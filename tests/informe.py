@@ -42,7 +42,7 @@ for r in res:
 def celda(r):
     if r is None: return "—"
     return {"PASS": "PASS", "FAIL": "**FAIL**", "SKIP": "SKIP", "XFAIL": "XFAIL", "XPASS": "XPASS"}[r["estado"]]
-L = ["# Informe de pruebas del normalizador (Fase 2 + P1/P2: captura y preservación de origen)\n"]
+L = ["# Informe de pruebas del normalizador (Fase 2 + P1/P2: captura y preservación de origen + P3: motor genérico en sombra)\n"]
 tot = {}
 for r in res: tot[r["estado"]] = tot.get(r["estado"], 0) + 1
 L.append("Resumen: " + ", ".join(f"{k}={v}" for k, v in sorted(tot.items())) + "\n")
@@ -78,6 +78,16 @@ for r in res:
     if fn.startswith("test_05"):
         g5.setdefault(fn.split("[")[0].split("::")[-1], []).append(r["estado"])
 for n, est in g5.items():
+    L.append(f"| `{n}` | {len(est)} | " + ("PASS" if all(e == "PASS" for e in est) else "/".join(f"{e}×{est.count(e)}" for e in sorted(set(est)))) + " |")
+L.append("\n## 2c. Registro de bancos + motor genérico en modo sombra (P3, `test_06_sombra_p3.py`)\n")
+L.append("La producción sigue siendo la del motor legado; el genérico solo compara y reporta (`SOMBRA_REPORTE.json`, `SOMBRA_DIFERENCIAS.csv`).\n")
+L.append("| Prueba | Casos | Estado |\n|---|---|---|")
+g6 = {}
+for r in res:
+    fn = r["id"].split("/")[-1]
+    if fn.startswith("test_06"):
+        g6.setdefault(fn.split("[")[0].split("::")[-1], []).append(r["estado"])
+for n, est in g6.items():
     L.append(f"| `{n}` | {len(est)} | " + ("PASS" if all(e == "PASS" for e in est) else "/".join(f"{e}×{est.count(e)}" for e in sorted(set(est)))) + " |")
 L.append("\n## 3. Defectos reales confirmados (fallan hoy; deben pasar tras corregir)\n")
 L.append("| Código | Estado hoy | Defecto demostrado | Cambio necesario (archivo · función) |\n|---|---|---|---|")

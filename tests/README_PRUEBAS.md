@@ -22,3 +22,11 @@ Regla de uso: tras cada cambio al motor, la sección 1 (regresión) debe seguir 
 * `test_05_preservacion.py`: completitud celda a celda, reconstruccion, mapa 1:1, debitos, cabeceras/pies, metadatos, determinismo, columnas vacias, doradas de NORMALIZADO.xlsx/LISTS.csv y UNION_ME.
 * `generar_golden_normalizado.py`: doradas de las 4 hojas de NORMALIZADO.xlsx (generadas con el motor ORIGINAL).
 * `evidencia_ab.py <motor_original> <motor_con_P1>`: comparacion A/B de salidas operativas (reloj fijado). Resultado en `reports/EVIDENCIA_MOTOR_SIN_CAMBIOS.txt`.
+
+
+## P3 (registro + motor genérico en sombra)
+
+* `../registro_bancos.json` y `../motor_generico.py` (nuevos). El motor legado solo añade el paso 16 (pasivo) al final de `ejecutar_motor`.
+* `test_06_sombra_p3.py` (109 casos): registro válido y contrato de 13 cuentas; validación de registros inválidos; el genérico no usa la lógica bancaria del legado; los 12 formatos coinciden al 100 % en sombra (detección, movimientos, validación) y reproducen las doradas; `CAMPO_CANONICO` cubre todos los encabezados reales; cuenta nueva por configuración; diferencias D-09/D-10/D-11/«Últimos 12» reportadas; el comparador detecta diferencias inyectadas; con la sombra encendida, apagada, con registro alterado o roto, o con el genérico roto, `NORMALIZADO.xlsx`/`LISTS.csv` son idénticos.
+* `evidencia_ab.py <motor_referencia> <motor_actual>` ahora acepta las claves nuevas `origen_estado` y `sombra_estado` e ignora las líneas de ORIGEN/SOMBRA. Evidencia de P3: `reports/EVIDENCIA_P3_SOMBRA.txt` (referencia = motor del checkpoint `8c9c09a`).
+

@@ -2574,6 +2574,8 @@ def ejecutar_motor(carpeta_entrada, ruta_salida):
             "df_deteccion_final": DataFrame,
             "ruta_salida": str,
             "ruta_lists_csv": str,
+            "origen_estado": dict,   # P1 (ORIGEN.xlsx)
+            "sombra_estado": dict,   # P3 (motor genérico en sombra)
         }
 
     Además de NORMALIZADO.xlsx, se genera en la misma carpeta un
@@ -3689,6 +3691,91 @@ def ejecutar_motor(carpeta_entrada, ruta_salida):
             f"{origen_estado.get('error')}"
         )
 
+    # ========================================================
+    # 16. MOTOR GENÉRICO EN MODO SOMBRA (P3, pasivo)
+    #
+    # Corre motor_generico.py (registro_bancos.json) en paralelo,
+    # DESPUÉS de escribir la salida productiva, y compara su
+    # resultado contra el de este motor. Escribe SOMBRA_REPORTE.json
+    # y SOMBRA_DIFERENCIAS.csv en la carpeta de salida. No modifica
+    # df_final, NORMALIZADO.xlsx ni LISTS.csv: la salida productiva
+    # es exclusivamente la de este motor legado. Un fallo o una
+    # diferencia aquí NUNCA detiene el proceso ni altera la salida
+    # (solo queda registrado en "sombra_estado"). Se desactiva con la
+    # variable de entorno CBBA_MOTOR_SOMBRA=0.
+    # ========================================================
+    if os.environ.get("CBBA_MOTOR_SOMBRA", "1") == "0":
+
+        sombra_estado = {
+            "estado": "DESACTIVADO",
+            "ruta_reporte": None
+        }
+
+    else:
+
+        try:
+            import importlib.util as _iu2
+            import types as _types
+
+            _ruta_gen = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "motor_generico.py"
+            )
+            _spec2 = _iu2.spec_from_file_location(
+                "motor_generico",
+                _ruta_gen
+            )
+            _gen = _iu2.module_from_spec(_spec2)
+            _spec2.loader.exec_module(_gen)
+
+            sombra_estado = _gen.ejecutar_sombra_produccion(
+                _types.SimpleNamespace(**globals()),
+                mapa_archivos,
+                df_deteccion_final,
+                tablas,
+                df_validacion,
+                lote,
+                fecha_carga,
+                carpeta_salida or "."
+            )
+
+        except Exception as e:
+
+            sombra_estado = {
+                "estado": "ERROR",
+                "error": f"{type(e).__name__}: {e}",
+                "ruta_reporte": None
+            }
+
+    try:
+
+        if sombra_estado.get("estado") in (
+            "SIN_DIFERENCIAS",
+            "CON_DIFERENCIAS"
+        ):
+
+            print(
+                f"\nMotor generico en SOMBRA: "
+                f"{sombra_estado['estado']} "
+                f"({sombra_estado['archivos_coinciden']}/"
+                f"{sombra_estado['archivos_comparados']} archivos "
+                "coinciden; la salida productiva es la de este motor "
+                "legado). "
+                f"Informe: {sombra_estado['ruta_reporte']}"
+            )
+
+        elif sombra_estado.get("estado") == "ERROR":
+
+            print(
+                "\nMotor generico en SOMBRA no se ejecuto "
+                "(no afecta NORMALIZADO.xlsx ni LISTS.csv): "
+                f"{sombra_estado.get('error')}"
+            )
+
+    except Exception:
+        # Informar es opcional: la salida productiva ya está escrita.
+        pass
+
     return {
         "df_final": df_final,
         "df_validacion": df_validacion,
@@ -3697,7 +3784,8 @@ def ejecutar_motor(carpeta_entrada, ruta_salida):
         "df_deteccion_final": df_deteccion_final,
         "ruta_salida": ruta_salida,
         "ruta_lists_csv": ruta_lists_csv,
-        "origen_estado": origen_estado
+        "origen_estado": origen_estado,
+        "sombra_estado": sombra_estado
     }
 
 

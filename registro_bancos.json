@@ -1,0 +1,345 @@
+{
+  "_ayuda": {
+    "proposito": "Registro parametrizable de bancos (P3). FORMATOS describe la estructura de un reporte; CUENTAS describe una instancia (banco, cuenta, moneda). Una cuenta nueva de un formato ya conocido se agrega con UNA entrada en CUENTAS y cero codigo.",
+    "modo": "SOMBRA: lo lee motor_generico.py, que corre en paralelo al motor legado y solo reporta diferencias. La salida productiva sigue siendo la del motor legado.",
+    "agregar_cuenta": "Copiar una entrada de CUENTAS, cambiar id (unico), cuenta (texto tal como aparece en la cabecera del extracto), banco y moneda, y dejar el mismo 'formato'. No tocar FORMATOS.",
+    "campos_de_formato": {
+      "familia": "Solo informativo (agrupa formatos del mismo banco).",
+      "orden_deteccion": "Orden estable de evaluacion; no decide el resultado (si mas de un formato/cuenta coincide, el resultado es AMBIGUO).",
+      "aceptado": "false = reporte real que existe pero NO es un extracto: se rechaza con 'mensaje'.",
+      "hojas_aceptadas": "Nombres de hoja validos; se usa la primera que exista en el libro.",
+      "firma": "Texto (normalizado: mayusculas, sin tildes) que debe aparecer en la cabecera y el encabezado, nunca en los datos. 'todas' = todos; 'alguna' = al menos uno.",
+      "encabezados": "'puntaje' = encabezados esperados (define la fila de encabezado, igual que el legado); 'puntaje_minimo' = fraccion minima exigida.",
+      "filtro_fecha": "Como se decide si una fila es un movimiento: PANDAS_DAYFIRST (pd.to_datetime dayfirst, igual que el legado) o NORMALIZAR_FECHA (acepta 24/Ago/2026).",
+      "sin_columna_fecha": "ERROR (KeyError) o SIN_MOVIMIENTOS (extracto valido vacio, solo BISA hoy).",
+      "campos": "Rol -> {alias, requerido}. 'alias' son los encabezados posibles del banco; 'constante' fija un valor cuando el banco no trae la columna.",
+      "importe": "DEBITO_CREDITO (dos columnas) o SIGNO (una columna con signo).",
+      "depositante": "VACIO | COLUMNA(campo) | legacy_bnb(campo): estrategia con nombre que conserva el resultado actual (D-18/D-19 sin tocar).",
+      "info_adicional": "partes en orden; 'etiqueta' antepone 'ETIQUETA: '; sin etiqueta = valor crudo; se unen con 'separador'.",
+      "filas_excluir": "Filas que no son movimientos (p. ej. SALDO INICIAL / SALDO AL CIERRE de BCP).",
+      "saldo": "Fuentes de saldo inicial/final para la validacion (RECONSTRUIDO, ULTIMA_FILA, CELDA_FIJA, ETIQUETA, FILA_ROTULADA).",
+      "campos_canonicos": "Encabezado original del banco -> etiqueta comun para consultar entre bancos (llena CAMPO_CANONICO)."
+    }
+  },
+  "version_registro": "P3-1",
+  "FORMATOS": {
+    "BNB_EXTRACTO_V1": {
+      "familia": "BNB",
+      "orden_deteccion": 20,
+      "hojas_aceptadas": ["Hoja 1", "Hoja"],
+      "firma": {"todas": ["CODIGO DE TRANSACCION", "ADICIONALES"]},
+      "encabezados": {
+        "puntaje": ["FECHA", "HORA", "DESCRIPCION", "CODIGO DE TRANSACCION", "DEBITOS", "CREDITOS", "SALDO"],
+        "puntaje_minimo": 1.0
+      },
+      "filtro_fecha": "PANDAS_DAYFIRST",
+      "sin_columna_fecha": "ERROR",
+      "campos": {
+        "FECHA": {"alias": ["Fecha"], "requerido": true},
+        "HORA": {"alias": ["Hora"], "requerido": true},
+        "DESCRIPCION": {"alias": ["Descripción", "Descripcion"], "requerido": true},
+        "CODIGO_ASIGNACION": {"alias": ["Código de transacción", "Codigo de transaccion"], "requerido": true},
+        "SALDO": {"alias": ["Saldo"], "requerido": true},
+        "ADICIONALES": {"alias": ["Adicionales"], "requerido": true},
+        "DEBITO": {"alias": ["Débitos", "Debitos", "Débito", "Debito"], "requerido": false},
+        "CREDITO": {"alias": ["Créditos", "Creditos", "Crédito", "Credito"], "requerido": false}
+      },
+      "importe": {"modo": "DEBITO_CREDITO"},
+      "depositante": {"estrategia": "legacy_bnb", "campo": "ADICIONALES"},
+      "info_adicional": {"separador": " | ", "partes": [{"campo": "ADICIONALES"}]},
+      "filas_excluir": [],
+      "saldo": {
+        "orden": "CRONOLOGICO",
+        "inicial": {"fuente": "RECONSTRUIDO"},
+        "final": {"fuente": "ULTIMA_FILA"}
+      },
+      "campos_canonicos": {
+        "Fecha": "FECHA",
+        "Hora": "HORA",
+        "Oficina": "OFICINA",
+        "Descripción": "DESCRIPCION",
+        "Referencia": "REFERENCIA",
+        "Código de transacción": "CODIGO_TRANSACCION",
+        "ITF": "ITF",
+        "Débitos": "DEBITO",
+        "Créditos": "CREDITO",
+        "Saldo": "SALDO",
+        "Adicionales": "ADICIONALES"
+      }
+    },
+
+    "BCP_EXTRACTO_V1": {
+      "familia": "BCP",
+      "orden_deteccion": 30,
+      "hojas_aceptadas": ["HistoricalAccountExcel"],
+      "firma": {"todas": ["EXTRACTOS BANCARIOS", "NRO. OPERACION"]},
+      "encabezados": {
+        "puntaje": ["FECHA", "HORA", "GLOSA", "IMPORTE", "SALDO", "NRO. OPERACION"],
+        "puntaje_minimo": 1.0
+      },
+      "filtro_fecha": "PANDAS_DAYFIRST",
+      "sin_columna_fecha": "ERROR",
+      "campos": {
+        "FECHA": {"alias": ["Fecha"], "requerido": true},
+        "HORA": {"alias": ["Hora"], "requerido": true},
+        "DESCRIPCION": {"alias": ["Glosa"], "requerido": true},
+        "IMPORTE_FIRMADO": {"alias": ["Importe"], "requerido": true},
+        "SALDO": {"alias": ["Saldo"], "requerido": true},
+        "CODIGO_ASIGNACION": {"alias": ["Nro. Operación", "Nro Operación", "Nro. Operacion", "Nro Operacion"], "requerido": true},
+        "TIPO": {"alias": ["Tipo"], "requerido": false},
+        "SUC_AGE": {"alias": ["Suc. Age."], "requerido": false},
+        "USUARIO": {"alias": ["Usuario"], "requerido": false}
+      },
+      "importe": {"modo": "SIGNO", "campo": "IMPORTE_FIRMADO"},
+      "depositante": {"estrategia": "VACIO"},
+      "info_adicional": {
+        "separador": " | ",
+        "partes": [{"campo": "TIPO"}, {"campo": "SUC_AGE"}, {"campo": "USUARIO"}]
+      },
+      "filas_excluir": [
+        {"campo": "DESCRIPCION", "contiene_alguna": ["SALDO INICIAL", "SALDO AL CIERRE"]}
+      ],
+      "saldo": {
+        "orden": "ARCHIVO",
+        "inicial": {"fuente": "FILA_ROTULADA", "campo_rotulo": "DESCRIPCION", "rotulo": "SALDO INICIAL", "campo_valor": "SALDO"},
+        "final": {"fuente": "FILA_ROTULADA", "campo_rotulo": "DESCRIPCION", "rotulo": "SALDO AL CIERRE", "campo_valor": "SALDO", "respaldo": "ULTIMA_FILA"}
+      },
+      "campos_canonicos": {
+        "Fecha": "FECHA",
+        "Hora": "HORA",
+        "Glosa": "GLOSA",
+        "Tipo": "TIPO_TRANSACCION",
+        "Suc. Age.": "SUCURSAL_AGENCIA",
+        "Usuario": "USUARIO_BANCO",
+        "Importe": "IMPORTE_FIRMADO",
+        "Saldo": "SALDO",
+        "Nro. Operación": "NRO_OPERACION"
+      }
+    },
+
+    "BISA_EXTRACTO_V1": {
+      "familia": "BISA",
+      "orden_deteccion": 10,
+      "hojas_aceptadas": ["Extracto de Movimientos"],
+      "firma": {"alguna": ["INFO. COMPLEMENTARIA", "NRO. REF.", "BANCO BISA"]},
+      "encabezados": {
+        "puntaje": ["FECHA", "HORA", "DESCRIPCION", "IMPORTE", "SALDO", "NRO. REF."],
+        "puntaje_minimo": 1.0
+      },
+      "filtro_fecha": "PANDAS_DAYFIRST",
+      "sin_columna_fecha": "SIN_MOVIMIENTOS",
+      "campos": {
+        "FECHA": {"alias": ["Fecha"], "requerido": false},
+        "HORA": {"alias": ["Hora"], "requerido": false},
+        "DESCRIPCION": {"alias": ["Descripción", "Descripcion"], "requerido": true},
+        "IMPORTE_FIRMADO": {"alias": ["Importe"], "requerido": true},
+        "SALDO": {"alias": ["Saldo"], "requerido": true},
+        "INFO_COMPLEMENTARIA": {"alias": ["Info. Complementaria", "Info Complementaria"], "requerido": false},
+        "CODIGO_ASIGNACION": {"alias": ["Nro. Ref.", "Nro Ref."], "requerido": true},
+        "SUCURSAL": {"alias": ["Sucursal"], "requerido": false},
+        "CANAL": {"alias": ["Canal"], "requerido": false}
+      },
+      "importe": {"modo": "SIGNO", "campo": "IMPORTE_FIRMADO"},
+      "depositante": {"estrategia": "VACIO"},
+      "info_adicional": {
+        "separador": " | ",
+        "partes": [
+          {"campo": "INFO_COMPLEMENTARIA"},
+          {"campo": "SUCURSAL", "etiqueta": "Sucursal"},
+          {"campo": "CANAL", "etiqueta": "Canal"}
+        ]
+      },
+      "filas_excluir": [],
+      "saldo": {
+        "orden": "ARCHIVO",
+        "inicial": {"fuente": "CELDA_FIJA", "fila": 8, "columna": 7},
+        "final": {"fuente": "ULTIMA_FILA", "respaldo": "INICIAL"}
+      },
+      "campos_canonicos": {
+        "Fecha": "FECHA",
+        "Hora": "HORA",
+        "Nro. Cheque": "NRO_CHEQUE",
+        "Descripción": "DESCRIPCION",
+        "Importe": "IMPORTE_FIRMADO",
+        "Saldo": "SALDO",
+        "Info. Complementaria": "INFO_COMPLEMENTARIA",
+        "Sucursal": "SUCURSAL_AGENCIA",
+        "Canal": "CANAL",
+        "Nro. Ref.": "REFERENCIA",
+        "Codigo": "CODIGO_BANCO_TRX",
+        "Nro. Lote": "NRO_LOTE"
+      }
+    },
+
+    "ECO_EXTRACTO_V1": {
+      "familia": "ECONOMICO",
+      "orden_deteccion": 50,
+      "hojas_aceptadas": ["Extracto"],
+      "firma": {"todas": ["NRO TRN./CHEQUE", "TRANSACCION"]},
+      "encabezados": {
+        "puntaje": ["FECHA", "HORA", "NRO TRN./CHEQUE", "TRANSACCION", "MONTO", "SALDO"],
+        "puntaje_minimo": 1.0
+      },
+      "filtro_fecha": "NORMALIZAR_FECHA",
+      "sin_columna_fecha": "ERROR",
+      "campos": {
+        "FECHA": {"alias": ["Fecha"], "requerido": true},
+        "HORA": {"alias": ["Hora"], "requerido": false},
+        "CODIGO_ASIGNACION": {"alias": ["Nro Trn./Cheque", "Nro Trn / Cheque"], "requerido": true},
+        "DESCRIPCION": {"alias": ["Transacción", "Transaccion"], "requerido": true},
+        "NOTA": {"alias": ["Nota"], "requerido": false},
+        "IMPORTE_FIRMADO": {"alias": ["Monto"], "requerido": true},
+        "SALDO": {"alias": ["Saldo"], "requerido": true}
+      },
+      "importe": {"modo": "SIGNO", "campo": "IMPORTE_FIRMADO"},
+      "depositante": {"estrategia": "VACIO"},
+      "info_adicional": {"separador": " | ", "partes": [{"campo": "NOTA"}]},
+      "filas_excluir": [],
+      "saldo": {
+        "orden": "ARCHIVO",
+        "inicial": {"fuente": "ETIQUETA", "etiqueta": "SALDO INICIAL"},
+        "final": {"fuente": "ETIQUETA", "etiqueta": "SALDO FINAL"}
+      },
+      "campos_canonicos": {
+        "Fecha": "FECHA",
+        "Hora": "HORA",
+        "Nro Trn./Cheque": "NRO_OPERACION",
+        "Transacción": "TIPO_TRANSACCION",
+        "Nota": "NOTA",
+        "Monto": "IMPORTE_FIRMADO",
+        "Saldo": "SALDO"
+      }
+    },
+
+    "BMSC_EXCEL_V1": {
+      "familia": "BMSC",
+      "orden_deteccion": 60,
+      "hojas_aceptadas": ["Excel"],
+      "firma": {"alguna": ["COD. BCA.", "NOMBRE/DENOMINACION DEPOSITANTE", "BANCO MERCANTIL SANTA CRUZ"]},
+      "encabezados": {
+        "puntaje": ["FECHA", "HORA", "COD. BCA.", "DEBITO", "CREDITO", "SALDO"],
+        "puntaje_minimo": 1.0
+      },
+      "filtro_fecha": "PANDAS_DAYFIRST",
+      "sin_columna_fecha": "ERROR",
+      "campos": {
+        "FECHA": {"alias": ["Fecha"], "requerido": true},
+        "HORA": {"alias": ["Hora"], "requerido": false},
+        "CODIGO_ASIGNACION": {"alias": ["Cod. Bca.", "Cod Bca."], "requerido": true},
+        "DEBITO": {"alias": ["Débito", "Debito", "Débitos", "Debitos"], "requerido": false},
+        "CREDITO": {"alias": ["Crédito", "Credito", "Créditos", "Creditos"], "requerido": false},
+        "SALDO": {"alias": ["Saldo"], "requerido": true},
+        "DESCRIPCION": {"alias": ["Descripción", "Descripcion"], "requerido": true},
+        "NOMBRE_DEPOSITANTE": {"alias": ["Nombre/Denominación Depositante", "Nombre/Denominacion Depositante"], "requerido": false},
+        "DOC_DEPOSITANTE": {"alias": ["Doc.Depositante", "Doc. Depositante"], "requerido": false},
+        "GLOSA": {"alias": ["Glosa"], "requerido": false},
+        "ORIGINADOR": {"alias": ["Originador"], "requerido": false},
+        "ORIGINADOR_ACH": {"alias": ["Originador ACH"], "requerido": false}
+      },
+      "importe": {"modo": "DEBITO_CREDITO"},
+      "depositante": {"estrategia": "COLUMNA", "campo": "NOMBRE_DEPOSITANTE"},
+      "info_adicional": {
+        "separador": " | ",
+        "partes": [
+          {"campo": "DOC_DEPOSITANTE", "etiqueta": "DOC"},
+          {"campo": "GLOSA", "etiqueta": "GLOSA"},
+          {"campo": "ORIGINADOR", "etiqueta": "ORIGINADOR"},
+          {"campo": "ORIGINADOR_ACH", "etiqueta": "ORIGINADOR ACH"}
+        ]
+      },
+      "filas_excluir": [],
+      "saldo": {
+        "orden": "ARCHIVO",
+        "inicial": {"fuente": "RECONSTRUIDO"},
+        "final": {"fuente": "ULTIMA_FILA"}
+      },
+      "campos_canonicos": {
+        "Fecha": "FECHA",
+        "Hora": "HORA",
+        "Cod. Bca.": "CODIGO_BANCO_TRX",
+        "Nro.Cheque": "NRO_CHEQUE",
+        "Nro/Nom.Plantilla": "PLANTILLA",
+        "Cod.Dep.Num": "COD_DEP_NUM",
+        "Doc.Depositante": "DEPOSITANTE_DOC",
+        "Nombre/Denominación Depositante": "DEPOSITANTE_NOMBRE",
+        "Tipo transact": "TIPO_TRANSACCION",
+        "Descripción": "DESCRIPCION",
+        "Oficina": "OFICINA",
+        "Banco": "BANCO_CONTRAPARTE",
+        "Tipo dep": "TIPO_DEPOSITO",
+        "Nom.Destinatario": "DESTINATARIO_NOMBRE",
+        "Glosa": "GLOSA",
+        "Originador": "ORIGINADOR",
+        "Originador ACH": "ORIGINADOR_ACH",
+        "Ciudad Origen": "CIUDAD_ORIGEN",
+        "Débito": "DEBITO",
+        "Crédito": "CREDITO",
+        "Saldo": "SALDO"
+      }
+    },
+
+    "UNION_FECHAS_V1": {
+      "familia": "UNION",
+      "orden_deteccion": 40,
+      "hojas_aceptadas": ["ExtractoMovimientosFechas"],
+      "firma": {"todas": ["FECHA MOVIMIENTO", "NRO DOCUMENTO"]},
+      "encabezados": {
+        "puntaje": ["FECHA MOVIMIENTO", "DESCRIPCION", "NRO DOCUMENTO", "MONTO", "SALDO"],
+        "puntaje_minimo": 1.0
+      },
+      "filtro_fecha": "PANDAS_DAYFIRST",
+      "sin_columna_fecha": "ERROR",
+      "campos": {
+        "FECHA": {"alias": ["Fecha Movimiento"], "requerido": true},
+        "HORA": {"constante": ""},
+        "DESCRIPCION": {"alias": ["Descripción", "Descripcion"], "requerido": true},
+        "CODIGO_ASIGNACION": {"alias": ["Nro Documento", "Nro. Documento"], "requerido": true},
+        "IMPORTE_FIRMADO": {"alias": ["Monto"], "requerido": true},
+        "SALDO": {"alias": ["Saldo"], "requerido": true},
+        "AG": {"alias": ["AG", "Agencia"], "requerido": false}
+      },
+      "importe": {"modo": "SIGNO", "campo": "IMPORTE_FIRMADO"},
+      "depositante": {"estrategia": "VACIO"},
+      "info_adicional": {"separador": " | ", "partes": [{"campo": "AG", "etiqueta": "AG"}]},
+      "filas_excluir": [],
+      "saldo": {
+        "orden": "ARCHIVO",
+        "inicial": {"fuente": "RECONSTRUIDO"},
+        "final": {"fuente": "ULTIMA_FILA"}
+      },
+      "campos_canonicos": {
+        "Fecha Movimiento": "FECHA",
+        "AG": "SUCURSAL_AGENCIA",
+        "Descripción": "DESCRIPCION",
+        "Nro Documento": "NRO_DOCUMENTO",
+        "Monto": "IMPORTE_FIRMADO",
+        "Saldo": "SALDO",
+        "Nro de verificasion": "NRO_VERIFICACION"
+      }
+    },
+
+    "UNION_ULTIMOS12_V1": {
+      "familia": "UNION",
+      "orden_deteccion": 45,
+      "aceptado": false,
+      "mensaje": "Reporte 'Ultimos 12 movimientos' de Banco Union: no es un extracto. Descargar el extracto por rango de fechas.",
+      "hojas_aceptadas": ["ExtractoMovimientosUltimos"]
+    }
+  },
+
+  "CUENTAS": [
+    {"id": "BISA_MN",     "formato": "BISA_EXTRACTO_V1",  "banco": "BISA",            "cuenta": "0696870039",       "moneda": "BOB", "activa": true},
+    {"id": "BISA_ME",     "formato": "BISA_EXTRACTO_V1",  "banco": "BISA",            "cuenta": "0696872023",       "moneda": "USD", "activa": true},
+    {"id": "BNB_MN",      "formato": "BNB_EXTRACTO_V1",   "banco": "BNB",             "cuenta": "3000100152",       "moneda": "BOB", "activa": true},
+    {"id": "BNB_ME",      "formato": "BNB_EXTRACTO_V1",   "banco": "BNB",             "cuenta": "3400041236",       "moneda": "USD", "activa": true},
+    {"id": "BNB_AHORRO",  "formato": "BNB_EXTRACTO_V1",   "banco": "BNB",             "cuenta": "3501936692",       "moneda": "BOB", "activa": true},
+    {"id": "BNB_CLINICA", "formato": "BNB_EXTRACTO_V1",   "banco": "BNB",             "cuenta": "3000100705",       "moneda": "BOB", "activa": true},
+    {"id": "BCP_MN",      "formato": "BCP_EXTRACTO_V1",   "banco": "BCP",             "cuenta": "301-5005684-3-97", "moneda": "BOB", "activa": true},
+    {"id": "BCP_ME",      "formato": "BCP_EXTRACTO_V1",   "banco": "BCP",             "cuenta": "301-5005425-2-71", "moneda": "USD", "activa": true},
+    {"id": "UNION_MN",    "formato": "UNION_FECHAS_V1",   "banco": "BANCO UNIÓN",     "cuenta": "10000003224552",   "moneda": "BOB", "activa": true},
+    {"id": "UNION_ME",    "formato": "UNION_FECHAS_V1",   "banco": "BANCO UNIÓN",     "cuenta": "20000003224544",   "moneda": "USD", "activa": true},
+    {"id": "ECO_CTA_CTE", "formato": "ECO_EXTRACTO_V1",   "banco": "BANCO ECONÓMICO", "cuenta": "3041210569",       "moneda": "BOB", "activa": true},
+    {"id": "ECO_AHORRO",  "formato": "ECO_EXTRACTO_V1",   "banco": "BANCO ECONÓMICO", "cuenta": "3051446946",       "moneda": "BOB", "activa": true},
+    {"id": "BMSC",        "formato": "BMSC_EXCEL_V1",     "banco": "BMSC",            "cuenta": "1000872489",       "moneda": "BOB", "activa": true}
+  ]
+}

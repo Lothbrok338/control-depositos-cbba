@@ -1,6 +1,6 @@
-# Informe de pruebas del normalizador (Fase 2 + P1/P2: captura y preservación de origen)
+# Informe de pruebas del normalizador (Fase 2 + P1/P2: captura y preservación de origen + P3: motor genérico en sombra)
 
-Resumen: PASS=270, SKIP=19, XFAIL=18
+Resumen: PASS=379, SKIP=20, XFAIL=18
 
 ## 1. Regresión por banco/formato (extractos reales)
 
@@ -63,6 +63,10 @@ Resumen: PASS=270, SKIP=19, XFAIL=18
 | `test_05_preservacion.py::test_union_me_real_completitud_con_movimientos` | 1 | SKIP |
 | `test_05_preservacion.py::test_union_me_real_debitos_completos` | 1 | SKIP |
 | `test_05_preservacion.py::test_union_me_real_nro_de_verificasion_y_mapa` | 1 | SKIP |
+| `test_06_sombra_p3.py::test_sombra_bisa_me_sin_movimientos_deja_df_vacio_como_el_legado` | 1 | PASS |
+| `test_06_sombra_p3.py::test_diferencia_union_ultimos12_se_reporta` | 1 | PASS |
+| `test_06_sombra_p3.py::test_sombra_union_me_proxy_sintetico_con_movimiento_coincide` | 1 | PASS |
+| `test_06_sombra_p3.py::test_sombra_union_me_vacio_proxy_falla_igual_que_el_legado_d16b` | 1 | PASS |
 
 ## 2b. Preservación de origen (P2, `test_05_preservacion.py`)
 
@@ -99,6 +103,55 @@ Resumen: PASS=270, SKIP=19, XFAIL=18
 | `test_union_me_real_completitud_con_movimientos` | 1 | SKIP×1 |
 | `test_union_me_real_debitos_completos` | 1 | SKIP×1 |
 | `test_union_me_real_nro_de_verificasion_y_mapa` | 1 | SKIP×1 |
+
+## 2c. Registro de bancos + motor genérico en modo sombra (P3, `test_06_sombra_p3.py`)
+
+La producción sigue siendo la del motor legado; el genérico solo compara y reporta (`SOMBRA_REPORTE.json`, `SOMBRA_DIFERENCIAS.csv`).
+
+| Prueba | Casos | Estado |
+|---|---|---|
+| `test_registro_es_valido` | 1 | PASS |
+| `test_registro_tiene_las_13_cuentas_actuales_y_coinciden_con_el_contrato` | 1 | PASS |
+| `test_registro_hojas_y_encabezados_coinciden_con_las_constantes_del_legado` | 1 | PASS |
+| `test_registro_formatos_de_la_misma_familia_se_comparten` | 1 | PASS |
+| `test_registro_invalido_se_detecta` | 15 | PASS |
+| `test_registro_json_roto_falla_con_mensaje` | 1 | PASS |
+| `test_motor_generico_no_usa_la_logica_bancaria_del_legado` | 1 | PASS |
+| `test_primitivas_compartidas_son_solo_conversion_y_lectura` | 1 | PASS |
+| `test_registro_no_se_modifica_al_procesar` | 1 | PASS |
+| `test_sombra_formato_coincide_al_100_con_el_legado` | 12 | PASS |
+| `test_sombra_generico_reproduce_la_dorada` | 12 | PASS×11/SKIP×1 |
+| `test_generico_identidad_banco_cuenta_moneda_siempre_completa` | 12 | PASS |
+| `test_sombra_bisa_me_sin_movimientos_deja_df_vacio_como_el_legado` | 1 | PASS |
+| `test_generico_es_determinista` | 1 | PASS |
+| `test_campo_canonico_cubre_todos_los_encabezados_reales` | 12 | PASS |
+| `test_campo_canonico_ejemplos` | 1 | PASS |
+| `test_cuenta_nueva_de_formato_conocido_se_agrega_solo_con_configuracion` | 1 | PASS |
+| `test_cuenta_nueva_produce_lo_mismo_que_una_cuenta_conocida_con_el_mismo_contenido` | 1 | PASS |
+| `test_con_cuenta_rechaza_configuraciones_invalidas` | 1 | PASS |
+| `test_cuenta_ambigua_en_cabecera_se_reporta_como_ambiguo` | 1 | PASS |
+| `test_diferencia_d10_cuenta_dentro_de_una_glosa_se_reporta` | 1 | PASS |
+| `test_diferencia_d11_bmsc_con_otra_cuenta_se_reporta` | 1 | PASS |
+| `test_diferencia_union_ultimos12_se_reporta` | 1 | PASS |
+| `test_d09_encabezado_incompleto_lo_rechaza_el_generico` | 1 | PASS |
+| `test_sombra_bnb_orden_descendente_valida_saldos_igual_que_el_legado` | 1 | PASS |
+| `test_sombra_bnb_sinteticos_coinciden_con_el_legado` | 3 | PASS |
+| `test_sombra_union_me_proxy_sintetico_con_movimiento_coincide` | 1 | PASS |
+| `test_sombra_union_me_vacio_proxy_falla_igual_que_el_legado_d16b` | 1 | PASS |
+| `test_sombra_no_corrige_d16_bnb_sin_movimientos` | 1 | PASS |
+| `test_el_comparador_reporta_diferencias_inyectadas` | 7 | PASS |
+| `test_una_fuente_de_saldo_distinta_que_da_el_mismo_resultado_no_es_diferencia` | 1 | PASS |
+| `test_el_comparador_reporta_diferencia_de_validacion` | 1 | PASS |
+| `test_comparar_frames_detecta_columna_indice_y_familia_de_tipo` | 1 | PASS |
+| `test_lote_corre_en_sombra_sin_diferencias_y_escribe_el_informe` | 1 | PASS |
+| `test_lote_la_produccion_sigue_siendo_la_del_legado` | 1 | PASS |
+| `test_sombra_encendida_o_apagada_da_exactamente_la_misma_produccion` | 1 | PASS |
+| `test_una_diferencia_en_sombra_se_reporta_y_no_altera_la_produccion` | 1 | PASS |
+| `test_un_fallo_del_generico_no_detiene_ni_altera_al_legado` | 3 | PASS |
+| `test_un_generico_que_explota_no_detiene_al_legado` | 1 | PASS |
+| `test_motor_sin_motor_generico_al_lado_tampoco_falla` | 1 | PASS |
+| `test_archivos_de_sombra_no_se_toman_como_extractos` | 1 | PASS |
+| `test_cli_compara_una_carpeta_sin_escribir_produccion` | 1 | PASS |
 
 ## 3. Defectos reales confirmados (fallan hoy; deben pasar tras corregir)
 

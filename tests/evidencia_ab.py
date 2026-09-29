@@ -1,10 +1,12 @@
-"""Evidencia A/B: el motor con P1 produce EXACTAMENTE las mismas salidas operativas que el motor original.
+"""Evidencia A/B: el motor con P1/P3 produce EXACTAMENTE las mismas salidas operativas que el motor de referencia.
 
-    python evidencia_ab.py <motor_original.py> <motor_con_P1.py>
+    python evidencia_ab.py <motor_referencia.py> <motor_actual.py>
 
 Ambos corren sobre los 12 fixtures con el reloj fijado (asi LOTE/FECHA DE CARGA coinciden) y se compara:
 LISTS.csv byte a byte, NORMALIZADO.xlsx celda a celda (valor + formato + tablas), df_final/df_validacion/
-resumen, y la salida de consola (salvo las lineas de ORIGEN).  Termina con codigo 1 si algo difiere.
+resumen, y la salida de consola (salvo las lineas de ORIGEN y de SOMBRA).  Termina con codigo 1 si algo difiere.
+Las claves nuevas del retorno permitidas son origen_estado (P1) y sombra_estado (P3).
+El motor actual puede estar junto a motor_generico.py y registro_bancos.json (modo sombra P3).
 """
 import contextlib, importlib.util, io, shutil, sys, tempfile
 from pathlib import Path
@@ -50,8 +52,8 @@ def main(a, b):
     fallos = []
     with tempfile.TemporaryDirectory() as t:
         t = Path(t)
-        ra, sa, oa = correr(a, "original", t)
-        rb, sb, ob = correr(b, "con_P1", t)
+        ra, sa, oa = correr(a, "referencia", t)
+        rb, sb, ob = correr(b, "actual", t)
         def check(nombre, ok, detalle=""):
             print(("IDENTICO  " if ok else "DIFERENTE ") + nombre + (f"  {detalle}" if detalle else ""))
             if not ok: fallos.append(nombre)
@@ -67,16 +69,18 @@ def main(a, b):
             except AssertionError:
                 ok = False
             check(f"retorno['{k}']", ok)
-        check("claves del retorno", set(rb) - set(ra) == {"origen_estado"} and set(ra) <= set(rb), f"nuevas: {sorted(set(rb) - set(ra))}")
-        # se ignoran las lineas de ORIGEN, las lineas en blanco y la carpeta temporal de cada corrida
+        check("claves del retorno", (set(rb) - set(ra)) <= {"origen_estado", "sombra_estado"} and set(ra) <= set(rb), f"nuevas: {sorted(set(rb) - set(ra))}")
+        # se ignoran las lineas de ORIGEN y de SOMBRA, las lineas en blanco y la carpeta temporal de cada corrida
         def limpio(texto, carpeta):
             return [x.replace(str(carpeta), "<TMP>") for x in texto.splitlines()
-                    if x.strip() and "ORIGEN" not in x and "Archivo técnico" not in x]
-        la, lb = limpio(oa, t / "original"), limpio(ob, t / "con_P1")
-        check("salida de consola (sin lineas de ORIGEN)", la == lb, f"{len(la)} lineas")
-        print("ORIGEN.xlsx solo en el motor con P1:", (sb / "ORIGEN.xlsx").exists(), "/", (sa / "ORIGEN.xlsx").exists())
-        print("archivos de salida original:", sorted(p.name for p in sa.iterdir()))
-        print("archivos de salida con P1  :", sorted(p.name for p in sb.iterdir()))
+                    if x.strip() and "ORIGEN" not in x and "Archivo técnico" not in x and "SOMBRA" not in x]
+        la, lb = limpio(oa, t / "referencia"), limpio(ob, t / "actual")
+        check("salida de consola (sin lineas de ORIGEN ni SOMBRA)", la == lb, f"{len(la)} lineas")
+        print("ORIGEN.xlsx en referencia / actual:", (sa / "ORIGEN.xlsx").exists(), "/", (sb / "ORIGEN.xlsx").exists())
+        print("SOMBRA_REPORTE.json en referencia / actual:", (sa / "SOMBRA_REPORTE.json").exists(), "/", (sb / "SOMBRA_REPORTE.json").exists())
+        print("sombra_estado del motor actual:", {k: v for k, v in (rb.get("sombra_estado") or {}).items() if k in ("estado", "archivos_comparados", "archivos_coinciden", "archivos_difieren", "diferencias_total")})
+        print("archivos de salida referencia:", sorted(p.name for p in sa.iterdir()))
+        print("archivos de salida actual    :", sorted(p.name for p in sb.iterdir()))
     print("\nRESULTADO:", "SIN CAMBIOS DE COMPORTAMIENTO OPERATIVO" if not fallos else f"DIFERENCIAS: {fallos}")
     return 1 if fallos else 0
 

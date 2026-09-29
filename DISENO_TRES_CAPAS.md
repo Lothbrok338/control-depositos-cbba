@@ -597,3 +597,10 @@ Los defectos D-01 a D-17 siguen su propio carril (Fase 2). D-18 y D-19 **no se t
 * **Enlace movimiento ↔ fila**: se usa el índice de la tabla normalizada (la lista `tablas` que `ejecutar_motor` aún conserva al final), `FILA_EXCEL = fila_encabezado + 2 + índice`, con verificación interna y con `test_cada_movimiento_apunta_a_su_fila_original` (el IMPORTE y el SALDO normalizados aparecen en la fila apuntada, leída por un lector independiente).
 * **P2** — `test_05_preservacion.py` (ver `INFORME_PRUEBAS.md`, sección 2b).
 * **Riesgo D-20 (CORREGIDO después del checkpoint)**: si la carpeta de salida es la misma que la de entrada, `ORIGEN.xlsx` sería tomado como extracto en la corrida siguiente (`descubrir_archivos` solo excluye nombres con «NORMALIZADO»). Requiere decisión: excluir `ORIGEN.xlsx` en `descubrir_archivos` o garantizar carpetas distintas.
+
+## 13. Estado de implementación: P3 (hecho)
+
+* `registro_bancos.json` + `motor_generico.py` + paso 16 pasivo en `ejecutar_motor`. Ver `ESTADO_PROYECTO.md` §5.
+* **Desviaciones respecto de este diseño:** (1) `hojas_aceptadas` por formato, sin sobrescritura por cuenta (BNB acepta «Hoja 1» y «Hoja»); (2) el formato declara `filtro_fecha` (`PANDAS_DAYFIRST` / `NORMALIZAR_FECHA`) para reproducir el criterio distinto de Económico (D-06), en lugar de unificarlo; (3) el saldo inicial de BISA sigue por celda fija G8 (`CELDA_FIJA`), no por etiqueta; (4) la detección exige `puntaje_minimo` 100 % (el legado no, D-09) y lee la cuenta solo en la cabecera (cierra D-10/D-11 **solo en el genérico**); (5) el bloque `historico` **no** se incluye todavía (P3b).
+* Sin tocar: `COLUMNAS_LISTS`, `CLAVE TRANSACCIÓN`, `normalizar_*`, `detectar_formato`, `validar_archivo`, `ENCABEZADOS_ESPERADOS`, `HOJAS_VALIDAS`, los 18 XFAIL, Power Automate, Lists y Power Apps.
+

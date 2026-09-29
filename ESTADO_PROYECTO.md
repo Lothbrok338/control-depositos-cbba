@@ -1,6 +1,6 @@
 # ESTADO DEL PROYECTO — CONTROL DE DEPÓSITOS CBBA (módulo de normalización)
 
-**Fecha del checkpoint:** 2026-09-29 · **Regla rectora:** NORMALIZAR NUNCA DEBE DESTRUIR INFORMACIÓN DE ORIGEN.
+**Fecha:** 2026-09-29 (checkpoint P1+P2 = commit `8c9c09a`, tag `checkpoint-p1-p2`; P3 encima) · **Regla rectora:** NORMALIZAR NUNCA DEBE DESTRUIR INFORMACIÓN DE ORIGEN.
 
 ## 1. Estado
 
@@ -12,11 +12,12 @@
 | **P1** Captura íntegra de origen | **Terminado** | `captura_origen.py` + paso 15 de `ejecutar_motor` → `ORIGEN.xlsx` |
 | **P2** Pruebas de preservación | **Terminado** | `tests/test_05_preservacion.py` |
 | **D-20** salidas del sistema como extractos | **Corregido** | `descubrir_archivos` excluye `NORMALIZADO*`, `ORIGEN*.xlsx`, `EXTRACTO_HISTORICO_*.xlsx` |
-| **P3** Registro de bancos + motor genérico en modo sombra | **SIGUIENTE — no iniciado** | |
+| **P3** Registro de bancos + motor genérico en modo sombra | **Terminado** | `registro_bancos.json` (6 formatos + 1 rechazado, 13 cuentas), `motor_generico.py`, paso 16 pasivo en `ejecutar_motor`, `tests/test_06_sombra_p3.py`. Producción = solo legado |
+| P3b · P4 · P5 · P6 | No iniciados | |
 
 ## 2. Resultado de pruebas (suite completa)
 
-**270 PASS · 19 SKIP · 18 XFAIL · 0 FAIL** (≈110 s).
+**379 PASS · 20 SKIP · 18 XFAIL · 0 FAIL** (≈130 s). Base P1+P2: 270 / 19 / 18; P3 agrega 109 PASS y 1 SKIP (BISA_ME no tiene movimientos para comparar con su dorada).
 
 * **PASS (270):** regresión de los 12 formatos contra doradas; lote de 12; preservación P2 (completitud celda a celda, reconstrucción del archivo, mapa 1:1, débitos, cabeceras/pies, metadatos, determinismo de IDs, columnas vacías, NORMALIZADO.xlsx y LISTS.csv idénticos a sus doradas); D-20 (9 nombres excluidos, 4 nombres reales que siguen incluidos, corrida completa con salida = entrada).
 * **SKIP (19):** todos por falta de muestra real. UNION_ME: `REQUIERE MUESTRA REAL CON MOVIMIENTOS` (movimientos, saldos, débitos, `Nro de verificasion`, completitud y mapa) y archivo vacío real pendiente (`union_me_vacio.xls`). 8 pruebas de débitos en formatos sin débitos en su fixture (BCP_ME, BISA_ME, BISA_MN, BMSC, ECO_AHORRO, BNB_AHORRO, BNB_CLINICA, UNION_MN).
@@ -52,7 +53,19 @@ Plan: P1 ✔ · P2 ✔ · **P3** registro + motor genérico en modo sombra · P3
 
 **Observación:** el consumidor de `PROCESAR.txt` en Power Automate sigue sin identificarse; el flujo no ejecuta Python.
 
-## 5. Siguiente paso: P3
+## 5. P3 — registro + motor genérico en modo sombra (hecho)
+
+* `registro_bancos.json`: `FORMATOS` (BNB, BCP, BISA, ECO, BMSC, `UNION_FECHAS_V1` y `UNION_ULTIMOS12_V1` rechazado) y `CUENTAS` (las 13 actuales, con el mismo id que el código legado). Incluye `campos_canonicos` (llena `CAMPO_CANONICO`, **aún sin conectar** a `ORIGEN.xlsx`: `captura_origen.py` no se tocó).
+* **Agregar una cuenta de un formato conocido = una entrada en `CUENTAS`**, cero código (probado con `Registro.con_cuenta`).
+* `motor_generico.py`: detecta (firma en cabecera + cuenta registrada), lee, mapea a las 26 columnas y valida saldos solo con el registro. Reutiliza del legado únicamente primitivas de conversión/lectura y `finalizar_dataframe` (que fija `COLUMNAS_LISTS` y `CLAVE TRANSACCIÓN`).
+* **Sombra:** al final de `ejecutar_motor` (paso 16, tras escribir la salida productiva) compara la corrida del legado con el genérico y escribe `SOMBRA_REPORTE.json` (diferencias + observaciones) y `SOMBRA_DIFERENCIAS.csv` (solo diferencias) junto a `NORMALIZADO.xlsx`. Clave nueva del retorno: `sombra_estado`. Un fallo o una diferencia **nunca** cambia ni detiene la producción. `CBBA_MOTOR_SOMBRA=0` la apaga; `CBBA_REGISTRO_BANCOS=<ruta>` usa otro registro (pruebas).
+* También corre solo: `python motor_generico.py <carpeta_entrada> [<carpeta_reporte>]` (no escribe NORMALIZADO.xlsx ni LISTS.csv).
+* **Resultado:** los 12 formatos con extracto real coinciden al 100 % (detección, 26 columnas, índice de fila, tipos, validación de saldos). UNION_ME: sin extracto real; solo proxy sintético.
+* **Diferencias conocidas, reportadas y NO corregidas en el legado** (el genérico es más estricto o distinto): D-09 (encabezado incompleto), D-10 (cuenta dentro de una glosa), D-11 (BMSC no verifica cuenta), «Últimos 12 movimientos» (el legado lo detecta como UNION_ME), cuenta ambigua en cabecera. Los defectos D-06, D-16, D-16b, D-17 etc. el genérico los **reproduce** a propósito (siguen XFAIL).
+* **Observación:** las sumas de créditos/débitos de la validación difieren ~1e-10 entre legado y genérico (orden de suma en coma flotante). Se informan como *observación* (tolerancia 1e-6, muy por debajo de la tolerancia 0.01 del motor) y no cuentan como diferencia.
+* Evidencia: `tests/reports/EVIDENCIA_P3_SOMBRA.txt` (A/B contra el motor del checkpoint: LISTS.csv idéntico byte a byte, NORMALIZADO.xlsx idéntico celda a celda, componentes congelados con texto fuente idéntico).
+
+## 5b. Siguiente paso: P3b (no iniciado)
 
 `registro_bancos.json` con los 13 formatos actuales (`FORMATOS` + `CUENTAS`, con bloque `historico`) y `motor_generico.py` en **modo sombra**: corre en paralelo, compara contra el legado y ante cualquier diferencia falla la prueba, no la producción. La salida sigue siendo la del legado. También llena `CAMPO_CANONICO`, y `BANCO/CUENTA/MONEDA` de extractos sin movimientos.
 
@@ -63,6 +76,6 @@ Plan: P1 ✔ · P2 ✔ · **P3** registro + motor genérico en modo sombra · P3
 * `detectar_formato`, `ENCABEZADOS_ESPERADOS`, `HOJAS_VALIDAS`, `validar_archivo`, y el control del año 2026 fijo.
 * Estructura de `NORMALIZADO.xlsx` (4 hojas, `tblLISTS`) y `LISTS.csv` (UTF-8 con BOM).
 * El flujo de Power Automate `NORMALIZAR EXTRACTOS DIARIOS CBBA`, Microsoft Lists y Power Apps.
-* `captura_origen.py` y el paso 15 de `ejecutar_motor` (aprobados; solo cambian con nueva aprobación).
+* `captura_origen.py`, el paso 15 y el paso 16 (sombra) de `ejecutar_motor` (aprobados; solo cambian con nueva aprobación).
 * Las doradas (`tests/golden/`) y los fixtures reales: solo se regeneran con motivo explícito y contra el motor original.
 * Los archivos bancarios originales: siempre evidencia inalterada.

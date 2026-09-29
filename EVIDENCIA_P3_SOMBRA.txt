@@ -1,0 +1,48 @@
+IDENTICO  LISTS.csv (bytes)  1625443 bytes; sha defdae4bdf3065be
+IDENTICO  NORMALIZADO.xlsx hojas  ['LISTS', 'VALIDACION', 'RESUMEN', 'DIAGNOSTICO']
+IDENTICO  NORMALIZADO.xlsx · LISTS (valores+formatos+tablas)  78004 celdas
+IDENTICO  NORMALIZADO.xlsx · VALIDACION (valores+formatos+tablas)  130 celdas
+IDENTICO  NORMALIZADO.xlsx · RESUMEN (valores+formatos+tablas)  96 celdas
+IDENTICO  NORMALIZADO.xlsx · DIAGNOSTICO (valores+formatos+tablas)  52 celdas
+IDENTICO  retorno['df_final']
+IDENTICO  retorno['df_validacion']
+IDENTICO  retorno['resumen']
+IDENTICO  retorno['df_resultado_archivos']
+IDENTICO  retorno['df_deteccion_final']
+IDENTICO  claves del retorno  nuevas: ['sombra_estado']
+IDENTICO  salida de consola (sin lineas de ORIGEN ni SOMBRA)  116 lineas
+ORIGEN.xlsx en referencia / actual: True / True
+SOMBRA_REPORTE.json en referencia / actual: False / True
+sombra_estado del motor actual: {'estado': 'SIN_DIFERENCIAS', 'archivos_comparados': 12, 'archivos_coinciden': 12, 'archivos_difieren': 0, 'diferencias_total': 0}
+archivos de salida referencia: ['LISTS.csv', 'NORMALIZADO.xlsx', 'ORIGEN.xlsx']
+archivos de salida actual    : ['LISTS.csv', 'NORMALIZADO.xlsx', 'ORIGEN.xlsx', 'SOMBRA_DIFERENCIAS.csv', 'SOMBRA_REPORTE.json']
+
+RESULTADO: SIN CAMBIOS DE COMPORTAMIENTO OPERATIVO
+
+COMPONENTES CONGELADOS (checkpoint 8c9c09a vs. actual, texto fuente idéntico):
+IDENTICO  COLUMNAS_LISTS
+IDENTICO  HOJAS_VALIDAS
+IDENTICO  ENCABEZADOS_ESPERADOS
+IDENTICO  crear_clave
+IDENTICO  valor_clave_numero
+IDENTICO  finalizar_dataframe
+IDENTICO  normalizar_bnb
+IDENTICO  normalizar_bcp
+IDENTICO  normalizar_union
+IDENTICO  normalizar_economico
+IDENTICO  normalizar_bisa
+IDENTICO  normalizar_bmsc
+IDENTICO  normalizar_archivo
+IDENTICO  detectar_formato
+IDENTICO  validar_archivo
+IDENTICO  encontrar_fila_encabezado
+IDENTICO  leer_tabla_movimientos
+IDENTICO  descubrir_archivos
+IDENTICO  numero
+IDENTICO  normalizar_fecha
+IDENTICO  normalizar_hora
+IDENTICO  codigo_texto
+
+Funciones/constantes del motor con cambio de texto: ['ejecutar_motor']
+captura_origen.py: IDENTICO
+RESULTADO: TODO LO CONGELADO SIGUE IDENTICO
