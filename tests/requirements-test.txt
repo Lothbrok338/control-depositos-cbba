@@ -1,0 +1,6 @@
+pytest>=8
+pandas
+numpy
+openpyxl
+xlrd
+python-calamine

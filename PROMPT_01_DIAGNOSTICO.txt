@@ -1,0 +1,52 @@
+PROYECTO: CONTROL DE DEPÓSITOS CBBA — BLOQUE 1: NORMALIZACIÓN
+
+Trabaja SOLO en modo diagnóstico. NO modifiques archivos todavía.
+
+Te entrego:
+1) NORMALIZADOR_POWER_AUTOMATE.zip: export real del flujo Power Automate “NORMALIZAR EXTRACTOS DIARIOS CBBA”. Conserva referencias y conexiones; no las reemplaces por placeholders.
+2) motor_control_depositos_cbba.py: motor Python real que identifica banco/cuenta, lee extractos, normaliza, valida y genera NORMALIZADO.xlsx + LISTS.csv.
+
+CONTEXTO FUNCIONAL
+- El flujo Power Automate recibe una FECHA A PROCESAR, busca la carpeta diaria correspondiente, copia los archivos a /ControlDepositos/Entrada y crea PROCESAR.txt para disparar el motor.
+- La normalización real vive principalmente en Python.
+- El sistema funciona actualmente. La regla es: SI ALGO ESTÁ BIEN, NO SE TOCA.
+- Después incorporaremos una cuenta bancaria adicional; todavía no inventes sus reglas.
+- Más adelante habrá otros bloques: carga a Microsoft Lists, Power Apps/confirmación, cierre Excel/histórico y flujo padre. NO los rediseñes ahora.
+
+OBJETIVO DE ESTA ETAPA
+Auditar únicamente el bloque de NORMALIZACIÓN y proponer mejoras reales, conservando comportamiento válido.
+
+REVISA EN PARTICULAR
+1. Qué hace exactamente el flujo Power Automate y qué hace exactamente el motor Python.
+2. Si hay pasos redundantes en el flujo (por ejemplo variables/Compose que no sean usadas realmente por el motor).
+3. Todos los bancos/cuentas/formats actualmente soportados y cómo se identifican.
+4. Robustez de detección de banco/cuenta, hoja, encabezados y zona de datos.
+5. Conversión de fechas, horas, débitos, créditos, saldo, códigos de asignación y texto de búsqueda.
+6. Manejo de archivos vacíos, formatos desconocidos, encabezados desplazados, archivos repetidos y cuentas sin movimientos.
+7. Controles de integridad financiera y continuidad de saldo.
+8. Riesgo de duplicados y composición de CLAVE TRANSACCIÓN. NO cambies la clave todavía: primero explica cualquier riesgo y una migración compatible.
+9. Qué campos deben permanecer en la salida estándar de 26 columnas para no romper los bloques posteriores.
+10. Qué debe prepararse para agregar una cuenta bancaria nueva sin afectar las existentes.
+11. Dependencias, valores hardcodeados, rutas fijas y puntos que dificulten mover el motor de ejecución manual a ejecución automática/cloud.
+12. Qué pruebas automatizadas faltan para demostrar que un cambio no altera los bancos que ya funcionan.
+
+REGLAS
+- NO reescribas el proyecto desde cero.
+- NO cambies conexiones, IDs, rutas o contratos de salida sin justificarlo.
+- NO elimines columnas ni cambies nombres todavía.
+- NO generes ZIP de importación todavía.
+- NO hagas push, deploy ni cambios en producción.
+- No uses IA para decisiones que ya son determinísticas.
+- Si algo no puede verificarse sin extractos reales, marca: “REQUIERE MUESTRA REAL”; no inventes.
+
+ENTREGA SOLO ESTE INFORME:
+A. MAPA ACTUAL: Power Automate → Python → salidas.
+B. DEJAR IGUAL.
+C. MEJORAR (prioridad alta/media/baja y motivo).
+D. RIESGOS REALES.
+E. REDUNDANCIAS SEGURAS DE ELIMINAR.
+F. PRUEBAS QUE NECESITAS con archivos reales.
+G. PLAN DE CAMBIO MÍNIMO por archivos/funciones exactas.
+H. DATOS NECESARIOS para incorporar posteriormente una cuenta bancaria adicional.
+
+Al final, DETENTE y espera mi aprobación. No modifiques nada.

@@ -1,0 +1,86 @@
+{
+ "BCP_ME": {
+  "archivo": "bcp_me_1.xls",
+  "movimientos": 8,
+  "estado_validacion": "OK",
+  "saldo_inicial": 22323.54,
+  "saldo_final": 27888.54
+ },
+ "BCP_MN": {
+  "archivo": "bcp_mn_3.xls",
+  "movimientos": 2331,
+  "estado_validacion": "OK",
+  "saldo_inicial": 2080805.66,
+  "saldo_final": 4840975.83
+ },
+ "BISA_ME": {
+  "archivo": "bisa_me_2.xls",
+  "movimientos": 0,
+  "estado_validacion": "OK",
+  "saldo_inicial": 28542.78,
+  "saldo_final": 28542.78
+ },
+ "BISA_MN": {
+  "archivo": "bisa_mn_2.xls",
+  "movimientos": 1,
+  "estado_validacion": "OK",
+  "saldo_inicial": 62687.52,
+  "saldo_final": 63826.52
+ },
+ "BNB_AHORRO": {
+  "archivo": "bnb_ahorro_2.xls",
+  "movimientos": 95,
+  "estado_validacion": "OK",
+  "saldo_inicial": 256397.49,
+  "saldo_final": 269467.49
+ },
+ "BNB_ME": {
+  "archivo": "bnb_me_1_1.xls",
+  "movimientos": 7,
+  "estado_validacion": "OK",
+  "saldo_inicial": 143667.19,
+  "saldo_final": 139590.84
+ },
+ "BNB_MN": {
+  "archivo": "bnb_mn_3.xls",
+  "movimientos": 1184,
+  "estado_validacion": "OK",
+  "saldo_inicial": 7286942.48,
+  "saldo_final": 4116014.12
+ },
+ "BNB_CLINICA": {
+  "archivo": "clinica_1.xls",
+  "movimientos": 14,
+  "estado_validacion": "OK",
+  "saldo_inicial": 49324.86,
+  "saldo_final": 118301.76
+ },
+ "ECO_CTA_CTE": {
+  "archivo": "economico_1.xlsx",
+  "movimientos": 388,
+  "estado_validacion": "OK",
+  "saldo_inicial": 235198.61,
+  "saldo_final": 647240.28
+ },
+ "ECO_AHORRO": {
+  "archivo": "economico_ahorro.xlsx",
+  "movimientos": 1,
+  "estado_validacion": "OK",
+  "saldo_inicial": 61601.86,
+  "saldo_final": 67601.86
+ },
+ "BMSC": {
+  "archivo": "mercantil_1.xls",
+  "movimientos": 3,
+  "estado_validacion": "OK",
+  "saldo_inicial": 194424.79,
+  "saldo_final": 201662.79
+ },
+ "UNION_MN": {
+  "archivo": "union_mn_2.xls",
+  "movimientos": 32,
+  "estado_validacion": "OK",
+  "saldo_inicial": 236180.41,
+  "saldo_final": 379646.61
+ }
+}

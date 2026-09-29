@@ -1,0 +1,18 @@
+IDENTICO  LISTS.csv (bytes)  1625443 bytes; sha defdae4bdf3065be
+IDENTICO  NORMALIZADO.xlsx hojas  ['LISTS', 'VALIDACION', 'RESUMEN', 'DIAGNOSTICO']
+IDENTICO  NORMALIZADO.xlsx · LISTS (valores+formatos+tablas)  78004 celdas
+IDENTICO  NORMALIZADO.xlsx · VALIDACION (valores+formatos+tablas)  130 celdas
+IDENTICO  NORMALIZADO.xlsx · RESUMEN (valores+formatos+tablas)  96 celdas
+IDENTICO  NORMALIZADO.xlsx · DIAGNOSTICO (valores+formatos+tablas)  52 celdas
+IDENTICO  retorno['df_final']
+IDENTICO  retorno['df_validacion']
+IDENTICO  retorno['resumen']
+IDENTICO  retorno['df_resultado_archivos']
+IDENTICO  retorno['df_deteccion_final']
+IDENTICO  claves del retorno  nuevas: ['origen_estado']
+IDENTICO  salida de consola (sin lineas de ORIGEN)  116 lineas
+ORIGEN.xlsx solo en el motor con P1: True / False
+archivos de salida original: ['LISTS.csv', 'NORMALIZADO.xlsx']
+archivos de salida con P1  : ['LISTS.csv', 'NORMALIZADO.xlsx', 'ORIGEN.xlsx']
+
+RESULTADO: SIN CAMBIOS DE COMPORTAMIENTO OPERATIVO
