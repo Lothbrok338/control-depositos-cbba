@@ -15,9 +15,9 @@ CAMBIOS = {  # codigo -> (archivo/funcion, cambio minimo necesario)
  "D-06": ("motor · normalizar_bnb/bcp/union/bisa/bmsc", "Usar el mismo parser (normalizar_fecha) para FILTRAR filas y para el valor final, como ya hace normalizar_economico."),
  "D-07": ("motor · normalizar_*", "Contar filas descartadas por fecha; si alguna tiene importe/saldo, lanzar ValueError (pies de pagina 'Total ...' siguen permitidos)."),
  "D-08": ("motor · ejecutar_motor (paso 6)", "Reemplazar 2026 fijo por año parametrizable (p. ej. derivado de FECHA A PROCESAR) sin bloquear enero 2027."),
- "D-09": ("motor · encontrar_fila_encabezado / leer_tabla_movimientos", "Exigir puntaje minimo (p. ej. 100% o umbral fijo) y lanzar ValueError con el formato y las filas inspeccionadas."),
- "D-10": ("motor · detectar_formato", "Buscar la cuenta solo en la zona de cabecera (filas previas al encabezado) y exigir UNA sola cuenta conocida."),
- "D-11": ("motor · detectar_formato (rama BMSC)", "Verificar 1000872489 en cabecera (aparece en fila 7 col F del extracto real) o devolver NO_RECONOCIDO."),
+ "D-09": ("motor · encontrar_fila_encabezado / leer_tabla_movimientos", "RUTA PRODUCTIVA CERRADA EN P4 (la deteccion por registro exige el encabezado completo en la misma hoja antes de normalizar). Pendiente en la primitiva (P5): exigir puntaje minimo y lanzar ValueError."),
+ "D-10": ("deteccion_registro.py (P4)", "CORREGIDO EN P4: la cuenta se lee solo en la celda rotulada de la cabecera (filas previas al encabezado) y debe ser UNA cuenta registrada."),
+ "D-11": ("deteccion_registro.py (P4)", "CORREGIDO EN P4: BMSC exige la cuenta 1000872489 registrada en la cabecera; otra cuenta = CUENTA_NO_REGISTRADA."),
  "D-12": ("motor · normalizar_union/bcp/bisa/economico/bnb", "Reemplazar los 'else' implicitos por un diccionario CUENTAS[formato] que falle si el formato no esta registrado."),
  "D-13": ("motor · ejecutar_motor (inicio y paso 10-11)", "Eliminar/mover salidas previas al iniciar y escribir a temporal + renombrar al terminar."),
  "D-14": ("motor · bloque __main__ / ejecutar_motor", "sys.stdout.reconfigure(encoding='utf-8') (o quitar emojis) antes del primer print."),
@@ -42,7 +42,9 @@ for r in res:
 def celda(r):
     if r is None: return "—"
     return {"PASS": "PASS", "FAIL": "**FAIL**", "SKIP": "SKIP", "XFAIL": "XFAIL", "XPASS": "XPASS"}[r["estado"]]
-L = ["# Informe de pruebas del normalizador (Fase 2 + P1/P2: captura y preservación de origen + P3: motor genérico en sombra + P3b: EXTRACTO_HISTORICO)\n"]
+L = ["# Informe de pruebas del normalizador (Fase 2 + P1/P2: captura y preservación de origen + P3: motor genérico en sombra + P3b: EXTRACTO_HISTORICO + P4: detección por registro)\n"]
+CORREGIDOS_P4 = {"test_cuenta_dentro_de_glosa_no_cambia_la_deteccion": ("D-10", "Cuenta", "un BNB_CLINICA cuya glosa menciona la cuenta BNB_MN ya NO se clasifica como BNB_MN"),
+                 "test_bmsc_con_otra_cuenta_no_se_acepta": ("D-11", "Cuenta", "un BMSC con otra cuenta ya NO se acepta con la cuenta fija 1000872489")}
 tot = {}
 for r in res: tot[r["estado"]] = tot.get(r["estado"], 0) + 1
 L.append("Resumen: " + ", ".join(f"{k}={v}" for k, v in sorted(tot.items())) + "\n")
@@ -65,7 +67,7 @@ for r in res:
     base = r["id"].split("[")[0]
     fn = base.split("/")[-1]
     n = fn.split("::")[-1]
-    if fn.startswith("test_07"):
+    if fn.startswith(("test_07", "test_08")):
         continue
     if fn.startswith(("test_01", "test_03")) or "union" in n or "bisa_me_sin" in n or "totales_pie" in n:
         grp.setdefault(fn, []).append(r["estado"])
@@ -101,14 +103,28 @@ for r in res:
         g7.setdefault(fn.split("[")[0].split("::")[-1], []).append(r["estado"])
 for n, est in g7.items():
     L.append(f"| `{n}` | {len(est)} | " + ("PASS" if all(e == "PASS" for e in est) else "/".join(f"{e}×{est.count(e)}" for e in sorted(set(est)))) + " |")
+L.append("\n## 2e. Detección productiva por registro (P4, `test_08_deteccion_p4.py`)\n")
+L.append("Banco, cuenta, moneda y formato salen de `registro_bancos.json` (`deteccion_registro.py`); la normalización sigue en los `normalizar_*` legados.\n")
+L.append("| Prueba | Casos | Estado |\n|---|---|---|")
+g8 = {}
+for r in res:
+    fn = r["id"].split("/")[-1]
+    if fn.startswith("test_08"):
+        g8.setdefault(fn.split("[")[0].split("::")[-1], []).append(r["estado"])
+for n, est in g8.items():
+    L.append(f"| `{n}` | {len(est)} | " + ("PASS" if all(e == "PASS" for e in est) else "/".join(f"{e}×{est.count(e)}" for e in sorted(set(est)))) + " |")
 L.append("\n## 3. Defectos reales confirmados (fallan hoy; deben pasar tras corregir)\n")
 L.append("| Código | Estado hoy | Defecto demostrado | Cambio necesario (archivo · función) |\n|---|---|---|---|")
 for r in res:
     if r["id"].split("/")[-1].startswith("test_04"):
         m = re.match(r"(D-\d+b?)\s+([A-ZÑÁÉÍÓÚ ]+):\s*(.*)", r["motivo"])
-        cod, area, txt = (m.group(1), m.group(2), m.group(3)) if m else ("?", "", r["motivo"])
+        nombre = r["id"].split("::")[-1]
+        if not m and nombre not in CORREGIDOS_P4:
+            continue
+        cod, area, txt = (m.group(1), m.group(2), m.group(3)) if m else CORREGIDOS_P4[nombre]
         donde, cambio = CAMBIOS.get(cod, ("", ""))
-        estado = {"XFAIL": "FALLA (defecto vigente)", "XPASS": "YA CORREGIDO", "PASS": "PASS"}.get(r["estado"], r["estado"])
+        estado = {"XFAIL": "FALLA (defecto vigente)", "XPASS": "YA CORREGIDO",
+                  "PASS": "CORREGIDO EN P4 (PASS)" if nombre in CORREGIDOS_P4 else "PASS"}.get(r["estado"], r["estado"])
         L.append(f"| {cod} {area.title()} | {estado} | {txt} | `{donde}` — {cambio} |")
 (RAIZ / "reports" / "INFORME_PRUEBAS.md").write_text("\n".join(L) + "\n", encoding="utf-8")
 print("\n".join(L))

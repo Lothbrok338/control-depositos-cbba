@@ -1,0 +1,69 @@
+EVIDENCIA P4 — detección productiva por registro_bancos.json
+Fecha: 2026-09-30 · referencia: main 9a3eae8 (motor + captura_origen + motor_generico + registro de ese commit)
+Comando: python tests/evidencia_ab.py <ref>/motor_control_depositos_cbba.py motor_control_depositos_cbba.py (reloj fijado, 12 fixtures reales)
+
+1) SALIDAS OPERATIVAS (A/B)
+IDENTICO  LISTS.csv (bytes)  1625443 bytes; sha defdae4bdf3065be
+IDENTICO  NORMALIZADO.xlsx hojas  ['LISTS', 'VALIDACION', 'RESUMEN', 'DIAGNOSTICO']
+IDENTICO  NORMALIZADO.xlsx · LISTS (valores+formatos+tablas)  78004 celdas
+IDENTICO  NORMALIZADO.xlsx · VALIDACION (valores+formatos+tablas)  130 celdas
+IDENTICO  NORMALIZADO.xlsx · RESUMEN (valores+formatos+tablas)  96 celdas
+IDENTICO  NORMALIZADO.xlsx · DIAGNOSTICO (valores+formatos+tablas)  52 celdas
+IDENTICO  retorno['df_final']
+IDENTICO  retorno['df_validacion']
+IDENTICO  retorno['resumen']
+IDENTICO  retorno['df_resultado_archivos']
+IDENTICO  retorno['df_deteccion_final']
+IDENTICO  claves del retorno  nuevas: ['deteccion_estado']
+IDENTICO  salida de consola (sin lineas de ORIGEN ni SOMBRA)  116 lineas
+ORIGEN.xlsx en referencia / actual: True / True
+SOMBRA_REPORTE.json en referencia / actual: True / True
+sombra_estado del motor actual: {'estado': 'SIN_DIFERENCIAS', 'archivos_comparados': 12, 'archivos_coinciden': 12, 'archivos_difieren': 0, 'diferencias_total': 0}
+archivos de salida referencia: ['LISTS.csv', 'NORMALIZADO.xlsx', 'ORIGEN.xlsx', 'SOMBRA_DIFERENCIAS.csv', 'SOMBRA_REPORTE.json']
+archivos de salida actual    : ['LISTS.csv', 'NORMALIZADO.xlsx', 'ORIGEN.xlsx', 'SOMBRA_DIFERENCIAS.csv', 'SOMBRA_REPORTE.json']
+
+RESULTADO: SIN CAMBIOS DE COMPORTAMIENTO OPERATIVO
+
+2) ORIGEN.xlsx, CAPA 4 Y COMPONENTES CONGELADOS
+IDENTICO  ORIGEN.xlsx (4 hojas, valores+formatos) {'DATOS_ORIGINALES': 411005, 'METADATOS_EXTRACTO': 343, 'METADATOS_EXTRA': 1187, 'MAPA_ORIGEN': 32520}
+IDENTICO  EXTRACTO_HISTORICO P3b (11 archivos, huella completa) OK OK
+
+COMPONENTES CONGELADOS (main 9a3eae8 vs. actual, texto fuente):
+IDENTICO  COLUMNAS_LISTS
+IDENTICO  HOJAS_VALIDAS
+IDENTICO  ENCABEZADOS_ESPERADOS
+IDENTICO  crear_clave
+IDENTICO  valor_clave_numero
+IDENTICO  finalizar_dataframe
+IDENTICO  normalizar_bnb
+IDENTICO  normalizar_bcp
+IDENTICO  normalizar_union
+IDENTICO  normalizar_economico
+IDENTICO  normalizar_bisa
+IDENTICO  normalizar_bmsc
+IDENTICO  normalizar_archivo
+IDENTICO  validar_archivo
+IDENTICO  ecuacion_saldo
+IDENTICO  encontrar_fila_encabezado
+IDENTICO  leer_tabla_movimientos
+IDENTICO  extraer_nombre_bnb
+IDENTICO  descubrir_archivos
+IDENTICO  numero
+IDENTICO  normalizar_fecha
+IDENTICO  normalizar_hora
+IDENTICO  codigo_texto
+IDENTICO  normalizar_texto
+IDENTICO  leer_excel_robusto
+IDENTICO  leer_todas_hojas
+IDENTICO  texto_de_archivo
+
+Cambiados: ['detectar_formato', 'ejecutar_motor']
+Nuevos   : ['_MODULO_DETECCION', 'aplicar_identidad_registro', 'detectar_extracto', 'detector_registro', 'modulo_deteccion']
+Quitados : []
+captura_origen.py: IDENTICO (git diff vs 9a3eae8)
+historico.py: IDENTICO (git diff vs 9a3eae8)
+motor_generico.py: IDENTICO (git diff vs 9a3eae8)
+NORMALIZADOR_POWER_AUTOMATE.zip: IDENTICO (git diff vs 9a3eae8)
+
+Nota: 'detectar_formato' y 'ejecutar_motor' son los únicos cambios de texto del motor (P4). Las funciones nuevas
+(modulo_deteccion, detector_registro, detectar_extracto, aplicar_identidad_registro) solo identifican y verifican identidad.

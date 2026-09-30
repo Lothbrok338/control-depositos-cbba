@@ -4,6 +4,9 @@ Reglas que estas pruebas protegen:
   * el motor genérico NO produce salida: la producción sigue siendo la del legado;
   * cualquier diferencia genérico ↔ legado queda REPORTADA (SOMBRA_REPORTE.json / SOMBRA_DIFERENCIAS.csv);
   * un fallo del motor genérico no detiene ni altera al legado;
+  * desde P4 la DETECCIÓN productiva también sale del registro (deteccion_registro.py): las diferencias de
+    detección que P3 reportaba (D-09, D-10, D-11, «Últimos 12», cuenta ambigua) ya no existen: producción y
+    genérico rechazan o aceptan lo mismo;
   * una cuenta nueva de un formato conocido se agrega por configuración, sin lógica bancaria nueva;
   * el genérico no reutiliza la lógica bancaria del legado (detección, encabezados, normalizar_*, validar_archivo).
 """
@@ -246,7 +249,7 @@ def test_cuenta_nueva_de_formato_conocido_se_agrega_solo_con_configuracion(mg, r
     # sin registrar: se rechaza con motivo explícito (y el legado tambien la rechaza)
     sin = mg.MotorGenerico(registro, motor).procesar(str(ruta), "L", TS, nombre_origen="nueva.xlsx")
     assert sin.deteccion.estado == "NO_RECONOCIDO" and "cuenta no registrada" in sin.deteccion.motivo
-    assert motor.detectar_formato(str(ruta)) == "NO_RECONOCIDO"
+    assert motor.detectar_formato(str(ruta)) == "NO_RECONOCIDO"          # producción (P4): mismo rechazo
     # registrada: UNA entrada de configuración, cero código
     nuevo = registro.con_cuenta("BNB_PRUEBA", "BNB_EXTRACTO_V1", "BNB", "9999999999", "USD")
     assert len(registro.cuentas) == 13 and len(nuevo.cuentas) == 14          # el registro original no cambia
@@ -287,12 +290,18 @@ def test_cuenta_ambigua_en_cabecera_se_reporta_como_ambiguo(mg, generico, motor,
     ruta = crear_xlsx_bnb(tmp_path / "a.xlsx", "3000100152 y 3000100705", [{"fecha": "01/08/2026", "cred": 1.0, "saldo": 1.0}])
     g = generico.detectar(str(ruta))
     assert g.estado == "AMBIGUO" and set(g.candidatos) == {"BNB_MN", "BNB_CLINICA"}
-    assert motor.detectar_formato(str(ruta)) == "BNB_MN"          # el legado elige la primera sin avisar
+    # P4: la producción ya no elige la primera en silencio: también la declara AMBIGUA
+    p = motor.detectar_extracto(str(ruta))
+    assert p.estado == "AMBIGUO" and set(p.candidatos) == {"BNB_MN", "BNB_CLINICA"}
+    assert motor.detectar_formato(str(ruta)) == "NO_RECONOCIDO"
+    # el comparador sigue reportando una detección distinta si se la entrega (p. ej. la del legado P3)
     r = mg.sombra_archivo(generico, "a.xlsx", str(ruta), "BNB_MN", "L", TS)
     assert r["estado"] == "DIFIERE" and any(d["nivel"] == "DETECCION" for d in r["diferencias"])
 
 
-# ------------------------------- 6. DIFERENCIAS DOCUMENTADAS: SE REPORTAN, NO SE CORRIGEN EN EL LEGADO -------------------------------
+# ------------------------------- 6. DIFERENCIAS DE DETECCIÓN DE P3: RESUELTAS EN P4 -------------------------------
+# En P3 el legado detectaba distinto (D-09, D-10, D-11, «Últimos 12») y la sombra lo reportaba. Desde P4 la
+# detección productiva sale del registro: producción y genérico coinciden y la sombra ya no ve diferencia.
 def _sombra_ad_hoc(mg, gen, motor, ruta, nombre):
     try:
         fl = motor.detectar_formato(str(ruta))
@@ -309,36 +318,39 @@ def _sombra_ad_hoc(mg, gen, motor, ruta, nombre):
                                  validacion_legado=val, error_legado=err)
 
 
-def test_diferencia_d10_cuenta_dentro_de_una_glosa_se_reporta(mg, generico, motor, tmp_path):
-    """D-10 (legado): un BNB_CLINICA cuya glosa menciona la cuenta de BNB_MN se clasifica como BNB_MN.
-    El genérico lee la cuenta solo en la cabecera y acierta; la diferencia queda REPORTADA."""
+def test_diferencia_d10_cuenta_dentro_de_una_glosa_resuelta_en_p4(mg, generico, motor, tmp_path):
+    """D-10: en P3 el legado clasificaba como BNB_MN un BNB_CLINICA cuya glosa menciona la cuenta de BNB_MN.
+    Desde P4 la producción lee la cuenta solo en la cabecera: coincide con el genérico."""
     ruta = crear_xlsx_bnb(tmp_path / "x.xlsx", "3000100705", [
         {"fecha": "01/08/2026", "cred": 100.0, "saldo": 1100.0, "adic": "Transferencia desde cuenta 3000100152"}])
     fl, r = _sombra_ad_hoc(mg, generico, motor, ruta, "x.xlsx")
-    assert fl == "BNB_MN" and r["cuenta_generico"] == "BNB_CLINICA"
-    assert r["estado"] == "DIFIERE" and [d["nivel"] for d in r["diferencias"]][0] == "DETECCION"
+    assert fl == "BNB_CLINICA" and r["cuenta_generico"] == "BNB_CLINICA"
+    assert r["estado"] == "COINCIDE", r["diferencias"]
 
 
-def test_diferencia_d11_bmsc_con_otra_cuenta_se_reporta(mg, generico, motor, tmp_path):
-    """D-11 (legado): BMSC no verifica la cuenta. El genérico lo rechaza: 'cuenta no registrada'."""
+def test_diferencia_d11_bmsc_con_otra_cuenta_resuelta_en_p4(mg, generico, motor, tmp_path):
+    """D-11: en P3 el legado aceptaba cualquier BMSC. Desde P4 ambos lo rechazan: 'cuenta no registrada'."""
     ruta = crear_xlsx_bmsc_otra_cuenta(tmp_path / "b.xlsx", "9999999999")
     fl, r = _sombra_ad_hoc(mg, generico, motor, ruta, "b.xlsx")
-    assert fl == "BMSC" and r["cuenta_generico"] == "NO_RECONOCIDO"
-    assert r["estado"] == "DIFIERE"
-    assert "cuenta no registrada" in r["diferencias"][0]["detalle"]
+    assert fl == "NO_RECONOCIDO" and r["cuenta_generico"] == "NO_RECONOCIDO"
+    assert r["estado"] == "COINCIDE"
+    p = motor.detectar_extracto(str(ruta))
+    assert p.estado == "CUENTA_NO_REGISTRADA" and "no está registrada" in p.motivo
 
 
-def test_diferencia_union_ultimos12_se_reporta(mg, generico, motor):
-    """El legado detecta el reporte 'Últimos 12 movimientos' como UNION_ME (y recién falla al leer la hoja).
-    El genérico lo rechaza en la detección con un mensaje explícito."""
+def test_diferencia_union_ultimos12_resuelta_en_p4(mg, generico, motor):
+    """En P3 el legado detectaba 'Últimos 12 movimientos' como UNION_ME. Desde P4 la producción lo rechaza
+    en la detección con el mensaje del registro, igual que el genérico."""
     fl, r = _sombra_ad_hoc(mg, generico, motor, UNION_ULTIMOS12, "union_ultimos12.xls")
-    assert fl == "UNION_ME" and r["cuenta_generico"] == "NO_RECONOCIDO"
-    assert r["estado"] == "DIFIERE" and "Ultimos 12" in r["diferencias"][0]["detalle"]
+    assert fl == "NO_RECONOCIDO" and r["cuenta_generico"] == "NO_RECONOCIDO"
+    assert r["estado"] == "COINCIDE"
+    p = motor.detectar_extracto(str(UNION_ULTIMOS12))
+    assert p.estado == "RECHAZADO" and "Ultimos 12" in p.motivo
 
 
-def test_d09_encabezado_incompleto_lo_rechaza_el_generico(mg, registro, motor, tmp_path):
-    """D-09 (legado): acepta una fila cualquiera aunque no coincida con ningún encabezado.
-    El genérico exige puntaje_minimo (100 %) y lo declara NO_RECONOCIDO."""
+def test_d09_encabezado_incompleto_lo_rechazan_el_generico_y_la_produccion(mg, registro, motor, tmp_path):
+    """D-09: el genérico exige puntaje_minimo (100 %) y lo declara NO_RECONOCIDO. Desde P4 la producción
+    también (en P3 el legado lo detectaba como BNB_MN)."""
     from openpyxl import Workbook
     wb = Workbook(); ws = wb.active; ws.title = "Hoja 1"
     ws.append(["Cuenta:", "3000100152"])
@@ -347,7 +359,8 @@ def test_d09_encabezado_incompleto_lo_rechaza_el_generico(mg, registro, motor, t
     ruta = tmp_path / "inc.xlsx"; wb.save(ruta)
     g = mg.MotorGenerico(registro, motor).detectar(str(ruta))
     assert g.estado == "NO_RECONOCIDO" and "encabezado incompleto" in g.motivo
-    assert motor.detectar_formato(str(ruta)) == "BNB_MN"
+    assert motor.detectar_formato(str(ruta)) == "NO_RECONOCIDO"
+    assert motor.detectar_extracto(str(ruta)).estado == "ENCABEZADO_INCOMPLETO"
 
 
 # ------------------------------- 7. EQUIVALENCIA EN CASOS SINTÉTICOS -------------------------------
@@ -544,8 +557,9 @@ def test_sombra_encendida_o_apagada_da_exactamente_la_misma_produccion(motor, tm
 
 
 def test_una_diferencia_en_sombra_se_reporta_y_no_altera_la_produccion(motor, registro, tmp_path, sin_sombra):
-    """Registro con un dato distinto (moneda de BNB_ME): el informe lo señala; NORMALIZADO/LISTS no cambian."""
-    d = _mutar(registro, lambda x: [c.update(moneda="BOB") for c in x["CUENTAS"] if c["id"] == "BNB_ME"])
+    """Registro con un dato de NORMALIZACIÓN distinto (separador de INFORMACIÓN ADICIONAL de BMSC, que la
+    producción no usa hasta P5): el informe lo señala; NORMALIZADO/LISTS no cambian."""
+    d = _mutar(registro, lambda x: x["FORMATOS"]["BMSC_EXCEL_V1"]["info_adicional"].update(separador=" / "))
     ruta_reg = tmp_path / "registro_alterado.json"
     ruta_reg.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
     sin, s_sin = sin_sombra
@@ -553,15 +567,31 @@ def test_una_diferencia_en_sombra_se_reporta_y_no_altera_la_produccion(motor, re
     s = con["sombra_estado"]
     assert s["estado"] == "CON_DIFERENCIAS" and s["archivos_difieren"] == 1 and s["diferencias_total"] >= 1
     csv = pd.read_csv(s_con / "SOMBRA_DIFERENCIAS.csv", encoding="utf-8-sig", dtype=str)
-    assert set(csv["ARCHIVO"]) == {"bnb_me_1_1.xls"} and "MONEDA" in set(csv["COLUMNA"])
-    filas = csv[(csv["COLUMNA"] == "MONEDA") & csv["FILA (ÍNDICE)"].notna()]     # sin la fila resumen "N más"
-    assert set(filas["VALOR LEGADO"]) == {"USD"} and set(filas["VALOR GENÉRICO"]) == {"BOB"}
+    assert set(csv["ARCHIVO"]) == {"mercantil_1.xls"}
+    assert set(csv["COLUMNA"]) == {"INFORMACIÓN ADICIONAL", "TEXTO DE BÚSQUEDA"}     # TEXTO DE BÚSQUEDA la incluye
     _misma_produccion(con, s_con, sin, s_sin)
-    assert set(con["df_final"].loc[con["df_final"]["CUENTA BANCARIA"] == "3400041236", "MONEDA"]) == {"USD"}
 
 
-@pytest.mark.parametrize("caso", ["json_roto", "registro_invalido", "archivo_inexistente"])
-def test_un_fallo_del_generico_no_detiene_ni_altera_al_legado(motor, registro, tmp_path, sin_sombra, caso):
+def test_p4_registro_que_contradice_al_normalizador_legado_detiene_la_produccion(motor, registro, tmp_path, capsys):
+    """P4: si el registro dice otra MONEDA para una cuenta que el legado ya conoce (BNB_ME = USD), la
+    producción no elige en silencio: se detiene sin escribir nada y dice qué no coincide."""
+    d = _mutar(registro, lambda x: [c.update(moneda="BOB") for c in x["CUENTAS"] if c["id"] == "BNB_ME"])
+    ruta_reg = tmp_path / "registro_alterado.json"
+    ruta_reg.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    with pytest.raises(ValueError, match="falló la normalización"):
+        _correr(motor, tmp_path / "con", sombra=True, registro_env=ruta_reg)
+    assert "no coinciden en MONEDA para BNB_ME" in capsys.readouterr().out
+    assert not (tmp_path / "con" / "out").exists() or not any((tmp_path / "con" / "out").iterdir())
+
+
+@pytest.mark.parametrize("caso,texto", [
+    ("json_roto", "no es JSON válido"),
+    ("registro_invalido", "CUENTAS vacío"),
+    ("archivo_inexistente", "no se pudo leer el registro"),
+])
+def test_p4_sin_registro_valido_la_produccion_se_detiene_con_error_claro(motor, registro, tmp_path, caso, texto):
+    """Desde P4 el registro es la fuente productiva de la detección: si falta o está roto, el proceso se
+    detiene ANTES de escribir cualquier salida y con el motivo (antes solo lo notaba la sombra)."""
     ruta = tmp_path / "r.json"
     if caso == "json_roto":
         ruta.write_text("{ roto", encoding="utf-8")
@@ -569,6 +599,18 @@ def test_un_fallo_del_generico_no_detiene_ni_altera_al_legado(motor, registro, t
         ruta.write_text(json.dumps(_mutar(registro, lambda d: d["CUENTAS"].clear())), encoding="utf-8")
     else:
         ruta = tmp_path / "no_existe.json"
+    with pytest.raises(ValueError, match="PROCESO DETENIDO") as e:
+        _correr(motor, tmp_path / "con", sombra=True, registro_env=ruta)
+    assert texto in str(e.value)
+    assert not (tmp_path / "con" / "out").exists()
+
+
+def test_un_fallo_del_generico_no_detiene_ni_altera_al_legado(motor, registro, tmp_path, sin_sombra):
+    """Registro válido para DETECTAR pero inválido para el motor genérico (importe.modo de BNB): la sombra
+    falla (ERROR) y la producción sale idéntica."""
+    ruta = tmp_path / "r.json"
+    ruta.write_text(json.dumps(_mutar(registro, lambda d: d["FORMATOS"]["BNB_EXTRACTO_V1"]["importe"].update(
+        modo="OTRO")), ensure_ascii=False), encoding="utf-8")
     sin, s_sin = sin_sombra
     con, s_con = _correr(motor, tmp_path / "con", sombra=True, registro_env=ruta)
     assert con["sombra_estado"]["estado"] == "ERROR" and con["sombra_estado"]["error"]
@@ -578,13 +620,15 @@ def test_un_fallo_del_generico_no_detiene_ni_altera_al_legado(motor, registro, t
 
 
 def _motor_aparte(tmp_path, nombre, generico_src=None):
-    """Copia el legado (y captura_origen.py) a una carpeta propia, con o sin motor_generico.py al lado."""
+    """Copia el legado (y captura_origen.py) a una carpeta propia, con o sin motor_generico.py al lado.
+    Desde P4 la detección productiva necesita deteccion_registro.py y registro_bancos.json: se copian siempre."""
     d = tmp_path / nombre
     d.mkdir()
     shutil.copy(REPO / "motor_control_depositos_cbba.py", d / "motor_control_depositos_cbba.py")
     shutil.copy(REPO / "captura_origen.py", d / "captura_origen.py")
+    shutil.copy(REPO / "deteccion_registro.py", d / "deteccion_registro.py")
+    shutil.copy(REPO / "registro_bancos.json", d / "registro_bancos.json")
     if generico_src is not None:
-        shutil.copy(REPO / "registro_bancos.json", d / "registro_bancos.json")
         (d / "motor_generico.py").write_text(generico_src, encoding="utf-8")
     spec = importlib.util.spec_from_file_location(f"motor_{nombre}", d / "motor_control_depositos_cbba.py")
     mod = importlib.util.module_from_spec(spec)

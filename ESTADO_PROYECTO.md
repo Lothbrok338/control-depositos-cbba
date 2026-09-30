@@ -13,12 +13,13 @@
 | **P2** Pruebas de preservación | **Terminado** | `tests/test_05_preservacion.py` |
 | **D-20** salidas del sistema como extractos | **Corregido** | `descubrir_archivos` excluye `NORMALIZADO*`, `ORIGEN*.xlsx`, `EXTRACTO_HISTORICO_*.xlsx` |
 | **P3** Registro de bancos + motor genérico en modo sombra | **TERMINADO Y APROBADO** | `registro_bancos.json` (6 formatos + 1 rechazado, 13 cuentas), `motor_generico.py`, paso 16 pasivo en `ejecutar_motor`, `tests/test_06_sombra_p3.py`. Producción = solo legado |
-| **P3b** Capa 4 (EXTRACTO_HISTORICO) | **TERMINADO — pendiente de tu aprobación** | `historico.py` (función pura + escritor + CLI), bloque `historico` en `registro_bancos.json` (6 formatos), `tests/test_07_historico_p3b.py`, huella dorada `tests/golden/historico/MANIFEST_HISTORICO.json`. **No se integró a `ejecutar_motor`** (ver §5c) |
-| P4 · P5 · P6 | No iniciados | |
+| **P3b** Capa 4 (EXTRACTO_HISTORICO) | **TERMINADO Y APROBADO** | `historico.py` (función pura + escritor + CLI), bloque `historico` en `registro_bancos.json` (6 formatos), `tests/test_07_historico_p3b.py`, huella dorada `tests/golden/historico/MANIFEST_HISTORICO.json`. **No se integró a `ejecutar_motor`** (ver §5c) |
+| **P4** Detección productiva por registro | **TERMINADO — pendiente de tu aprobación** | `deteccion_registro.py` (nuevo); bloques `deteccion` + `legado` por formato y `version_deteccion: P4-1` en `registro_bancos.json`; `detectar_formato` delega en el registro; `ejecutar_motor` usa la detección completa; `tests/test_08_deteccion_p4.py`. Normalización = legado (sin cambios). Ver §5d |
+| P5 · P6 | No iniciados | |
 
 ## 2. Resultado de pruebas (suite completa)
 
-**Con P3b: 505 PASS · 22 SKIP · 18 XFAIL · 0 FAIL** (P3b agrega 126 PASS y 2 SKIP de UNION_ME con movimientos reales). Antes de P3b: **379 PASS · 20 SKIP · 18 XFAIL · 0 FAIL** (≈130 s). **12 formatos reales coinciden al 100 % en sombra** (0 diferencias, 12/12 archivos). **UNION_ME: pendiente de fixture real** (solo proxy sintético en sombra). Base P1+P2: 270 / 19 / 18; P3 agrega 109 PASS y 1 SKIP (BISA_ME no tiene movimientos para comparar con su dorada).
+**Con P4: 577 PASS · 22 SKIP · 16 XFAIL · 0 FAIL** (P4 agrega `test_08_deteccion_p4.py` con 68 PASS, pasa D-10 y D-11 de XFAIL a PASS y adapta `test_06` a la detección por registro; ≈290 s). Con P3b: 505 PASS · 22 SKIP · 18 XFAIL · 0 FAIL (P3b agrega 126 PASS y 2 SKIP de UNION_ME con movimientos reales). Antes de P3b: **379 PASS · 20 SKIP · 18 XFAIL · 0 FAIL** (≈130 s). **12 formatos reales coinciden al 100 % en sombra** (0 diferencias, 12/12 archivos). **UNION_ME: pendiente de fixture real** (solo proxy sintético en sombra). Base P1+P2: 270 / 19 / 18; P3 agrega 109 PASS y 1 SKIP (BISA_ME no tiene movimientos para comparar con su dorada).
 
 * **PASS (270):** regresión de los 12 formatos contra doradas; lote de 12; preservación P2 (completitud celda a celda, reconstrucción del archivo, mapa 1:1, débitos, cabeceras/pies, metadatos, determinismo de IDs, columnas vacías, NORMALIZADO.xlsx y LISTS.csv idénticos a sus doradas); D-20 (9 nombres excluidos, 4 nombres reales que siguen incluidos, corrida completa con salida = entrada).
 * **SKIP (19):** todos por falta de muestra real. UNION_ME: `REQUIERE MUESTRA REAL CON MOVIMIENTOS` (movimientos, saldos, débitos, `Nro de verificasion`, completitud y mapa) y archivo vacío real pendiente (`union_me_vacio.xls`). 8 pruebas de débitos en formatos sin débitos en su fixture (BCP_ME, BISA_ME, BISA_MN, BMSC, ECO_AHORRO, BNB_AHORRO, BNB_CLINICA, UNION_MN).
@@ -32,10 +33,10 @@
 3. **METADATOS_EXTRACTO** (+ **METADATOS_EXTRA**) — tabla fija por extracto + etiquetas/valores abiertos de cabecera, pie y hojas extra.
 4. **EXTRACTO_HISTORICO** (capa 4, sin implementar) — un Excel amigable por banco/cuenta/periodo, con las columnas útiles propias de cada banco y solo `ESTADO`, `CONFIRMADO POR`, `FECHA DE CONFIRMACIÓN` añadidas; sin IDs técnicos; reconstruible desde DATOS_ORIGINALES + MAPA_ORIGEN + NORMALIZADO sin releer el banco.
 5. `ORIGEN.xlsx` (capas 2 y 3) es un artefacto técnico y **separado**; no es el histórico de Contabilidad.
-6. **Registro parametrizable** `registro_bancos.json` (FORMATOS / CUENTAS): una cuenta nueva de un formato conocido = una entrada, cero código (P3).
+6. **Registro parametrizable** `registro_bancos.json` (FORMATOS / CUENTAS): una cuenta nueva de un formato conocido = una entrada, cero código (P3). **Desde P4 es la fuente productiva de la detección** (banco, cuenta, moneda, formato).
 7. **UNION_ME** = `UNION_FECHAS_V1`: estructura **confirmada** por código legado + captura real (7 columnas, incl. `Nro de verificasion`, que el motor legado no lee y que va a ORIGEN e histórico, no a las 26 columnas). Comportamiento con movimientos: **pendiente de fixture real**.
 
-Plan: P1 ✔ · P2 ✔ · P3 ✔ · **P3b** generador de capa 4 (hecho, por aprobar) · P4 detección al registro · P5 normalización al registro · P6 retiro del legado.
+Plan: P1 ✔ · P2 ✔ · P3 ✔ · P3b ✔ · **P4** detección al registro (hecho, por aprobar) · P5 normalización al registro · P6 retiro del legado.
 
 ## 4. Pendientes
 
@@ -50,7 +51,7 @@ Plan: P1 ✔ · P2 ✔ · P3 ✔ · **P3b** generador de capa 4 (hecho, por apro
 * Unidad de la capa 4 (archivo por cuenta-mes), formato de fecha, columna CLAVE oculta vs. protegida, y convivencia con `PLANTILLA EXTRACTO.xlsx` hasta probar Excel Online.
 * Política de `ORIGEN.xlsx`: hoy se escribe junto a NORMALIZADO.xlsx y se sobrescribe en cada corrida.
 
-**Defectos de la Fase 2 sin corregir (18 XFAIL):** se atacan en su propio carril, después de P3.
+**Defectos de la Fase 2 sin corregir (16 XFAIL):** se atacan en su propio carril. D-10 y D-11 se corrigieron con P4 (detección); D-09 y D-12 quedaron fuera de la ruta productiva pero su primitiva sigue XFAIL hasta P5.
 
 **Observación:** el consumidor de `PROCESAR.txt` en Power Automate sigue sin identificarse; el flujo no ejecuta Python.
 
@@ -62,11 +63,11 @@ Plan: P1 ✔ · P2 ✔ · P3 ✔ · **P3b** generador de capa 4 (hecho, por apro
 * **Sombra:** al final de `ejecutar_motor` (paso 16, tras escribir la salida productiva) compara la corrida del legado con el genérico y escribe `SOMBRA_REPORTE.json` (diferencias + observaciones) y `SOMBRA_DIFERENCIAS.csv` (solo diferencias) junto a `NORMALIZADO.xlsx`. Clave nueva del retorno: `sombra_estado`. Un fallo o una diferencia **nunca** cambia ni detiene la producción. `CBBA_MOTOR_SOMBRA=0` la apaga; `CBBA_REGISTRO_BANCOS=<ruta>` usa otro registro (pruebas).
 * También corre solo: `python motor_generico.py <carpeta_entrada> [<carpeta_reporte>]` (no escribe NORMALIZADO.xlsx ni LISTS.csv).
 * **Resultado:** los 12 formatos con extracto real coinciden al 100 % (detección, 26 columnas, índice de fila, tipos, validación de saldos). UNION_ME: sin extracto real; solo proxy sintético.
-* **Diferencias conocidas, reportadas y NO corregidas en el legado** (el genérico es más estricto o distinto): D-09 (encabezado incompleto), D-10 (cuenta dentro de una glosa), D-11 (BMSC no verifica cuenta), «Últimos 12 movimientos» (el legado lo detecta como UNION_ME), cuenta ambigua en cabecera. Los defectos D-06, D-16, D-16b, D-17 etc. el genérico los **reproduce** a propósito (siguen XFAIL).
+* **Diferencias conocidas, reportadas y NO corregidas en el legado** (el genérico es más estricto o distinto) — **las de detección quedaron resueltas en P4 (§5d)**: D-09 (encabezado incompleto), D-10 (cuenta dentro de una glosa), D-11 (BMSC no verifica cuenta), «Últimos 12 movimientos» (el legado lo detecta como UNION_ME), cuenta ambigua en cabecera. Los defectos D-06, D-16, D-16b, D-17 etc. el genérico los **reproduce** a propósito (siguen XFAIL).
 * **Observación:** las sumas de créditos/débitos de la validación difieren ~1e-10 entre legado y genérico (orden de suma en coma flotante). Se informan como *observación* (tolerancia 1e-6, muy por debajo de la tolerancia 0.01 del motor) y no cuentan como diferencia.
 * Evidencia: `tests/reports/EVIDENCIA_P3_SOMBRA.txt` (A/B contra el motor del checkpoint: LISTS.csv idéntico byte a byte, NORMALIZADO.xlsx idéntico celda a celda, componentes congelados con texto fuente idéntico).
 
-## 5c. P3b — capa 4 EXTRACTO_HISTORICO (hecho, pendiente de aprobación)
+## 5c. P3b — capa 4 EXTRACTO_HISTORICO (hecho y aprobado)
 
 * **Qué genera:** un `.xlsx` por banco / cuenta / mes (`EXTRACTO_HISTORICO_{BANCO}_{CUENTA}_{AAAA-MM}.xlsx`), con **una sola hoja `EXTRACTO`**: título, zona superior (banco, cuenta, moneda, titular, producto, período del mes y del extracto, emisión, y los saldos/totales que el banco declara), tabla con las **columnas propias de cada banco en su orden y con su nombre**, y al final **solo** `ESTADO · CONFIRMADO POR · FECHA DE CONFIRMACIÓN`. `CLAVE TRANSACCIÓN` va en una columna **oculta** de la misma tabla (para sincronizar después). Fecha visible `dd/mm/yyyy`.
 * **Fuentes:** solo `DATOS_ORIGINALES + MAPA_ORIGEN` (ORIGEN.xlsx) + `NORMALIZADO.xlsx` (hoja LISTS) **o** `LISTS.csv` + `registro_bancos.json`. No abre el extracto bancario, no importa el motor ni `captura_origen.py`, no escribe en NORMALIZADO/LISTS/ORIGEN.
@@ -80,11 +81,22 @@ Plan: P1 ✔ · P2 ✔ · P3 ✔ · **P3b** generador de capa 4 (hecho, por apro
 
 Capa 4 (`EXTRACTO_HISTORICO`, ver `DISENO_TRES_CAPAS.md` §6): bloque `historico` de los formatos en `registro_bancos.json`, `historico.py` (función pura + escritor) y `test_06_historico.py`, alimentado del `NORMALIZADO` legado. No depende de P4 ni P5. Sin decidir todavía: ruta de salida, lista de `ESTADO`, formato de fecha y convivencia con `PLANTILLA EXTRACTO.xlsx` (sección 4).
 
+## 5d. P4 — detección productiva por registro (hecho, pendiente de aprobación)
+
+* **Qué cambió:** banco, cuenta, moneda y formato se identifican con `registro_bancos.json` (`deteccion_registro.py`, junto al motor). `detectar_formato(archivo)` conserva su contrato (id de cuenta o `NO_RECONOCIDO`) y `detectar_extracto(archivo)` devuelve el detalle (estado, motivo, hoja, fila de encabezado, cuenta leída, id del normalizador legado). `ejecutar_motor` agrega al retorno `deteccion_estado` (versión, ruta y SHA-256 del registro, detalle por archivo).
+* **Reglas:** firma solo en cabecera + encabezado; encabezado con menos de `puntaje_minimo` (100 %) = `ENCABEZADO_INCOMPLETO` con las columnas que faltan; la cuenta se lee **solo** en la celda que sigue a una etiqueta de `deteccion.etiquetas_cuenta` en las filas anteriores al encabezado (nunca glosas ni movimientos); debe ser **una** cuenta registrada para ese formato (`CUENTA_NO_REGISTRADA`, `SIN_CUENTA`, `AMBIGUO` si no); dos formatos válidos en el mismo libro = `AMBIGUO`; «Últimos 12 movimientos» = `RECHAZADO` (por hoja o por `cabecera_prohibida`). Cualquier rechazo detiene el lote **antes de escribir** y el mensaje nombra archivo, estado y motivo.
+* **Cuenta nueva = una entrada en `CUENTAS`** (probado de punta a punta: NORMALIZADO, LISTS, ORIGEN, sombra y EXTRACTO_HISTORICO). Como la normalización sigue en el legado, la cuenta nueva se normaliza con la plantilla de su formato (`legado.plantilla_por_hoja`) y BANCO / CUENTA BANCARIA / MONEDA se toman del registro; `CLAVE TRANSACCIÓN` se recalcula con `crear_clave` (fórmula congelada). Para las 13 cuentas actuales el normalizador recibe su propio id, como antes; si el registro contradijera su banco/cuenta/moneda, el proceso se detiene.
+* **Dependencia nueva:** sin `registro_bancos.json` válido y `deteccion_registro.py` junto al motor, el proceso se detiene con error claro (antes solo fallaba la sombra). Al desplegar el motor hay que copiar esos dos archivos.
+* **Defectos:** D-10 y D-11 **corregidos** (sus pruebas pasan a regresión). D-09 y D-12: la ruta productiva ya no los alcanza (no se normaliza sin encabezado completo; una cuenta nueva no hereda la identidad de la plantilla), pero la primitiva (`encontrar_fila_encabezado` / `else` de los `normalizar_*`) sigue igual → **siguen XFAIL** hasta P5.
+* **Sombra (P3):** las diferencias de detección que reportaba (D-09, D-10, D-11, «Últimos 12», cuenta ambigua) ya no existen: producción y genérico coinciden. Sigue comparando la normalización (12/12 sin diferencias).
+* **Evidencia:** `tests/reports/EVIDENCIA_P4_DETECCION.txt` (referencia `main` 9a3eae8): LISTS.csv idéntico byte a byte; NORMALIZADO.xlsx (4 hojas), ORIGEN.xlsx (4 hojas) y los 11 EXTRACTO_HISTORICO idénticos; DataFrames de retorno y consola idénticos; texto fuente idéntico de `COLUMNAS_LISTS`, `crear_clave`, `finalizar_dataframe`, los 6 `normalizar_*`, `validar_archivo`, primitivas de número/fecha/hora; `captura_origen.py`, `historico.py`, `motor_generico.py` sin cambios.
+
 ## 6. Componentes que todavía NO deben modificarse
 
 * `COLUMNAS_LISTS` (26 columnas, su orden y nombres) y `CLAVE TRANSACCIÓN` (fórmula).
 * Todas las funciones `normalizar_*` y `finalizar_dataframe`.
-* `detectar_formato`, `ENCABEZADOS_ESPERADOS`, `HOJAS_VALIDAS`, `validar_archivo`, y el control del año 2026 fijo.
+* `ENCABEZADOS_ESPERADOS`, `HOJAS_VALIDAS`, `validar_archivo`, `encontrar_fila_encabezado`, `leer_tabla_movimientos` y el control del año 2026 fijo.
+* `deteccion_registro.py`, los bloques `deteccion` / `legado` del registro, `detectar_formato` y los pasos 1, 2, 7 y 15 de `ejecutar_motor` (P4): solo cambian con aprobación.
 * Estructura de `NORMALIZADO.xlsx` (4 hojas, `tblLISTS`) y `LISTS.csv` (UTF-8 con BOM).
 * El flujo de Power Automate `NORMALIZAR EXTRACTOS DIARIOS CBBA`, Microsoft Lists y Power Apps.
 * `captura_origen.py`, el paso 15 y el paso 16 (sombra) de `ejecutar_motor` (aprobados; solo cambian con nueva aprobación).

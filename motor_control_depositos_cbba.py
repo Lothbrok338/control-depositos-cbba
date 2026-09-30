@@ -75,6 +75,21 @@ regla de negocio):
      (utf-8-sig). Es puramente una exportación adicional: no
      modifica ningún dato, cálculo ni validación del motor.
 
+P4 — DETECCIÓN POR REGISTRO (único cambio de regla desde las celdas):
+  La identificación de banco, cuenta, moneda y formato ya no está en
+  `detectar_formato` (ramas por banco sobre las 40 primeras filas de
+  todo el archivo) sino en `registro_bancos.json`, a través de
+  `deteccion_registro.py` (ambos junto a este archivo; la variable
+  CBBA_REGISTRO_BANCOS apunta a otro registro). La cuenta se lee solo
+  en la celda rotulada de la cabecera y se valida en todos los
+  formatos (BMSC incluido); encabezado incompleto, cabecera ambigua,
+  cuenta no registrada o el reporte Unión «Últimos 12» detienen el
+  proceso con el motivo. Una cuenta nueva de un formato conocido se
+  agrega con una entrada en CUENTAS, sin código. La normalización,
+  la validación de saldos, COLUMNAS_LISTS y CLAVE TRANSACCIÓN no
+  cambian: siguen en los normalizar_* / validar_archivo /
+  finalizar_dataframe de este archivo (P5 los migrará).
+
 Uso como script:
     python motor_control_depositos_cbba.py <carpeta_entrada> <ruta_salida>
 
@@ -621,133 +636,147 @@ def texto_de_archivo(hojas):
 
 
 # ============================================================
-# DETECTOR ROBUSTO
+# DETECTOR POR REGISTRO (P4)
 #
-# IMPORTANTE:
-# Primero identifica la estructura del banco.
-# Recién después usa la cuenta.
+# Desde P4 la identificación de banco, cuenta, moneda y formato
+# sale de registro_bancos.json (módulo deteccion_registro.py, junto
+# a este archivo). La variable CBBA_REGISTRO_BANCOS apunta a otro
+# registro (la misma que usa la sombra).
 #
-# Esto evita confundir números de cuenta que aparezcan
-# dentro de glosas, adicionales u originantes.
+# Primero se reconoce la estructura (firma + encabezado completo en
+# la hoja aceptada) y recién después se lee la cuenta, SOLO en la
+# celda rotulada de la cabecera (filas anteriores al encabezado de
+# la tabla). Nunca se buscan números en glosas, adicionales u
+# originantes. Encabezado incompleto, cuenta ausente, cuenta no
+# registrada, varias cuentas o varios formatos = error explícito.
+#
+# La normalización sigue en los normalizar_* de este motor: la
+# detección devuelve el id que entienden (`formato_legado`).
 # ============================================================
 
-def detectar_formato(archivo):
+_MODULO_DETECCION = None
 
-    hojas = leer_todas_hojas(
+
+def modulo_deteccion():
+    """Carga deteccion_registro.py desde la carpeta de este motor."""
+
+    global _MODULO_DETECCION
+
+    if _MODULO_DETECCION is None:
+
+        import importlib.util as _iu
+        import sys as _sys
+
+        ruta = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "deteccion_registro.py"
+        )
+
+        if not os.path.exists(ruta):
+            raise ValueError(
+                "no se encuentra deteccion_registro.py junto al motor "
+                f"({ruta}): sin él no se pueden identificar los extractos"
+            )
+
+        spec = _iu.spec_from_file_location(
+            "deteccion_registro_p4",
+            ruta
+        )
+        modulo = _iu.module_from_spec(spec)
+        _sys.modules[spec.name] = modulo
+        spec.loader.exec_module(modulo)
+
+        _MODULO_DETECCION = modulo
+
+    return _MODULO_DETECCION
+
+
+def detector_registro(ruta_registro=None):
+    """
+    Detector productivo: lee y valida el registro (incluida la
+    correspondencia con HOJAS_VALIDAS y ENCABEZADOS_ESPERADOS de los
+    normalizadores legados). Lanza ValueError si el registro falta o
+    es inválido.
+    """
+
+    return modulo_deteccion().DetectorRegistro.cargar(
+        normalizar_texto,
+        leer_todas_hojas,
+        ruta=ruta_registro,
+        hojas_legado=HOJAS_VALIDAS,
+        encabezados_legado=ENCABEZADOS_ESPERADOS
+    )
+
+
+def detectar_extracto(archivo, detector=None):
+    """Resultado completo de la detección (estado, motivo, identidad)."""
+
+    return (
+        detector
+        or detector_registro()
+    ).detectar(
         archivo
     )
 
-    texto = texto_de_archivo(
-        hojas
+
+def detectar_formato(archivo):
+    """Id de cuenta (p. ej. "BNB_MN") o "NO_RECONOCIDO"."""
+
+    return detectar_extracto(
+        archivo
+    ).formato_motor
+
+
+def aplicar_identidad_registro(tabla, deteccion):
+    """
+    BANCO / CUENTA BANCARIA / MONEDA salen del registro.
+
+    * Cuenta que el legado ya conoce: su normalizador asigna la
+      identidad; aquí solo se verifica que coincida con el registro
+      (si no coincide, error: nunca se elige uno en silencio).
+    * Cuenta nueva (solo configuración): el normalizador legado de la
+      plantilla del formato asigna la identidad de otra cuenta; se
+      reemplaza por la del registro y CLAVE TRANSACCIÓN se recalcula
+      con la fórmula congelada (crear_clave).
+    """
+
+    if len(tabla) == 0:
+        return tabla
+
+    esperado = {
+        "BANCO": deteccion.banco,
+        "CUENTA BANCARIA": deteccion.cuenta,
+        "MONEDA": deteccion.moneda
+    }
+
+    if not deteccion.cuenta_nueva:
+
+        for columna, valor in esperado.items():
+
+            actuales = set(
+                tabla[columna].astype(str)
+            )
+
+            if actuales != {valor}:
+                raise ValueError(
+                    "registro_bancos.json y el normalizador legado no "
+                    f"coinciden en {columna} para {deteccion.cuenta_id}: "
+                    f"registro={valor!r}, legado={sorted(actuales)}"
+                )
+
+        return tabla
+
+    tabla = tabla.copy()
+
+    for columna, valor in esperado.items():
+        tabla[columna] = valor
+
+    tabla["CLAVE TRANSACCIÓN"] = tabla.apply(
+        crear_clave,
+        axis=1
     )
 
-    # ========================================================
-    # 1. BISA
-    # ========================================================
-
-    if (
-        "INFO. COMPLEMENTARIA" in texto
-        or "NRO. REF." in texto
-        or "BANCO BISA" in texto
-    ):
-
-        if "0696870039" in texto:
-            return "BISA_MN"
-
-        if "0696872023" in texto:
-            return "BISA_ME"
-
-        if "MONEDA: BS" in texto:
-            return "BISA_MN"
-
-        if "MONEDA: USD" in texto:
-            return "BISA_ME"
-
-
-    # ========================================================
-    # 2. BNB
-    # ========================================================
-
-    if (
-        "CODIGO DE TRANSACCION" in texto
-        and "ADICIONALES" in texto
-    ):
-
-        if "3000100152" in texto:
-            return "BNB_MN"
-
-        if "3400041236" in texto:
-            return "BNB_ME"
-
-        if "3501936692" in texto:
-            return "BNB_AHORRO"
-
-        if "3000100705" in texto:
-            return "BNB_CLINICA"
-
-
-    # ========================================================
-    # 3. BCP
-    # ========================================================
-
-    if (
-        "EXTRACTOS BANCARIOS" in texto
-        and "NRO. OPERACION" in texto
-    ):
-
-        if "301-5005684-3-97" in texto:
-            return "BCP_MN"
-
-        if "301-5005425-2-71" in texto:
-            return "BCP_ME"
-
-
-    # ========================================================
-    # 4. BANCO UNIÓN
-    # ========================================================
-
-    if (
-        "FECHA MOVIMIENTO" in texto
-        and "NRO DOCUMENTO" in texto
-    ):
-
-        if "10000003224552" in texto:
-            return "UNION_MN"
-
-        if "20000003224544" in texto:
-            return "UNION_ME"
-
-
-    # ========================================================
-    # 5. BANCO ECONÓMICO
-    # ========================================================
-
-    if (
-        "NRO TRN./CHEQUE" in texto
-        and "TRANSACCION" in texto
-    ):
-
-        if "3041210569" in texto:
-            return "ECO_CTA_CTE"
-
-        if "3051446946" in texto:
-            return "ECO_AHORRO"
-
-
-    # ========================================================
-    # 6. BMSC
-    # ========================================================
-
-    if (
-        "COD. BCA." in texto
-        or "NOMBRE/DENOMINACION DEPOSITANTE" in texto
-        or "BANCO MERCANTIL SANTA CRUZ" in texto
-    ):
-
-        return "BMSC"
-
-
-    return "NO_RECONOCIDO"
+    return tabla
 
 
 # ============================================================
@@ -2576,6 +2605,7 @@ def ejecutar_motor(carpeta_entrada, ruta_salida):
             "ruta_lists_csv": str,
             "origen_estado": dict,   # P1 (ORIGEN.xlsx)
             "sombra_estado": dict,   # P3 (motor genérico en sombra)
+            "deteccion_estado": dict # P4 (detección por registro)
         }
 
     Además de NORMALIZADO.xlsx, se genera en la misma carpeta un
@@ -2634,17 +2664,37 @@ def ejecutar_motor(carpeta_entrada, ruta_salida):
 
     detecciones = []
 
+    # P4: detalle de la detección por archivo (identidad del registro
+    # y id del normalizador legado que corresponde).
+    detalle_deteccion = {}
+
     print(
         "\n🔎 DETECTANDO BANCOS Y CUENTAS...\n"
     )
+
+    # Sin un registro válido no se puede identificar ningún extracto:
+    # se detiene aquí, antes de escribir cualquier salida.
+    try:
+
+        detector = detector_registro()
+
+    except ValueError as e:
+
+        raise ValueError(
+            f"❌ PROCESO DETENIDO: {e}"
+        )
 
     for nombre, ruta in mapa_archivos.items():
 
         try:
 
-            formato = detectar_formato(
+            deteccion = detector.detectar(
                 ruta
             )
+
+            detalle_deteccion[nombre] = deteccion
+
+            formato = deteccion.formato_motor
 
             detecciones.append({
                 "ARCHIVO": nombre,
@@ -2660,7 +2710,8 @@ def ejecutar_motor(carpeta_entrada, ruta_salida):
 
                 print(
                     f"❌ {nombre} → "
-                    "NO RECONOCIDO"
+                    f"NO RECONOCIDO ({deteccion.estado}): "
+                    f"{deteccion.motivo}"
                 )
 
             else:
@@ -2669,6 +2720,15 @@ def ejecutar_motor(carpeta_entrada, ruta_salida):
                     f"✅ {nombre} → "
                     f"{formato}"
                 )
+
+                if deteccion.cuenta_nueva:
+
+                    print(
+                        f"   ↳ cuenta registrada solo en "
+                        f"registro_bancos.json; se normaliza con "
+                        f"la plantilla legada "
+                        f"{deteccion.formato_legado}"
+                    )
 
         except Exception as e:
 
@@ -2706,9 +2766,22 @@ def ejecutar_motor(carpeta_entrada, ruta_salida):
 
     if errores_deteccion > 0:
 
+        motivos = [
+            f"   • {f['ARCHIVO']}: "
+            + (
+                f"{detalle_deteccion[f['ARCHIVO']].estado} — "
+                f"{detalle_deteccion[f['ARCHIVO']].motivo}"
+                if f["ARCHIVO"] in detalle_deteccion
+                else f["ESTADO"]
+            )
+            for f in detecciones
+            if f["FORMATO"] in ("NO_RECONOCIDO", "ERROR")
+        ]
+
         raise ValueError(
             "❌ PROCESO DETENIDO: "
-            "hay archivos no reconocidos."
+            "hay archivos no reconocidos.\n"
+            + "\n".join(motivos)
         )
 
     # ========================================================
@@ -2766,12 +2839,22 @@ def ejecutar_motor(carpeta_entrada, ruta_salida):
 
         try:
 
+            # P4: el normalizador legado recibe su propio id (cuenta
+            # conocida) o la plantilla del formato (cuenta nueva); la
+            # identidad BANCO / CUENTA / MONEDA es la del registro.
+            deteccion = detalle_deteccion[nombre]
+
             resultado = normalizar_archivo(
                 ruta,
-                formato,
+                deteccion.formato_legado,
                 lote,
                 fecha_carga,
                 nombre_origen=nombre
+            )
+
+            resultado = aplicar_identidad_registro(
+                resultado,
+                deteccion
             )
 
             tablas.append(
@@ -3055,7 +3138,7 @@ def ejecutar_motor(carpeta_entrada, ruta_salida):
 
         resultado = validar_archivo(
             ruta,
-            formato,
+            detalle_deteccion[nombre].formato_legado,
             datos_archivo
         )
 
@@ -3653,6 +3736,39 @@ def ejecutar_motor(carpeta_entrada, ruta_salida):
         _cap = _iu.module_from_spec(_spec)
         _spec.loader.exec_module(_cap)
 
+        # P4: una cuenta nueva (solo registro) se lee con la hoja y el
+        # encabezado de su plantilla legada.
+        _alias = {
+            d.cuenta_id: d.formato_legado
+            for d in detalle_deteccion.values()
+            if d.ok and d.cuenta_nueva
+        }
+
+        _contrato = {
+            "hojas_validas": HOJAS_VALIDAS,
+            "encabezados_esperados": ENCABEZADOS_ESPERADOS,
+            "encontrar_fila_encabezado": encontrar_fila_encabezado,
+        }
+
+        if _alias:
+
+            _contrato = {
+                "hojas_validas": {
+                    **HOJAS_VALIDAS,
+                    **{c: HOJAS_VALIDAS[p] for c, p in _alias.items()}
+                },
+                "encabezados_esperados": {
+                    **ENCABEZADOS_ESPERADOS,
+                    **{c: ENCABEZADOS_ESPERADOS[p] for c, p in _alias.items()}
+                },
+                "encontrar_fila_encabezado": (
+                    lambda raw, f: encontrar_fila_encabezado(
+                        raw,
+                        _alias.get(f, f)
+                    )
+                ),
+            }
+
         origen_estado = _cap.generar_origen_seguro(
             mapa_archivos,
             df_deteccion_final,
@@ -3661,11 +3777,7 @@ def ejecutar_motor(carpeta_entrada, ruta_salida):
             lote,
             fecha_carga,
             ruta_origen,
-            {
-                "hojas_validas": HOJAS_VALIDAS,
-                "encabezados_esperados": ENCABEZADOS_ESPERADOS,
-                "encontrar_fila_encabezado": encontrar_fila_encabezado,
-            }
+            _contrato
         )
 
     except Exception as e:
@@ -3785,7 +3897,16 @@ def ejecutar_motor(carpeta_entrada, ruta_salida):
         "ruta_salida": ruta_salida,
         "ruta_lists_csv": ruta_lists_csv,
         "origen_estado": origen_estado,
-        "sombra_estado": sombra_estado
+        "sombra_estado": sombra_estado,
+        "deteccion_estado": {
+            "version_deteccion": detector.version,
+            "ruta_registro": detector.ruta,
+            "sha256_registro": detector.sha256,
+            "archivos": {
+                n: d.como_dict()
+                for n, d in detalle_deteccion.items()
+            }
+        }
     }
 
 

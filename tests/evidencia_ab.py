@@ -5,8 +5,9 @@
 Ambos corren sobre los 12 fixtures con el reloj fijado (asi LOTE/FECHA DE CARGA coinciden) y se compara:
 LISTS.csv byte a byte, NORMALIZADO.xlsx celda a celda (valor + formato + tablas), df_final/df_validacion/
 resumen, y la salida de consola (salvo las lineas de ORIGEN y de SOMBRA).  Termina con codigo 1 si algo difiere.
-Las claves nuevas del retorno permitidas son origen_estado (P1) y sombra_estado (P3).
-El motor actual puede estar junto a motor_generico.py y registro_bancos.json (modo sombra P3).
+Las claves nuevas del retorno permitidas son origen_estado (P1), sombra_estado (P3) y deteccion_estado (P4).
+El motor actual puede estar junto a motor_generico.py y registro_bancos.json (modo sombra P3); desde P4
+necesita deteccion_registro.py y registro_bancos.json a su lado (deteccion productiva por registro).
 """
 import contextlib, importlib.util, io, shutil, sys, tempfile
 from pathlib import Path
@@ -69,7 +70,7 @@ def main(a, b):
             except AssertionError:
                 ok = False
             check(f"retorno['{k}']", ok)
-        check("claves del retorno", (set(rb) - set(ra)) <= {"origen_estado", "sombra_estado"} and set(ra) <= set(rb), f"nuevas: {sorted(set(rb) - set(ra))}")
+        check("claves del retorno", (set(rb) - set(ra)) <= {"origen_estado", "sombra_estado", "deteccion_estado"} and set(ra) <= set(rb), f"nuevas: {sorted(set(rb) - set(ra))}")
         # se ignoran las lineas de ORIGEN y de SOMBRA, las lineas en blanco y la carpeta temporal de cada corrida
         def limpio(texto, carpeta):
             return [x.replace(str(carpeta), "<TMP>") for x in texto.splitlines()

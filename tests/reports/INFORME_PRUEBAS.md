@@ -1,6 +1,6 @@
-# Informe de pruebas del normalizador (Fase 2 + P1/P2: captura y preservación de origen + P3: motor genérico en sombra + P3b: EXTRACTO_HISTORICO)
+# Informe de pruebas del normalizador (Fase 2 + P1/P2: captura y preservación de origen + P3: motor genérico en sombra + P3b: EXTRACTO_HISTORICO + P4: detección por registro)
 
-Resumen: PASS=505, SKIP=22, XFAIL=18
+Resumen: PASS=577, SKIP=22, XFAIL=16
 
 ## 1. Regresión por banco/formato (extractos reales)
 
@@ -64,7 +64,7 @@ Resumen: PASS=505, SKIP=22, XFAIL=18
 | `test_05_preservacion.py::test_union_me_real_debitos_completos` | 1 | SKIP |
 | `test_05_preservacion.py::test_union_me_real_nro_de_verificasion_y_mapa` | 1 | SKIP |
 | `test_06_sombra_p3.py::test_sombra_bisa_me_sin_movimientos_deja_df_vacio_como_el_legado` | 1 | PASS |
-| `test_06_sombra_p3.py::test_diferencia_union_ultimos12_se_reporta` | 1 | PASS |
+| `test_06_sombra_p3.py::test_diferencia_union_ultimos12_resuelta_en_p4` | 1 | PASS |
 | `test_06_sombra_p3.py::test_sombra_union_me_proxy_sintetico_con_movimiento_coincide` | 1 | PASS |
 | `test_06_sombra_p3.py::test_sombra_union_me_vacio_proxy_falla_igual_que_el_legado_d16b` | 1 | PASS |
 
@@ -130,10 +130,10 @@ La producción sigue siendo la del motor legado; el genérico solo compara y rep
 | `test_cuenta_nueva_produce_lo_mismo_que_una_cuenta_conocida_con_el_mismo_contenido` | 1 | PASS |
 | `test_con_cuenta_rechaza_configuraciones_invalidas` | 1 | PASS |
 | `test_cuenta_ambigua_en_cabecera_se_reporta_como_ambiguo` | 1 | PASS |
-| `test_diferencia_d10_cuenta_dentro_de_una_glosa_se_reporta` | 1 | PASS |
-| `test_diferencia_d11_bmsc_con_otra_cuenta_se_reporta` | 1 | PASS |
-| `test_diferencia_union_ultimos12_se_reporta` | 1 | PASS |
-| `test_d09_encabezado_incompleto_lo_rechaza_el_generico` | 1 | PASS |
+| `test_diferencia_d10_cuenta_dentro_de_una_glosa_resuelta_en_p4` | 1 | PASS |
+| `test_diferencia_d11_bmsc_con_otra_cuenta_resuelta_en_p4` | 1 | PASS |
+| `test_diferencia_union_ultimos12_resuelta_en_p4` | 1 | PASS |
+| `test_d09_encabezado_incompleto_lo_rechazan_el_generico_y_la_produccion` | 1 | PASS |
 | `test_sombra_bnb_orden_descendente_valida_saldos_igual_que_el_legado` | 1 | PASS |
 | `test_sombra_bnb_sinteticos_coinciden_con_el_legado` | 3 | PASS |
 | `test_sombra_union_me_proxy_sintetico_con_movimiento_coincide` | 1 | PASS |
@@ -147,7 +147,9 @@ La producción sigue siendo la del motor legado; el genérico solo compara y rep
 | `test_lote_la_produccion_sigue_siendo_la_del_legado` | 1 | PASS |
 | `test_sombra_encendida_o_apagada_da_exactamente_la_misma_produccion` | 1 | PASS |
 | `test_una_diferencia_en_sombra_se_reporta_y_no_altera_la_produccion` | 1 | PASS |
-| `test_un_fallo_del_generico_no_detiene_ni_altera_al_legado` | 3 | PASS |
+| `test_p4_registro_que_contradice_al_normalizador_legado_detiene_la_produccion` | 1 | PASS |
+| `test_p4_sin_registro_valido_la_produccion_se_detiene_con_error_claro` | 3 | PASS |
+| `test_un_fallo_del_generico_no_detiene_ni_altera_al_legado` | 1 | PASS |
 | `test_un_generico_que_explota_no_detiene_al_legado` | 1 | PASS |
 | `test_motor_sin_motor_generico_al_lado_tampoco_falla` | 1 | PASS |
 | `test_archivos_de_sombra_no_se_toman_como_extractos` | 1 | PASS |
@@ -197,6 +199,48 @@ Un Excel por banco/cuenta/mes para Contabilidad/Ingresos, construido solo con OR
 | `test_el_motor_no_cambio_y_no_escribe_historicos` | 1 | PASS |
 | `test_cli_genera_desde_origen_y_lists_csv` | 1 | PASS |
 
+## 2e. Detección productiva por registro (P4, `test_08_deteccion_p4.py`)
+
+Banco, cuenta, moneda y formato salen de `registro_bancos.json` (`deteccion_registro.py`); la normalización sigue en los `normalizar_*` legados.
+
+| Prueba | Casos | Estado |
+|---|---|---|
+| `test_p4_formato_real_se_detecta_exactamente_como_hoy` | 12 | PASS |
+| `test_p4_detectar_formato_conserva_su_contrato` | 12 | PASS |
+| `test_p4_lote_12_salidas_identicas_y_deteccion_por_registro` | 1 | PASS |
+| `test_p4_registro_valido_para_detectar_y_coherente_con_los_normalizadores` | 1 | PASS |
+| `test_p4_registro_invalido_se_rechaza_al_cargar` | 12 | PASS |
+| `test_p4_cuenta_nueva_sin_registrar_se_rechaza_con_motivo` | 1 | PASS |
+| `test_p4_cuenta_nueva_se_incorpora_solo_con_una_entrada_en_cuentas` | 1 | PASS |
+| `test_p4_cuenta_nueva_tambien_llega_al_historico_p3b` | 1 | PASS |
+| `test_p4_cuenta_nueva_normaliza_igual_que_su_plantilla_salvo_la_identidad` | 1 | PASS |
+| `test_p4_cuenta_nueva_en_hoja_alternativa_usa_la_plantilla_de_esa_hoja` | 1 | PASS |
+| `test_p4_cuenta_nueva_de_union_junto_al_lote_real` | 1 | PASS |
+| `test_p4_cuenta_nueva_no_modifica_el_registro_productivo` | 1 | PASS |
+| `test_p4_cuenta_en_glosa_no_altera_la_deteccion` | 1 | PASS |
+| `test_p4_cuenta_no_registrada_con_glosa_que_menciona_una_registrada_se_rechaza` | 1 | PASS |
+| `test_p4_cuenta_fuera_de_la_cabecera_no_cuenta` | 1 | PASS |
+| `test_p4_los_extractos_reales_tienen_otras_cuentas_en_sus_movimientos_y_no_confunden` | 1 | PASS |
+| `test_p4_bmsc_con_cuenta_incorrecta_se_rechaza` | 1 | PASS |
+| `test_p4_bmsc_con_cuenta_de_otro_banco_se_rechaza_y_lo_dice` | 1 | PASS |
+| `test_p4_bmsc_con_su_cuenta_registrada_se_acepta` | 1 | PASS |
+| `test_p4_bmsc_sin_cuenta_en_la_cabecera_se_rechaza` | 1 | PASS |
+| `test_p4_dos_cuentas_en_la_celda_de_cuenta_es_ambiguo` | 1 | PASS |
+| `test_p4_dos_rotulos_de_cuenta_distintos_es_ambiguo` | 1 | PASS |
+| `test_p4_una_cuenta_registrada_y_otra_desconocida_en_la_cabecera_es_ambiguo` | 1 | PASS |
+| `test_p4_archivo_con_estructura_de_dos_formatos_es_ambiguo` | 1 | PASS |
+| `test_p4_cabecera_ambigua_detiene_el_lote_sin_escribir` | 1 | PASS |
+| `test_p4_encabezado_incompleto_se_rechaza_y_dice_que_falta` | 1 | PASS |
+| `test_p4_encabezado_con_una_sola_columna_faltante_tambien_se_rechaza` | 1 | PASS |
+| `test_p4_hoja_sin_encabezado_reconocible_no_se_asigna_a_ningun_formato` | 1 | PASS |
+| `test_p4_union_ultimos12_real_se_rechaza_en_la_deteccion` | 1 | PASS |
+| `test_p4_union_ultimos12_detiene_el_lote_con_su_mensaje` | 1 | PASS |
+| `test_p4_union_ultimos12_con_la_hoja_renombrada_tampoco_pasa_como_union_me` | 1 | PASS |
+| `test_p4_union_ultimos12_aunque_traiga_saldo_se_rechaza_por_su_cabecera` | 1 | PASS |
+| `test_p4_union_me_proxy_sintetico_sigue_detectandose` | 1 | PASS |
+| `test_p4_la_deteccion_no_contiene_logica_de_normalizacion` | 1 | PASS |
+| `test_p4_cuenta_conocida_que_contradice_al_registro_no_se_corrige_en_silencio` | 1 | PASS |
+
 ## 3. Defectos reales confirmados (fallan hoy; deben pasar tras corregir)
 
 | Código | Estado hoy | Defecto demostrado | Cambio necesario (archivo · función) |
@@ -209,9 +253,9 @@ Un Excel por banco/cuenta/mes para Contabilidad/Ingresos, construido solo con OR
 | D-06 Fecha | FALLA (defecto vigente) | el filtro de filas usa pd.to_datetime(dayfirst) y descarta EN SILENCIO fechas '24/Ago/2026' (el Economico si las reconoce con normalizar_fecha): dos criterios distintos | `motor · normalizar_bnb/bcp/union/bisa/bmsc` — Usar el mismo parser (normalizar_fecha) para FILTRAR filas y para el valor final, como ya hace normalizar_economico. |
 | D-07 Filas | FALLA (defecto vigente) | una fila con importe y fecha NO interpretable se descarta sin error ni conteo (deberia bloquear o informar filas descartadas) | `motor · normalizar_*` — Contar filas descartadas por fecha; si alguna tiene importe/saldo, lanzar ValueError (pies de pagina 'Total ...' siguen permitidos). |
 | D-08 Año | FALLA (defecto vigente) | el año 2026 esta fijo: un movimiento de 2027 bloquea toda la exportacion | `motor · ejecutar_motor (paso 6)` — Reemplazar 2026 fijo por año parametrizable (p. ej. derivado de FECHA A PROCESAR) sin bloquear enero 2027. |
-| D-09 Encabezado | FALLA (defecto vigente) | encontrar_fila_encabezado acepta puntaje 0 (fila cualquiera) sin error | `motor · encontrar_fila_encabezado / leer_tabla_movimientos` — Exigir puntaje minimo (p. ej. 100% o umbral fijo) y lanzar ValueError con el formato y las filas inspeccionadas. |
-| D-10 Cuenta | FALLA (defecto vigente) | la cuenta se busca en las primeras 40 filas de TODO el archivo: un BNB_CLINICA cuya glosa menciona la cuenta BNB_MN se clasifica como BNB_MN | `motor · detectar_formato` — Buscar la cuenta solo en la zona de cabecera (filas previas al encabezado) y exigir UNA sola cuenta conocida. |
-| D-11 Cuenta | FALLA (defecto vigente) | BMSC no verifica el numero de cuenta: cualquier archivo con sus palabras clave se acepta como BMSC y recibe la cuenta fija 1000872489 | `motor · detectar_formato (rama BMSC)` — Verificar 1000872489 en cabecera (aparece en fila 7 col F del extracto real) o devolver NO_RECONOCIDO. |
+| D-09 Encabezado | FALLA (defecto vigente) | (primitiva) encontrar_fila_encabezado acepta puntaje 0 (fila cualquiera) sin error. RUTA PRODUCTIVA CERRADA EN P4: la deteccion por registro exige el encabezado completo en la misma hoja antes de normalizar (test_08). La primitiva la usan los normalizar_* congelados: se corrige con la normalizacion (P5) | `motor · encontrar_fila_encabezado / leer_tabla_movimientos` — RUTA PRODUCTIVA CERRADA EN P4 (la deteccion por registro exige el encabezado completo en la misma hoja antes de normalizar). Pendiente en la primitiva (P5): exigir puntaje minimo y lanzar ValueError. |
+| D-10 Cuenta | CORREGIDO EN P4 (PASS) | un BNB_CLINICA cuya glosa menciona la cuenta BNB_MN ya NO se clasifica como BNB_MN | `deteccion_registro.py (P4)` — CORREGIDO EN P4: la cuenta se lee solo en la celda rotulada de la cabecera (filas previas al encabezado) y debe ser UNA cuenta registrada. |
+| D-11 Cuenta | CORREGIDO EN P4 (PASS) | un BMSC con otra cuenta ya NO se acepta con la cuenta fija 1000872489 | `deteccion_registro.py (P4)` — CORREGIDO EN P4: BMSC exige la cuenta 1000872489 registrada en la cabecera; otra cuenta = CUENTA_NO_REGISTRADA. |
 | D-12 Cuenta Nueva | FALLA (defecto vigente) | un formato UNION_* nuevo cae en el 'else' y recibe SIN ERROR la cuenta y moneda de UNION_ME (20000003224544 / USD) | `motor · normalizar_union/bcp/bisa/economico/bnb` — Reemplazar los 'else' implicitos por un diccionario CUENTAS[formato] que falle si el formato no esta registrado. |
 | D-16 Vacios | FALLA (defecto vigente) | un extracto BNB con encabezado y SIN movimientos lanza KeyError y bloquea todo el lote (solo BISA maneja 'sin movimientos', y por un efecto colateral de dropna) | `motor · leer_tabla_movimientos / normalizar_*` — Si el encabezado existe pero no hay filas, devolver DataFrame vacio con COLUMNAS_LISTS y estado SIN MOVIMIENTOS (patron ya usado por BISA). |
 | D-16b Vacios | FALLA (defecto vigente) | un UNION_ME por fechas SIN movimientos (formato confirmado por codigo legado + captura real, con 'Nro de verificasion') lanza KeyError y bloquearia todo el lote. Probado con PROXY SINTETICO: confirmar con el archivo real vacio | `motor · leer_tabla_movimientos / normalizar_union` — Un UNION_ME sin movimientos debe devolver 0 filas y estado SIN MOVIMIENTOS (mismo cambio que D-16); confirmar con el archivo real vacío. |

@@ -512,9 +512,12 @@ def test_captura_no_agrega_columnas_ni_cambia_clave(corrida_lote):
 
 
 def test_si_la_captura_falla_normalizado_y_lists_salen_identicos(tmp_path):
-    """Motor SIN captura_origen.py al lado: ORIGEN no se genera, pero NORMALIZADO/LISTS son los mismos."""
+    """Motor SIN captura_origen.py al lado: ORIGEN no se genera, pero NORMALIZADO/LISTS son los mismos.
+    Desde P4 la detección productiva necesita deteccion_registro.py y registro_bancos.json junto al motor."""
     solo = tmp_path / "motor"; solo.mkdir()
     shutil.copy(MOTOR_PATH, solo / "motor_control_depositos_cbba.py")
+    for dep in ("deteccion_registro.py", "registro_bancos.json"):
+        shutil.copy(MOTOR_PATH.parent / dep, solo / dep)
     spec = importlib.util.spec_from_file_location("motor_sin_captura", solo / "motor_control_depositos_cbba.py")
     m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
     ent = tmp_path / "in"; ent.mkdir()

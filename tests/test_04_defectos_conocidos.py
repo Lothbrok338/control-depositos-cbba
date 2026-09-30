@@ -77,7 +77,10 @@ def test_movimiento_de_2027_no_bloquea(motor, tmp_path):
 
 
 # ------------------------------- ENCABEZADO -------------------------------
-@defecto("D-09 ENCABEZADO", "encontrar_fila_encabezado acepta puntaje 0 (fila cualquiera) sin error")
+@defecto("D-09 ENCABEZADO", "(primitiva) encontrar_fila_encabezado acepta puntaje 0 (fila cualquiera) sin error. "
+                                        "RUTA PRODUCTIVA CERRADA EN P4: la deteccion por registro exige el encabezado "
+                                        "completo en la misma hoja antes de normalizar (test_08). La primitiva la usan los "
+                                        "normalizar_* congelados: se corrige con la normalizacion (P5)")
 def test_encabezado_sin_coincidencias_debe_fallar(motor):
     raw = pd.DataFrame([["Reporte", "x"], ["nada", "util"]])
     with pytest.raises(ValueError):
@@ -85,17 +88,17 @@ def test_encabezado_sin_coincidencias_debe_fallar(motor):
 
 
 # ------------------------------- DETECCION DE CUENTA -------------------------------
-@defecto("D-10 CUENTA", "la cuenta se busca en las primeras 40 filas de TODO el archivo: un BNB_CLINICA cuya "
-                        "glosa menciona la cuenta BNB_MN se clasifica como BNB_MN")
+# D-10 y D-11: CORREGIDOS EN P4 (deteccion por registro_bancos.json). Ya no son xfail: son regresion.
 def test_cuenta_dentro_de_glosa_no_cambia_la_deteccion(motor, tmp_path):
+    """D-10 (corregido en P4): la cuenta se lee solo en la celda rotulada de la cabecera; un BNB_CLINICA cuya
+    glosa menciona la cuenta de BNB_MN sigue siendo BNB_CLINICA."""
     ruta = crear_xlsx_bnb(tmp_path / "x.xlsx", "3000100705", [
         {"fecha": "01/08/2026", "cred": 100.0, "saldo": 1100.0, "adic": "Transferencia desde cuenta 3000100152"}])
     assert motor.detectar_formato(str(ruta)) == "BNB_CLINICA"
 
 
-@defecto("D-11 CUENTA", "BMSC no verifica el numero de cuenta: cualquier archivo con sus palabras clave "
-                        "se acepta como BMSC y recibe la cuenta fija 1000872489")
 def test_bmsc_con_otra_cuenta_no_se_acepta(motor, tmp_path):
+    """D-11 (corregido en P4): BMSC exige que la cuenta de la cabecera este registrada (1000872489)."""
     ruta = crear_xlsx_bmsc_otra_cuenta(tmp_path / "x.xlsx", "9999999999")
     assert motor.detectar_formato(str(ruta)) == "NO_RECONOCIDO"
 
