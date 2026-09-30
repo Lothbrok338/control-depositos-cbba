@@ -1,0 +1,52 @@
+{
+  "fuente": "tests/golden/LOTE_12_LISTS.csv",
+  "sha256_fuente": "6d5da35355cbcb50ff2a154c05d6767d2a6af580488961cd93540f48a62fc8bf",
+  "checkpoint": "673754a9b69072e6960bbf0c7ffb0f50dc5d2670",
+  "artefacto": "DEPOSITOS_ACTIVOS__P7-b4d991f026be.json",
+  "filas": [
+    {
+      "fila_piloto": 1,
+      "fila_datos_dorada": 9,
+      "fixture": "union_mn_2.xls",
+      "CLAVE_TRANSACCION": "BANCO UNIÓN|10000003224552|20260801||74583632|CRÉDITO|700.00|236880.41",
+      "cobertura": [
+        "CLAVE_CON_O_Y_ESPACIO",
+        "HORA_VACIA"
+      ],
+      "negativos": {}
+    },
+    {
+      "fila_piloto": 2,
+      "fila_datos_dorada": 24,
+      "fixture": "bnb_mn_3.xls",
+      "CLAVE_TRANSACCION": "BNB|3000100152|20260801|093143|3P58189022|CRÉDITO|8662.00|7361576.48",
+      "cobertura": [
+        "ORIGINANTE"
+      ],
+      "negativos": {}
+    },
+    {
+      "fila_piloto": 3,
+      "fila_datos_dorada": 28,
+      "fixture": "bcp_mn_3.xls",
+      "CLAVE_TRANSACCION": "BCP|301-5005684-3-97|20260801|095007|15|DÉBITO|458.82|2136281.62",
+      "cobertura": [
+        "DEBITO_NO_VACIO"
+      ],
+      "negativos": {}
+    },
+    {
+      "fila_piloto": 4,
+      "fila_datos_dorada": 2319,
+      "fixture": "bnb_mn_3.xls",
+      "CLAVE_TRANSACCION": "BNB|3000100152|20260811|105028|3P8A146051|CRÉDITO|640.00|7794241.94",
+      "cobertura": [
+        "ORIGINANTE",
+        "NUMERO_NEGATIVO"
+      ],
+      "negativos": {
+        "CRÉDITO": "-640.0"
+      }
+    }
+  ]
+}

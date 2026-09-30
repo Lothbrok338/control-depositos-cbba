@@ -1,0 +1,65 @@
+{
+  "conteos": {
+    "p7": {
+      "PASS": 614,
+      "SKIP": 23,
+      "XFAIL": 14,
+      "FAIL": 6
+    },
+    "p8": {
+      "PASS": 642,
+      "SKIP": 23,
+      "XFAIL": 14,
+      "FAIL": 6
+    }
+  },
+  "fallos": {
+    "p7": [
+      "tests/test_05_preservacion.py::test_normalizado_xlsx_identico_a_su_dorada[RESUMEN]",
+      "tests/test_05_preservacion.py::test_normalizado_xlsx_identico_a_su_dorada[VALIDACION]",
+      "tests/test_05_preservacion.py::test_si_la_captura_falla_normalizado_y_lists_salen_identicos",
+      "tests/test_07_historico_p3b.py::test_normalizado_y_lists_siguen_identicos_a_sus_doradas",
+      "tests/test_09_normalizacion_p5.py::test_p5_las_12_cuentas_reales_como_cuentas_nuevas_solo_por_configuracion",
+      "tests/test_09_normalizacion_p5.py::test_p5_lote_real_completo_sin_ningun_normalizador_legado"
+    ],
+    "p8": [
+      "tests/test_05_preservacion.py::test_normalizado_xlsx_identico_a_su_dorada[RESUMEN]",
+      "tests/test_05_preservacion.py::test_normalizado_xlsx_identico_a_su_dorada[VALIDACION]",
+      "tests/test_05_preservacion.py::test_si_la_captura_falla_normalizado_y_lists_salen_identicos",
+      "tests/test_07_historico_p3b.py::test_normalizado_y_lists_siguen_identicos_a_sus_doradas",
+      "tests/test_09_normalizacion_p5.py::test_p5_las_12_cuentas_reales_como_cuentas_nuevas_solo_por_configuracion",
+      "tests/test_09_normalizacion_p5.py::test_p5_lote_real_completo_sin_ningun_normalizador_legado"
+    ]
+  },
+  "pruebas_nuevas": [
+    "tests/test_12_flujo_p8.py::test_apostrofos_odata_se_escapan_sin_modificar_clave",
+    "tests/test_12_flujo_p8.py::test_configuracion_binaria_no_adivina_otra_forma",
+    "tests/test_12_flujo_p8.py::test_conjunto_ampliado_cubre_fixtures_sin_cambios",
+    "tests/test_12_flujo_p8.py::test_creacion_fallida_o_timeout_reconsulta_y_continua[False-Failed]",
+    "tests/test_12_flujo_p8.py::test_creacion_fallida_o_timeout_reconsulta_y_continua[False-TimedOut]",
+    "tests/test_12_flujo_p8.py::test_creacion_fallida_o_timeout_reconsulta_y_continua[True-Failed]",
+    "tests/test_12_flujo_p8.py::test_creacion_fallida_o_timeout_reconsulta_y_continua[True-TimedOut]",
+    "tests/test_12_flujo_p8.py::test_diagnostico_acotado_mantiene_json_valido_con_textos_largos",
+    "tests/test_12_flujo_p8.py::test_error_con_omitidos_conserva_fila_original_y_no_expone_secreto",
+    "tests/test_12_flujo_p8.py::test_estructural_siempre_registra_antes_de_terminar[columnas]",
+    "tests/test_12_flujo_p8.py::test_estructural_siempre_registra_antes_de_terminar[ilegible]",
+    "tests/test_12_flujo_p8.py::test_estructural_siempre_registra_antes_de_terminar[omitido_invalido]",
+    "tests/test_12_flujo_p8.py::test_estructural_siempre_registra_antes_de_terminar[propiedad_movimiento]",
+    "tests/test_12_flujo_p8.py::test_estructural_siempre_registra_antes_de_terminar[propiedad_raiz]",
+    "tests/test_12_flujo_p8.py::test_estructural_siempre_registra_antes_de_terminar[version]",
+    "tests/test_12_flujo_p8.py::test_extremos_con_utc_y_fecha_testigo_julio_nueve",
+    "tests/test_12_flujo_p8.py::test_fallo_escritura_bitacora_no_se_oculta_ni_termina_exitoso",
+    "tests/test_12_flujo_p8.py::test_fallo_lectura_tiene_archivo_del_trigger",
+    "tests/test_12_flujo_p8.py::test_fallo_preconsulta_es_estructural_y_cero_creaciones",
+    "tests/test_12_flujo_p8.py::test_lote_vacio_valido",
+    "tests/test_12_flujo_p8.py::test_paquete_y_fuente_son_reproducibles",
+    "tests/test_12_flujo_p8.py::test_piloto_8_y_reproceso_sin_intentos_de_creacion",
+    "tests/test_12_flujo_p8.py::test_reconsulta_fallida_es_error_de_fila_y_no_del_lote[Failed]",
+    "tests/test_12_flujo_p8.py::test_reconsulta_fallida_es_error_de_fila_y_no_del_lote[TimedOut]",
+    "tests/test_12_flujo_p8.py::test_trigger_sharepoint_filtra_nombres_reales[DEPOSITOS_ACTIVOS__x.csv-False]",
+    "tests/test_12_flujo_p8.py::test_trigger_sharepoint_filtra_nombres_reales[DEPOSITOS_ACTIVOS__x.json-True]",
+    "tests/test_12_flujo_p8.py::test_trigger_sharepoint_filtra_nombres_reales[MANIFIESTO_P7__x.json-False]",
+    "tests/test_12_flujo_p8.py::test_trigger_sharepoint_filtra_nombres_reales[otro.json-False]"
+  ],
+  "heredadas_identicas": true
+}

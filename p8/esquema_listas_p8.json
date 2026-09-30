@@ -1,0 +1,388 @@
+{
+  "Depositos_Activos": {
+    "title_obligatorio": false,
+    "columnas": [
+      {
+        "nombre_tecnico": "CLAVE_TRANSACCION",
+        "tipo": "Texto de una linea",
+        "obligatoria": true,
+        "indexada": true,
+        "valores_unicos": true,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "CODIGO_ASIGNACION",
+        "tipo": "Texto de una linea",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "BANCO",
+        "tipo": "Texto de una linea",
+        "obligatoria": true,
+        "indexada": true,
+        "valores_unicos": false,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "CUENTA_BANCARIA",
+        "tipo": "Texto de una linea",
+        "obligatoria": true,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "MONEDA",
+        "tipo": "Texto de una linea",
+        "obligatoria": true,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "FECHA_MOVIMIENTO",
+        "tipo": "Fecha y hora, solo fecha",
+        "obligatoria": true,
+        "indexada": true,
+        "valores_unicos": false,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "HORA_MOVIMIENTO",
+        "tipo": "Texto de una linea",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "IMPORTE",
+        "tipo": "Numero, 2 decimales",
+        "obligatoria": true,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "DEBITO",
+        "tipo": "Numero, 2 decimales",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "CREDITO",
+        "tipo": "Numero, 2 decimales",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "TIPO_MOVIMIENTO",
+        "tipo": "Texto de una linea",
+        "obligatoria": true,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "SALDO",
+        "tipo": "Numero, 2 decimales",
+        "obligatoria": true,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "DESCRIPCION",
+        "tipo": "Varias lineas de texto sin formato",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "DEPOSITANTE_ORIGINANTE",
+        "tipo": "Varias lineas de texto sin formato",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "INFORMACION_ADICIONAL",
+        "tipo": "Varias lineas de texto sin formato",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "MOTOR_ESTADO",
+        "tipo": "Texto de una linea",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "MOTOR_ESTUDIANTE",
+        "tipo": "Texto de una linea",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "MOTOR_SOLICITADO_POR",
+        "tipo": "Texto de una linea",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "MOTOR_SEDE_SOLICITANTE",
+        "tipo": "Texto de una linea",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "MOTOR_CONFIRMADO_POR",
+        "tipo": "Texto de una linea",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "MOTOR_FECHA_CONFIRMACION",
+        "tipo": "Texto de una linea",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "MOTOR_OBSERVACION",
+        "tipo": "Varias lineas de texto sin formato",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "TEXTO_BUSQUEDA",
+        "tipo": "Varias lineas de texto sin formato",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "ARCHIVO_ORIGEN",
+        "tipo": "Texto de una linea",
+        "obligatoria": true,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "LOTE_CARGA",
+        "tipo": "Texto de una linea",
+        "obligatoria": true,
+        "indexada": true,
+        "valores_unicos": false,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "FECHA_CARGA",
+        "tipo": "Texto de una linea",
+        "obligatoria": true,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "P7"
+      },
+      {
+        "nombre_tecnico": "ESTADO_ASIGNACION",
+        "tipo": "Opcion",
+        "obligatoria": true,
+        "indexada": true,
+        "valores_unicos": false,
+        "valores": [
+          "DISPONIBLE"
+        ],
+        "predeterminado": "DISPONIBLE",
+        "permitir_relleno": false,
+        "origen": "P8"
+      },
+      {
+        "nombre_tecnico": "ESTUDIANTE",
+        "tipo": "Texto de una linea",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "operativo"
+      },
+      {
+        "nombre_tecnico": "CODIGO_ESTUDIANTE",
+        "tipo": "Texto de una linea",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "operativo"
+      },
+      {
+        "nombre_tecnico": "SOLICITADO_POR",
+        "tipo": "Texto de una linea",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "operativo"
+      },
+      {
+        "nombre_tecnico": "SEDE_ASIGNACION",
+        "tipo": "Texto de una linea",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "operativo"
+      },
+      {
+        "nombre_tecnico": "USUARIO_ASIGNACION",
+        "tipo": "Texto de una linea",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "operativo"
+      },
+      {
+        "nombre_tecnico": "FECHA_HORA_ASIGNACION",
+        "tipo": "Fecha y hora, incluir hora",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "operativo"
+      },
+      {
+        "nombre_tecnico": "OBSERVACION",
+        "tipo": "Varias lineas de texto sin formato",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false,
+        "origen": "operativo"
+      }
+    ],
+    "total_columnas_sin_title": 34
+  },
+  "Depositos_Cargas": {
+    "title_obligatorio": false,
+    "columnas": [
+      {
+        "nombre_tecnico": "LOTE_ID",
+        "tipo": "Texto de una linea",
+        "obligatoria": true,
+        "indexada": true,
+        "valores_unicos": false
+      },
+      {
+        "nombre_tecnico": "FECHA_HORA_PROCESO",
+        "tipo": "Fecha y hora, incluir hora",
+        "obligatoria": true,
+        "indexada": true,
+        "valores_unicos": false
+      },
+      {
+        "nombre_tecnico": "ARCHIVO_FUENTE",
+        "tipo": "Texto de una linea",
+        "obligatoria": true,
+        "indexada": false,
+        "valores_unicos": false
+      },
+      {
+        "nombre_tecnico": "SHA256",
+        "tipo": "Texto de una linea",
+        "obligatoria": true,
+        "indexada": false,
+        "valores_unicos": false
+      },
+      {
+        "nombre_tecnico": "CANTIDAD_RECIBIDA",
+        "tipo": "Numero, 0 decimales",
+        "obligatoria": true,
+        "indexada": false,
+        "valores_unicos": false
+      },
+      {
+        "nombre_tecnico": "CANTIDAD_VALIDA",
+        "tipo": "Numero, 0 decimales",
+        "obligatoria": true,
+        "indexada": false,
+        "valores_unicos": false
+      },
+      {
+        "nombre_tecnico": "CANTIDAD_NUEVA",
+        "tipo": "Numero, 0 decimales",
+        "obligatoria": true,
+        "indexada": false,
+        "valores_unicos": false
+      },
+      {
+        "nombre_tecnico": "CANTIDAD_YA_EXISTE",
+        "tipo": "Numero, 0 decimales",
+        "obligatoria": true,
+        "indexada": false,
+        "valores_unicos": false
+      },
+      {
+        "nombre_tecnico": "CANTIDAD_ERROR",
+        "tipo": "Numero, 0 decimales",
+        "obligatoria": true,
+        "indexada": false,
+        "valores_unicos": false
+      },
+      {
+        "nombre_tecnico": "ESTADO_LOTE",
+        "tipo": "Opcion",
+        "obligatoria": true,
+        "indexada": false,
+        "valores_unicos": false,
+        "valores": [
+          "COMPLETADO",
+          "COMPLETADO_CON_ERRORES",
+          "FALLIDO"
+        ],
+        "permitir_relleno": false
+      },
+      {
+        "nombre_tecnico": "MENSAJE_ERROR",
+        "tipo": "Varias lineas de texto sin formato",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false
+      },
+      {
+        "nombre_tecnico": "ARCHIVO_JSON",
+        "tipo": "Texto de una linea",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false
+      },
+      {
+        "nombre_tecnico": "ID_EJECUCION_FLUJO",
+        "tipo": "Texto de una linea",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false
+      }
+    ],
+    "total_columnas_sin_title": 13
+  }
+}

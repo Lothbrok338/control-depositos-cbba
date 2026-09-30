@@ -1,0 +1,1591 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.1.0.0",
+  "parameters": {
+    "$authentication": {
+      "defaultValue": {},
+      "type": "SecureObject"
+    },
+    "$connections": {
+      "defaultValue": {},
+      "type": "Object"
+    }
+  },
+  "triggers": {
+    "Cuando_se_crea_un_archivo": {
+      "type": "OpenApiConnection",
+      "recurrence": {
+        "interval": 1,
+        "frequency": "Minute"
+      },
+      "splitOn": "@triggerOutputs()?['body/value']",
+      "inputs": {
+        "host": {
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+          "connectionName": "shared_sharepointonline",
+          "operationId": "GetOnNewFileItems"
+        },
+        "parameters": {
+          "dataset": "<SITIO_SHAREPOINT>",
+          "table": "<BIBLIOTECA_DOCUMENTOS>",
+          "folderPath": "<CARPETA_ENTRADA_M365>"
+        },
+        "authentication": "@parameters('$authentication')",
+        "retryPolicy": {
+          "type": "none"
+        }
+      },
+      "conditions": [
+        {
+          "expression": "@and(equals(triggerBody()?['{IsFolder}'],false),startsWith(coalesce(triggerBody()?['{FilenameWithExtension}'],''),'DEPOSITOS_ACTIVOS__'),endsWith(coalesce(triggerBody()?['{FilenameWithExtension}'],''),'.json'))"
+        }
+      ],
+      "runtimeConfiguration": {
+        "concurrency": {
+          "runs": 1
+        }
+      }
+    }
+  },
+  "actions": {
+    "CONFIGURACION": {
+      "type": "Scope",
+      "actions": {
+        "PARAM_SITIO_SHAREPOINT": {
+          "type": "Compose",
+          "inputs": "<SITIO_SHAREPOINT>",
+          "runAfter": {}
+        },
+        "PARAM_LISTA_DEPOSITOS_ACTIVOS": {
+          "type": "Compose",
+          "inputs": "Depositos_Activos",
+          "runAfter": {
+            "PARAM_SITIO_SHAREPOINT": [
+              "Succeeded"
+            ]
+          }
+        },
+        "PARAM_LISTA_DEPOSITOS_CARGAS": {
+          "type": "Compose",
+          "inputs": "Depositos_Cargas",
+          "runAfter": {
+            "PARAM_LISTA_DEPOSITOS_ACTIVOS": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runAfter": {}
+    },
+    "Inicializar_varCantidadRecibida": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varCantidadRecibida",
+            "type": "integer",
+            "value": 0
+          }
+        ]
+      },
+      "runAfter": {
+        "CONFIGURACION": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varCantidadValida": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varCantidadValida",
+            "type": "integer",
+            "value": 0
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varCantidadRecibida": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varCantidadNueva": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varCantidadNueva",
+            "type": "integer",
+            "value": 0
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varCantidadValida": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varCantidadYaExiste": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varCantidadYaExiste",
+            "type": "integer",
+            "value": 0
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varCantidadNueva": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varCantidadError": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varCantidadError",
+            "type": "integer",
+            "value": 0
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varCantidadYaExiste": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varClasificados": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varClasificados",
+            "type": "integer",
+            "value": 0
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varCantidadError": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varFilaActual": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varFilaActual",
+            "type": "integer",
+            "value": 0
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varClasificados": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varDetalle": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varDetalle",
+            "type": "array",
+            "value": []
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varFilaActual": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varClavesExistentes": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varClavesExistentes",
+            "type": "array",
+            "value": []
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varDetalle": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varResultadoFila": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varResultadoFila",
+            "type": "string",
+            "value": "PENDIENTE"
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varClavesExistentes": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varFalloEstructural": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varFalloEstructural",
+            "type": "boolean",
+            "value": true
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varResultadoFila": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varProcesamientoCompleto": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varProcesamientoCompleto",
+            "type": "boolean",
+            "value": false
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varFalloEstructural": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varLoteId": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varLoteId",
+            "type": "string",
+            "value": "DESCONOCIDO"
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varProcesamientoCompleto": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varArchivoFuente": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varArchivoFuente",
+            "type": "string",
+            "value": "DESCONOCIDO"
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varLoteId": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varSha256": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varSha256",
+            "type": "string",
+            "value": "DESCONOCIDO"
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varArchivoFuente": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varEtapa": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varEtapa",
+            "type": "string",
+            "value": "LECTURA"
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varSha256": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varArchivoJson": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varArchivoJson",
+            "type": "string",
+            "value": "@take(coalesce(triggerBody()?['{FilenameWithExtension}'],'DESCONOCIDO'),255)"
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varEtapa": [
+          "Succeeded"
+        ]
+      }
+    },
+    "TRY": {
+      "type": "Scope",
+      "actions": {
+        "Obtener_contenido_del_archivo": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetFileContent"
+            },
+            "parameters": {
+              "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+              "id": "@triggerBody()?['{Identifier}']",
+              "inferContentType": false
+            },
+            "authentication": "@parameters('$authentication')",
+            "retryPolicy": {
+              "type": "none"
+            }
+          },
+          "runAfter": {}
+        },
+        "Etapa_parse": {
+          "type": "SetVariable",
+          "inputs": {
+            "name": "varEtapa",
+            "value": "PARSE_JSON"
+          },
+          "runAfter": {
+            "Obtener_contenido_del_archivo": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Analizar_JSON": {
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@json(base64ToString(body('Obtener_contenido_del_archivo')?['$content']))",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "esquema": {
+                  "type": "string"
+                },
+                "lote_id": {
+                  "type": "string"
+                },
+                "archivo_fuente": {
+                  "type": "string"
+                },
+                "sha256_archivo_fuente": {
+                  "type": "string"
+                },
+                "columnas": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "movimientos": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "CLAVE_TRANSACCION": {
+                        "type": "string"
+                      },
+                      "CODIGO_ASIGNACION": {
+                        "type": "string"
+                      },
+                      "BANCO": {
+                        "type": "string"
+                      },
+                      "CUENTA_BANCARIA": {
+                        "type": "string"
+                      },
+                      "MONEDA": {
+                        "type": "string"
+                      },
+                      "FECHA_MOVIMIENTO": {
+                        "type": "string"
+                      },
+                      "HORA_MOVIMIENTO": {
+                        "type": "string"
+                      },
+                      "IMPORTE": {
+                        "type": "string"
+                      },
+                      "DEBITO": {
+                        "type": "string"
+                      },
+                      "CREDITO": {
+                        "type": "string"
+                      },
+                      "TIPO_MOVIMIENTO": {
+                        "type": "string"
+                      },
+                      "SALDO": {
+                        "type": "string"
+                      },
+                      "DESCRIPCION": {
+                        "type": "string"
+                      },
+                      "DEPOSITANTE_ORIGINANTE": {
+                        "type": "string"
+                      },
+                      "INFORMACION_ADICIONAL": {
+                        "type": "string"
+                      },
+                      "MOTOR_ESTADO": {
+                        "type": "string"
+                      },
+                      "MOTOR_ESTUDIANTE": {
+                        "type": "string"
+                      },
+                      "MOTOR_SOLICITADO_POR": {
+                        "type": "string"
+                      },
+                      "MOTOR_SEDE_SOLICITANTE": {
+                        "type": "string"
+                      },
+                      "MOTOR_CONFIRMADO_POR": {
+                        "type": "string"
+                      },
+                      "MOTOR_FECHA_CONFIRMACION": {
+                        "type": "string"
+                      },
+                      "MOTOR_OBSERVACION": {
+                        "type": "string"
+                      },
+                      "TEXTO_BUSQUEDA": {
+                        "type": "string"
+                      },
+                      "ARCHIVO_ORIGEN": {
+                        "type": "string"
+                      },
+                      "LOTE_CARGA": {
+                        "type": "string"
+                      },
+                      "FECHA_CARGA": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "CLAVE_TRANSACCION",
+                      "CODIGO_ASIGNACION",
+                      "BANCO",
+                      "CUENTA_BANCARIA",
+                      "MONEDA",
+                      "FECHA_MOVIMIENTO",
+                      "HORA_MOVIMIENTO",
+                      "IMPORTE",
+                      "DEBITO",
+                      "CREDITO",
+                      "TIPO_MOVIMIENTO",
+                      "SALDO",
+                      "DESCRIPCION",
+                      "DEPOSITANTE_ORIGINANTE",
+                      "INFORMACION_ADICIONAL",
+                      "MOTOR_ESTADO",
+                      "MOTOR_ESTUDIANTE",
+                      "MOTOR_SOLICITADO_POR",
+                      "MOTOR_SEDE_SOLICITANTE",
+                      "MOTOR_CONFIRMADO_POR",
+                      "MOTOR_FECHA_CONFIRMACION",
+                      "MOTOR_OBSERVACION",
+                      "TEXTO_BUSQUEDA",
+                      "ARCHIVO_ORIGEN",
+                      "LOTE_CARGA",
+                      "FECHA_CARGA"
+                    ]
+                  }
+                },
+                "omitidos": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "fila": {
+                        "type": "integer"
+                      },
+                      "estado": {
+                        "type": "string"
+                      },
+                      "motivo": {
+                        "type": "string"
+                      },
+                      "errores": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "valores": {
+                        "type": "object",
+                        "properties": {
+                          "CLAVE_TRANSACCION": {
+                            "type": "string"
+                          },
+                          "CODIGO_ASIGNACION": {
+                            "type": "string"
+                          },
+                          "BANCO": {
+                            "type": "string"
+                          },
+                          "CUENTA_BANCARIA": {
+                            "type": "string"
+                          },
+                          "MONEDA": {
+                            "type": "string"
+                          },
+                          "FECHA_MOVIMIENTO": {
+                            "type": "string"
+                          },
+                          "HORA_MOVIMIENTO": {
+                            "type": "string"
+                          },
+                          "IMPORTE": {
+                            "type": "string"
+                          },
+                          "DEBITO": {
+                            "type": "string"
+                          },
+                          "CREDITO": {
+                            "type": "string"
+                          },
+                          "TIPO_MOVIMIENTO": {
+                            "type": "string"
+                          },
+                          "SALDO": {
+                            "type": "string"
+                          },
+                          "DESCRIPCION": {
+                            "type": "string"
+                          },
+                          "DEPOSITANTE_ORIGINANTE": {
+                            "type": "string"
+                          },
+                          "INFORMACION_ADICIONAL": {
+                            "type": "string"
+                          },
+                          "MOTOR_ESTADO": {
+                            "type": "string"
+                          },
+                          "MOTOR_ESTUDIANTE": {
+                            "type": "string"
+                          },
+                          "MOTOR_SOLICITADO_POR": {
+                            "type": "string"
+                          },
+                          "MOTOR_SEDE_SOLICITANTE": {
+                            "type": "string"
+                          },
+                          "MOTOR_CONFIRMADO_POR": {
+                            "type": "string"
+                          },
+                          "MOTOR_FECHA_CONFIRMACION": {
+                            "type": "string"
+                          },
+                          "MOTOR_OBSERVACION": {
+                            "type": "string"
+                          },
+                          "TEXTO_BUSQUEDA": {
+                            "type": "string"
+                          },
+                          "ARCHIVO_ORIGEN": {
+                            "type": "string"
+                          },
+                          "LOTE_CARGA": {
+                            "type": "string"
+                          },
+                          "FECHA_CARGA": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "CLAVE_TRANSACCION",
+                          "CODIGO_ASIGNACION",
+                          "BANCO",
+                          "CUENTA_BANCARIA",
+                          "MONEDA",
+                          "FECHA_MOVIMIENTO",
+                          "HORA_MOVIMIENTO",
+                          "IMPORTE",
+                          "DEBITO",
+                          "CREDITO",
+                          "TIPO_MOVIMIENTO",
+                          "SALDO",
+                          "DESCRIPCION",
+                          "DEPOSITANTE_ORIGINANTE",
+                          "INFORMACION_ADICIONAL",
+                          "MOTOR_ESTADO",
+                          "MOTOR_ESTUDIANTE",
+                          "MOTOR_SOLICITADO_POR",
+                          "MOTOR_SEDE_SOLICITANTE",
+                          "MOTOR_CONFIRMADO_POR",
+                          "MOTOR_FECHA_CONFIRMACION",
+                          "MOTOR_OBSERVACION",
+                          "TEXTO_BUSQUEDA",
+                          "ARCHIVO_ORIGEN",
+                          "LOTE_CARGA",
+                          "FECHA_CARGA"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "fila",
+                      "estado",
+                      "motivo",
+                      "errores",
+                      "valores"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "esquema",
+                "lote_id",
+                "archivo_fuente",
+                "sha256_archivo_fuente",
+                "columnas",
+                "movimientos",
+                "omitidos"
+              ]
+            }
+          },
+          "runAfter": {
+            "Etapa_parse": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Etapa_contrato": {
+          "type": "SetVariable",
+          "inputs": {
+            "name": "varEtapa",
+            "value": "CONTRATO"
+          },
+          "runAfter": {
+            "Analizar_JSON": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Guardar_recibidos": {
+          "type": "SetVariable",
+          "inputs": {
+            "name": "varCantidadRecibida",
+            "value": "@add(length(body('Analizar_JSON')?['movimientos']),length(body('Analizar_JSON')?['omitidos']))"
+          },
+          "runAfter": {
+            "Etapa_contrato": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Omitidos_ERROR": {
+          "type": "Query",
+          "inputs": {
+            "from": "@body('Analizar_JSON')?['omitidos']",
+            "where": "@equals(item()?['estado'],'ERROR')"
+          },
+          "runAfter": {
+            "Guardar_recibidos": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Omitidos_YA_EXISTE": {
+          "type": "Query",
+          "inputs": {
+            "from": "@body('Analizar_JSON')?['omitidos']",
+            "where": "@equals(item()?['estado'],'YA_EXISTE')"
+          },
+          "runAfter": {
+            "Omitidos_ERROR": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Omitidos_invalidos": {
+          "type": "Query",
+          "inputs": {
+            "from": "@body('Analizar_JSON')?['omitidos']",
+            "where": "@not(or(equals(item()?['estado'],'ERROR'),equals(item()?['estado'],'YA_EXISTE')))"
+          },
+          "runAfter": {
+            "Omitidos_YA_EXISTE": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Filas_omitidas": {
+          "type": "Select",
+          "inputs": {
+            "from": "@body('Analizar_JSON')?['omitidos']",
+            "select": "@item()?['fila']"
+          },
+          "runAfter": {
+            "Omitidos_invalidos": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Filas_movimientos": {
+          "type": "Query",
+          "inputs": {
+            "from": "@range(1,variables('varCantidadRecibida'))",
+            "where": "@not(contains(body('Filas_omitidas'),item()))"
+          },
+          "runAfter": {
+            "Filas_omitidas": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Contrato_P7_valido": {
+          "type": "If",
+          "expression": "@and(equals(body('Analizar_JSON')?['esquema'],'P7_DEPOSITOS_ACTIVOS_V1'),equals(join(body('Analizar_JSON')?['columnas'],'|'),'CLAVE_TRANSACCION|CODIGO_ASIGNACION|BANCO|CUENTA_BANCARIA|MONEDA|FECHA_MOVIMIENTO|HORA_MOVIMIENTO|IMPORTE|DEBITO|CREDITO|TIPO_MOVIMIENTO|SALDO|DESCRIPCION|DEPOSITANTE_ORIGINANTE|INFORMACION_ADICIONAL|MOTOR_ESTADO|MOTOR_ESTUDIANTE|MOTOR_SOLICITADO_POR|MOTOR_SEDE_SOLICITANTE|MOTOR_CONFIRMADO_POR|MOTOR_FECHA_CONFIRMACION|MOTOR_OBSERVACION|TEXTO_BUSQUEDA|ARCHIVO_ORIGEN|LOTE_CARGA|FECHA_CARGA'),equals(length(body('Analizar_JSON')?['columnas']),26),empty(body('Omitidos_invalidos')),equals(length(body('Filas_movimientos')),length(body('Analizar_JSON')?['movimientos'])),greater(length(body('Analizar_JSON')?['lote_id']),0),lessOrEquals(length(body('Analizar_JSON')?['lote_id']),255),greater(length(body('Analizar_JSON')?['archivo_fuente']),0),lessOrEquals(length(body('Analizar_JSON')?['archivo_fuente']),255),equals(length(body('Analizar_JSON')?['sha256_archivo_fuente']),64))",
+          "actions": {
+            "Guardar_lote": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varLoteId",
+                "value": "@body('Analizar_JSON')?['lote_id']"
+              },
+              "runAfter": {}
+            },
+            "Guardar_fuente": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varArchivoFuente",
+                "value": "@body('Analizar_JSON')?['archivo_fuente']"
+              },
+              "runAfter": {
+                "Guardar_lote": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Guardar_hash": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varSha256",
+                "value": "@body('Analizar_JSON')?['sha256_archivo_fuente']"
+              },
+              "runAfter": {
+                "Guardar_fuente": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Guardar_validos": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varCantidadValida",
+                "value": "@sub(variables('varCantidadRecibida'),length(body('Omitidos_ERROR')))"
+              },
+              "runAfter": {
+                "Guardar_hash": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Contar_omitidos_error": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varCantidadError",
+                "value": "@length(body('Omitidos_ERROR'))"
+              },
+              "runAfter": {
+                "Guardar_validos": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Contar_omitidos_existentes": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varCantidadYaExiste",
+                "value": "@length(body('Omitidos_YA_EXISTE'))"
+              },
+              "runAfter": {
+                "Contar_omitidos_error": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Detallar_omitidos": {
+              "type": "Foreach",
+              "foreach": "@take(body('Omitidos_ERROR'),8)",
+              "runtimeConfiguration": {
+                "concurrency": {
+                  "repetitions": 1
+                }
+              },
+              "actions": {
+                "Registrar_detalle_omitido": {
+                  "type": "If",
+                  "expression": "@less(length(variables('varDetalle')),8)",
+                  "actions": {
+                    "Detalle_omitido": {
+                      "type": "Compose",
+                      "inputs": {
+                        "fila": "@items('Detallar_omitidos')?['fila']",
+                        "CLAVE_TRANSACCION": "@take(items('Detallar_omitidos')?['valores']?['CLAVE_TRANSACCION'],255)",
+                        "motivo": "Fila rechazada por adaptador P7; ver omitidos del JSON.",
+                        "codigo": "P7_OMITIDO_ERROR"
+                      },
+                      "runAfter": {}
+                    },
+                    "Detalle_acotado_omitido": {
+                      "type": "Compose",
+                      "inputs": "@if(lessOrEquals(length(string(outputs('Detalle_omitido'))),800),outputs('Detalle_omitido'),setProperty(outputs('Detalle_omitido'),'CLAVE_TRANSACCION',take(outputs('Detalle_omitido')?['CLAVE_TRANSACCION'],64)))",
+                      "runAfter": {
+                        "Detalle_omitido": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Anotar_omitido": {
+                      "type": "AppendToArrayVariable",
+                      "inputs": {
+                        "name": "varDetalle",
+                        "value": "@outputs('Detalle_acotado_omitido')"
+                      },
+                      "runAfter": {
+                        "Detalle_acotado_omitido": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {}
+                  }
+                }
+              },
+              "runAfter": {
+                "Contar_omitidos_existentes": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Etapa_preconsulta": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varEtapa",
+                "value": "PRECONSULTA"
+              },
+              "runAfter": {
+                "Detallar_omitidos": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Preconsultar_claves": {
+              "type": "Foreach",
+              "foreach": "@body('Analizar_JSON')?['movimientos']",
+              "runtimeConfiguration": {
+                "concurrency": {
+                  "repetitions": 1
+                }
+              },
+              "actions": {
+                "Obtener_clave_preexistente": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "GetItems"
+                    },
+                    "parameters": {
+                      "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+                      "table": "@outputs('PARAM_LISTA_DEPOSITOS_ACTIVOS')",
+                      "$filter": "@concat('CLAVE_TRANSACCION eq ''',replace(items('Preconsultar_claves')?['CLAVE_TRANSACCION'],'''',''''''),'''')",
+                      "$top": 1
+                    },
+                    "authentication": "@parameters('$authentication')",
+                    "retryPolicy": {
+                      "type": "none"
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "Existe_en_preconsulta": {
+                  "type": "If",
+                  "expression": "@greater(length(body('Obtener_clave_preexistente')?['value']),0)",
+                  "actions": {
+                    "Guardar_clave_existente": {
+                      "type": "AppendToArrayVariable",
+                      "inputs": {
+                        "name": "varClavesExistentes",
+                        "value": "@items('Preconsultar_claves')?['CLAVE_TRANSACCION']"
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {}
+                  },
+                  "runAfter": {
+                    "Obtener_clave_preexistente": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "runAfter": {
+                "Etapa_preconsulta": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Claves_en_preconsulta": {
+              "type": "Compose",
+              "inputs": "@length(variables('varClavesExistentes'))",
+              "runAfter": {
+                "Preconsultar_claves": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Etapa_procesamiento": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varEtapa",
+                "value": "MOVIMIENTOS"
+              },
+              "runAfter": {
+                "Claves_en_preconsulta": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Aplicar_a_cada_movimiento": {
+              "type": "Foreach",
+              "foreach": "@range(0,length(body('Analizar_JSON')?['movimientos']))",
+              "runtimeConfiguration": {
+                "concurrency": {
+                  "repetitions": 1
+                }
+              },
+              "actions": {
+                "Movimiento_actual": {
+                  "type": "Compose",
+                  "inputs": "@body('Analizar_JSON')?['movimientos'][items('Aplicar_a_cada_movimiento')]",
+                  "runAfter": {}
+                },
+                "Guardar_numero_fila": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "varFilaActual",
+                    "value": "@body('Filas_movimientos')[items('Aplicar_a_cada_movimiento')]"
+                  },
+                  "runAfter": {
+                    "Movimiento_actual": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Reiniciar_resultado_fila": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "varResultadoFila",
+                    "value": "PENDIENTE"
+                  },
+                  "runAfter": {
+                    "Guardar_numero_fila": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Clave_preexistente": {
+                  "type": "If",
+                  "expression": "@contains(variables('varClavesExistentes'),outputs('Movimiento_actual')?['CLAVE_TRANSACCION'])",
+                  "actions": {
+                    "Preexistente": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "varResultadoFila",
+                        "value": "YA_EXISTE"
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "TRY_CREAR_MOVIMIENTO": {
+                        "type": "Scope",
+                        "actions": {
+                          "Crear_movimiento": {
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                                "connectionName": "shared_sharepointonline",
+                                "operationId": "PostItem"
+                              },
+                              "parameters": {
+                                "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+                                "table": "@outputs('PARAM_LISTA_DEPOSITOS_ACTIVOS')",
+                                "item/CLAVE_TRANSACCION": "@outputs('Movimiento_actual')?['CLAVE_TRANSACCION']",
+                                "item/CODIGO_ASIGNACION": "@outputs('Movimiento_actual')?['CODIGO_ASIGNACION']",
+                                "item/BANCO": "@outputs('Movimiento_actual')?['BANCO']",
+                                "item/CUENTA_BANCARIA": "@outputs('Movimiento_actual')?['CUENTA_BANCARIA']",
+                                "item/MONEDA": "@outputs('Movimiento_actual')?['MONEDA']",
+                                "item/FECHA_MOVIMIENTO": "@outputs('Movimiento_actual')?['FECHA_MOVIMIENTO']",
+                                "item/HORA_MOVIMIENTO": "@outputs('Movimiento_actual')?['HORA_MOVIMIENTO']",
+                                "item/IMPORTE": "@float(outputs('Movimiento_actual')?['IMPORTE'])",
+                                "item/DEBITO": "@if(empty(outputs('Movimiento_actual')?['DEBITO']),null,float(outputs('Movimiento_actual')?['DEBITO']))",
+                                "item/CREDITO": "@if(empty(outputs('Movimiento_actual')?['CREDITO']),null,float(outputs('Movimiento_actual')?['CREDITO']))",
+                                "item/TIPO_MOVIMIENTO": "@outputs('Movimiento_actual')?['TIPO_MOVIMIENTO']",
+                                "item/SALDO": "@float(outputs('Movimiento_actual')?['SALDO'])",
+                                "item/DESCRIPCION": "@outputs('Movimiento_actual')?['DESCRIPCION']",
+                                "item/DEPOSITANTE_ORIGINANTE": "@outputs('Movimiento_actual')?['DEPOSITANTE_ORIGINANTE']",
+                                "item/INFORMACION_ADICIONAL": "@outputs('Movimiento_actual')?['INFORMACION_ADICIONAL']",
+                                "item/MOTOR_ESTADO": "@outputs('Movimiento_actual')?['MOTOR_ESTADO']",
+                                "item/MOTOR_ESTUDIANTE": "@outputs('Movimiento_actual')?['MOTOR_ESTUDIANTE']",
+                                "item/MOTOR_SOLICITADO_POR": "@outputs('Movimiento_actual')?['MOTOR_SOLICITADO_POR']",
+                                "item/MOTOR_SEDE_SOLICITANTE": "@outputs('Movimiento_actual')?['MOTOR_SEDE_SOLICITANTE']",
+                                "item/MOTOR_CONFIRMADO_POR": "@outputs('Movimiento_actual')?['MOTOR_CONFIRMADO_POR']",
+                                "item/MOTOR_FECHA_CONFIRMACION": "@outputs('Movimiento_actual')?['MOTOR_FECHA_CONFIRMACION']",
+                                "item/MOTOR_OBSERVACION": "@outputs('Movimiento_actual')?['MOTOR_OBSERVACION']",
+                                "item/TEXTO_BUSQUEDA": "@outputs('Movimiento_actual')?['TEXTO_BUSQUEDA']",
+                                "item/ARCHIVO_ORIGEN": "@outputs('Movimiento_actual')?['ARCHIVO_ORIGEN']",
+                                "item/LOTE_CARGA": "@outputs('Movimiento_actual')?['LOTE_CARGA']",
+                                "item/FECHA_CARGA": "@outputs('Movimiento_actual')?['FECHA_CARGA']",
+                                "item/ESTADO_ASIGNACION/Value": "DISPONIBLE"
+                              },
+                              "authentication": "@parameters('$authentication')",
+                              "retryPolicy": {
+                                "type": "none"
+                              }
+                            }
+                          }
+                        },
+                        "runAfter": {}
+                      },
+                      "Crear_OK": {
+                        "type": "SetVariable",
+                        "inputs": {
+                          "name": "varResultadoFila",
+                          "value": "NUEVO"
+                        },
+                        "runAfter": {
+                          "TRY_CREAR_MOVIMIENTO": [
+                            "Succeeded"
+                          ]
+                        }
+                      },
+                      "CATCH_CREAR_MOVIMIENTO": {
+                        "type": "Scope",
+                        "actions": {
+                          "Reconsultar_CLAVE_TRANSACCION": {
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                                "connectionName": "shared_sharepointonline",
+                                "operationId": "GetItems"
+                              },
+                              "parameters": {
+                                "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+                                "table": "@outputs('PARAM_LISTA_DEPOSITOS_ACTIVOS')",
+                                "$filter": "@concat('CLAVE_TRANSACCION eq ''',replace(outputs('Movimiento_actual')?['CLAVE_TRANSACCION'],'''',''''''),'''')",
+                                "$top": 1
+                              },
+                              "authentication": "@parameters('$authentication')",
+                              "retryPolicy": {
+                                "type": "none"
+                              }
+                            },
+                            "runAfter": {}
+                          },
+                          "Clasificar_reconsulta": {
+                            "type": "If",
+                            "expression": "@greater(length(body('Reconsultar_CLAVE_TRANSACCION')?['value']),0)",
+                            "actions": {
+                              "Resultado_YA_EXISTE": {
+                                "type": "SetVariable",
+                                "inputs": {
+                                  "name": "varResultadoFila",
+                                  "value": "YA_EXISTE"
+                                }
+                              }
+                            },
+                            "else": {
+                              "actions": {
+                                "Resultado_ERROR": {
+                                  "type": "SetVariable",
+                                  "inputs": {
+                                    "name": "varResultadoFila",
+                                    "value": "ERROR"
+                                  },
+                                  "runAfter": {}
+                                },
+                                "Registrar_clave_ausente": {
+                                  "type": "If",
+                                  "expression": "@less(length(variables('varDetalle')),8)",
+                                  "actions": {
+                                    "Detalle_clave_ausente": {
+                                      "type": "Compose",
+                                      "inputs": {
+                                        "fila": "@variables('varFilaActual')",
+                                        "CLAVE_TRANSACCION": "@take(outputs('Movimiento_actual')?['CLAVE_TRANSACCION'],255)",
+                                        "motivo": "Crear elemento fallo o expiro; reconsulta sin coincidencias.",
+                                        "codigo": "@concat('CREAR_',actions('Crear_movimiento')?['status'],'_HTTP_',string(coalesce(outputs('Crear_movimiento')?['statusCode'],0)))"
+                                      },
+                                      "runAfter": {}
+                                    },
+                                    "Detalle_acotado_clave_ausente": {
+                                      "type": "Compose",
+                                      "inputs": "@if(lessOrEquals(length(string(outputs('Detalle_clave_ausente'))),800),outputs('Detalle_clave_ausente'),setProperty(outputs('Detalle_clave_ausente'),'CLAVE_TRANSACCION',take(outputs('Detalle_clave_ausente')?['CLAVE_TRANSACCION'],64)))",
+                                      "runAfter": {
+                                        "Detalle_clave_ausente": [
+                                          "Succeeded"
+                                        ]
+                                      }
+                                    },
+                                    "Anotar_clave_ausente": {
+                                      "type": "AppendToArrayVariable",
+                                      "inputs": {
+                                        "name": "varDetalle",
+                                        "value": "@outputs('Detalle_acotado_clave_ausente')"
+                                      },
+                                      "runAfter": {
+                                        "Detalle_acotado_clave_ausente": [
+                                          "Succeeded"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "else": {
+                                    "actions": {}
+                                  },
+                                  "runAfter": {
+                                    "Resultado_ERROR": [
+                                      "Succeeded"
+                                    ]
+                                  }
+                                }
+                              }
+                            },
+                            "runAfter": {
+                              "Reconsultar_CLAVE_TRANSACCION": [
+                                "Succeeded"
+                              ]
+                            }
+                          },
+                          "CATCH_RECONSULTA": {
+                            "type": "Scope",
+                            "actions": {
+                              "Resultado_ERROR_reconsulta": {
+                                "type": "SetVariable",
+                                "inputs": {
+                                  "name": "varResultadoFila",
+                                  "value": "ERROR"
+                                },
+                                "runAfter": {}
+                              },
+                              "Anotar_fallo_reconsulta": {
+                                "type": "If",
+                                "expression": "@less(length(variables('varDetalle')),8)",
+                                "actions": {
+                                  "Detalle_reconsulta": {
+                                    "type": "Compose",
+                                    "inputs": {
+                                      "fila": "@variables('varFilaActual')",
+                                      "CLAVE_TRANSACCION": "@take(outputs('Movimiento_actual')?['CLAVE_TRANSACCION'],255)",
+                                      "motivo": "Fallo o timeout de reconsulta; existencia no confirmada. Reprocesar es seguro.",
+                                      "codigo": "@concat('CREAR_',actions('Crear_movimiento')?['status'],'_HTTP_',string(coalesce(outputs('Crear_movimiento')?['statusCode'],0)),'; RECONSULTA_',actions('Reconsultar_CLAVE_TRANSACCION')?['status'],'_HTTP_',string(coalesce(outputs('Reconsultar_CLAVE_TRANSACCION')?['statusCode'],0)))"
+                                    },
+                                    "runAfter": {}
+                                  },
+                                  "Detalle_acotado_reconsulta": {
+                                    "type": "Compose",
+                                    "inputs": "@if(lessOrEquals(length(string(outputs('Detalle_reconsulta'))),800),outputs('Detalle_reconsulta'),setProperty(outputs('Detalle_reconsulta'),'CLAVE_TRANSACCION',take(outputs('Detalle_reconsulta')?['CLAVE_TRANSACCION'],64)))",
+                                    "runAfter": {
+                                      "Detalle_reconsulta": [
+                                        "Succeeded"
+                                      ]
+                                    }
+                                  },
+                                  "Anotar_reconsulta": {
+                                    "type": "AppendToArrayVariable",
+                                    "inputs": {
+                                      "name": "varDetalle",
+                                      "value": "@outputs('Detalle_acotado_reconsulta')"
+                                    },
+                                    "runAfter": {
+                                      "Detalle_acotado_reconsulta": [
+                                        "Succeeded"
+                                      ]
+                                    }
+                                  }
+                                },
+                                "else": {
+                                  "actions": {}
+                                },
+                                "runAfter": {
+                                  "Resultado_ERROR_reconsulta": [
+                                    "Succeeded"
+                                  ]
+                                }
+                              }
+                            },
+                            "runAfter": {
+                              "Reconsultar_CLAVE_TRANSACCION": [
+                                "Failed",
+                                "TimedOut"
+                              ]
+                            }
+                          }
+                        },
+                        "runAfter": {
+                          "TRY_CREAR_MOVIMIENTO": [
+                            "Failed",
+                            "TimedOut"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Reiniciar_resultado_fila": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Cerrar_fila": {
+                  "type": "If",
+                  "expression": "@equals(variables('varResultadoFila'),'NUEVO')",
+                  "actions": {
+                    "Contar_NUEVO": {
+                      "type": "IncrementVariable",
+                      "inputs": {
+                        "name": "varCantidadNueva",
+                        "value": 1
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "Resultado_alternativo": {
+                        "type": "If",
+                        "expression": "@equals(variables('varResultadoFila'),'YA_EXISTE')",
+                        "actions": {
+                          "Contar_YA_EXISTE": {
+                            "type": "IncrementVariable",
+                            "inputs": {
+                              "name": "varCantidadYaExiste",
+                              "value": 1
+                            }
+                          }
+                        },
+                        "else": {
+                          "actions": {
+                            "Contar_ERROR": {
+                              "type": "IncrementVariable",
+                              "inputs": {
+                                "name": "varCantidadError",
+                                "value": 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Clave_preexistente": [
+                      "Succeeded",
+                      "Failed",
+                      "TimedOut",
+                      "Skipped"
+                    ]
+                  }
+                },
+                "Contar_fila_clasificada": {
+                  "type": "IncrementVariable",
+                  "inputs": {
+                    "name": "varClasificados",
+                    "value": 1
+                  },
+                  "runAfter": {
+                    "Cerrar_fila": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "runAfter": {
+                "Etapa_procesamiento": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Comprobar_fin_procesamiento": {
+              "type": "If",
+              "expression": "@equals(variables('varClasificados'),length(body('Analizar_JSON')?['movimientos']))",
+              "actions": {
+                "Procesamiento_completo": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "varProcesamientoCompleto",
+                    "value": true
+                  },
+                  "runAfter": {}
+                },
+                "Sin_fallo_estructural": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "varFalloEstructural",
+                    "value": false
+                  },
+                  "runAfter": {
+                    "Procesamiento_completo": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "Aplicar_a_cada_movimiento": [
+                  "Succeeded",
+                  "Failed",
+                  "TimedOut",
+                  "Skipped"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "Filas_movimientos": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runAfter": {
+        "Inicializar_varArchivoJson": [
+          "Succeeded"
+        ]
+      }
+    },
+    "CATCH": {
+      "type": "Scope",
+      "actions": {
+        "Marcar_fallo_estructural": {
+          "type": "If",
+          "expression": "@not(variables('varProcesamientoCompleto'))",
+          "actions": {
+            "Fallo_estructural": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varFalloEstructural",
+                "value": true
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          }
+        }
+      },
+      "runAfter": {
+        "TRY": [
+          "Failed",
+          "TimedOut"
+        ]
+      }
+    },
+    "FINALLY": {
+      "type": "Scope",
+      "actions": {
+        "Reconciliar_fallo_estructural": {
+          "type": "If",
+          "expression": "@variables('varFalloEstructural')",
+          "actions": {
+            "Errores_sin_procesar": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varCantidadError",
+                "value": "@max(0,sub(sub(variables('varCantidadRecibida'),variables('varCantidadNueva')),variables('varCantidadYaExiste')))"
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {}
+        },
+        "Invariante": {
+          "type": "Compose",
+          "inputs": "@equals(variables('varCantidadRecibida'),add(add(variables('varCantidadNueva'),variables('varCantidadYaExiste')),variables('varCantidadError')))",
+          "runAfter": {
+            "Reconciliar_fallo_estructural": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Estado_final": {
+          "type": "Compose",
+          "inputs": "@if(not(outputs('Invariante')),'COMPLETADO_CON_ERRORES',if(variables('varFalloEstructural'),'FALLIDO',if(greater(variables('varCantidadError'),0),'COMPLETADO_CON_ERRORES','COMPLETADO')))",
+          "runAfter": {
+            "Invariante": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Diagnostico": {
+          "type": "Compose",
+          "inputs": {
+            "etapa": "@variables('varEtapa')",
+            "archivo": "@variables('varArchivoJson')",
+            "mensaje": "@if(variables('varFalloEstructural'),'Fallo estructural: revisar la etapa indicada en el historial. Las filas sin resultado confirmado se cuentan como ERROR.',if(outputs('Invariante'),'Errores de filas manejados; ver detalle.','Conteos inconsistentes.'))",
+            "ejecucion": "@take(workflow()?['run']?['name'],128)",
+            "errores": "@variables('varDetalle')",
+            "cantidad_error": "@variables('varCantidadError')",
+            "detalle_omitido": "@max(0,sub(variables('varCantidadError'),length(variables('varDetalle'))))"
+          },
+          "runAfter": {
+            "Estado_final": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Mensaje_acotado": {
+          "type": "Compose",
+          "inputs": "@if(equals(outputs('Estado_final'),'COMPLETADO'),'',if(lessOrEquals(length(string(outputs('Diagnostico'))),8000),string(outputs('Diagnostico')),string(setProperty(setProperty(outputs('Diagnostico'),'errores',json('[]')),'mensaje','Detalle excedio el limite de 8000 caracteres; revisar historial mediante ejecucion.'))))",
+          "runAfter": {
+            "Diagnostico": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Registrar_bitacora_del_lote": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "PostItem"
+            },
+            "parameters": {
+              "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+              "table": "@outputs('PARAM_LISTA_DEPOSITOS_CARGAS')",
+              "item/LOTE_ID": "@variables('varLoteId')",
+              "item/FECHA_HORA_PROCESO": "@utcNow()",
+              "item/ARCHIVO_FUENTE": "@variables('varArchivoFuente')",
+              "item/SHA256": "@variables('varSha256')",
+              "item/CANTIDAD_RECIBIDA": "@variables('varCantidadRecibida')",
+              "item/CANTIDAD_VALIDA": "@variables('varCantidadValida')",
+              "item/CANTIDAD_NUEVA": "@variables('varCantidadNueva')",
+              "item/CANTIDAD_YA_EXISTE": "@variables('varCantidadYaExiste')",
+              "item/CANTIDAD_ERROR": "@variables('varCantidadError')",
+              "item/ESTADO_LOTE/Value": "@outputs('Estado_final')",
+              "item/MENSAJE_ERROR": "@outputs('Mensaje_acotado')",
+              "item/ARCHIVO_JSON": "@variables('varArchivoJson')",
+              "item/ID_EJECUCION_FLUJO": "@workflow()?['run']?['name']"
+            },
+            "authentication": "@parameters('$authentication')",
+            "retryPolicy": {
+              "type": "none"
+            }
+          },
+          "runAfter": {
+            "Mensaje_acotado": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runAfter": {
+        "CATCH": [
+          "Succeeded",
+          "Failed",
+          "TimedOut",
+          "Skipped"
+        ]
+      }
+    },
+    "Finalizar_ejecucion": {
+      "type": "If",
+      "expression": "@equals(outputs('Estado_final'),'FALLIDO')",
+      "actions": {
+        "Terminar_FALLIDO": {
+          "type": "Terminate",
+          "inputs": {
+            "runStatus": "Failed",
+            "runError": {
+              "code": "P8_ESTRUCTURAL",
+              "message": "Bitacora FALLIDO registrada; revisar Depositos_Cargas."
+            }
+          }
+        }
+      },
+      "else": {
+        "actions": {
+          "Terminar_procesado": {
+            "type": "Terminate",
+            "inputs": {
+              "runStatus": "Succeeded"
+            }
+          }
+        }
+      },
+      "runAfter": {
+        "FINALLY": [
+          "Succeeded"
+        ]
+      }
+    }
+  },
+  "outputs": {}
+}
