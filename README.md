@@ -5,7 +5,7 @@ Estado y decisiones: `ESTADO_PROYECTO.md` · Diseño: `DISENO_TRES_CAPAS.md` · 
 ## Ejecutar las pruebas
 ```
 pip install -r tests/requirements-test.txt
-python -m pytest tests -q          # esperado: 606 passed, 23 skipped, 14 xfailed (575 de P6 + 31 de P7)
+python -m pytest tests -q          # esperado: 620 passed, 23 skipped, 14 xfailed (575 de P6 + 45 de P7)
 python tests/informe.py            # regenera tests/reports/INFORME_PRUEBAS.md
 ```
 Comparación contra el checkpoint P5 (evidencia P6): `git worktree add <carpeta> checkpoint-p5` y `cd tests && python evidencia_p6_retiro.py <carpeta>`.
@@ -33,11 +33,11 @@ Banco, cuenta, moneda y formato se identifican con `registro_bancos.json` a trav
 
 Los `normalizar_*` por banco, `normalizar_archivo`, `validar_archivo`, `HOJAS_VALIDAS`, `ENCABEZADOS_ESPERADOS`, `encontrar_fila_encabezado`, `leer_tabla_movimientos`, `texto_de_archivo`, `aplicar_identidad_registro`, la referencia en sombra (paso 16, `SOMBRA_REPORTE.json` / `SOMBRA_DIFERENCIAS.csv`, `CBBA_MOTOR_SOMBRA`, clave `sombra_estado` del retorno), la detección propia de P3 y el modo script de `motor_generico.py` se retiraron. Hojas, encabezados, campos y saldos viven solo en `registro_bancos.json`. Las primitivas compartidas (números, fechas, horas, códigos, texto, lector de Excel, `buscar_columna*`, `extraer_nombre_bnb`, `ecuacion_saldo`, `crear_clave` / `finalizar_dataframe`, `COLUMNAS_LISTS`) siguen en `motor_control_depositos_cbba.py`, sin cambios. Archivos productivos: `motor_control_depositos_cbba.py`, `deteccion_registro.py`, `motor_generico.py`, `registro_bancos.json`, `captura_origen.py` (+ `historico.py` para la capa 4). Si una carpeta de salida conserva `SOMBRA_*` de corridas P3-P5, ya no se actualizan: se pueden borrar.
 
-## Puente Microsoft 365 (P7, en revisión)
+## Puente Microsoft 365 (P7)
 ```
 python adaptador_m365.py <salida>/LISTS.csv <carpeta_m365>      # genera DEPOSITOS_ACTIVOS__<lote>.json + MANIFIESTO_P7__<lote>.json
 ```
-Capa **separada** del motor (solo biblioteca estándar; no modifica `LISTS.csv` ni ninguna salida de P6). El JSON alimenta la Microsoft List `Depositos_Activos` mediante el flujo `P7 - CARGA DEPOSITOS ACTIVOS`; la `CLAVE TRANSACCIÓN` de P6 evita duplicados (`NUEVO` / `YA_EXISTE` / `ERROR`). Diseño de la lista: `DISENO_LISTA_DEPOSITOS_ACTIVOS.md` · flujo: `ESPECIFICACION_FLUJO_P7_CARGA_DEPOSITOS_ACTIVOS.md` · ejemplo real: `ejemplos_p7/` · pruebas: `tests/test_11_adaptador_m365_p7.py`.
+Capa **separada** del motor (solo biblioteca estándar; no modifica `LISTS.csv` ni ninguna salida de P6). El JSON alimenta la Microsoft List `Depositos_Activos` mediante el flujo `P7 - CARGA DEPOSITOS ACTIVOS`; la `CLAVE TRANSACCIÓN` de P6 evita duplicados (`NUEVO` / `YA_EXISTE` / `ERROR`). **Alcance: P7 valida localmente el puente P6 → artefacto M365 y NO certifica la integración end-to-end con SharePoint / Power Automate** (pendiente del piloto en un tenant de Microsoft 365). Antes de leer nada, el adaptador comprueba (fail-fast) que el contrato de columnas coincide exactamente con las 26 `COLUMNAS_LISTS` de P6; si no, se detiene con `ERROR de contrato`. Bitácora de lotes: lista `Depositos_Cargas`. Diseño de la lista: `DISENO_LISTA_DEPOSITOS_ACTIVOS.md` · flujo: `ESPECIFICACION_FLUJO_P7_CARGA_DEPOSITOS_ACTIVOS.md` · ejemplo real: `ejemplos_p7/` · pruebas: `tests/test_11_adaptador_m365_p7.py`.
 
 ## Extracto histórico para Contabilidad / Ingresos (P3b, capa 4)
 ```

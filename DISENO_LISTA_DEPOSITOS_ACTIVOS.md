@@ -1,6 +1,8 @@
 # DISEÑO · Microsoft List `Depositos_Activos` (P7)
 
-Estado: **P7 en revisión** (sin checkpoint). El motor P6 no se modifica: `LISTS.csv` sigue saliendo exactamente igual y es la única fuente de alimentación de la lista. Flujo de carga: `ESPECIFICACION_FLUJO_P7_CARGA_DEPOSITOS_ACTIVOS.md`. Capa de adaptación: `adaptador_m365.py`.
+Estado: **P7 aprobado conceptualmente** (D-1 y D-2 aprobadas). El motor P6 no se modifica: `LISTS.csv` sigue saliendo exactamente igual y es la única fuente de alimentación de la lista. Flujo de carga: `ESPECIFICACION_FLUJO_P7_CARGA_DEPOSITOS_ACTIVOS.md`. Capa de adaptación: `adaptador_m365.py`.
+
+> **Alcance de P7.** P7 valida **localmente** el puente P6 → artefacto M365. P7 **NO certifica** la integración end-to-end con SharePoint / Power Automate: la lista y el flujo aquí descritos no se han ejecutado contra un tenant de Microsoft 365. Las validaciones que lo requieren están pendientes para el piloto (ver §7 y `ESPECIFICACION_FLUJO_P7_CARGA_DEPOSITOS_ACTIVOS.md` §9) y no bloquean P7.
 
 ```
 motor P6 → LISTS.csv ──(adaptador_m365.py)──► DEPOSITOS_ACTIVOS__<lote>.json + MANIFIESTO_P7__<lote>.json
@@ -90,7 +92,7 @@ El adaptador **no los emite**: el flujo solo completa `ESTADO_ASIGNACION`; el re
 | `FECHA_HORA_ASIGNACION` | Fecha y hora (con hora) | No | Power Apps: `Now()`. |
 | `OBSERVACION` | Varias líneas (texto sin formato) | No | Sin acento. Distinta de `MOTOR_OBSERVACION`. |
 
-**Decisión D-1 (nombres).** `ESTUDIANTE`, `SOLICITADO POR` y `OBSERVACIÓN` ya existen en `COLUMNAS_LISTS` y chocarían con `ESTUDIANTE`, `SOLICITADO_POR` y `OBSERVACION` de los campos operativos (y `ESTADO` / `SEDE SOLICITANTE` con `ESTADO_ASIGNACION` / `SEDE_ASIGNACION` en significado). Los campos operativos conservan exactamente los nombres pedidos; las 7 columnas homónimas del motor llevan prefijo `MOTOR_` y quedan **reservadas** (el motor las fija constantes; nunca se actualizan). Alternativa: no crearlas en la lista (el flujo simplemente no las mapearía). Recomendado crearlas y ocultarlas de vistas y formularios: la lista queda alineada 1:1 con el contrato del motor.
+**Decisión D-1 (nombres) — aprobada.** `ESTUDIANTE`, `SOLICITADO POR` y `OBSERVACIÓN` ya existen en `COLUMNAS_LISTS` y chocarían con `ESTUDIANTE`, `SOLICITADO_POR` y `OBSERVACION` de los campos operativos (y `ESTADO` / `SEDE SOLICITANTE` con `ESTADO_ASIGNACION` / `SEDE_ASIGNACION` en significado). Los campos operativos conservan exactamente los nombres pedidos; las 7 columnas homónimas del motor llevan prefijo `MOTOR_` y quedan **reservadas** (el motor las fija constantes; nunca se actualizan). Se conservan las 26 columnas del contrato P6 (no se elimina información) y se crean en la lista; podrán ocultarse de vistas y formularios y, después, en Power Apps.
 
 ## 5. Creación de la lista (una sola vez, clic a clic)
 
@@ -102,6 +104,10 @@ El adaptador **no los emite**: el flujo solo completa `ESTADO_ASIGNACION`; el re
    - **Configuración de la lista → Columnas indexadas → Crear un índice nuevo** para `FECHA_MOVIMIENTO`, `BANCO`, `ESTADO_ASIGNACION`, `LOTE_CARGA`.
 5. **Vista por defecto:** mostrar `CLAVE_TRANSACCION`, `FECHA_MOVIMIENTO`, `BANCO`, `CUENTA_BANCARIA`, `IMPORTE`, `TIPO_MOVIMIENTO`, `ESTADO_ASIGNACION`; ocultar las `MOTOR_*`.
 6. Permisos: el flujo (o su cuenta de conexión) necesita *Colaborar* sobre la lista; los usuarios de Power Apps, *Editar* pero no *Eliminar*. Se define en el despliegue.
+
+## 5b. Segunda lista: `Depositos_Cargas` (bitácora oficial de lotes — D-2 aprobada)
+
+Se crea igual que `Depositos_Activos` (§5). Registra **un elemento por ejecución del flujo**: `LOTE_ID`, `FECHA_HORA_PROCESO`, `ARCHIVO_FUENTE`, `SHA256`, `CANTIDAD_RECIBIDA`, `CANTIDAD_VALIDA`, `CANTIDAD_NUEVA`, `CANTIDAD_YA_EXISTE`, `CANTIDAD_ERROR`, `ESTADO_LOTE` (`COMPLETADO` / `COMPLETADO_CON_ERRORES` / `FALLIDO`) y `MENSAJE_ERROR` (más `ARCHIVO_JSON` e `ID_EJECUCION_FLUJO`). Definición completa de columnas, tipos, estados e invariante de conteo: `ESPECIFICACION_FLUJO_P7_CARGA_DEPOSITOS_ACTIVOS.md` §3.
 
 ## 6. Conversión de tipos en el flujo
 
@@ -115,9 +121,10 @@ El artefacto conserva **todos los valores como texto exacto del CSV** (`"445.0"`
 | Número (obligatorio) | `float(item()?['IMPORTE'])` |
 | Opción `ESTADO_ASIGNACION` | valor fijo `DISPONIBLE` |
 
-## 7. Riesgos y verificaciones para el piloto
+## 7. Riesgos y verificaciones pendientes para el piloto (requieren tenant; no bloquean P7)
 
 - **Fecha solo fecha:** confirmar en el piloto que `2026-07-07` queda como 7 de julio (zona horaria del sitio). Si hubiera desfase, cambiar `FECHA_MOVIMIENTO` a texto `AAAA-MM-DD`: la clave no cambia.
 - **Índice y umbral de 5000:** los índices deben existir antes de crecer la lista; los filtros por `CLAVE_TRANSACCION` / `FECHA_MOVIMIENTO` no superan el umbral, los filtros por columnas sin índice sí pueden fallar con más de 5000 elementos.
 - **Unicidad:** verificar el mensaje/código exacto que devuelve *Crear elemento* al violar la unicidad (el flujo no depende del texto: confirma con una consulta, ver la especificación del flujo).
 - **`FECHA DE CARGA`** sale con la hora local de la máquina que corre el motor (defecto D-15 ya conocido y no tocado en P7).
+- **Volumen (~4000 elementos por lote):** no se optimiza en P7; se mide en el piloto.

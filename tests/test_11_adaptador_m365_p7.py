@@ -412,6 +412,152 @@ def test_p7_esquema_declara_las_26_columnas_como_texto(ad):
     assert fila["required"] == list(ad.COLUMNAS_TECNICAS)
 
 
+# ============================================================ 6b. contrato P6: validacion fail-fast
+
+def _motor_falso(ruta, columnas_src):
+    ruta.write_text(f"import pandas as pd\n\nCOLUMNAS_LISTS = {columnas_src}\n", encoding="utf-8")
+    return ruta
+
+
+def test_p7_contrato_esperado_es_exactamente_el_de_p6(ad, motor):
+    assert list(ad.COLUMNAS_LISTS_P6) == list(motor.COLUMNAS_LISTS) == COLUMNAS_LISTS_CONTRATO
+    assert len(ad.COLUMNAS_LISTS_P6) == 26
+    assert ad.columnas_lists_del_motor(RAIZ.parent / "motor_control_depositos_cbba.py") == ad.COLUMNAS_LISTS_P6
+
+
+def test_p7_verificar_contrato_contra_el_motor_real(ad):
+    assert ad.verificar_contrato() == ad.CONTRATO_VERIFICADO_CONTRA_MOTOR
+
+
+def test_p7_adaptar_informa_que_el_contrato_fue_verificado(ad, tmp_path):
+    r = ad.adaptar(_csv_sintetico(tmp_path, [{}]), tmp_path / "o", ahora=AHORA)
+    assert r["contrato"] == "VERIFICADO_CONTRA_MOTOR"
+
+
+def test_p7_motor_ausente_no_bloquea_pero_se_informa(ad, tmp_path):
+    (tmp_path / "e").mkdir()
+    r = ad.adaptar(_csv_sintetico(tmp_path / "e", [{}]), tmp_path / "o", ahora=AHORA,
+                   ruta_motor=tmp_path / "no_existe.py")
+    assert r["contrato"] == "MOTOR_NO_DISPONIBLE"
+
+
+def _mapeo_alterado(ad, cambio):
+    return tuple(cambio(list(ad.COLUMNAS_M365)))
+
+
+def test_p7_deriva_en_la_tabla_del_adaptador_detiene_todo(ad, monkeypatch, tmp_path):
+    ent = tmp_path / "e"; ent.mkdir()
+    ruta = _csv_sintetico(ent, [{}])
+
+    def permutar(t): t[0], t[1] = t[1], t[0]; return t
+    def renombrar(t): t[2] = ("BANCOS",) + t[2][1:]; return t
+    def quitar(t): del t[5]; return t
+    def duplicar(t): t.append(t[0]); return t
+
+    for i, cambio in enumerate((permutar, renombrar, quitar, duplicar)):
+        monkeypatch.setattr(ad, "COLUMNAS_M365", _mapeo_alterado(ad, cambio))
+        with pytest.raises(ad.ContratoError, match="COLUMNAS_M365"):
+            ad.adaptar(ruta, tmp_path / f"o{i}", ahora=AHORA)
+        assert not (tmp_path / f"o{i}").exists()  # no se escribio nada
+    monkeypatch.undo()
+    assert ad.verificar_contrato()
+
+
+def test_p7_el_error_de_contrato_nombra_la_desviacion(ad, monkeypatch):
+    def cambio(t): t[2] = ("BANCOS",) + t[2][1:]; return t
+    monkeypatch.setattr(ad, "COLUMNAS_M365", _mapeo_alterado(ad, cambio))
+    with pytest.raises(ad.ContratoError) as e:
+        ad.verificar_contrato()
+    assert "faltan ['BANCO']" in str(e.value) and "sobran ['BANCOS']" in str(e.value)
+
+
+def test_p7_nombre_tecnico_que_choca_con_campo_operativo_detiene_todo(ad, monkeypatch):
+    def cambio(t):
+        i = [c[1] for c in t].index("MOTOR_ESTUDIANTE")
+        t[i] = (t[i][0], "ESTUDIANTE") + t[i][2:]
+        return t
+    monkeypatch.setattr(ad, "COLUMNAS_M365", _mapeo_alterado(ad, cambio))
+    with pytest.raises(ad.ContratoError, match="operativos"):
+        ad.verificar_contrato()
+
+
+def test_p7_deriva_en_columnas_lists_del_motor_detiene_todo(ad, tmp_path):
+    ent = tmp_path / "e"; ent.mkdir()
+    ruta = _csv_sintetico(ent, [{}])
+    cols = list(ad.COLUMNAS_LISTS_P6)
+    casos = {
+        "columna_de_mas": cols + ["NUEVA COLUMNA"],
+        "columna_de_menos": cols[:-1],
+        "orden_distinto": [cols[1], cols[0]] + cols[2:],
+        "renombrada": cols[:5] + ["FECHA DEL MOVIMIENTO"] + cols[6:],
+    }
+    for nombre, c in casos.items():
+        motor_falso = _motor_falso(tmp_path / f"motor_{nombre}.py", repr(c))
+        with pytest.raises(ad.ContratoError, match="COLUMNAS_LISTS del motor"):
+            ad.adaptar(ruta, tmp_path / f"o_{nombre}", ahora=AHORA, ruta_motor=motor_falso)
+        assert not (tmp_path / f"o_{nombre}").exists()
+
+
+def test_p7_motor_sin_columnas_lists_o_ilegible_detiene_todo(ad, tmp_path):
+    sin = tmp_path / "sin.py"; sin.write_text("X = 1\n", encoding="utf-8")
+    roto = tmp_path / "roto.py"; roto.write_text("COLUMNAS_LISTS = [\n", encoding="utf-8")
+    dinamico = tmp_path / "dinamico.py"; dinamico.write_text("COLUMNAS_LISTS = [c for c in 'ab']\n", encoding="utf-8")
+    for ruta in (sin, roto, dinamico):
+        with pytest.raises(ad.ContratoError, match="motor|COLUMNAS_LISTS"):
+            ad.verificar_contrato(ruta)
+
+
+def test_p7_cli_con_deriva_de_contrato_sale_con_error_y_no_escribe(ad, monkeypatch, tmp_path, capsys):
+    ent = tmp_path / "e"; ent.mkdir()
+    ruta = _csv_sintetico(ent, [{}])
+    def cambio(t): del t[5]; return t
+    monkeypatch.setattr(ad, "COLUMNAS_M365", _mapeo_alterado(ad, cambio))
+    assert ad.main([str(ruta), str(tmp_path / "o"), "--ahora", AHORA]) == 2
+    assert ad.main(["--esquema", str(tmp_path / "esq.json")]) == 2
+    err = capsys.readouterr().err
+    assert err.count("ERROR de contrato") == 2 and "COLUMNAS_M365" in err
+    assert not (tmp_path / "o").exists() and not (tmp_path / "esq.json").exists()
+
+
+def test_p7_encabezado_de_lists_csv_desviado_nombra_la_diferencia(ad, tmp_path):
+    ruta = tmp_path / "LISTS.csv"
+    cols = list(ad.COLUMNAS_LISTS_P6)
+    ruta.write_text(",".join(cols[:-1]) + ",OTRA\n", encoding="utf-8")
+    with pytest.raises(ad.ContratoError) as e:
+        ad.leer_lists_csv(ruta)
+    assert "faltan ['FECHA DE CARGA']" in str(e.value) and "sobran ['OTRA']" in str(e.value)
+
+
+def test_p7_verificar_contrato_no_modifica_el_motor(ad):
+    motor_py = RAIZ.parent / "motor_control_depositos_cbba.py"
+    antes = _sha(motor_py)
+    ad.verificar_contrato()
+    assert _sha(motor_py) == antes
+
+
+# ============================================================ 6c. documentacion: bitacora Depositos_Cargas
+
+BITACORA_CAMPOS = ("LOTE_ID", "FECHA_HORA_PROCESO", "ARCHIVO_FUENTE", "SHA256", "CANTIDAD_RECIBIDA", "CANTIDAD_VALIDA",
+                   "CANTIDAD_NUEVA", "CANTIDAD_YA_EXISTE", "CANTIDAD_ERROR", "ESTADO_LOTE", "MENSAJE_ERROR")
+
+
+def test_p7_especificacion_del_flujo_define_la_bitacora_depositos_cargas():
+    esp = (RAIZ.parent / "ESPECIFICACION_FLUJO_P7_CARGA_DEPOSITOS_ACTIVOS.md").read_text(encoding="utf-8")
+    dis = (RAIZ.parent / "DISENO_LISTA_DEPOSITOS_ACTIVOS.md").read_text(encoding="utf-8")
+    assert "Depositos_Cargas" in esp and "Depositos_Cargas" in dis
+    for campo in BITACORA_CAMPOS:
+        assert f"`{campo}`" in esp, campo
+    for estado in ("COMPLETADO", "COMPLETADO_CON_ERRORES", "FALLIDO"):
+        assert f"`{estado}`" in esp
+
+
+def test_p7_documentacion_declara_que_no_certifica_la_integracion_end_to_end():
+    for nombre in ("README.md", "DISENO_LISTA_DEPOSITOS_ACTIVOS.md",
+                   "ESPECIFICACION_FLUJO_P7_CARGA_DEPOSITOS_ACTIVOS.md"):
+        txt = (RAIZ.parent / nombre).read_text(encoding="utf-8")
+        assert "NO certifica" in txt and "end-to-end" in txt, nombre
+
+
 # ============================================================ 7. ejemplo publicado
 
 def test_p7_ejemplo_publicado_se_regenera_identico_desde_su_lists_csv(ad, tmp_path):

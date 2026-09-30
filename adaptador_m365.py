@@ -17,6 +17,7 @@ su orden. Cada valor se conserva como TEXTO EXACTO del CSV (ni recorte, ni conve
 CLAVE TRANSACCIÓN que produjo `crear_clave` (P6, congelada) es la identidad del movimiento y no se recalcula.
 """
 import argparse
+import ast
 import csv
 import datetime
 import hashlib
@@ -100,7 +101,90 @@ _FECHA_ISO = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 class ContratoError(ValueError):
-    """El LISTS.csv no cumple el contrato de 26 columnas: no se genera ningun artefacto."""
+    """El contrato de 26 columnas de P6 no se cumple (adaptador, motor o LISTS.csv): no se genera ningun artefacto."""
+
+
+# ------------------------------------------------------------------ contrato de columnas (fail-fast)
+
+# Contrato ESPERADO por P7: las 26 columnas de COLUMNAS_LISTS de P6, en su orden. Es un literal independiente de la
+# tabla COLUMNAS_M365: si alguien edita el mapeo (o el motor cambia sus columnas), el adaptador se detiene.
+COLUMNAS_LISTS_P6 = (
+    "CLAVE TRANSACCIÓN", "CÓDIGO DE ASIGNACIÓN", "BANCO", "CUENTA BANCARIA", "MONEDA",
+    "FECHA MOVIMIENTO", "HORA MOVIMIENTO", "IMPORTE", "DÉBITO", "CRÉDITO",
+    "TIPO MOVIMIENTO", "SALDO", "DESCRIPCIÓN", "DEPOSITANTE / ORIGINANTE",
+    "INFORMACIÓN ADICIONAL", "ESTADO", "ESTUDIANTE", "SOLICITADO POR",
+    "SEDE SOLICITANTE", "CONFIRMADO POR", "FECHA CONFIRMACIÓN", "OBSERVACIÓN",
+    "TEXTO DE BÚSQUEDA", "ARCHIVO ORIGEN", "LOTE DE CARGA", "FECHA DE CARGA",
+)
+MOTOR_P6 = os.path.join(os.path.dirname(os.path.abspath(__file__)), "motor_control_depositos_cbba.py")
+
+CONTRATO_VERIFICADO_CONTRA_MOTOR = "VERIFICADO_CONTRA_MOTOR"
+CONTRATO_MOTOR_NO_DISPONIBLE = "MOTOR_NO_DISPONIBLE"
+
+
+def _describir_diferencia(esperado, recibido):
+    esperado, recibido = list(esperado), list(recibido)
+    faltan = [c for c in esperado if c not in recibido]
+    sobran = [c for c in recibido if c not in esperado]
+    partes = []
+    if faltan:
+        partes.append(f"faltan {faltan}")
+    if sobran:
+        partes.append(f"sobran {sobran}")
+    if len(recibido) != len(set(recibido)):
+        partes.append("hay columnas repetidas")
+    if not faltan and not sobran and len(recibido) == len(set(recibido)):
+        partes.append("mismas columnas en distinto orden")
+    return f"{len(recibido)} columnas recibidas, se esperaban {len(esperado)}: " + "; ".join(partes)
+
+
+def columnas_lists_del_motor(ruta_motor):
+    """COLUMNAS_LISTS leida del CODIGO FUENTE del motor (ast.literal_eval): no lo importa ni lo ejecuta, y no
+    requiere pandas. Devuelve la tupla de columnas."""
+    try:
+        with open(ruta_motor, encoding="utf-8") as f:
+            arbol = ast.parse(f.read(), filename=ruta_motor)
+    except (OSError, SyntaxError, UnicodeDecodeError) as e:
+        raise ContratoError(f"No se pudo leer COLUMNAS_LISTS del motor ({ruta_motor}): {e}")
+    for nodo in arbol.body:
+        if isinstance(nodo, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "COLUMNAS_LISTS"
+                                                 for t in nodo.targets):
+            try:
+                valor = ast.literal_eval(nodo.value)
+            except ValueError as e:
+                raise ContratoError(f"COLUMNAS_LISTS del motor no es una lista literal: {e}")
+            return tuple(valor)
+    raise ContratoError(f"El motor ({ruta_motor}) no define COLUMNAS_LISTS")
+
+
+def verificar_contrato(ruta_motor=None):
+    """Fail-fast: el contrato que espera P7 debe ser EXACTAMENTE el de P6 (26 columnas, mismo nombre y orden).
+    1) COLUMNAS_LISTS_P6 y la tabla COLUMNAS_M365 (nombres de origen, nombres tecnicos) deben ser coherentes.
+    2) Si el motor esta junto al adaptador (o se indica `ruta_motor`), su COLUMNAS_LISTS debe ser identica.
+    Lanza ContratoError ante cualquier desviacion; devuelve CONTRATO_VERIFICADO_CONTRA_MOTOR o, si el motor no esta
+    disponible (adaptador desplegado solo), CONTRATO_MOTOR_NO_DISPONIBLE. No modifica P6."""
+    esperado = tuple(COLUMNAS_LISTS_P6)
+    if len(esperado) != 26 or len(set(esperado)) != 26:
+        raise ContratoError(f"Contrato esperado invalido: {len(esperado)} columnas ({len(set(esperado))} distintas), "
+                            "se requieren 26 distintas")
+    origen = tuple(c[0] for c in COLUMNAS_M365)
+    if origen != esperado:
+        raise ContratoError("La tabla de columnas del adaptador (COLUMNAS_M365) no coincide con las 26 columnas "
+                            "de P6: " + _describir_diferencia(esperado, origen))
+    tecnicos = [c[1] for c in COLUMNAS_M365]
+    if len(set(tecnicos)) != len(tecnicos):
+        raise ContratoError("Nombres tecnicos repetidos en COLUMNAS_M365")
+    choque = sorted(set(tecnicos) & set(CAMPOS_OPERATIVOS))
+    if choque:
+        raise ContratoError(f"Nombres tecnicos que chocan con campos operativos (usar prefijo MOTOR_): {choque}")
+    ruta = MOTOR_P6 if ruta_motor is None else ruta_motor
+    if not os.path.isfile(ruta):
+        return CONTRATO_MOTOR_NO_DISPONIBLE
+    del_motor = columnas_lists_del_motor(ruta)
+    if del_motor != esperado:
+        raise ContratoError("COLUMNAS_LISTS del motor no coincide con el contrato P6 esperado por P7: "
+                            + _describir_diferencia(esperado, del_motor))
+    return CONTRATO_VERIFICADO_CONTRA_MOTOR
 
 
 # ------------------------------------------------------------------ lectura y validacion
@@ -125,8 +209,8 @@ def leer_lists_csv(ruta):
         raise ContratoError("LISTS.csv esta vacio (sin encabezado)")
     if tuple(encabezado) != COLUMNAS_CSV:
         raise ContratoError(
-            "El encabezado de LISTS.csv no coincide con COLUMNAS_LISTS (26 columnas, mismo orden). "
-            f"Recibido: {encabezado}"
+            "El encabezado de LISTS.csv no coincide con COLUMNAS_LISTS (26 columnas, mismo orden): "
+            + _describir_diferencia(COLUMNAS_CSV, encabezado)
         )
     movimientos = []
     for n, fila in enumerate(lector, start=1):
@@ -354,10 +438,11 @@ def serializar_esquema():
     return (json.dumps(esquema_parse_json(), ensure_ascii=False, indent=2) + "\n").encode("utf-8")
 
 
-def adaptar(ruta_lists_csv, carpeta_salida, ahora=None, claves_existentes=None):
+def adaptar(ruta_lists_csv, carpeta_salida, ahora=None, claves_existentes=None, ruta_motor=None):
     """Lee LISTS.csv y escribe el artefacto y el manifiesto en `carpeta_salida`.
     `carpeta_salida` no puede ser la carpeta de LISTS.csv (no se toca la salida del motor).
     Devuelve dict con rutas, manifiesto y (si se dieron `claves_existentes`) la clasificacion esperada."""
+    contrato = verificar_contrato(ruta_motor)  # fail-fast: antes de leer o escribir cualquier cosa
     ruta_lists_csv = os.path.abspath(ruta_lists_csv)
     carpeta_salida = os.path.abspath(carpeta_salida)
     if os.path.dirname(ruta_lists_csv) == carpeta_salida:
@@ -382,7 +467,7 @@ def adaptar(ruta_lists_csv, carpeta_salida, ahora=None, claves_existentes=None):
         f.write(artefacto)
     with open(rutas["manifiesto"], "wb") as f:
         f.write((json.dumps(manifiesto, ensure_ascii=False, indent=2) + "\n").encode("utf-8"))
-    res = {"lote_id": lote_id, "rutas": rutas, "manifiesto": manifiesto}
+    res = {"lote_id": lote_id, "rutas": rutas, "manifiesto": manifiesto, "contrato": contrato}
     if claves_existentes is not None:
         clasif = clasificar(a_cargar, omitidos, claves_existentes)
         rutas["clasificacion"] = os.path.join(carpeta_salida, f"CLASIFICACION_P7__{lote_id}.csv")
@@ -410,6 +495,11 @@ def main(argv=None):
     p.add_argument("--esquema", help="escribe el esquema JSON para 'Analizar JSON' y termina")
     a = p.parse_args(argv)
     if a.esquema:
+        try:
+            verificar_contrato()
+        except ContratoError as e:
+            print(f"ERROR de contrato: {e}", file=sys.stderr)
+            return 2
         with open(a.esquema, "wb") as f:
             f.write(serializar_esquema())
         print(f"Esquema escrito: {a.esquema}")
@@ -423,6 +513,7 @@ def main(argv=None):
         print(f"ERROR de contrato: {e}", file=sys.stderr)
         return 2
     m = r["manifiesto"]
+    print(f"Contrato de 26 columnas: {r['contrato']}")
     print(f"Lote {m['lote_id']}: recibidas={m['cantidad_recibida']} validas={m['cantidad_valida']} "
           f"a_cargar={m['cantidad_a_cargar']} repetidas_en_lote={m['cantidad_repetida_en_lote']} "
           f"error={m['cantidad_error']}")
