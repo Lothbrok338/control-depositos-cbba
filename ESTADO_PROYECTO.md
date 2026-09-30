@@ -1,6 +1,6 @@
 # ESTADO DEL PROYECTO — CONTROL DE DEPÓSITOS CBBA (módulo de normalización)
 
-**Fecha del checkpoint P3:** 2026-09-30 (checkpoint anterior P1+P2 = commit `8c9c09a`, tag local `checkpoint-p1-p2`; checkpoint P3 = rama remota `checkpoint-p3`, el entorno no puede subir tags) · **Regla rectora:** NORMALIZAR NUNCA DEBE DESTRUIR INFORMACIÓN DE ORIGEN.
+**Fecha del checkpoint P4:** 2026-09-30 (checkpoint P4 = rama remota `checkpoint-p4` = `main` al cerrar P4; anteriores: P1+P2 = commit `8c9c09a`, tag local `checkpoint-p1-p2`; P3 = rama remota `checkpoint-p3`; el entorno no puede subir tags) · **Regla rectora:** NORMALIZAR NUNCA DEBE DESTRUIR INFORMACIÓN DE ORIGEN.
 
 ## 1. Estado
 
@@ -14,12 +14,13 @@
 | **D-20** salidas del sistema como extractos | **Corregido** | `descubrir_archivos` excluye `NORMALIZADO*`, `ORIGEN*.xlsx`, `EXTRACTO_HISTORICO_*.xlsx` |
 | **P3** Registro de bancos + motor genérico en modo sombra | **TERMINADO Y APROBADO** | `registro_bancos.json` (6 formatos + 1 rechazado, 13 cuentas), `motor_generico.py`, paso 16 pasivo en `ejecutar_motor`, `tests/test_06_sombra_p3.py`. Producción = solo legado |
 | **P3b** Capa 4 (EXTRACTO_HISTORICO) | **TERMINADO Y APROBADO** | `historico.py` (función pura + escritor + CLI), bloque `historico` en `registro_bancos.json` (6 formatos), `tests/test_07_historico_p3b.py`, huella dorada `tests/golden/historico/MANIFEST_HISTORICO.json`. **No se integró a `ejecutar_motor`** (ver §5c) |
-| **P4** Detección productiva por registro | **TERMINADO — pendiente de tu aprobación** | `deteccion_registro.py` (nuevo); bloques `deteccion` + `legado` por formato y `version_deteccion: P4-1` en `registro_bancos.json`; `detectar_formato` delega en el registro; `ejecutar_motor` usa la detección completa; `tests/test_08_deteccion_p4.py`. Normalización = legado (sin cambios). Ver §5d |
-| P5 · P6 | No iniciados | |
+| **P4** Detección productiva por registro | **TERMINADO Y APROBADO** (577 PASS · 22 SKIP · 16 XFAIL · 0 FAIL) | `deteccion_registro.py` (nuevo); bloques `deteccion` + `legado` por formato y `version_deteccion: P4-1` en `registro_bancos.json`; `detectar_formato` delega en el registro; `ejecutar_motor` usa la detección completa; `tests/test_08_deteccion_p4.py`. Normalización = legado (sin cambios). Ver §5d |
+| **P5** Normalización productiva por registro | **SIGUIENTE FASE — no iniciada** (espera tu instrucción) | |
+| P6 | No iniciado | |
 
 ## 2. Resultado de pruebas (suite completa)
 
-**Con P4: 577 PASS · 22 SKIP · 16 XFAIL · 0 FAIL** (P4 agrega `test_08_deteccion_p4.py` con 68 PASS, pasa D-10 y D-11 de XFAIL a PASS y adapta `test_06` a la detección por registro; ≈290 s). Con P3b: 505 PASS · 22 SKIP · 18 XFAIL · 0 FAIL (P3b agrega 126 PASS y 2 SKIP de UNION_ME con movimientos reales). Antes de P3b: **379 PASS · 20 SKIP · 18 XFAIL · 0 FAIL** (≈130 s). **12 formatos reales coinciden al 100 % en sombra** (0 diferencias, 12/12 archivos). **UNION_ME: pendiente de fixture real** (solo proxy sintético en sombra). Base P1+P2: 270 / 19 / 18; P3 agrega 109 PASS y 1 SKIP (BISA_ME no tiene movimientos para comparar con su dorada).
+**Con P4 (aprobado): 577 PASS · 22 SKIP · 16 XFAIL · 0 FAIL** (P4 agrega `test_08_deteccion_p4.py` con 68 PASS, pasa D-10 y D-11 de XFAIL a PASS y adapta `test_06` a la detección por registro; ≈290 s). Con P3b: 505 PASS · 22 SKIP · 18 XFAIL · 0 FAIL (P3b agrega 126 PASS y 2 SKIP de UNION_ME con movimientos reales). Antes de P3b: **379 PASS · 20 SKIP · 18 XFAIL · 0 FAIL** (≈130 s). **12 formatos reales coinciden al 100 % en sombra** (0 diferencias, 12/12 archivos). **UNION_ME: pendiente de fixture real** (solo proxy sintético en sombra). Base P1+P2: 270 / 19 / 18; P3 agrega 109 PASS y 1 SKIP (BISA_ME no tiene movimientos para comparar con su dorada).
 
 * **PASS (270):** regresión de los 12 formatos contra doradas; lote de 12; preservación P2 (completitud celda a celda, reconstrucción del archivo, mapa 1:1, débitos, cabeceras/pies, metadatos, determinismo de IDs, columnas vacías, NORMALIZADO.xlsx y LISTS.csv idénticos a sus doradas); D-20 (9 nombres excluidos, 4 nombres reales que siguen incluidos, corrida completa con salida = entrada).
 * **SKIP (19):** todos por falta de muestra real. UNION_ME: `REQUIERE MUESTRA REAL CON MOVIMIENTOS` (movimientos, saldos, débitos, `Nro de verificasion`, completitud y mapa) y archivo vacío real pendiente (`union_me_vacio.xls`). 8 pruebas de débitos en formatos sin débitos en su fixture (BCP_ME, BISA_ME, BISA_MN, BMSC, ECO_AHORRO, BNB_AHORRO, BNB_CLINICA, UNION_MN).
@@ -36,7 +37,7 @@
 6. **Registro parametrizable** `registro_bancos.json` (FORMATOS / CUENTAS): una cuenta nueva de un formato conocido = una entrada, cero código (P3). **Desde P4 es la fuente productiva de la detección** (banco, cuenta, moneda, formato).
 7. **UNION_ME** = `UNION_FECHAS_V1`: estructura **confirmada** por código legado + captura real (7 columnas, incl. `Nro de verificasion`, que el motor legado no lee y que va a ORIGEN e histórico, no a las 26 columnas). Comportamiento con movimientos: **pendiente de fixture real**.
 
-Plan: P1 ✔ · P2 ✔ · P3 ✔ · P3b ✔ · **P4** detección al registro (hecho, por aprobar) · P5 normalización al registro · P6 retiro del legado.
+Plan: P1 ✔ · P2 ✔ · P3 ✔ · P3b ✔ · P4 ✔ · **P5 normalización al registro (siguiente, no iniciada)** · P6 retiro del legado.
 
 ## 4. Pendientes
 
@@ -81,7 +82,7 @@ Plan: P1 ✔ · P2 ✔ · P3 ✔ · P3b ✔ · **P4** detección al registro (he
 
 Capa 4 (`EXTRACTO_HISTORICO`, ver `DISENO_TRES_CAPAS.md` §6): bloque `historico` de los formatos en `registro_bancos.json`, `historico.py` (función pura + escritor) y `test_06_historico.py`, alimentado del `NORMALIZADO` legado. No depende de P4 ni P5. Sin decidir todavía: ruta de salida, lista de `ESTADO`, formato de fecha y convivencia con `PLANTILLA EXTRACTO.xlsx` (sección 4).
 
-## 5d. P4 — detección productiva por registro (hecho, pendiente de aprobación)
+## 5d. P4 — detección productiva por registro (hecho y aprobado · checkpoint `checkpoint-p4`)
 
 * **Qué cambió:** banco, cuenta, moneda y formato se identifican con `registro_bancos.json` (`deteccion_registro.py`, junto al motor). `detectar_formato(archivo)` conserva su contrato (id de cuenta o `NO_RECONOCIDO`) y `detectar_extracto(archivo)` devuelve el detalle (estado, motivo, hoja, fila de encabezado, cuenta leída, id del normalizador legado). `ejecutar_motor` agrega al retorno `deteccion_estado` (versión, ruta y SHA-256 del registro, detalle por archivo).
 * **Reglas:** firma solo en cabecera + encabezado; encabezado con menos de `puntaje_minimo` (100 %) = `ENCABEZADO_INCOMPLETO` con las columnas que faltan; la cuenta se lee **solo** en la celda que sigue a una etiqueta de `deteccion.etiquetas_cuenta` en las filas anteriores al encabezado (nunca glosas ni movimientos); debe ser **una** cuenta registrada para ese formato (`CUENTA_NO_REGISTRADA`, `SIN_CUENTA`, `AMBIGUO` si no); dos formatos válidos en el mismo libro = `AMBIGUO`; «Últimos 12 movimientos» = `RECHAZADO` (por hoja o por `cabecera_prohibida`). Cualquier rechazo detiene el lote **antes de escribir** y el mensaje nombra archivo, estado y motivo.

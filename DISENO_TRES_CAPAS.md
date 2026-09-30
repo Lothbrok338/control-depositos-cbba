@@ -611,7 +611,7 @@ Los defectos D-01 a D-17 siguen su propio carril (Fase 2). D-18 y D-19 **no se t
 * Sin tocar: `motor_control_depositos_cbba.py`, `captura_origen.py`, `motor_generico.py`, `COLUMNAS_LISTS`, `CLAVE TRANSACCIÓN`, los 18 XFAIL, Power Automate, Lists y Power Apps.
 
 
-## 15. Estado de implementación: P4 (hecho, pendiente de aprobación)
+## 15. Estado de implementación: P4 (hecho y aprobado)
 
 * Detección productiva por registro: `deteccion_registro.py` (nuevo) + bloques `deteccion` y `legado` por formato y `version_deteccion: P4-1` en `registro_bancos.json`. `detectar_formato` delega en el registro y `ejecutar_motor` usa la detección completa (pasos 1, 2, 7 y 15). Ver `ESTADO_PROYECTO.md` §5d.
 * **Cómo se cumple §3 (motor genérico, pasos 1–3) en producción:** firma solo en cabecera + encabezado; encabezado por debajo de `puntaje_minimo` = error con las columnas que faltan; cuenta leída **solo** en la celda que sigue a una etiqueta de `deteccion.etiquetas_cuenta`, en las filas anteriores al encabezado; exactamente una cuenta registrada para ese formato; más de un formato o más de una cuenta = `AMBIGUO`.
