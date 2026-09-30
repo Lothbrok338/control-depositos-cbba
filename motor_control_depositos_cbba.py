@@ -87,8 +87,19 @@ P4 — DETECCIÓN POR REGISTRO (único cambio de regla desde las celdas):
   proceso con el motivo. Una cuenta nueva de un formato conocido se
   agrega con una entrada en CUENTAS, sin código. La normalización,
   la validación de saldos, COLUMNAS_LISTS y CLAVE TRANSACCIÓN no
-  cambian: siguen en los normalizar_* / validar_archivo /
-  finalizar_dataframe de este archivo (P5 los migrará).
+  cambian.
+
+P5 — NORMALIZACIÓN POR REGISTRO:
+  La normalización y la validación de saldos productivas salen de
+  `motor_generico.py` gobernado por `registro_bancos.json` (ambos junto
+  a este archivo): archivo → detección por registro → normalización
+  genérica → salida productiva. COLUMNAS_LISTS, CLAVE TRANSACCIÓN
+  (crear_clave / finalizar_dataframe), NORMALIZADO.xlsx, LISTS.csv y
+  ORIGEN.xlsx no cambian. Los normalizar_* / validar_archivo de este
+  archivo ya NO producen salida: quedan como referencia y se comparan
+  en sombra después de escribir la salida (SOMBRA_REPORTE.json); se
+  retiran en P6. Una cuenta nueva de un formato conocido se normaliza
+  solo con su entrada en CUENTAS, sin código ni plantilla legada.
 
 Uso como script:
     python motor_control_depositos_cbba.py <carpeta_entrada> <ruta_salida>
@@ -777,6 +788,203 @@ def aplicar_identidad_registro(tabla, deteccion):
     )
 
     return tabla
+
+
+# ============================================================
+# NORMALIZACIÓN POR REGISTRO (P5)
+#
+# Desde P5 la normalización y la validación de saldos productivas
+# las hace motor_generico.py (junto a este archivo) con la
+# configuración de registro_bancos.json: la misma secuencia para
+# todos los bancos, sin ramas por banco ni por cuenta. Reutiliza las
+# primitivas de este archivo (números, fechas, horas, lector de
+# Excel, finalizar_dataframe → COLUMNAS_LISTS y CLAVE TRANSACCIÓN,
+# congeladas). Los normalizar_* / validar_archivo quedan solo como
+# referencia (paso 16) hasta P6.
+# ============================================================
+
+_MODULO_GENERICO = None
+
+
+def modulo_generico():
+    """Carga motor_generico.py desde la carpeta de este motor."""
+
+    global _MODULO_GENERICO
+
+    if _MODULO_GENERICO is None:
+
+        import importlib.util as _iu
+        import sys as _sys
+
+        ruta = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "motor_generico.py"
+        )
+
+        if not os.path.exists(ruta):
+            raise ValueError(
+                "no se encuentra motor_generico.py junto al motor "
+                f"({ruta}): sin él no se pueden normalizar los extractos"
+            )
+
+        spec = _iu.spec_from_file_location(
+            "motor_generico_p5",
+            ruta
+        )
+        modulo = _iu.module_from_spec(spec)
+        _sys.modules[spec.name] = modulo
+        spec.loader.exec_module(modulo)
+
+        _MODULO_GENERICO = modulo
+
+    return _MODULO_GENERICO
+
+
+def normalizador_registro(ruta_registro=None):
+    """
+    Normalizador productivo: el motor genérico con registro_bancos.json
+    (el mismo que usa la detección; CBBA_REGISTRO_BANCOS apunta a otro).
+    Lanza ValueError si falta motor_generico.py o si el registro no sirve
+    para normalizar.
+    """
+
+    mg = modulo_generico()
+
+    ruta = modulo_deteccion().ruta_registro(ruta_registro)
+
+    try:
+
+        registro = mg.Registro.cargar(ruta)
+
+    except OSError as e:
+
+        raise ValueError(
+            f"no se pudo leer el registro de bancos '{ruta}': {e}"
+        )
+
+    problemas = registro.validar()
+
+    if problemas:
+        raise ValueError(
+            f"registro de bancos inválido para normalizar ({ruta}): "
+            + "; ".join(problemas)
+        )
+
+    return mg.MotorGenerico(
+        registro,
+        globals()
+    )
+
+
+def normalizar_extracto(
+    archivo,
+    deteccion,
+    lote,
+    fecha_carga,
+    nombre_origen=None,
+    normalizador=None
+):
+    """
+    Normalización productiva de UN extracto (P5).
+
+    `deteccion` es el resultado de la detección por registro (o el id de
+    la cuenta en CUENTAS). Devuelve (tabla, contexto): `tabla` tiene las
+    26 COLUMNAS_LISTS con el índice de fila del archivo (vacía si el
+    extracto válido no trae movimientos); `contexto` guarda la hoja, la
+    fila de encabezado y la tabla leída, que usan la validación de saldos
+    y ORIGEN.xlsx.
+    """
+
+    normalizador = normalizador or normalizador_registro()
+
+    cuenta_id = getattr(
+        deteccion,
+        "cuenta_id",
+        deteccion
+    )
+
+    tabla, contexto = normalizador.normalizar(
+        archivo,
+        cuenta_id,
+        lote,
+        fecha_carga,
+        nombre_origen=nombre_origen
+    )
+
+    # Se normaliza la misma tabla que la detección comprobó.
+    if hasattr(deteccion, "hoja"):
+
+        leido = (
+            contexto["hoja"],
+            int(contexto["fila_encabezado"])
+        )
+
+        detectado = (
+            deteccion.hoja,
+            int(deteccion.fila_encabezado)
+        )
+
+        if leido != detectado:
+            raise ValueError(
+                f"{cuenta_id}: la normalización leyó la hoja/fila "
+                f"{leido} y la detección comprobó {detectado}"
+            )
+
+    return tabla, contexto
+
+
+def validar_extracto(
+    archivo,
+    deteccion,
+    datos,
+    contexto,
+    normalizador=None
+):
+    """
+    Validación de saldos productiva (P5): misma ecuación y tolerancia
+    (ecuacion_saldo, 0.01); las fuentes de saldo inicial/final salen del
+    registro.
+    """
+
+    normalizador = normalizador or normalizador_registro()
+
+    return normalizador.validar(
+        archivo,
+        getattr(deteccion, "cuenta_id", deteccion),
+        datos,
+        contexto
+    )
+
+
+def contrato_origen_registro(detecciones, normalizador):
+    """
+    Contrato de captura_origen.py (ORIGEN.xlsx) armado desde el registro:
+    la hoja y el encabezado de cada cuenta son los que la detección y la
+    normalización usaron (también para una cuenta nueva).
+    """
+
+    encabezados = {
+        d.cuenta_id: normalizador.registro.formato(
+            d.formato_id
+        )["encabezados"]["puntaje"]
+        for d in detecciones.values()
+        if d.ok
+    }
+
+    return {
+        "hojas_validas": {
+            d.cuenta_id: d.hoja
+            for d in detecciones.values()
+            if d.ok
+        },
+        "encabezados_esperados": encabezados,
+        "encontrar_fila_encabezado": (
+            lambda raw, cuenta_id: normalizador._fila_encabezado(
+                raw,
+                encabezados[cuenta_id]
+            )
+        ),
+    }
 
 
 # ============================================================
@@ -2604,7 +2812,8 @@ def ejecutar_motor(carpeta_entrada, ruta_salida):
             "ruta_salida": str,
             "ruta_lists_csv": str,
             "origen_estado": dict,   # P1 (ORIGEN.xlsx)
-            "sombra_estado": dict,   # P3 (motor genérico en sombra)
+            "sombra_estado": dict,   # P5: normalizar_* legados en
+                                     # sombra, como referencia
             "deteccion_estado": dict # P4 (detección por registro)
         }
 
@@ -2678,10 +2887,23 @@ def ejecutar_motor(carpeta_entrada, ruta_salida):
 
         detector = detector_registro()
 
+        # P5: el mismo registro gobierna la normalización (motor
+        # genérico). Sin él tampoco se puede normalizar: se detiene aquí.
+        normalizador = normalizador_registro(
+            detector.ruta
+        )
+
     except ValueError as e:
 
         raise ValueError(
             f"❌ PROCESO DETENIDO: {e}"
+        )
+
+    if normalizador.registro.sha256 != detector.sha256:
+
+        raise ValueError(
+            "❌ PROCESO DETENIDO: registro_bancos.json cambió durante "
+            "la carga (detección y normalización deben usar el mismo)."
         )
 
     for nombre, ruta in mapa_archivos.items():
@@ -2725,9 +2947,8 @@ def ejecutar_motor(carpeta_entrada, ruta_salida):
 
                     print(
                         f"   ↳ cuenta registrada solo en "
-                        f"registro_bancos.json; se normaliza con "
-                        f"la plantilla legada "
-                        f"{deteccion.formato_legado}"
+                        f"registro_bancos.json (formato "
+                        f"{deteccion.formato_id})"
                     )
 
         except Exception as e:
@@ -2829,6 +3050,10 @@ def ejecutar_motor(carpeta_entrada, ruta_salida):
 
     tablas = []
 
+    # P5: lo que la normalización leyó de cada archivo (hoja, fila de
+    # encabezado, tabla), para validar saldos y armar ORIGEN.xlsx.
+    contextos = {}
+
     resultados_archivos = []
 
     for _, fila in df_deteccion_final.iterrows():
@@ -2839,22 +3064,18 @@ def ejecutar_motor(carpeta_entrada, ruta_salida):
 
         try:
 
-            # P4: el normalizador legado recibe su propio id (cuenta
-            # conocida) o la plantilla del formato (cuenta nueva); la
-            # identidad BANCO / CUENTA / MONEDA es la del registro.
+            # P5: normalización genérica gobernada por el registro
+            # (identidad BANCO / CUENTA / MONEDA incluida). Ningún
+            # normalizar_* legado interviene en la salida.
             deteccion = detalle_deteccion[nombre]
 
-            resultado = normalizar_archivo(
+            resultado, contextos[nombre] = normalizar_extracto(
                 ruta,
-                deteccion.formato_legado,
+                deteccion,
                 lote,
                 fecha_carga,
-                nombre_origen=nombre
-            )
-
-            resultado = aplicar_identidad_registro(
-                resultado,
-                deteccion
+                nombre_origen=nombre,
+                normalizador=normalizador
             )
 
             tablas.append(
@@ -3124,6 +3345,11 @@ def ejecutar_motor(carpeta_entrada, ruta_salida):
 
     validaciones = []
 
+    # P5: filas y resultado de cada validación (los usa la referencia
+    # legada del paso 16 para comparar exactamente lo mismo).
+    datos_validados = {}
+    validacion_por_archivo = {}
+
     for _, fila in df_deteccion_final.iterrows():
 
         nombre = fila["ARCHIVO"]
@@ -3136,11 +3362,16 @@ def ejecutar_motor(carpeta_entrada, ruta_salida):
             ] == nombre
         ].copy()
 
-        resultado = validar_archivo(
+        resultado = validar_extracto(
             ruta,
-            detalle_deteccion[nombre].formato_legado,
-            datos_archivo
+            detalle_deteccion[nombre],
+            datos_archivo,
+            contextos[nombre],
+            normalizador=normalizador
         )
+
+        datos_validados[nombre] = datos_archivo
+        validacion_por_archivo[nombre] = resultado
 
         validaciones.append({
             "ARCHIVO": nombre,
@@ -3736,38 +3967,12 @@ def ejecutar_motor(carpeta_entrada, ruta_salida):
         _cap = _iu.module_from_spec(_spec)
         _spec.loader.exec_module(_cap)
 
-        # P4: una cuenta nueva (solo registro) se lee con la hoja y el
-        # encabezado de su plantilla legada.
-        _alias = {
-            d.cuenta_id: d.formato_legado
-            for d in detalle_deteccion.values()
-            if d.ok and d.cuenta_nueva
-        }
-
-        _contrato = {
-            "hojas_validas": HOJAS_VALIDAS,
-            "encabezados_esperados": ENCABEZADOS_ESPERADOS,
-            "encontrar_fila_encabezado": encontrar_fila_encabezado,
-        }
-
-        if _alias:
-
-            _contrato = {
-                "hojas_validas": {
-                    **HOJAS_VALIDAS,
-                    **{c: HOJAS_VALIDAS[p] for c, p in _alias.items()}
-                },
-                "encabezados_esperados": {
-                    **ENCABEZADOS_ESPERADOS,
-                    **{c: ENCABEZADOS_ESPERADOS[p] for c, p in _alias.items()}
-                },
-                "encontrar_fila_encabezado": (
-                    lambda raw, f: encontrar_fila_encabezado(
-                        raw,
-                        _alias.get(f, f)
-                    )
-                ),
-            }
+        # P5: hoja y encabezado de cada cuenta según el registro (los
+        # mismos que usaron la detección y la normalización).
+        _contrato = contrato_origen_registro(
+            detalle_deteccion,
+            normalizador
+        )
 
         origen_estado = _cap.generar_origen_seguro(
             mapa_archivos,
@@ -3804,17 +4009,17 @@ def ejecutar_motor(carpeta_entrada, ruta_salida):
         )
 
     # ========================================================
-    # 16. MOTOR GENÉRICO EN MODO SOMBRA (P3, pasivo)
+    # 16. REFERENCIA LEGADA EN SOMBRA (P5, pasiva)
     #
-    # Corre motor_generico.py (registro_bancos.json) en paralelo,
-    # DESPUÉS de escribir la salida productiva, y compara su
-    # resultado contra el de este motor. Escribe SOMBRA_REPORTE.json
-    # y SOMBRA_DIFERENCIAS.csv en la carpeta de salida. No modifica
-    # df_final, NORMALIZADO.xlsx ni LISTS.csv: la salida productiva
-    # es exclusivamente la de este motor legado. Un fallo o una
-    # diferencia aquí NUNCA detiene el proceso ni altera la salida
-    # (solo queda registrado en "sombra_estado"). Se desactiva con la
-    # variable de entorno CBBA_MOTOR_SOMBRA=0.
+    # Desde P5 la salida productiva es la del motor genérico. Aquí,
+    # DESPUÉS de escribirla, se corren los normalizar_* y
+    # validar_archivo legados como REFERENCIA y se compara archivo por
+    # archivo (26 columnas, índice, tipos y validación de saldos).
+    # Escribe SOMBRA_REPORTE.json y SOMBRA_DIFERENCIAS.csv en la
+    # carpeta de salida. No modifica df_final, NORMALIZADO.xlsx,
+    # LISTS.csv ni ORIGEN.xlsx; un fallo o una diferencia aquí NUNCA
+    # detiene el proceso (solo queda en "sombra_estado"). Se desactiva
+    # con CBBA_MOTOR_SOMBRA=0. Se retira con el legado en P6.
     # ========================================================
     if os.environ.get("CBBA_MOTOR_SOMBRA", "1") == "0":
 
@@ -3826,26 +4031,21 @@ def ejecutar_motor(carpeta_entrada, ruta_salida):
     else:
 
         try:
-            import importlib.util as _iu2
             import types as _types
 
-            _ruta_gen = os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                "motor_generico.py"
-            )
-            _spec2 = _iu2.spec_from_file_location(
-                "motor_generico",
-                _ruta_gen
-            )
-            _gen = _iu2.module_from_spec(_spec2)
-            _spec2.loader.exec_module(_gen)
-
-            sombra_estado = _gen.ejecutar_sombra_produccion(
+            sombra_estado = modulo_generico().ejecutar_referencia_legado(
                 _types.SimpleNamespace(**globals()),
+                normalizador.registro,
                 mapa_archivos,
-                df_deteccion_final,
-                tablas,
-                df_validacion,
+                detalle_deteccion,
+                dict(
+                    zip(
+                        df_deteccion_final["ARCHIVO"],
+                        tablas
+                    )
+                ),
+                validacion_por_archivo,
+                datos_validados,
                 lote,
                 fecha_carga,
                 carpeta_salida or "."
@@ -3867,19 +4067,19 @@ def ejecutar_motor(carpeta_entrada, ruta_salida):
         ):
 
             print(
-                f"\nMotor generico en SOMBRA: "
+                f"\nReferencia legada en SOMBRA: "
                 f"{sombra_estado['estado']} "
                 f"({sombra_estado['archivos_coinciden']}/"
                 f"{sombra_estado['archivos_comparados']} archivos "
-                "coinciden; la salida productiva es la de este motor "
-                "legado). "
+                "coinciden con los normalizar_* legados; la salida "
+                "productiva es la del motor generico). "
                 f"Informe: {sombra_estado['ruta_reporte']}"
             )
 
         elif sombra_estado.get("estado") == "ERROR":
 
             print(
-                "\nMotor generico en SOMBRA no se ejecuto "
+                "\nReferencia legada en SOMBRA no se ejecuto "
                 "(no afecta NORMALIZADO.xlsx ni LISTS.csv): "
                 f"{sombra_estado.get('error')}"
             )

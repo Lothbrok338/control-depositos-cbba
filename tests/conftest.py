@@ -22,7 +22,23 @@ def ruta_fixture():
 
 @pytest.fixture(scope="session")
 def normalizado(motor):
-    """Normaliza cada fixture valido una sola vez: {formato: (df, validacion)}."""
+    """RUTA PRODUCTIVA (P5): deteccion por registro + normalizacion y validacion del motor generico.
+    Normaliza cada fixture valido una sola vez: {formato: (df, validacion)}."""
+    ts = pd.Timestamp("2026-01-01 00:00:00")
+    detector, normalizador = motor.detector_registro(), motor.normalizador_registro()
+    out = {}
+    for fm in FORMATOS_OK:
+        ruta = str(EXTRACTOS / FIXTURES[fm])
+        det = detector.detectar(ruta)
+        df, ctx = motor.normalizar_extracto(ruta, det, "LOTE_TEST", ts, nombre_origen=FIXTURES[fm],
+                                            normalizador=normalizador)
+        out[fm] = (df, motor.validar_extracto(ruta, det, df, ctx, normalizador=normalizador))
+    return out
+
+
+@pytest.fixture(scope="session")
+def normalizado_legado(motor):
+    """REFERENCIA LEGADA (normalizar_* / validar_archivo): solo para comparar contra la produccion."""
     ts = pd.Timestamp("2026-01-01 00:00:00")
     out = {}
     for fm in FORMATOS_OK:

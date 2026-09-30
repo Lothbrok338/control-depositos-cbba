@@ -1,7 +1,7 @@
 {
   "_ayuda": {
     "proposito": "Registro parametrizable de bancos (P3). FORMATOS describe la estructura de un reporte; CUENTAS describe una instancia (banco, cuenta, moneda). Una cuenta nueva de un formato ya conocido se agrega con UNA entrada en CUENTAS y cero codigo.",
-    "modo": "PRODUCTIVO para la DETECCION desde P4: deteccion_registro.py identifica banco, cuenta, moneda y formato con este registro (motor_control_depositos_cbba.py). La NORMALIZACION productiva sigue en los normalizar_* del legado hasta P5; motor_generico.py sigue en SOMBRA y solo reporta diferencias.",
+    "modo": "PRODUCTIVO. DETECCION (P4): deteccion_registro.py identifica banco, cuenta, moneda y formato con este registro. NORMALIZACION y VALIDACION DE SALDOS (P5): motor_generico.py normaliza a las 26 columnas y valida con este registro (motor_control_depositos_cbba.py). Los normalizar_* legados ya no producen salida: se comparan en sombra como referencia (SOMBRA_REPORTE.json) hasta P6.",
     "agregar_cuenta": "Copiar una entrada de CUENTAS, cambiar id (unico), cuenta (texto tal como aparece en la cabecera del extracto), banco y moneda, y dejar el mismo 'formato'. No tocar FORMATOS.",
     "campos_de_formato": {
       "familia": "Solo informativo (agrupa formatos del mismo banco).",
@@ -11,7 +11,7 @@
       "firma": "Texto (normalizado: mayusculas, sin tildes) que debe aparecer en la cabecera y el encabezado, nunca en los datos. 'todas' = todos; 'alguna' = al menos uno.",
       "encabezados": "'puntaje' = encabezados esperados (define la fila de encabezado, igual que el legado); 'puntaje_minimo' = fraccion minima exigida. Por debajo del minimo el archivo se rechaza con la lista de encabezados que faltan.",
       "deteccion": "P4. 'zona_cuenta' CABECERA = filas de la hoja ANTERIORES al encabezado de la tabla (nunca glosas ni movimientos). 'etiquetas_cuenta' = rotulos exactos (sin ':' final) cuya celda siguiente a la derecha, o el resto de la misma celda 'ROTULO: n', trae el numero de cuenta. Debe leerse UNA cuenta registrada para el formato; cero, varias o una no registrada = error. 'cabecera_prohibida' = texto que, si aparece en la cabecera, rechaza el archivo con 'mensaje' aunque la estructura se parezca.",
-      "legado": "P4 (temporal hasta P5). 'plantilla_por_hoja' = id del normalizar_* legado que lee esa hoja; se usa SOLO para una cuenta nueva que el legado no conoce: el legado normaliza con la plantilla y BANCO / CUENTA BANCARIA / MONEDA se toman de CUENTAS (CLAVE TRANSACCION se recalcula con la formula congelada). Las cuentas que el legado ya conoce se normalizan con su propio id.",
+      "legado": "Solo REFERENCIA desde P5 (se retira en P6). 'plantilla_por_hoja' = id del normalizar_* legado que lee esa hoja; la comparacion en sombra lo usa para una cuenta nueva que el legado no conoce (plantilla + BANCO / CUENTA BANCARIA / MONEDA de CUENTAS). No interviene en la salida productiva: la normalizacion de cualquier cuenta sale de este registro.",
       "filtro_fecha": "Como se decide si una fila es un movimiento: PANDAS_DAYFIRST (pd.to_datetime dayfirst, igual que el legado) o NORMALIZAR_FECHA (acepta 24/Ago/2026).",
       "sin_columna_fecha": "ERROR (KeyError) o SIN_MOVIMIENTOS (extracto valido vacio, solo BISA hoy).",
       "campos": "Rol -> {alias, requerido}. 'alias' son los encabezados posibles del banco; 'constante' fija un valor cuando el banco no trae la columna.",
@@ -28,6 +28,7 @@
   "version_registro": "P3-1",
   "version_historico": "P3b-1",
   "version_deteccion": "P4-1",
+  "version_normalizacion": "P5-1",
   "HISTORICO": {
     "hoja": "EXTRACTO",
     "nombre_archivo": "EXTRACTO_HISTORICO_{BANCO}_{CUENTA}_{PERIODO}.xlsx",

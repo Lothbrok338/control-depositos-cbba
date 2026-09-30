@@ -8,7 +8,9 @@ Reglas que estas pruebas protegen:
   * la cuenta se valida en todos los formatos, BMSC incluido;
   * encabezado insuficiente, cabecera ambigua o reporte Unión «Últimos 12» = error claro, nunca una elección
     silenciosa;
-  * la normalización sigue delegada a los normalizar_* legados (P5 no empezó).
+  * (P4) la normalización seguía en los normalizar_* legados. DESDE P5 la normaliza el motor genérico con el
+    registro (test_09_normalizacion_p5.py); `formato_legado` / `aplicar_identidad_registro` solo alimentan la
+    referencia legada en sombra. Estas pruebas de detección no cambian.
 """
 import copy
 import importlib.util
@@ -184,7 +186,7 @@ def test_p4_cuenta_nueva_sin_registrar_se_rechaza_con_motivo(motor, tmp_path):
 
 def test_p4_cuenta_nueva_se_incorpora_solo_con_una_entrada_en_cuentas(motor, datos_registro, tmp_path):
     """Mismo motor, mismo código: solo el registro gana una entrada. La cuenta se procesa de punta a punta
-    (NORMALIZADO, LISTS, ORIGEN, sombra) con BANCO / CUENTA / MONEDA del registro."""
+    (NORMALIZADO, LISTS, ORIGEN, referencia legada en sombra) con BANCO / CUENTA / MONEDA del registro."""
     ruta = crear_xlsx_bnb(tmp_path / "nueva.xlsx", "3999000111", FILAS_BNB)
     reg = _registro_con(datos_registro, tmp_path, NUEVA_BNB)
     res = _correr(motor, _carpeta(tmp_path, ruta), tmp_path / "out", registro=reg)
@@ -222,7 +224,8 @@ def test_p4_cuenta_nueva_tambien_llega_al_historico_p3b(motor, datos_registro, t
 
 
 def test_p4_cuenta_nueva_normaliza_igual_que_su_plantilla_salvo_la_identidad(motor, datos_registro, tmp_path):
-    """La normalización sigue siendo la del normalizar_* legado: solo cambian BANCO/CUENTA/MONEDA/CLAVE."""
+    """REFERENCIA (P4; desde P5 la usa solo la sombra): la plantilla legada + identidad del registro solo cambia
+    BANCO/CUENTA/MONEDA/CLAVE respecto de la plantilla."""
     ruta = crear_xlsx_bnb(tmp_path / "nueva.xlsx", "3999000111", FILAS_BNB)
     reg = _registro_con(datos_registro, tmp_path, NUEVA_BNB)
     det = motor.detector_registro(str(reg)).detectar(str(ruta))
@@ -488,7 +491,9 @@ def test_p4_la_deteccion_no_contiene_logica_de_normalizacion(dr):
 
 
 def test_p4_cuenta_conocida_que_contradice_al_registro_no_se_corrige_en_silencio(motor, datos_registro, tmp_path):
-    """Si el registro dijera otra cuenta para un id que el legado conoce, la producción se detiene."""
+    """aplicar_identidad_registro no corrige en silencio una contradicción legado ↔ registro. Desde P5 no está en
+    la ruta productiva (la identidad sale solo del registro; la referencia legada reporta la diferencia, ver
+    test_06::test_p5_identidad_del_registro_que_contradice_al_legado_se_reporta_en_la_referencia)."""
     det = motor.detector_registro(str(REPO / "registro_bancos.json")).detectar(
         str(EXTRACTOS / FIXTURES["BNB_ME"]))
     det.moneda = "BOB"

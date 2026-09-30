@@ -1,9 +1,10 @@
-"""P3: registro_bancos.json + motor_generico.py en MODO SOMBRA.
+"""P3: registro_bancos.json + motor_generico.py (comparador genérico ↔ legado).
 
 Reglas que estas pruebas protegen:
-  * el motor genérico NO produce salida: la producción sigue siendo la del legado;
-  * cualquier diferencia genérico ↔ legado queda REPORTADA (SOMBRA_REPORTE.json / SOMBRA_DIFERENCIAS.csv);
-  * un fallo del motor genérico no detiene ni altera al legado;
+  * DESDE P5 la producción es la del motor genérico y el legado corre en SOMBRA como referencia
+    (paso 16): cualquier diferencia legado ↔ producción queda REPORTADA (SOMBRA_REPORTE.json /
+    SOMBRA_DIFERENCIAS.csv) y un fallo de la referencia no detiene ni altera la producción;
+  * las secciones 1-8 prueban el comparador y el genérico contra el legado (siguen valiendo en P5);
   * desde P4 la DETECCIÓN productiva también sale del registro (deteccion_registro.py): las diferencias de
     detección que P3 reportaba (D-09, D-10, D-11, «Últimos 12», cuenta ambigua) ya no existen: producción y
     genérico rechazan o aceptan lo mismo;
@@ -52,8 +53,8 @@ def generico(mg, registro, motor):
     return mg.MotorGenerico(registro, motor)
 
 
-def _sombra_fixture(mg, gen, motor, normalizado, ruta_fixture, fm):
-    df, val = normalizado[fm]
+def _sombra_fixture(mg, gen, motor, normalizado_legado, ruta_fixture, fm):
+    df, val = normalizado_legado[fm]
     return mg.sombra_archivo(gen, FIXTURES[fm], ruta_fixture(fm), fm, "LOTE_TEST", TS,
                              tabla_legado=df, validacion_legado=val)
 
@@ -176,9 +177,9 @@ def test_registro_no_se_modifica_al_procesar(registro, generico, ruta_fixture):
 
 # ------------------------------- 3. SOMBRA: 12 FORMATOS REALES -------------------------------
 @pytest.mark.parametrize("formato", FORMATOS_OK)
-def test_sombra_formato_coincide_al_100_con_el_legado(mg, generico, motor, normalizado, ruta_fixture, formato):
+def test_sombra_formato_coincide_al_100_con_el_legado(mg, generico, motor, normalizado_legado, ruta_fixture, formato):
     """Detección + movimientos normalizados (26 columnas, índice, valores, tipos) + validación de saldos."""
-    r = _sombra_fixture(mg, generico, motor, normalizado, ruta_fixture, formato)
+    r = _sombra_fixture(mg, generico, motor, normalizado_legado, ruta_fixture, formato)
     assert r["diferencias"] == [], r["diferencias"][:5]
     assert r["estado"] == "COINCIDE" and r["cuenta_generico"] == formato
     assert r["movimientos_generico"] == r["movimientos_legado"]
@@ -286,7 +287,7 @@ def test_con_cuenta_rechaza_configuraciones_invalidas(registro):
         registro.con_cuenta("Z", "BNB_EXTRACTO_V1", "BNB", "3000100152", "BOB")        # cuenta ya registrada
 
 
-def test_cuenta_ambigua_en_cabecera_se_reporta_como_ambiguo(mg, generico, motor, normalizado, tmp_path):
+def test_cuenta_ambigua_en_cabecera_se_reporta_como_ambiguo(mg, generico, motor, tmp_path):
     ruta = crear_xlsx_bnb(tmp_path / "a.xlsx", "3000100152 y 3000100705", [{"fecha": "01/08/2026", "cred": 1.0, "saldo": 1.0}])
     g = generico.detectar(str(ruta))
     assert g.estado == "AMBIGUO" and set(g.candidatos) == {"BNB_MN", "BNB_CLINICA"}
@@ -436,31 +437,31 @@ CASOS_DIFERENCIA = {
 
 
 @pytest.mark.parametrize("nombre", [n for n, c in CASOS_DIFERENCIA.items() if c[2]])
-def test_el_comparador_reporta_diferencias_inyectadas(mg, registro, motor, normalizado, ruta_fixture, nombre):
+def test_el_comparador_reporta_diferencias_inyectadas(mg, registro, motor, normalizado_legado, ruta_fixture, nombre):
     fm, fn, nivel, columna = CASOS_DIFERENCIA[nombre]
     reg = _reg_mutado(mg, registro, fn)
     assert reg.validar() == []
     gen = mg.MotorGenerico(reg, motor)
-    df, val = normalizado[fm]
+    df, val = normalizado_legado[fm]
     r = mg.sombra_archivo(gen, FIXTURES[fm], ruta_fixture(fm), fm, "LOTE_TEST", TS, tabla_legado=df, validacion_legado=val)
     assert r["estado"] == "DIFIERE"
     assert any(d["nivel"] == nivel and d["columna"] == columna for d in r["diferencias"]), r["diferencias"][:6]
 
 
-def test_una_fuente_de_saldo_distinta_que_da_el_mismo_resultado_no_es_diferencia(mg, registro, motor, normalizado, ruta_fixture):
+def test_una_fuente_de_saldo_distinta_que_da_el_mismo_resultado_no_es_diferencia(mg, registro, motor, normalizado_legado, ruta_fixture):
     """La comparación es de RESULTADOS: cambiar la fuente de saldo sin cambiar el valor no reporta nada."""
     fm, fn, _, _ = CASOS_DIFERENCIA["saldo_final_eco"]
     gen = mg.MotorGenerico(_reg_mutado(mg, registro, fn), motor)
-    df, val = normalizado[fm]
+    df, val = normalizado_legado[fm]
     r = mg.sombra_archivo(gen, FIXTURES[fm], ruta_fixture(fm), fm, "LOTE_TEST", TS, tabla_legado=df, validacion_legado=val)
     assert r["estado"] == "COINCIDE"
 
 
-def test_el_comparador_reporta_diferencia_de_validacion(mg, registro, motor, normalizado, ruta_fixture):
+def test_el_comparador_reporta_diferencia_de_validacion(mg, registro, motor, normalizado_legado, ruta_fixture):
     reg = _reg_mutado(mg, registro, lambda d: d["FORMATOS"]["BISA_EXTRACTO_V1"]["saldo"].update(
         inicial={"fuente": "CELDA_FIJA", "fila": 9, "columna": 7}))
     gen = mg.MotorGenerico(reg, motor)
-    df, val = normalizado["BISA_MN"]
+    df, val = normalizado_legado["BISA_MN"]
     r = mg.sombra_archivo(gen, "bisa_mn_2.xls", ruta_fixture("BISA_MN"), "BISA_MN", "LOTE_TEST", TS,
                           tabla_legado=df, validacion_legado=val)
     assert r["estado"] == "DIFIERE" and any(d["nivel"] == "VALIDACION" for d in r["diferencias"])
@@ -478,28 +479,26 @@ def test_comparar_frames_detecta_columna_indice_y_familia_de_tipo(mg):
     assert [(x["columna"], x["valor_legado"], x["valor_generico"]) for x in d] == [("y", "b", "c")]
 
 
-# ------------------------------- 9. INTEGRACIÓN: ejecutar_motor + SOMBRA -------------------------------
-def test_lote_corre_en_sombra_sin_diferencias_y_escribe_el_informe(corrida_lote):
+# ------------------------------- 9. INTEGRACIÓN (P5): producción genérica + REFERENCIA LEGADA en sombra -------------
+def test_lote_corre_con_la_referencia_legada_sin_diferencias_y_escribe_el_informe(corrida_lote):
     res, salida = corrida_lote
     s = res["sombra_estado"]
-    assert s["estado"] == "SIN_DIFERENCIAS", s
+    assert s["estado"] == "SIN_DIFERENCIAS" and s["modo"] == "REFERENCIA_LEGADO", s
     assert (s["archivos_comparados"], s["archivos_coinciden"], s["archivos_difieren"], s["diferencias_total"]) == (12, 12, 0, 0)
     informe = json.loads((salida / "SOMBRA_REPORTE.json").read_text(encoding="utf-8"))
-    assert informe["modo"] == "SOMBRA" and informe["estado"] == "SIN_DIFERENCIAS"
+    assert informe["modo"] == "REFERENCIA_LEGADO" and informe["estado"] == "SIN_DIFERENCIAS"
+    assert "motor genérico" in informe["produccion"] and informe["version_motor_generico"] == "P5-1"
     assert informe["version_registro"] == "P3-1" and len(informe["sha256_registro"]) == 64
     assert {a["cuenta_generico"] for a in informe["archivos"]} == set(FORMATOS_OK)
-    assert all(a["estado"] == "COINCIDE" for a in informe["archivos"])
-    # solo ruido de coma flotante (< 1e-6) en sumas de validación, informado aparte y sin contar como diferencia
-    obs = [o for a in informe["archivos"] for o in a["observaciones"]]
-    assert len(obs) == informe["observaciones_total"]
-    assert all(o["nivel"] == "OBSERVACION" and o["columna"] in ("CRÉDITOS", "DÉBITOS")
-               and abs(o["valor_legado"] - o["valor_generico"]) <= 1e-6 for o in obs)
+    assert all(a["estado"] == "COINCIDE" and a["formato_legado"] == a["cuenta_generico"] for a in informe["archivos"])
+    # P5: legado y producción validan las MISMAS filas: desaparece el ruido de coma flotante de P3
+    assert informe["observaciones_total"] == 0 and s["observaciones_total"] == 0
     csv = pd.read_csv(salida / "SOMBRA_DIFERENCIAS.csv", encoding="utf-8-sig")
     assert len(csv) == 0 and "DETALLE" in csv.columns
 
 
-def test_lote_la_produccion_sigue_siendo_la_del_legado(corrida_lote):
-    """LISTS.csv y NORMALIZADO.xlsx productivos = doradas generadas con el motor ORIGINAL (no con el genérico)."""
+def test_lote_la_produccion_generica_es_identica_a_la_dorada_del_legado(corrida_lote):
+    """LISTS.csv y NORMALIZADO.xlsx productivos (motor genérico) = doradas generadas con el motor ORIGINAL."""
     from helpers import leer_csv_texto
     res, salida = corrida_lote
     pd.testing.assert_frame_equal(leer_csv_texto(salida / "LISTS.csv"), leer_csv_texto(GOLDEN / "LOTE_12_LISTS.csv"))
@@ -533,21 +532,24 @@ def _correr(motor, base, sombra=True, registro_env=None):
         return motor.ejecutar_motor(str(ent), str(sal / "NORMALIZADO.xlsx")), sal
 
 
-def _misma_produccion(a, sa, b, sb):
+def _misma_produccion(a, sa, b, sb, sin=()):
+    """Misma salida productiva; `sin` = columnas de LISTS que se permite que difieran."""
     from evidencia_ab import celdas
-    assert (sa / "LISTS.csv").read_bytes() == (sb / "LISTS.csv").read_bytes()
-    assert celdas(sa / "NORMALIZADO.xlsx") == celdas(sb / "NORMALIZADO.xlsx")
+    if not sin:
+        assert (sa / "LISTS.csv").read_bytes() == (sb / "LISTS.csv").read_bytes()
+        assert celdas(sa / "NORMALIZADO.xlsx") == celdas(sb / "NORMALIZADO.xlsx")
     for k in ("df_final", "df_validacion", "resumen", "df_resultado_archivos", "df_deteccion_final"):
-        pd.testing.assert_frame_equal(a[k], b[k])
+        pd.testing.assert_frame_equal(a[k].drop(columns=list(sin), errors="ignore"),
+                                      b[k].drop(columns=list(sin), errors="ignore"))
 
 
 @pytest.fixture(scope="module")
 def sin_sombra(motor, tmp_path_factory):
-    """Línea base: el legado con la sombra APAGADA (mismo reloj fijo)."""
+    """Línea base: producción con la referencia legada APAGADA (mismo reloj fijo)."""
     return _correr(motor, tmp_path_factory.mktemp("sin_sombra"), sombra=False)
 
 
-def test_sombra_encendida_o_apagada_da_exactamente_la_misma_produccion(motor, tmp_path, sin_sombra):
+def test_referencia_encendida_o_apagada_da_exactamente_la_misma_produccion(motor, tmp_path, sin_sombra):
     sin, s_sin = sin_sombra
     con, s_con = _correr(motor, tmp_path / "con", sombra=True)
     assert sin["sombra_estado"]["estado"] == "DESACTIVADO" and con["sombra_estado"]["estado"] == "SIN_DIFERENCIAS"
@@ -556,12 +558,18 @@ def test_sombra_encendida_o_apagada_da_exactamente_la_misma_produccion(motor, tm
     assert (s_con / "SOMBRA_REPORTE.json").exists() and not (s_sin / "SOMBRA_REPORTE.json").exists()
 
 
-def test_una_diferencia_en_sombra_se_reporta_y_no_altera_la_produccion(motor, registro, tmp_path, sin_sombra):
-    """Registro con un dato de NORMALIZACIÓN distinto (separador de INFORMACIÓN ADICIONAL de BMSC, que la
-    producción no usa hasta P5): el informe lo señala; NORMALIZADO/LISTS no cambian."""
-    d = _mutar(registro, lambda x: x["FORMATOS"]["BMSC_EXCEL_V1"]["info_adicional"].update(separador=" / "))
-    ruta_reg = tmp_path / "registro_alterado.json"
-    ruta_reg.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+def _registro_alterado(registro, tmp_path, fn):
+    ruta = tmp_path / "registro_alterado.json"
+    ruta.write_text(json.dumps(_mutar(registro, fn), ensure_ascii=False), encoding="utf-8")
+    return ruta
+
+
+def test_p5_el_registro_gobierna_la_normalizacion_y_la_referencia_legada_reporta_la_diferencia(
+        motor, registro, tmp_path, sin_sombra):
+    """P5: un dato de NORMALIZACIÓN del registro (separador de INFORMACIÓN ADICIONAL de BMSC) cambia la
+    producción (solo en ese archivo y esas columnas) y la referencia legada lo señala."""
+    ruta_reg = _registro_alterado(registro, tmp_path, lambda x: x["FORMATOS"]["BMSC_EXCEL_V1"]["info_adicional"].update(
+        separador=" / "))
     sin, s_sin = sin_sombra
     con, s_con = _correr(motor, tmp_path / "con", sombra=True, registro_env=ruta_reg)
     s = con["sombra_estado"]
@@ -569,19 +577,29 @@ def test_una_diferencia_en_sombra_se_reporta_y_no_altera_la_produccion(motor, re
     csv = pd.read_csv(s_con / "SOMBRA_DIFERENCIAS.csv", encoding="utf-8-sig", dtype=str)
     assert set(csv["ARCHIVO"]) == {"mercantil_1.xls"}
     assert set(csv["COLUMNA"]) == {"INFORMACIÓN ADICIONAL", "TEXTO DE BÚSQUEDA"}     # TEXTO DE BÚSQUEDA la incluye
-    _misma_produccion(con, s_con, sin, s_sin)
+    bmsc = con["df_final"][con["df_final"]["ARCHIVO ORIGEN"] == "mercantil_1.xls"]
+    assert len(bmsc) and bmsc["INFORMACIÓN ADICIONAL"].str.contains(" / ").all()
+    _misma_produccion(con, s_con, sin, s_sin, sin=("INFORMACIÓN ADICIONAL", "TEXTO DE BÚSQUEDA"))
+    otros = con["df_final"]["ARCHIVO ORIGEN"] != "mercantil_1.xls"
+    pd.testing.assert_frame_equal(con["df_final"][otros], sin["df_final"][otros])
 
 
-def test_p4_registro_que_contradice_al_normalizador_legado_detiene_la_produccion(motor, registro, tmp_path, capsys):
-    """P4: si el registro dice otra MONEDA para una cuenta que el legado ya conoce (BNB_ME = USD), la
-    producción no elige en silencio: se detiene sin escribir nada y dice qué no coincide."""
-    d = _mutar(registro, lambda x: [c.update(moneda="BOB") for c in x["CUENTAS"] if c["id"] == "BNB_ME"])
-    ruta_reg = tmp_path / "registro_alterado.json"
-    ruta_reg.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
-    with pytest.raises(ValueError, match="falló la normalización"):
-        _correr(motor, tmp_path / "con", sombra=True, registro_env=ruta_reg)
-    assert "no coinciden en MONEDA para BNB_ME" in capsys.readouterr().out
-    assert not (tmp_path / "con" / "out").exists() or not any((tmp_path / "con" / "out").iterdir())
+def test_p5_identidad_del_registro_que_contradice_al_legado_se_reporta_en_la_referencia(
+        motor, registro, tmp_path, sin_sombra):
+    """P5: BANCO / CUENTA / MONEDA salen del registro (fuente única). Si el registro dijera otra MONEDA para
+    BNB_ME, la producción usa la del registro y la referencia legada lo reporta (en P4 esto detenía la
+    producción porque la normalizaba el legado con su identidad fija)."""
+    ruta_reg = _registro_alterado(registro, tmp_path, lambda x: [c.update(moneda="BOB") for c in x["CUENTAS"]
+                                                                 if c["id"] == "BNB_ME"])
+    con, s_con = _correr(motor, tmp_path / "con", sombra=True, registro_env=ruta_reg)
+    bnb_me = con["df_final"][con["df_final"]["ARCHIVO ORIGEN"] == FIXTURES["BNB_ME"]]
+    assert set(bnb_me["MONEDA"]) == {"BOB"}
+    s = con["sombra_estado"]
+    assert s["estado"] == "CON_DIFERENCIAS" and s["archivos_difieren"] == 1
+    csv = pd.read_csv(s_con / "SOMBRA_DIFERENCIAS.csv", encoding="utf-8-sig", dtype=str)
+    assert set(csv["ARCHIVO"]) == {FIXTURES["BNB_ME"]} and "MONEDA" in set(csv["COLUMNA"])
+    moneda = csv[(csv["COLUMNA"] == "MONEDA") & csv["VALOR LEGADO"].notna()]
+    assert set(moneda["VALOR LEGADO"]) == {"USD"} and set(moneda["VALOR GENÉRICO"]) == {"BOB"}
 
 
 @pytest.mark.parametrize("caso,texto", [
@@ -605,22 +623,20 @@ def test_p4_sin_registro_valido_la_produccion_se_detiene_con_error_claro(motor, 
     assert not (tmp_path / "con" / "out").exists()
 
 
-def test_un_fallo_del_generico_no_detiene_ni_altera_al_legado(motor, registro, tmp_path, sin_sombra):
-    """Registro válido para DETECTAR pero inválido para el motor genérico (importe.modo de BNB): la sombra
-    falla (ERROR) y la producción sale idéntica."""
-    ruta = tmp_path / "r.json"
-    ruta.write_text(json.dumps(_mutar(registro, lambda d: d["FORMATOS"]["BNB_EXTRACTO_V1"]["importe"].update(
-        modo="OTRO")), ensure_ascii=False), encoding="utf-8")
-    sin, s_sin = sin_sombra
-    con, s_con = _correr(motor, tmp_path / "con", sombra=True, registro_env=ruta)
-    assert con["sombra_estado"]["estado"] == "ERROR" and con["sombra_estado"]["error"]
-    assert not (s_con / "SOMBRA_REPORTE.json").exists()
-    _misma_produccion(con, s_con, sin, s_sin)
-    assert con["origen_estado"]["estado"] == "OK"
+def test_p5_registro_valido_para_detectar_pero_no_para_normalizar_detiene_la_produccion(motor, registro, tmp_path):
+    """P5: el registro también gobierna la normalización. Un registro que sirve para DETECTAR pero no para
+    NORMALIZAR (importe.modo de BNB inválido) detiene el proceso antes de escribir nada (en P3/P4 solo fallaba
+    la sombra)."""
+    ruta = _registro_alterado(registro, tmp_path, lambda d: d["FORMATOS"]["BNB_EXTRACTO_V1"]["importe"].update(
+        modo="OTRO"))
+    with pytest.raises(ValueError, match="PROCESO DETENIDO") as e:
+        _correr(motor, tmp_path / "con", sombra=True, registro_env=ruta)
+    assert "inválido para normalizar" in str(e.value) and "importe.modo" in str(e.value)
+    assert not (tmp_path / "con" / "out").exists()
 
 
 def _motor_aparte(tmp_path, nombre, generico_src=None):
-    """Copia el legado (y captura_origen.py) a una carpeta propia, con o sin motor_generico.py al lado.
+    """Copia el motor (y captura_origen.py) a una carpeta propia, con o sin motor_generico.py al lado.
     Desde P4 la detección productiva necesita deteccion_registro.py y registro_bancos.json: se copian siempre."""
     d = tmp_path / nombre
     d.mkdir()
@@ -636,23 +652,37 @@ def _motor_aparte(tmp_path, nombre, generico_src=None):
     return mod
 
 
-def test_un_generico_que_explota_no_detiene_al_legado(tmp_path, sin_sombra):
-    """Aunque el punto de entrada del genérico lance una excepción, el legado termina igual."""
+def test_una_referencia_legada_que_explota_no_detiene_la_produccion(tmp_path, sin_sombra):
+    """Aunque la comparación contra el legado lance una excepción, la producción termina igual."""
     src = (REPO / "motor_generico.py").read_text(encoding="utf-8")
-    roto = _motor_aparte(tmp_path, "roto", src + "\n\ndef ejecutar_sombra_produccion(*a, **k):\n    raise RuntimeError('boom')\n")
+    roto = _motor_aparte(tmp_path, "roto", src + "\n\ndef ejecutar_referencia_legado(*a, **k):\n    raise RuntimeError('boom')\n")
     sin, s_sin = sin_sombra
     con, s_con = _correr(roto, tmp_path / "con", sombra=True)
     assert con["sombra_estado"]["estado"] == "ERROR" and "boom" in con["sombra_estado"]["error"]
     _misma_produccion(con, s_con, sin, s_sin)
 
 
-def test_motor_sin_motor_generico_al_lado_tampoco_falla(tmp_path, sin_sombra):
-    """Si motor_generico.py no existe junto al motor, la producción sigue igual (sombra_estado = ERROR)."""
-    aislado = _motor_aparte(tmp_path, "solo_legado")
+def test_un_normalizador_legado_que_falla_solo_se_reporta(motor, tmp_path, sin_sombra, monkeypatch):
+    """Si un normalizar_* legado (referencia) falla, la producción sale idéntica y el informe lo dice."""
+    def roto(*a, **k):
+        raise RuntimeError("legado roto")
+    monkeypatch.setattr(motor, "normalizar_bmsc", roto)
     sin, s_sin = sin_sombra
-    con, s_con = _correr(aislado, tmp_path / "con", sombra=True)
-    assert con["sombra_estado"]["estado"] == "ERROR"
+    con, s_con = _correr(motor, tmp_path / "con", sombra=True)
+    s = con["sombra_estado"]
+    assert s["estado"] == "CON_DIFERENCIAS" and s["archivos_difieren"] == 1
+    csv = pd.read_csv(s_con / "SOMBRA_DIFERENCIAS.csv", encoding="utf-8-sig", dtype=str)
+    assert csv[["ARCHIVO", "NIVEL"]].values.tolist() == [["mercantil_1.xls", "ERROR_LEGADO"]]
     _misma_produccion(con, s_con, sin, s_sin)
+
+
+def test_p5_motor_sin_motor_generico_al_lado_se_detiene_con_error_claro(tmp_path):
+    """Desde P5 motor_generico.py es la normalización productiva: sin él el proceso se detiene antes de
+    escribir nada (en P3/P4 solo fallaba la sombra)."""
+    aislado = _motor_aparte(tmp_path, "solo_legado")
+    with pytest.raises(ValueError, match="PROCESO DETENIDO: no se encuentra motor_generico.py"):
+        _correr(aislado, tmp_path / "con", sombra=True)
+    assert not (tmp_path / "con" / "out").exists()
 
 
 def test_archivos_de_sombra_no_se_toman_como_extractos(motor, tmp_path):

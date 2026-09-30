@@ -1,37 +1,42 @@
 """
 ============================================================
-CONTROL DE DEPÓSITOS CBBA — MOTOR GENÉRICO (P3, MODO SOMBRA)
+CONTROL DE DEPÓSITOS CBBA — MOTOR GENÉRICO (P5: NORMALIZACIÓN PRODUCTIVA)
 ============================================================
 
 Motor dirigido por `registro_bancos.json`: la misma secuencia para todos
-los bancos, sin ramas por banco. Detecta el formato y la cuenta, lee la
-tabla de movimientos, la mapea a las 26 `COLUMNAS_LISTS` y valida saldos
-usando SOLO la configuración del registro.
+los bancos, sin ramas por banco. Lee la tabla de movimientos, la mapea a
+las 26 `COLUMNAS_LISTS` y valida saldos usando SOLO la configuración del
+registro.
 
-ESTADO: SOMBRA. Este módulo NUNCA produce salida productiva.
-  * La salida productiva (NORMALIZADO.xlsx, LISTS.csv) es exclusivamente
-    la del motor legado (`motor_control_depositos_cbba.py`).
-  * Este motor corre en paralelo, compara su resultado contra el del
-    legado (detección, movimientos normalizados y validación de saldos)
-    y REPORTA cada diferencia en `SOMBRA_REPORTE.json` y
-    `SOMBRA_DIFERENCIAS.csv`. Una diferencia no altera la producción.
-  * Ningún error de este módulo debe detener ni cambiar al motor legado.
+ESTADO: PRODUCTIVO desde P5.
+  * `motor_control_depositos_cbba.py` identifica cada extracto con
+    `deteccion_registro.py` (P4) y lo normaliza y valida con
+    `MotorGenerico.normalizar` / `MotorGenerico.validar` (P5). La salida
+    productiva (NORMALIZADO.xlsx, LISTS.csv, ORIGEN.xlsx) sale de aquí.
+  * Los `normalizar_*` / `validar_archivo` del legado quedan SOLO como
+    referencia: `ejecutar_referencia_legado` los corre DESPUÉS de escribir
+    la salida productiva, compara y REPORTA cada diferencia en
+    `SOMBRA_REPORTE.json` y `SOMBRA_DIFERENCIAS.csv` (el legado es ahora la
+    sombra). Una diferencia o un fallo del legado no altera la producción.
+    Se retiran en P6.
 
-Qué reutiliza del legado (solo primitivas sin lógica bancaria, y sin
+Qué reutiliza del motor (solo primitivas sin lógica bancaria, y sin
 modificarlas): conversión de números/fechas/horas/códigos, lector de
 Excel robusto, búsqueda difusa de columnas y `finalizar_dataframe`
 (que fija `COLUMNAS_LISTS` y `CLAVE TRANSACCIÓN`, congeladas).
 
-Qué NO usa del legado (lo reimplementa desde el registro, para que la
-comparación tenga sentido): `detectar_formato`, `ENCABEZADOS_ESPERADOS`,
-`HOJAS_VALIDAS`, `encontrar_fila_encabezado`, `leer_tabla_movimientos`,
-todos los `normalizar_*` y `validar_archivo`.
+Qué NO usa del legado (lo reimplementa desde el registro): `detectar_formato`,
+`ENCABEZADOS_ESPERADOS`, `HOJAS_VALIDAS`, `encontrar_fila_encabezado`,
+`leer_tabla_movimientos`, todos los `normalizar_*` y `validar_archivo`.
+La fila de encabezado exige `encabezados.puntaje_minimo` (D-09): nunca se
+normaliza una tabla leída desde una fila cualquiera.
 
 Agregar una cuenta nueva de un formato ya conocido = una entrada en
 `CUENTAS` del registro; cero código (ver `Registro.con_cuenta`).
 
-Uso como módulo (dentro del motor legado, ya integrado):
-    from motor_generico import ejecutar_sombra_produccion
+Uso como módulo (dentro del motor productivo, ya integrado):
+    MotorGenerico(Registro.cargar(ruta), primitivas).normalizar(...)
+    ejecutar_referencia_legado(...)       # comparación contra el legado
 
 Uso como script (compara la carpeta contra el legado, sin escribir
 NORMALIZADO.xlsx ni LISTS.csv):
@@ -53,7 +58,7 @@ import numpy as np
 import pandas as pd
 
 
-VERSION_MOTOR_GENERICO = "P3-sombra-1"
+VERSION_MOTOR_GENERICO = "P5-1"
 
 RUTA_REGISTRO_DEFECTO = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -702,10 +707,31 @@ class MotorGenerico:
 
         raw = hojas[hoja]
 
-        fila, _, _ = self._fila_encabezado(
+        esperados = fmt["encabezados"]["puntaje"]
+
+        fila, puntaje, total = self._fila_encabezado(
             raw,
-            fmt["encabezados"]["puntaje"]
+            esperados
         )
+
+        # D-09: la tabla solo se lee desde un encabezado que cumple el
+        # mínimo del registro; nunca desde la «mejor» fila cualquiera.
+        if fila is None or puntaje < fmt["encabezados"]["puntaje_minimo"] * total:
+
+            texto = (
+                ""
+                if fila is None
+                else self._norm(
+                    " | ".join(raw.loc[fila].fillna("").astype(str).tolist())
+                )
+            )
+
+            faltan = [e for e in esperados if self._norm(e) not in texto]
+
+            raise ValueError(
+                f"hoja '{hoja}': encabezado de la tabla incompleto "
+                f"({max(puntaje, 0)}/{total}); faltan: {', '.join(faltan)}"
+            )
 
         tabla = self.L.leer_excel_robusto(
             ruta,
@@ -1634,8 +1660,11 @@ def armar_informe(motor, archivos, lote, extra=None):
     diferencias_total = sum(len(a["diferencias"]) for a in archivos)
 
     informe = {
-        "modo": "SOMBRA",
-        "produccion": "motor legado (el motor genérico no produce salida)",
+        "modo": "COMPARACION_CARPETA",
+        "produccion": (
+            "ninguna: comparación genérico ↔ legado de una carpeta "
+            "(no escribe NORMALIZADO.xlsx ni LISTS.csv)"
+        ),
         "version_motor_generico": VERSION_MOTOR_GENERICO,
         "version_registro": motor.registro.version,
         "sha256_registro": motor.registro.sha256,
@@ -1713,93 +1742,160 @@ def escribir_informe(informe, carpeta):
 
 
 # ============================================================
-# INTEGRACIÓN EN PRODUCCIÓN (SOMBRA, NUNCA DETIENE AL LEGADO)
+# PRODUCCIÓN (P5): EL LEGADO COMO REFERENCIA EN SOMBRA
 # ============================================================
 
-def ejecutar_sombra_produccion(
+MODO_REFERENCIA = "REFERENCIA_LEGADO"
+
+
+def referencia_archivo(
     legado,
-    mapa_archivos,
-    df_deteccion_final,
-    tablas,
-    df_validacion,
+    nombre,
+    ruta,
+    deteccion,
+    tabla_produccion,
+    validacion_produccion,
+    datos_validados,
     lote,
-    fecha_carga,
-    carpeta_reporte,
-    ruta_registro=None
+    fecha_carga
 ):
     """
-    Se llama al final de `ejecutar_motor`, cuando la salida productiva ya
-    fue escrita. Compara la corrida del legado (detecciones, tablas
-    normalizadas y validaciones tal como las produjo) con el motor
-    genérico y escribe el informe de diferencias.
+    Corre el normalizador y la validación LEGADOS de UN archivo y los
+    compara con la salida productiva (motor genérico). Nunca lanza.
 
-    Devuelve un diccionario de estado. NUNCA lanza: cualquier fallo de
-    este módulo queda como {"estado": "ERROR", ...} y no afecta al legado.
+    `deteccion` es el resultado de la detección productiva (P4): el legado
+    recibe su `formato_legado` (el propio id de la cuenta o, para una cuenta
+    nueva, la plantilla del formato con la identidad del registro).
+    `datos_validados` son las filas que la producción validó (mismas filas y
+    mismo orden), para que la validación legada use exactamente lo mismo.
+    """
+
+    r = {
+        "archivo": nombre,
+        "formato_legado": deteccion.formato_legado,
+        "cuenta_generico": deteccion.cuenta_id,
+        "estado": "COINCIDE",
+        "movimientos_legado": None,
+        "movimientos_generico": len(tabla_produccion),
+        "diferencias": [],
+        "observaciones": []
+    }
+
+    try:
+
+        tabla_legado = legado.normalizar_archivo(
+            ruta,
+            deteccion.formato_legado,
+            lote,
+            fecha_carga,
+            nombre_origen=nombre
+        )
+
+        # Cuenta nueva: la plantilla legada trae la identidad de otra
+        # cuenta. Cuenta conocida: se compara tal cual (una contradicción
+        # con el registro aparece como diferencia de BANCO/CUENTA/MONEDA).
+        if deteccion.cuenta_nueva:
+            tabla_legado = legado.aplicar_identidad_registro(
+                tabla_legado,
+                deteccion
+            )
+
+        validacion_legado = legado.validar_archivo(
+            ruta,
+            deteccion.formato_legado,
+            datos_validados
+        )
+
+    except Exception as e:
+
+        r["estado"] = "DIFIERE"
+        r["diferencias"].append({
+            "nivel": "ERROR_LEGADO",
+            "columna": "",
+            "fila_indice": None,
+            "valor_legado": _error_a_dict(e),
+            "valor_generico": "OK",
+            "detalle": "el normalizador legado (referencia) falla y la producción procesa"
+        })
+        return r
+
+    r["movimientos_legado"] = len(tabla_legado)
+
+    difs = comparar_frames(tabla_legado, tabla_produccion)
+    difs.extend(
+        comparar_validacion(validacion_legado, validacion_produccion)
+    )
+
+    r["observaciones"] = [d for d in difs if d["nivel"] == "OBSERVACION"]
+    r["diferencias"] = [d for d in difs if d["nivel"] != "OBSERVACION"]
+
+    if r["diferencias"]:
+        r["estado"] = "DIFIERE"
+
+    return r
+
+
+def ejecutar_referencia_legado(
+    legado,
+    registro,
+    mapa_archivos,
+    detecciones,
+    tablas,
+    validaciones,
+    datos_validados,
+    lote,
+    fecha_carga,
+    carpeta_reporte
+):
+    """
+    Se llama al final de `ejecutar_motor`, cuando la salida productiva
+    (motor genérico) ya fue escrita. Compara archivo por archivo contra los
+    `normalizar_*` / `validar_archivo` legados y escribe el informe.
+
+    detecciones     {nombre: resultado de la detección productiva}
+    tablas          {nombre: DataFrame productivo del archivo (índice original)}
+    validaciones    {nombre: validación productiva (dict)}
+    datos_validados {nombre: filas que la producción validó}
+
+    Devuelve un diccionario de estado. NUNCA lanza: cualquier fallo queda
+    como {"estado": "ERROR", ...} y no afecta la producción.
     """
 
     try:
 
-        registro = Registro.cargar(
-            ruta_registro
-            or os.environ.get("CBBA_REGISTRO_BANCOS")
-        )
-
-        problemas = registro.validar()
-
-        if problemas:
-            return {
-                "estado": "ERROR",
-                "error": "registro inválido: " + "; ".join(problemas),
-                "ruta_reporte": None
-            }
-
-        motor = MotorGenerico(registro, legado)
-
-        archivos = []
-
-        validacion_por_archivo = {
-            fila["ARCHIVO"]: fila
-            for _, fila in df_validacion.iterrows()
-        }
-
-        for (_, fila), tabla in zip(df_deteccion_final.iterrows(), tablas):
-
-            nombre = fila["ARCHIVO"]
-
-            v = validacion_por_archivo.get(nombre)
-
-            validacion_legado = (
-                None
-                if v is None
-                else {
-                    k: v[k]
-                    for k in (
-                        "SALDO INICIAL", "CRÉDITOS", "DÉBITOS",
-                        "SALDO CALCULADO", "SALDO FINAL", "DIFERENCIA",
-                        "ESTADO"
-                    )
-                }
+        archivos = [
+            referencia_archivo(
+                legado,
+                nombre,
+                mapa_archivos[nombre],
+                detecciones[nombre],
+                tablas[nombre],
+                validaciones[nombre],
+                datos_validados[nombre],
+                lote,
+                fecha_carga
             )
+            for nombre in tablas
+        ]
 
-            archivos.append(
-                sombra_archivo(
-                    motor,
-                    nombre,
-                    mapa_archivos[nombre],
-                    fila["FORMATO"],
-                    lote,
-                    fecha_carga,
-                    tabla_legado=tabla,
-                    validacion_legado=validacion_legado
+        informe = armar_informe(
+            types.SimpleNamespace(registro=registro),
+            archivos,
+            lote,
+            extra={
+                "modo": MODO_REFERENCIA,
+                "produccion": (
+                    "motor genérico (registro_bancos.json); los normalizar_* "
+                    "legados solo se comparan como referencia"
                 )
-            )
-
-        informe = armar_informe(motor, archivos, lote)
+            }
+        )
 
         ruta_json, ruta_csv = escribir_informe(informe, carpeta_reporte)
 
         return {
             "estado": informe["estado"],
+            "modo": MODO_REFERENCIA,
             "archivos_comparados": informe["archivos_comparados"],
             "archivos_coinciden": informe["archivos_coinciden"],
             "archivos_difieren": informe["archivos_difieren"],
@@ -1813,6 +1909,7 @@ def ejecutar_sombra_produccion(
 
         return {
             "estado": "ERROR",
+            "modo": MODO_REFERENCIA,
             "error": _error_a_dict(e),
             "ruta_reporte": None
         }

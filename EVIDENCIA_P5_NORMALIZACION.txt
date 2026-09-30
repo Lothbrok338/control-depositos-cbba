@@ -1,0 +1,113 @@
+EVIDENCIA P5 — normalización productiva por motor_generico.py + registro_bancos.json
+Fecha: 2026-09-30 · referencia: checkpoint P4 = main 998158e (motor + deteccion_registro + captura_origen + motor_generico + registro de ese commit)
+Comandos (desde tests/, reloj fijado, 12 fixtures reales):
+  python tests/evidencia_ab.py <p4>/motor_control_depositos_cbba.py motor_control_depositos_cbba.py
+  python tests/evidencia_p5_extra.py <p4> 998158e
+Suite completa P5: 620 PASS · 24 SKIP · 14 XFAIL · 0 FAIL (P4: 577 · 22 · 16 · 0)
+
+A) SALIDAS OPERATIVAS P4 vs P5 (A/B)
+IDENTICO  LISTS.csv (bytes)  1625443 bytes; sha defdae4bdf3065be
+IDENTICO  NORMALIZADO.xlsx hojas  ['LISTS', 'VALIDACION', 'RESUMEN', 'DIAGNOSTICO']
+IDENTICO  NORMALIZADO.xlsx · LISTS (valores+formatos+tablas)  78004 celdas
+IDENTICO  NORMALIZADO.xlsx · VALIDACION (valores+formatos+tablas)  130 celdas
+IDENTICO  NORMALIZADO.xlsx · RESUMEN (valores+formatos+tablas)  96 celdas
+IDENTICO  NORMALIZADO.xlsx · DIAGNOSTICO (valores+formatos+tablas)  52 celdas
+IDENTICO  retorno['df_final']
+IDENTICO  retorno['df_validacion']
+IDENTICO  retorno['resumen']
+IDENTICO  retorno['df_resultado_archivos']
+IDENTICO  retorno['df_deteccion_final']
+IDENTICO  claves del retorno  nuevas: []
+IDENTICO  salida de consola (sin lineas de ORIGEN ni SOMBRA)  116 lineas
+ORIGEN.xlsx en referencia / actual: True / True
+SOMBRA_REPORTE.json en referencia / actual: True / True
+sombra_estado del motor actual: {'estado': 'SIN_DIFERENCIAS', 'archivos_comparados': 12, 'archivos_coinciden': 12, 'archivos_difieren': 0, 'diferencias_total': 0}
+archivos de salida referencia: ['LISTS.csv', 'NORMALIZADO.xlsx', 'ORIGEN.xlsx', 'SOMBRA_DIFERENCIAS.csv', 'SOMBRA_REPORTE.json']
+archivos de salida actual    : ['LISTS.csv', 'NORMALIZADO.xlsx', 'ORIGEN.xlsx', 'SOMBRA_DIFERENCIAS.csv', 'SOMBRA_REPORTE.json']
+
+RESULTADO: SIN CAMBIOS DE COMPORTAMIENTO OPERATIVO
+
+B) ORIGEN, HISTORICO, DETALLE POR ARCHIVO, PRODUCCION SIN LEGADO, CUENTAS NUEVAS, COMPONENTES CONGELADOS
+1) ORIGEN.xlsx E HISTORICO P3b
+IDENTICO  ORIGEN.xlsx (4 hojas, valores+formatos)  {'DATOS_ORIGINALES': 411005, 'METADATOS_EXTRACTO': 343, 'METADATOS_EXTRA': 1187, 'MAPA_ORIGEN': 32520}
+IDENTICO  EXTRACTO_HISTORICO P3b (11 archivos, huella completa)  OK OK; advertencias 0/0
+
+2) POR ARCHIVO (LISTS.csv): movimientos, importes, saldos, claves, banco/cuenta/moneda
+IDENTICO  26 columnas (nombres y orden)  26 columnas
+IDENTICO  mismos archivos con movimientos  11 archivos (BISA_ME: 0 movimientos)
+IDENTICO  bcp_me_1.xls            mov=8 importe=5565.0 cred=5565.0 deb=0.0 saldo_fin=27888.54 claves=e77920a5ac7b ('BCP', '301-5005425-2-71', 'USD')
+IDENTICO  bcp_mn_3.xls            mov=2331 importe=4855140.95 cred=3807655.56 deb=1047485.39 saldo_fin=4840975.83 claves=defd73b586cf ('BCP', '301-5005684-3-97', 'BOB')
+IDENTICO  bisa_mn_2.xls           mov=1 importe=1139.0 cred=1139.0 deb=0.0 saldo_fin=63826.52 claves=d806a15dc720 ('BISA', '0696870039', 'BOB')
+IDENTICO  bnb_ahorro_2.xls        mov=95 importe=13070.0 cred=13070.0 deb=0.0 saldo_fin=269467.49 claves=e10034481e72 ('BNB', '3501936692', 'BOB')
+IDENTICO  bnb_me_1_1.xls          mov=7 importe=7030.85 cred=1477.25 deb=5553.6 saldo_fin=139590.84 claves=d17b8a9632c3 ('BNB', '3400041236', 'USD')
+IDENTICO  bnb_mn_3.xls            mov=1184 importe=20992191.82 cred=8909991.73 deb=12080920.09 saldo_fin=4116014.12 claves=c68ce7b45c0b ('BNB', '3000100152', 'BOB')
+IDENTICO  clinica_1.xls           mov=14 importe=68976.9 cred=68976.9 deb=0.0 saldo_fin=118301.76 claves=b8e795805b17 ('BNB', '3000100705', 'BOB')
+IDENTICO  economico_1.xlsx        mov=388 importe=469529.09 cred=440785.38 deb=28743.71 saldo_fin=647240.28 claves=0eeff904649d ('BANCO ECONÓMICO', '3041210569', 'BOB')
+IDENTICO  economico_ahorro.xlsx   mov=1 importe=6000.0 cred=6000.0 deb=0.0 saldo_fin=67601.86 claves=8e3087f3f418 ('BANCO ECONÓMICO', '3051446946', 'BOB')
+IDENTICO  mercantil_1.xls         mov=3 importe=7238.0 cred=7238.0 deb=0.0 saldo_fin=201662.79 claves=8299cc57a557 ('BMSC', '1000872489', 'BOB')
+IDENTICO  union_mn_2.xls          mov=32 importe=143466.2 cred=143466.2 deb=0.0 saldo_fin=379646.61 claves=197e4ca1bbe8 ('BANCO UNIÓN', '10000003224552', 'BOB')
+IDENTICO  validación de saldos (12 archivos, hoja VALIDACION)  {'OK': 12}
+
+3) REFERENCIA LEGADA EN SOMBRA (motor actual)
+    {'estado': 'SIN_DIFERENCIAS', 'modo': 'REFERENCIA_LEGADO', 'archivos_comparados': 12, 'archivos_coinciden': 12, 'diferencias_total': 0, 'observaciones_total': 0}
+IDENTICO  referencia legada: 12/12 coinciden, 0 diferencias, 0 observaciones
+
+4) PRODUCCION SIN NINGUN NORMALIZADOR LEGADO
+IDENTICO  LISTS.csv (bytes) sin legado = referencia P4  legado llamado: nunca
+IDENTICO  NORMALIZADO.xlsx (4 hojas) sin legado = referencia P4
+
+5) CUENTAS NUEVAS SOLO POR CONFIGURACION (13 ids renombrados *_CFG, sin legado)
+    detección: 12/12 cuentas nuevas para el legado; FORMATO = ['BCP_ME_CFG', 'BCP_MN_CFG', 'BISA_ME_CFG']...
+IDENTICO  LISTS.csv (bytes) con cuentas nuevas = referencia P4  legado llamado: nunca
+IDENTICO  NORMALIZADO.xlsx · LISTS con cuentas nuevas
+IDENTICO  NORMALIZADO.xlsx · VALIDACION con cuentas nuevas (salvo la columna FORMATO = id)
+IDENTICO  NORMALIZADO.xlsx · DIAGNOSTICO con cuentas nuevas (salvo la columna FORMATO = id)
+IDENTICO  ORIGEN.xlsx generado con cuentas nuevas  movimientos mapeados 4064
+
+6) COMPONENTES CONGELADOS (998158e vs. actual, texto fuente del motor):
+IDENTICO  COLUMNAS_LISTS
+IDENTICO  crear_clave
+IDENTICO  valor_clave_numero
+IDENTICO  finalizar_dataframe
+IDENTICO  normalizar_bnb
+IDENTICO  normalizar_bcp
+IDENTICO  normalizar_union
+IDENTICO  normalizar_economico
+IDENTICO  normalizar_bisa
+IDENTICO  normalizar_bmsc
+IDENTICO  normalizar_archivo
+IDENTICO  validar_archivo
+IDENTICO  ecuacion_saldo
+IDENTICO  HOJAS_VALIDAS
+IDENTICO  ENCABEZADOS_ESPERADOS
+IDENTICO  encontrar_fila_encabezado
+IDENTICO  leer_tabla_movimientos
+IDENTICO  extraer_nombre_bnb
+IDENTICO  descubrir_archivos
+IDENTICO  numero
+IDENTICO  normalizar_fecha
+IDENTICO  normalizar_hora
+IDENTICO  codigo_texto
+IDENTICO  normalizar_texto
+IDENTICO  buscar_columna
+IDENTICO  buscar_columna_opcional
+IDENTICO  leer_excel_robusto
+IDENTICO  leer_todas_hojas
+IDENTICO  texto_de_archivo
+IDENTICO  modulo_deteccion
+IDENTICO  detector_registro
+IDENTICO  detectar_extracto
+IDENTICO  detectar_formato
+IDENTICO  aplicar_identidad_registro
+
+Cambiados: ['ejecutar_motor']
+Nuevos   : ['_MODULO_GENERICO', 'contrato_origen_registro', 'modulo_generico', 'normalizador_registro', 'normalizar_extracto', 'validar_extracto']
+Quitados : []
+IDENTICO  captura_origen.py (git diff vs 998158e)
+IDENTICO  historico.py (git diff vs 998158e)
+IDENTICO  deteccion_registro.py (git diff vs 998158e)
+IDENTICO  NORMALIZADOR_POWER_AUTOMATE.zip (git diff vs 998158e)
+motor_generico.py: MODIFICADO (P5) (git diff vs 998158e)
+registro_bancos.json: MODIFICADO (P5) (git diff vs 998158e)
+
+RESULTADO: SIN REGRESIONES

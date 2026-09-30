@@ -5,7 +5,7 @@ Estado y decisiones: `ESTADO_PROYECTO.md` · Diseño: `DISENO_TRES_CAPAS.md` · 
 ## Ejecutar las pruebas
 ```
 pip install -r tests/requirements-test.txt
-python -m pytest tests -q          # esperado: 577 passed, 22 skipped, 16 xfailed
+python -m pytest tests -q          # esperado: 620 passed, 24 skipped, 14 xfailed
 python tests/informe.py            # regenera tests/reports/INFORME_PRUEBAS.md
 ```
 Comparación A/B contra un motor de referencia: `python tests/evidencia_ab.py <motor_original.py> motor_control_depositos_cbba.py`.
@@ -14,13 +14,16 @@ Comparación A/B contra un motor de referencia: `python tests/evidencia_ab.py <m
 ```
 python motor_control_depositos_cbba.py <carpeta_entrada> <ruta>/NORMALIZADO.xlsx
 ```
-Genera `NORMALIZADO.xlsx`, `LISTS.csv` (**la salida productiva es solo la del motor legado**) y `ORIGEN.xlsx` (captura íntegra de origen, `captura_origen.py`).
+Genera `NORMALIZADO.xlsx`, `LISTS.csv` (**desde P5 normalizados por `motor_generico.py` + `registro_bancos.json`**) y `ORIGEN.xlsx` (captura íntegra de origen, `captura_origen.py`). **Junto al motor deben estar `deteccion_registro.py`, `motor_generico.py`, `registro_bancos.json` y `captura_origen.py`.**
 
 ## Detección por registro (P4)
-Banco, cuenta, moneda y formato se identifican con `registro_bancos.json` a través de `deteccion_registro.py`: **ambos deben estar junto a `motor_control_depositos_cbba.py`** (o `CBBA_REGISTRO_BANCOS=<ruta>` para otro registro). La cuenta se lee solo en la celda rotulada de la cabecera y debe estar registrada; encabezado incompleto, cabecera ambigua, cuenta no registrada o el reporte Unión «Últimos 12» detienen el proceso con el motivo. **Cuenta nueva de un formato conocido = una entrada en `CUENTAS`** (id único, formato, banco, cuenta tal como figura en la cabecera, moneda). La normalización sigue en el motor legado (P5 pendiente).
+Banco, cuenta, moneda y formato se identifican con `registro_bancos.json` a través de `deteccion_registro.py`: **ambos deben estar junto a `motor_control_depositos_cbba.py`** (o `CBBA_REGISTRO_BANCOS=<ruta>` para otro registro). La cuenta se lee solo en la celda rotulada de la cabecera y debe estar registrada; encabezado incompleto, cabecera ambigua, cuenta no registrada o el reporte Unión «Últimos 12» detienen el proceso con el motivo. **Cuenta nueva de un formato conocido = una entrada en `CUENTAS`** (id único, formato, banco, cuenta tal como figura en la cabecera, moneda).
 
-## Motor genérico en modo sombra (P3)
-`registro_bancos.json` describe formatos y cuentas; `motor_generico.py` corre en paralelo, compara contra el legado y escribe `SOMBRA_REPORTE.json` y `SOMBRA_DIFERENCIAS.csv` junto a `NORMALIZADO.xlsx`. No produce salida ni altera la producción. Cuenta nueva de un formato conocido = una entrada en `CUENTAS`. Solo comparar una carpeta: `python motor_generico.py <carpeta_entrada> [<carpeta_reporte>]`. Apagar: `CBBA_MOTOR_SOMBRA=0`.
+## Normalización por registro (P5)
+`archivo → detección por registro → normalización genérica → salida productiva`. `motor_generico.py` normaliza a las 26 `COLUMNAS_LISTS` y valida saldos solo con `registro_bancos.json`; `CLAVE TRANSACCIÓN` sigue saliendo de `crear_clave` (congelada). **Cuenta nueva de un formato conocido = una entrada en `CUENTAS`**: se normaliza sin código, sin `normalizar_*` propio y sin plantilla legada. Sin `motor_generico.py` o con un registro que no sirve para normalizar, el proceso se detiene antes de escribir.
+
+## Referencia legada en sombra (P5; antes «motor genérico en sombra», P3)
+Los `normalizar_*` / `validar_archivo` legados ya no producen salida: después de escribirla, el paso 16 los corre como referencia y escribe `SOMBRA_REPORTE.json` (modo `REFERENCIA_LEGADO`) y `SOMBRA_DIFERENCIAS.csv` junto a `NORMALIZADO.xlsx`. Nunca altera ni detiene la producción. Apagar: `CBBA_MOTOR_SOMBRA=0`. Se retira en P6. Comparar solo una carpeta (genérico con su propia detección vs. legado): `python motor_generico.py <carpeta_entrada> [<carpeta_reporte>]`.
 
 ## Extracto histórico para Contabilidad / Ingresos (P3b, capa 4)
 ```

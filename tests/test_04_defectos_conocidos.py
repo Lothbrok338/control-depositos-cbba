@@ -1,7 +1,12 @@
 """DEFECTOS REALES diagnosticados. Cada test describe el comportamiento CORRECTO esperado y hoy FALLA
 (xfail estricto). Al corregir el motor el test pasa -> pytest lo reporta como XPASS(strict) y hay que
-quitar la marca. Codigos D-xx = numeracion de este informe."""
+quitar la marca. Codigos D-xx = numeracion de este informe.
+
+Desde P5 los defectos de NORMALIZACION se prueban sobre la RUTA PRODUCTIVA (`normalizar_extracto`: motor
+generico gobernado por registro_bancos.json), que es la que produce NORMALIZADO.xlsx / LISTS.csv. Los
+normalizar_* legados ya no producen salida (solo referencia hasta P6)."""
 import datetime as dt
+import json
 import os
 import subprocess
 import sys
@@ -20,6 +25,12 @@ def defecto(codigo, texto):
 
 
 TS = pd.Timestamp("2026-01-01")
+
+
+def normalizar_productivo(motor, ruta, cuenta_id, nombre="x.xlsx", normalizador=None):
+    """P5: la normalizacion que produce la salida (motor generico + registro)."""
+    df, _ = motor.normalizar_extracto(str(ruta), cuenta_id, "L", TS, nombre_origen=nombre, normalizador=normalizador)
+    return df
 
 # ------------------------------- NUMEROS -------------------------------
 @defecto("D-01 NUMERO", "'1,234' (coma de miles sin decimales) se lee como 1.234 en vez de 1234")
@@ -53,7 +64,7 @@ def test_hora_fraccion_de_dia_excel(motor):
 def test_bnb_fecha_con_mes_abreviado_no_se_pierde(motor, tmp_path):
     ruta = crear_xlsx_bnb(tmp_path / "x.xlsx", "3000100705",
                           [{"fecha": "24/Ago/2026", "cred": 100.0, "saldo": 1100.0}])
-    df = motor.normalizar_archivo(str(ruta), "BNB_CLINICA", "L", TS, nombre_origen="x.xlsx")
+    df = normalizar_productivo(motor, ruta, "BNB_CLINICA")
     assert len(df) == 1
 
 
@@ -65,7 +76,7 @@ def test_fila_con_importe_y_fecha_invalida_no_se_pierde_en_silencio(motor, tmp_p
         {"fecha": "32/13/2026", "cred": 50.0, "saldo": 1150.0},
     ])
     with pytest.raises(ValueError):
-        motor.normalizar_archivo(str(ruta), "BNB_CLINICA", "L", TS, nombre_origen="x.xlsx")
+        normalizar_productivo(motor, ruta, "BNB_CLINICA")
 
 
 @defecto("D-08 AÑO", "el año 2026 esta fijo: un movimiento de 2027 bloquea toda la exportacion")
@@ -77,14 +88,32 @@ def test_movimiento_de_2027_no_bloquea(motor, tmp_path):
 
 
 # ------------------------------- ENCABEZADO -------------------------------
-@defecto("D-09 ENCABEZADO", "(primitiva) encontrar_fila_encabezado acepta puntaje 0 (fila cualquiera) sin error. "
-                                        "RUTA PRODUCTIVA CERRADA EN P4: la deteccion por registro exige el encabezado "
-                                        "completo en la misma hoja antes de normalizar (test_08). La primitiva la usan los "
-                                        "normalizar_* congelados: se corrige con la normalizacion (P5)")
-def test_encabezado_sin_coincidencias_debe_fallar(motor):
-    raw = pd.DataFrame([["Reporte", "x"], ["nada", "util"]])
-    with pytest.raises(ValueError):
-        motor.encontrar_fila_encabezado(raw, "BNB_MN")
+# D-09: CORREGIDO EN P5 (ruta productiva cerrada ya en P4 por la deteccion). La normalizacion productiva (motor
+# generico) exige encabezados.puntaje_minimo del registro antes de leer la tabla. La primitiva legada
+# encontrar_fila_encabezado sigue igual, pero ya no interviene en la salida (solo referencia; se retira en P6).
+def _hoja_bnb(ruta, filas):
+    from openpyxl import Workbook
+    wb = Workbook(); ws = wb.active; ws.title = "Hoja 1"
+    for f in filas:
+        ws.append(f)
+    wb.save(ruta)
+    return ruta
+
+
+def test_encabezado_sin_coincidencias_debe_fallar(motor, tmp_path):
+    """D-09 (corregido en P5): sin ninguna fila de encabezado reconocible la normalizacion productiva falla con
+    ValueError; nunca lee la tabla desde una fila cualquiera."""
+    ruta = _hoja_bnb(tmp_path / "x.xlsx", [["Reporte", "x"], ["nada", "util"]])
+    with pytest.raises(ValueError, match="encabezado de la tabla incompleto"):
+        normalizar_productivo(motor, ruta, "BNB_MN")
+
+
+def test_encabezado_parcial_tambien_falla_y_dice_que_falta(motor, tmp_path):
+    """D-09 (corregido en P5): 3 de 7 encabezados = error con la lista de los que faltan."""
+    ruta = _hoja_bnb(tmp_path / "x.xlsx", [["Cuenta:", "3000100152"], ["Fecha", "Hora", "Saldo"],
+                                           ["01/08/2026", "10:00:00", 100]])
+    with pytest.raises(ValueError, match=r"\(3/7\); faltan: DESCRIPCION, CODIGO DE TRANSACCION, DEBITOS, CREDITOS"):
+        normalizar_productivo(motor, ruta, "BNB_MN")
 
 
 # ------------------------------- DETECCION DE CUENTA -------------------------------
@@ -103,17 +132,22 @@ def test_bmsc_con_otra_cuenta_no_se_acepta(motor, tmp_path):
     assert motor.detectar_formato(str(ruta)) == "NO_RECONOCIDO"
 
 
-@defecto("D-12 CUENTA NUEVA", "un formato UNION_* nuevo cae en el 'else' y recibe SIN ERROR la cuenta y moneda "
-                              "de UNION_ME (20000003224544 / USD)")
-def test_formato_union_nuevo_no_hereda_cuenta_ajena(motor, monkeypatch):
-    monkeypatch.setitem(motor.HOJAS_VALIDAS, "UNION_XX", motor.HOJAS_VALIDAS["UNION_MN"])
-    monkeypatch.setitem(motor.ENCABEZADOS_ESPERADOS, "UNION_XX", motor.ENCABEZADOS_ESPERADOS["UNION_MN"])
-    try:
-        df = motor.normalizar_archivo(str(EXTRACTOS / FIXTURES["UNION_MN"]), "UNION_XX", "L", TS,
-                                      nombre_origen="union_mn_2.xls")
-    except Exception:
-        return  # fallar de forma visible es aceptable
-    assert set(df["CUENTA BANCARIA"]) != {"20000003224544"}
+# D-12: CORREGIDO EN P5. La normalizacion productiva no tiene ramas por cuenta: BANCO / CUENTA BANCARIA / MONEDA
+# salen de la entrada de CUENTAS del registro. El 'else' de normalizar_union sigue en el legado (solo referencia).
+def test_formato_union_nuevo_no_hereda_cuenta_ajena(motor, tmp_path):
+    """D-12 (corregido en P5): una cuenta UNION nueva (solo registro) recibe SU cuenta y moneda, nunca las de
+    UNION_ME (20000003224544 / USD) ni las de UNION_MN."""
+    from helpers import RAIZ
+    d = json.loads((RAIZ.parent / "registro_bancos.json").read_text(encoding="utf-8"))
+    d["CUENTAS"].append({"id": "UNION_XX", "formato": "UNION_FECHAS_V1", "banco": "BANCO UNIÓN",
+                         "cuenta": "30000009990001", "moneda": "EUR", "activa": True})
+    reg = tmp_path / "registro.json"
+    reg.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    df = normalizar_productivo(motor, EXTRACTOS / FIXTURES["UNION_MN"], "UNION_XX", nombre="union_mn_2.xls",
+                               normalizador=motor.normalizador_registro(str(reg)))
+    assert len(df) == 32
+    assert set(df["CUENTA BANCARIA"]) == {"30000009990001"} and set(df["MONEDA"]) == {"EUR"}
+    assert all(c.startswith("BANCO UNIÓN|30000009990001|") for c in df["CLAVE TRANSACCIÓN"])
 
 
 # ------------------------------- ARCHIVOS VACIOS / COLUMNAS -------------------------------
@@ -121,7 +155,7 @@ def test_formato_union_nuevo_no_hereda_cuenta_ajena(motor, monkeypatch):
                         "(solo BISA maneja 'sin movimientos', y por un efecto colateral de dropna)")
 def test_bnb_sin_movimientos_no_bloquea(motor, tmp_path):
     ruta = crear_xlsx_bnb(tmp_path / "x.xlsx", "3000100705", [])
-    df = motor.normalizar_archivo(str(ruta), "BNB_CLINICA", "L", TS, nombre_origen="x.xlsx")
+    df = normalizar_productivo(motor, ruta, "BNB_CLINICA")
     assert len(df) == 0
 
 
@@ -130,7 +164,7 @@ def test_bnb_sin_movimientos_no_bloquea(motor, tmp_path):
 def test_union_me_vacio_no_bloquea(motor, tmp_path):
     from helpers import crear_xlsx_union_me_vacio
     ruta = crear_xlsx_union_me_vacio(tmp_path / "u.xlsx")
-    df = motor.normalizar_archivo(str(ruta), "UNION_ME", "L", TS, nombre_origen="u.xlsx")
+    df = normalizar_productivo(motor, ruta, "UNION_ME", nombre="u.xlsx")
     assert len(df) == 0
 
 
@@ -139,7 +173,7 @@ def test_union_me_vacio_no_bloquea(motor, tmp_path):
 def test_bnb_con_adicionales_vacio_no_bloquea(motor, tmp_path):
     ruta = crear_xlsx_bnb(tmp_path / "x.xlsx", "3000100705",
                           [{"fecha": "01/08/2026", "cred": 100.0, "saldo": 1100.0, "adic": ""}])
-    df = motor.normalizar_archivo(str(ruta), "BNB_CLINICA", "L", TS, nombre_origen="x.xlsx")
+    df = normalizar_productivo(motor, ruta, "BNB_CLINICA")
     assert len(df) == 1
 
 
