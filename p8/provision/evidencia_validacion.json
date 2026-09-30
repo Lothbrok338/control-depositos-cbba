@@ -1,0 +1,387 @@
+{
+  "estado": "VALIDACION_LOCAL_OK_TENANT_PENDIENTE",
+  "comando_pruebas": "python -m pytest -q tests/test_12_flujo_p8.py tests/test_13_provision_p8.py",
+  "resultados": {
+    "PASS": 63
+  },
+  "pruebas": [
+    {
+      "id": "test_12_flujo_p8.py::test_paquete_y_fuente_son_reproducibles",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_piloto_8_y_reproceso_sin_intentos_de_creacion",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_estructural_siempre_registra_antes_de_terminar[ilegible]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_estructural_siempre_registra_antes_de_terminar[version]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_estructural_siempre_registra_antes_de_terminar[columnas]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_estructural_siempre_registra_antes_de_terminar[propiedad_raiz]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_estructural_siempre_registra_antes_de_terminar[propiedad_movimiento]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_estructural_siempre_registra_antes_de_terminar[omitido_invalido]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_creacion_fallida_o_timeout_reconsulta_y_continua[False-Failed]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_creacion_fallida_o_timeout_reconsulta_y_continua[False-TimedOut]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_creacion_fallida_o_timeout_reconsulta_y_continua[True-Failed]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_creacion_fallida_o_timeout_reconsulta_y_continua[True-TimedOut]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_reconsulta_fallida_es_error_de_fila_y_no_del_lote[Failed]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_reconsulta_fallida_es_error_de_fila_y_no_del_lote[TimedOut]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_fallo_preconsulta_es_estructural_y_cero_creaciones",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_fallo_lectura_tiene_archivo_del_trigger",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_fallo_escritura_bitacora_no_se_oculta_ni_termina_exitoso",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_trigger_sharepoint_filtra_nombres_reales[MANIFIESTO_P7__x.json-False]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_trigger_sharepoint_filtra_nombres_reales[DEPOSITOS_ACTIVOS__x.csv-False]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_trigger_sharepoint_filtra_nombres_reales[otro.json-False]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_trigger_sharepoint_filtra_nombres_reales[DEPOSITOS_ACTIVOS__x.json-True]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_configuracion_binaria_no_adivina_otra_forma",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_error_con_omitidos_conserva_fila_original_y_no_expone_secreto",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_diagnostico_acotado_mantiene_json_valido_con_textos_largos",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_extremos_con_utc_y_fecha_testigo_julio_nueve",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_apostrofos_odata_se_escapan_sin_modificar_clave",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_conjunto_ampliado_cubre_fixtures_sin_cambios",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_12_flujo_p8.py::test_lote_vacio_valido",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_provision_y_reproceso_sin_ninguna_escritura",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_diferencias_no_reparan_ni_destruyen_datos[Required-False]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_diferencias_no_reparan_ni_destruyen_datos[Indexed-False]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_diferencias_no_reparan_ni_destruyen_datos[EnforceUniqueValues-False]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_diferencias_no_reparan_ni_destruyen_datos[TypeAsString-Number]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_diferencias_no_reparan_ni_destruyen_datos[Hidden-True]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_diferencias_no_reparan_ni_destruyen_datos[ReadOnlyField-True]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_diferencias_no_reparan_ni_destruyen_datos[DefaultValue-otro]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_formato_xml_final_se_comprueba[FECHA_MOVIMIENTO-Format-DateTime]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_formato_xml_final_se_comprueba[FECHA_HORA_ASIGNACION-Format-DateOnly]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_formato_xml_final_se_comprueba[IMPORTE-Decimals-0]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_formato_xml_final_se_comprueba[IMPORTE-Percentage-TRUE]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_formato_xml_final_se_comprueba[OBSERVACION-RichText-TRUE]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_formato_xml_final_se_comprueba[OBSERVACION-AppendOnly-TRUE]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_formato_xml_final_se_comprueba[ESTADO_ASIGNACION-FillInChoice-TRUE]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_opciones_exactas_y_predeterminado",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_nombre_interno_codificado_no_se_confunde_con_titulo",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_lista_parcial_agrega_solo_lo_que_falta_y_conserva_title",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_columna_adicional_se_reporta_y_conserva",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_errores_no_producen_ok_y_siempre_resumen[Buscar_lista-Failed-403]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_errores_no_producen_ok_y_siempre_resumen[Crear_lista-TimedOut-504]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_errores_no_producen_ok_y_siempre_resumen[Crear_columna-Failed-500]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_errores_no_producen_ok_y_siempre_resumen[Configurar_columna_nueva-Failed-403]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_errores_no_producen_ok_y_siempre_resumen[Exigir_unicidad-Failed-400]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_errores_no_producen_ok_y_siempre_resumen[Campos_finales-TimedOut-504]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_errores_no_producen_ok_y_siempre_resumen[Leer_lista_final-Failed-404]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_errores_no_producen_ok_y_siempre_resumen[Configurar_Title-Failed-403]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_exito_post_no_sustituye_a_verificacion_final",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_schema_xml_invalido_identifica_columna_y_continua",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_paginacion_no_certifica_inventario_parcial[Campos_antes]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_paginacion_no_certifica_inventario_parcial[Campos_finales]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_listas_incompatibles_no_se_alteran[ContentTypesEnabled-True]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_listas_incompatibles_no_se_alteran[BaseTemplate-101]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_contrato_unica_fuente",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_paquete_independiente_reproducible_y_grafo_valido",
+      "estado": "PASS",
+      "motivo": ""
+    }
+  ],
+  "fuente": "p8/esquema_listas_p8.json",
+  "sha256_fuente": "9eab09805bc3e6ce2e1b3762fab804ea7c36ecfc648ec920d2a6550aaadfd228",
+  "zip": "P8_PROVISIONAR_LISTAS.zip",
+  "sha256_zip": "2b67614a2ac760505a4d873d474b0ba3195f3c03dca34169f68b33d1084462a8",
+  "sha256_plantilla_carga_preservada": "3bcb8d5ba1ab12dcdc3d846ea1f0314c91b0ffbce33b13be20071fa59b13906c",
+  "rama": "candidate/p8-m365-pilot",
+  "HEAD_sin_nuevo_commit": "a0c1697aefde79366e6cddea4b0a9fe15b2f8edc",
+  "main": "673754a9b69072e6960bbf0c7ffb0f50dc5d2670",
+  "archivos_preexistentes_identicos": 118,
+  "diff_versionado": [],
+  "ensayo_primera_ejecucion": {
+    "resumen": {
+      "PROVISION_P8": "OK",
+      "resultado": "PROVISION_P8 = OK",
+      "fuente": "p8/esquema_listas_p8.json",
+      "sha256_contrato": "9eab09805bc3e6ce2e1b3762fab804ea7c36ecfc648ec920d2a6550aaadfd228",
+      "listas": [
+        {
+          "lista": "Depositos_Activos",
+          "esperadas": 34,
+          "presentes": 34,
+          "verificacion_columnas": "Succeeded"
+        },
+        {
+          "lista": "Depositos_Cargas",
+          "esperadas": 13,
+          "presentes": 13,
+          "verificacion_columnas": "Succeeded"
+        }
+      ],
+      "diferencias": [],
+      "ejecucion": "EJECUCION_LOCAL_NO_TENANT"
+    },
+    "GET": 14,
+    "POST": 99
+  },
+  "ensayo_reproceso": {
+    "resumen": {
+      "PROVISION_P8": "OK",
+      "resultado": "PROVISION_P8 = OK",
+      "fuente": "p8/esquema_listas_p8.json",
+      "sha256_contrato": "9eab09805bc3e6ce2e1b3762fab804ea7c36ecfc648ec920d2a6550aaadfd228",
+      "listas": [
+        {
+          "lista": "Depositos_Activos",
+          "esperadas": 34,
+          "presentes": 34,
+          "verificacion_columnas": "Succeeded"
+        },
+        {
+          "lista": "Depositos_Cargas",
+          "esperadas": 13,
+          "presentes": 13,
+          "verificacion_columnas": "Succeeded"
+        }
+      ],
+      "diferencias": [],
+      "ejecucion": "EJECUCION_LOCAL_NO_TENANT"
+    },
+    "GET": 14,
+    "POST": 0
+  },
+  "importacion_tenant_verificada": false
+}

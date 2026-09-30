@@ -1,0 +1,4173 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "$authentication": {
+      "defaultValue": {},
+      "type": "SecureObject"
+    },
+    "$connections": {
+      "defaultValue": {},
+      "type": "Object"
+    }
+  },
+  "triggers": {
+    "manual": {
+      "type": "Request",
+      "kind": "Button",
+      "inputs": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "title": "Sitio SharePoint",
+              "description": "URL completa del sitio donde se crearán las dos listas P8",
+              "type": "string",
+              "x-ms-content-hint": "TEXT",
+              "x-ms-dynamically-added": true
+            }
+          },
+          "required": [
+            "text"
+          ]
+        }
+      },
+      "runtimeConfiguration": {
+        "concurrency": {
+          "runs": 1
+        }
+      }
+    }
+  },
+  "actions": {
+    "Sitio_SharePoint": {
+      "type": "Compose",
+      "inputs": "@trim(triggerBody()?['text'])",
+      "runAfter": {}
+    },
+    "Contrato_compilado": {
+      "type": "Compose",
+      "inputs": [
+        {
+          "Nombre": "Depositos_Activos",
+          "Cantidad": 34,
+          "Nombres": [
+            "CLAVE_TRANSACCION",
+            "CODIGO_ASIGNACION",
+            "BANCO",
+            "CUENTA_BANCARIA",
+            "MONEDA",
+            "FECHA_MOVIMIENTO",
+            "HORA_MOVIMIENTO",
+            "IMPORTE",
+            "DEBITO",
+            "CREDITO",
+            "TIPO_MOVIMIENTO",
+            "SALDO",
+            "DESCRIPCION",
+            "DEPOSITANTE_ORIGINANTE",
+            "INFORMACION_ADICIONAL",
+            "MOTOR_ESTADO",
+            "MOTOR_ESTUDIANTE",
+            "MOTOR_SOLICITADO_POR",
+            "MOTOR_SEDE_SOLICITANTE",
+            "MOTOR_CONFIRMADO_POR",
+            "MOTOR_FECHA_CONFIRMACION",
+            "MOTOR_OBSERVACION",
+            "TEXTO_BUSQUEDA",
+            "ARCHIVO_ORIGEN",
+            "LOTE_CARGA",
+            "FECHA_CARGA",
+            "ESTADO_ASIGNACION",
+            "ESTUDIANTE",
+            "CODIGO_ESTUDIANTE",
+            "SOLICITADO_POR",
+            "SEDE_ASIGNACION",
+            "USUARIO_ASIGNACION",
+            "FECHA_HORA_ASIGNACION",
+            "OBSERVACION"
+          ],
+          "Campos": [
+            {
+              "Nombre": "CLAVE_TRANSACCION",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"CLAVE_TRANSACCION\" StaticName=\"CLAVE_TRANSACCION\" DisplayName=\"CLAVE_TRANSACCION\" Type=\"Text\" Required=\"TRUE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": true,
+                "Indexed": true,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": true,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "CLAVE_TRANSACCION"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            },
+            {
+              "Nombre": "CODIGO_ASIGNACION",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"CODIGO_ASIGNACION\" StaticName=\"CODIGO_ASIGNACION\" DisplayName=\"CODIGO_ASIGNACION\" Type=\"Text\" Required=\"FALSE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": false,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "CODIGO_ASIGNACION"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            },
+            {
+              "Nombre": "BANCO",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"BANCO\" StaticName=\"BANCO\" DisplayName=\"BANCO\" Type=\"Text\" Required=\"TRUE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": true,
+                "Indexed": true,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "BANCO"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            },
+            {
+              "Nombre": "CUENTA_BANCARIA",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"CUENTA_BANCARIA\" StaticName=\"CUENTA_BANCARIA\" DisplayName=\"CUENTA_BANCARIA\" Type=\"Text\" Required=\"TRUE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": true,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "CUENTA_BANCARIA"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            },
+            {
+              "Nombre": "MONEDA",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"MONEDA\" StaticName=\"MONEDA\" DisplayName=\"MONEDA\" Type=\"Text\" Required=\"TRUE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": true,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "MONEDA"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            },
+            {
+              "Nombre": "FECHA_MOVIMIENTO",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"FECHA_MOVIMIENTO\" StaticName=\"FECHA_MOVIMIENTO\" DisplayName=\"FECHA_MOVIMIENTO\" Type=\"DateTime\" Required=\"TRUE\" Hidden=\"FALSE\" Format=\"DateOnly\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldDateTime"
+                },
+                "Required": true,
+                "Indexed": true,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldDateTime"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "FECHA_MOVIMIENTO"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "DateTime"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                },
+                {
+                  "propiedad": "Format",
+                  "esperado": "DateOnly"
+                }
+              ]
+            },
+            {
+              "Nombre": "HORA_MOVIMIENTO",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"HORA_MOVIMIENTO\" StaticName=\"HORA_MOVIMIENTO\" DisplayName=\"HORA_MOVIMIENTO\" Type=\"Text\" Required=\"FALSE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": false,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "HORA_MOVIMIENTO"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            },
+            {
+              "Nombre": "IMPORTE",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"IMPORTE\" StaticName=\"IMPORTE\" DisplayName=\"IMPORTE\" Type=\"Number\" Required=\"TRUE\" Hidden=\"FALSE\" Decimals=\"2\" Percentage=\"FALSE\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldNumber"
+                },
+                "Required": true,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldNumber"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "IMPORTE"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Number"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                },
+                {
+                  "propiedad": "Decimals",
+                  "esperado": "2"
+                },
+                {
+                  "propiedad": "Percentage",
+                  "esperado": false
+                }
+              ]
+            },
+            {
+              "Nombre": "DEBITO",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"DEBITO\" StaticName=\"DEBITO\" DisplayName=\"DEBITO\" Type=\"Number\" Required=\"FALSE\" Hidden=\"FALSE\" Decimals=\"2\" Percentage=\"FALSE\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldNumber"
+                },
+                "Required": false,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldNumber"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "DEBITO"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Number"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                },
+                {
+                  "propiedad": "Decimals",
+                  "esperado": "2"
+                },
+                {
+                  "propiedad": "Percentage",
+                  "esperado": false
+                }
+              ]
+            },
+            {
+              "Nombre": "CREDITO",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"CREDITO\" StaticName=\"CREDITO\" DisplayName=\"CREDITO\" Type=\"Number\" Required=\"FALSE\" Hidden=\"FALSE\" Decimals=\"2\" Percentage=\"FALSE\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldNumber"
+                },
+                "Required": false,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldNumber"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "CREDITO"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Number"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                },
+                {
+                  "propiedad": "Decimals",
+                  "esperado": "2"
+                },
+                {
+                  "propiedad": "Percentage",
+                  "esperado": false
+                }
+              ]
+            },
+            {
+              "Nombre": "TIPO_MOVIMIENTO",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"TIPO_MOVIMIENTO\" StaticName=\"TIPO_MOVIMIENTO\" DisplayName=\"TIPO_MOVIMIENTO\" Type=\"Text\" Required=\"TRUE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": true,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "TIPO_MOVIMIENTO"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            },
+            {
+              "Nombre": "SALDO",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"SALDO\" StaticName=\"SALDO\" DisplayName=\"SALDO\" Type=\"Number\" Required=\"TRUE\" Hidden=\"FALSE\" Decimals=\"2\" Percentage=\"FALSE\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldNumber"
+                },
+                "Required": true,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldNumber"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "SALDO"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Number"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                },
+                {
+                  "propiedad": "Decimals",
+                  "esperado": "2"
+                },
+                {
+                  "propiedad": "Percentage",
+                  "esperado": false
+                }
+              ]
+            },
+            {
+              "Nombre": "DESCRIPCION",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"DESCRIPCION\" StaticName=\"DESCRIPCION\" DisplayName=\"DESCRIPCION\" Type=\"Note\" Required=\"FALSE\" Hidden=\"FALSE\" RichText=\"FALSE\" AppendOnly=\"FALSE\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldMultiLineText"
+                },
+                "Required": false,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldMultiLineText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "DESCRIPCION"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Note"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                },
+                {
+                  "propiedad": "RichText",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "AppendOnly",
+                  "esperado": false
+                }
+              ]
+            },
+            {
+              "Nombre": "DEPOSITANTE_ORIGINANTE",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"DEPOSITANTE_ORIGINANTE\" StaticName=\"DEPOSITANTE_ORIGINANTE\" DisplayName=\"DEPOSITANTE_ORIGINANTE\" Type=\"Note\" Required=\"FALSE\" Hidden=\"FALSE\" RichText=\"FALSE\" AppendOnly=\"FALSE\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldMultiLineText"
+                },
+                "Required": false,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldMultiLineText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "DEPOSITANTE_ORIGINANTE"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Note"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                },
+                {
+                  "propiedad": "RichText",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "AppendOnly",
+                  "esperado": false
+                }
+              ]
+            },
+            {
+              "Nombre": "INFORMACION_ADICIONAL",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"INFORMACION_ADICIONAL\" StaticName=\"INFORMACION_ADICIONAL\" DisplayName=\"INFORMACION_ADICIONAL\" Type=\"Note\" Required=\"FALSE\" Hidden=\"FALSE\" RichText=\"FALSE\" AppendOnly=\"FALSE\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldMultiLineText"
+                },
+                "Required": false,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldMultiLineText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "INFORMACION_ADICIONAL"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Note"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                },
+                {
+                  "propiedad": "RichText",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "AppendOnly",
+                  "esperado": false
+                }
+              ]
+            },
+            {
+              "Nombre": "MOTOR_ESTADO",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"MOTOR_ESTADO\" StaticName=\"MOTOR_ESTADO\" DisplayName=\"MOTOR_ESTADO\" Type=\"Text\" Required=\"FALSE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": false,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "MOTOR_ESTADO"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            },
+            {
+              "Nombre": "MOTOR_ESTUDIANTE",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"MOTOR_ESTUDIANTE\" StaticName=\"MOTOR_ESTUDIANTE\" DisplayName=\"MOTOR_ESTUDIANTE\" Type=\"Text\" Required=\"FALSE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": false,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "MOTOR_ESTUDIANTE"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            },
+            {
+              "Nombre": "MOTOR_SOLICITADO_POR",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"MOTOR_SOLICITADO_POR\" StaticName=\"MOTOR_SOLICITADO_POR\" DisplayName=\"MOTOR_SOLICITADO_POR\" Type=\"Text\" Required=\"FALSE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": false,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "MOTOR_SOLICITADO_POR"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            },
+            {
+              "Nombre": "MOTOR_SEDE_SOLICITANTE",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"MOTOR_SEDE_SOLICITANTE\" StaticName=\"MOTOR_SEDE_SOLICITANTE\" DisplayName=\"MOTOR_SEDE_SOLICITANTE\" Type=\"Text\" Required=\"FALSE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": false,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "MOTOR_SEDE_SOLICITANTE"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            },
+            {
+              "Nombre": "MOTOR_CONFIRMADO_POR",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"MOTOR_CONFIRMADO_POR\" StaticName=\"MOTOR_CONFIRMADO_POR\" DisplayName=\"MOTOR_CONFIRMADO_POR\" Type=\"Text\" Required=\"FALSE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": false,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "MOTOR_CONFIRMADO_POR"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            },
+            {
+              "Nombre": "MOTOR_FECHA_CONFIRMACION",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"MOTOR_FECHA_CONFIRMACION\" StaticName=\"MOTOR_FECHA_CONFIRMACION\" DisplayName=\"MOTOR_FECHA_CONFIRMACION\" Type=\"Text\" Required=\"FALSE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": false,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "MOTOR_FECHA_CONFIRMACION"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            },
+            {
+              "Nombre": "MOTOR_OBSERVACION",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"MOTOR_OBSERVACION\" StaticName=\"MOTOR_OBSERVACION\" DisplayName=\"MOTOR_OBSERVACION\" Type=\"Note\" Required=\"FALSE\" Hidden=\"FALSE\" RichText=\"FALSE\" AppendOnly=\"FALSE\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldMultiLineText"
+                },
+                "Required": false,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldMultiLineText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "MOTOR_OBSERVACION"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Note"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                },
+                {
+                  "propiedad": "RichText",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "AppendOnly",
+                  "esperado": false
+                }
+              ]
+            },
+            {
+              "Nombre": "TEXTO_BUSQUEDA",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"TEXTO_BUSQUEDA\" StaticName=\"TEXTO_BUSQUEDA\" DisplayName=\"TEXTO_BUSQUEDA\" Type=\"Note\" Required=\"FALSE\" Hidden=\"FALSE\" RichText=\"FALSE\" AppendOnly=\"FALSE\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldMultiLineText"
+                },
+                "Required": false,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldMultiLineText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "TEXTO_BUSQUEDA"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Note"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                },
+                {
+                  "propiedad": "RichText",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "AppendOnly",
+                  "esperado": false
+                }
+              ]
+            },
+            {
+              "Nombre": "ARCHIVO_ORIGEN",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"ARCHIVO_ORIGEN\" StaticName=\"ARCHIVO_ORIGEN\" DisplayName=\"ARCHIVO_ORIGEN\" Type=\"Text\" Required=\"TRUE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": true,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "ARCHIVO_ORIGEN"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            },
+            {
+              "Nombre": "LOTE_CARGA",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"LOTE_CARGA\" StaticName=\"LOTE_CARGA\" DisplayName=\"LOTE_CARGA\" Type=\"Text\" Required=\"TRUE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": true,
+                "Indexed": true,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "LOTE_CARGA"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            },
+            {
+              "Nombre": "FECHA_CARGA",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"FECHA_CARGA\" StaticName=\"FECHA_CARGA\" DisplayName=\"FECHA_CARGA\" Type=\"Text\" Required=\"TRUE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": true,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "FECHA_CARGA"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            },
+            {
+              "Nombre": "ESTADO_ASIGNACION",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"ESTADO_ASIGNACION\" StaticName=\"ESTADO_ASIGNACION\" DisplayName=\"ESTADO_ASIGNACION\" Type=\"Choice\" Required=\"TRUE\" Hidden=\"FALSE\" FillInChoice=\"FALSE\" Format=\"DropDown\"><CHOICES><CHOICE>DISPONIBLE</CHOICE></CHOICES><Default>DISPONIBLE</Default></Field>",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldChoice"
+                },
+                "Required": true,
+                "Indexed": true,
+                "DefaultValue": "DISPONIBLE"
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldChoice"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "ESTADO_ASIGNACION"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Choice"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": "DISPONIBLE"
+                },
+                {
+                  "propiedad": "Choices",
+                  "esperado": [
+                    "DISPONIBLE"
+                  ]
+                },
+                {
+                  "propiedad": "FillInChoice",
+                  "esperado": false
+                }
+              ]
+            },
+            {
+              "Nombre": "ESTUDIANTE",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"ESTUDIANTE\" StaticName=\"ESTUDIANTE\" DisplayName=\"ESTUDIANTE\" Type=\"Text\" Required=\"FALSE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": false,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "ESTUDIANTE"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            },
+            {
+              "Nombre": "CODIGO_ESTUDIANTE",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"CODIGO_ESTUDIANTE\" StaticName=\"CODIGO_ESTUDIANTE\" DisplayName=\"CODIGO_ESTUDIANTE\" Type=\"Text\" Required=\"FALSE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": false,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "CODIGO_ESTUDIANTE"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            },
+            {
+              "Nombre": "SOLICITADO_POR",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"SOLICITADO_POR\" StaticName=\"SOLICITADO_POR\" DisplayName=\"SOLICITADO_POR\" Type=\"Text\" Required=\"FALSE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": false,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "SOLICITADO_POR"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            },
+            {
+              "Nombre": "SEDE_ASIGNACION",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"SEDE_ASIGNACION\" StaticName=\"SEDE_ASIGNACION\" DisplayName=\"SEDE_ASIGNACION\" Type=\"Text\" Required=\"FALSE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": false,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "SEDE_ASIGNACION"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            },
+            {
+              "Nombre": "USUARIO_ASIGNACION",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"USUARIO_ASIGNACION\" StaticName=\"USUARIO_ASIGNACION\" DisplayName=\"USUARIO_ASIGNACION\" Type=\"Text\" Required=\"FALSE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": false,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "USUARIO_ASIGNACION"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            },
+            {
+              "Nombre": "FECHA_HORA_ASIGNACION",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"FECHA_HORA_ASIGNACION\" StaticName=\"FECHA_HORA_ASIGNACION\" DisplayName=\"FECHA_HORA_ASIGNACION\" Type=\"DateTime\" Required=\"FALSE\" Hidden=\"FALSE\" Format=\"DateTime\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldDateTime"
+                },
+                "Required": false,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldDateTime"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "FECHA_HORA_ASIGNACION"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "DateTime"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                },
+                {
+                  "propiedad": "Format",
+                  "esperado": "DateTime"
+                }
+              ]
+            },
+            {
+              "Nombre": "OBSERVACION",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"OBSERVACION\" StaticName=\"OBSERVACION\" DisplayName=\"OBSERVACION\" Type=\"Note\" Required=\"FALSE\" Hidden=\"FALSE\" RichText=\"FALSE\" AppendOnly=\"FALSE\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldMultiLineText"
+                },
+                "Required": false,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldMultiLineText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "OBSERVACION"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Note"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                },
+                {
+                  "propiedad": "RichText",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "AppendOnly",
+                  "esperado": false
+                }
+              ]
+            }
+          ],
+          "Ruta": "_api/web/lists/getbytitle('Depositos_Activos')",
+          "Buscar": "_api/web/lists?$select=Title,BaseTemplate,ContentTypesEnabled,Hidden&$filter=Title eq 'Depositos_Activos'&$top=2",
+          "Crear": {
+            "__metadata": {
+              "type": "SP.List"
+            },
+            "Title": "Depositos_Activos",
+            "BaseTemplate": 100,
+            "ContentTypesEnabled": false
+          },
+          "TitleRequired": false
+        },
+        {
+          "Nombre": "Depositos_Cargas",
+          "Cantidad": 13,
+          "Nombres": [
+            "LOTE_ID",
+            "FECHA_HORA_PROCESO",
+            "ARCHIVO_FUENTE",
+            "SHA256",
+            "CANTIDAD_RECIBIDA",
+            "CANTIDAD_VALIDA",
+            "CANTIDAD_NUEVA",
+            "CANTIDAD_YA_EXISTE",
+            "CANTIDAD_ERROR",
+            "ESTADO_LOTE",
+            "MENSAJE_ERROR",
+            "ARCHIVO_JSON",
+            "ID_EJECUCION_FLUJO"
+          ],
+          "Campos": [
+            {
+              "Nombre": "LOTE_ID",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"LOTE_ID\" StaticName=\"LOTE_ID\" DisplayName=\"LOTE_ID\" Type=\"Text\" Required=\"TRUE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": true,
+                "Indexed": true,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "LOTE_ID"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            },
+            {
+              "Nombre": "FECHA_HORA_PROCESO",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"FECHA_HORA_PROCESO\" StaticName=\"FECHA_HORA_PROCESO\" DisplayName=\"FECHA_HORA_PROCESO\" Type=\"DateTime\" Required=\"TRUE\" Hidden=\"FALSE\" Format=\"DateTime\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldDateTime"
+                },
+                "Required": true,
+                "Indexed": true,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldDateTime"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "FECHA_HORA_PROCESO"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "DateTime"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                },
+                {
+                  "propiedad": "Format",
+                  "esperado": "DateTime"
+                }
+              ]
+            },
+            {
+              "Nombre": "ARCHIVO_FUENTE",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"ARCHIVO_FUENTE\" StaticName=\"ARCHIVO_FUENTE\" DisplayName=\"ARCHIVO_FUENTE\" Type=\"Text\" Required=\"TRUE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": true,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "ARCHIVO_FUENTE"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            },
+            {
+              "Nombre": "SHA256",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"SHA256\" StaticName=\"SHA256\" DisplayName=\"SHA256\" Type=\"Text\" Required=\"TRUE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": true,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "SHA256"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            },
+            {
+              "Nombre": "CANTIDAD_RECIBIDA",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"CANTIDAD_RECIBIDA\" StaticName=\"CANTIDAD_RECIBIDA\" DisplayName=\"CANTIDAD_RECIBIDA\" Type=\"Number\" Required=\"TRUE\" Hidden=\"FALSE\" Decimals=\"0\" Percentage=\"FALSE\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldNumber"
+                },
+                "Required": true,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldNumber"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "CANTIDAD_RECIBIDA"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Number"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                },
+                {
+                  "propiedad": "Decimals",
+                  "esperado": "0"
+                },
+                {
+                  "propiedad": "Percentage",
+                  "esperado": false
+                }
+              ]
+            },
+            {
+              "Nombre": "CANTIDAD_VALIDA",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"CANTIDAD_VALIDA\" StaticName=\"CANTIDAD_VALIDA\" DisplayName=\"CANTIDAD_VALIDA\" Type=\"Number\" Required=\"TRUE\" Hidden=\"FALSE\" Decimals=\"0\" Percentage=\"FALSE\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldNumber"
+                },
+                "Required": true,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldNumber"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "CANTIDAD_VALIDA"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Number"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                },
+                {
+                  "propiedad": "Decimals",
+                  "esperado": "0"
+                },
+                {
+                  "propiedad": "Percentage",
+                  "esperado": false
+                }
+              ]
+            },
+            {
+              "Nombre": "CANTIDAD_NUEVA",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"CANTIDAD_NUEVA\" StaticName=\"CANTIDAD_NUEVA\" DisplayName=\"CANTIDAD_NUEVA\" Type=\"Number\" Required=\"TRUE\" Hidden=\"FALSE\" Decimals=\"0\" Percentage=\"FALSE\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldNumber"
+                },
+                "Required": true,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldNumber"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "CANTIDAD_NUEVA"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Number"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                },
+                {
+                  "propiedad": "Decimals",
+                  "esperado": "0"
+                },
+                {
+                  "propiedad": "Percentage",
+                  "esperado": false
+                }
+              ]
+            },
+            {
+              "Nombre": "CANTIDAD_YA_EXISTE",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"CANTIDAD_YA_EXISTE\" StaticName=\"CANTIDAD_YA_EXISTE\" DisplayName=\"CANTIDAD_YA_EXISTE\" Type=\"Number\" Required=\"TRUE\" Hidden=\"FALSE\" Decimals=\"0\" Percentage=\"FALSE\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldNumber"
+                },
+                "Required": true,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldNumber"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "CANTIDAD_YA_EXISTE"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Number"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                },
+                {
+                  "propiedad": "Decimals",
+                  "esperado": "0"
+                },
+                {
+                  "propiedad": "Percentage",
+                  "esperado": false
+                }
+              ]
+            },
+            {
+              "Nombre": "CANTIDAD_ERROR",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"CANTIDAD_ERROR\" StaticName=\"CANTIDAD_ERROR\" DisplayName=\"CANTIDAD_ERROR\" Type=\"Number\" Required=\"TRUE\" Hidden=\"FALSE\" Decimals=\"0\" Percentage=\"FALSE\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldNumber"
+                },
+                "Required": true,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldNumber"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "CANTIDAD_ERROR"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Number"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                },
+                {
+                  "propiedad": "Decimals",
+                  "esperado": "0"
+                },
+                {
+                  "propiedad": "Percentage",
+                  "esperado": false
+                }
+              ]
+            },
+            {
+              "Nombre": "ESTADO_LOTE",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"ESTADO_LOTE\" StaticName=\"ESTADO_LOTE\" DisplayName=\"ESTADO_LOTE\" Type=\"Choice\" Required=\"TRUE\" Hidden=\"FALSE\" FillInChoice=\"FALSE\" Format=\"DropDown\"><CHOICES><CHOICE>COMPLETADO</CHOICE><CHOICE>COMPLETADO_CON_ERRORES</CHOICE><CHOICE>FALLIDO</CHOICE></CHOICES></Field>",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldChoice"
+                },
+                "Required": true,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldChoice"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "ESTADO_LOTE"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Choice"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": true
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                },
+                {
+                  "propiedad": "Choices",
+                  "esperado": [
+                    "COMPLETADO",
+                    "COMPLETADO_CON_ERRORES",
+                    "FALLIDO"
+                  ]
+                },
+                {
+                  "propiedad": "FillInChoice",
+                  "esperado": false
+                }
+              ]
+            },
+            {
+              "Nombre": "MENSAJE_ERROR",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"MENSAJE_ERROR\" StaticName=\"MENSAJE_ERROR\" DisplayName=\"MENSAJE_ERROR\" Type=\"Note\" Required=\"FALSE\" Hidden=\"FALSE\" RichText=\"FALSE\" AppendOnly=\"FALSE\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldMultiLineText"
+                },
+                "Required": false,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldMultiLineText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "MENSAJE_ERROR"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Note"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                },
+                {
+                  "propiedad": "RichText",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "AppendOnly",
+                  "esperado": false
+                }
+              ]
+            },
+            {
+              "Nombre": "ARCHIVO_JSON",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"ARCHIVO_JSON\" StaticName=\"ARCHIVO_JSON\" DisplayName=\"ARCHIVO_JSON\" Type=\"Text\" Required=\"FALSE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": false,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "ARCHIVO_JSON"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            },
+            {
+              "Nombre": "ID_EJECUCION_FLUJO",
+              "Crear": {
+                "parameters": {
+                  "__metadata": {
+                    "type": "SP.XmlSchemaFieldCreationInformation"
+                  },
+                  "SchemaXml": "<Field Name=\"ID_EJECUCION_FLUJO\" StaticName=\"ID_EJECUCION_FLUJO\" DisplayName=\"ID_EJECUCION_FLUJO\" Type=\"Text\" Required=\"FALSE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "Options": 9
+                }
+              },
+              "Configurar": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "Required": false,
+                "Indexed": false,
+                "DefaultValue": ""
+              },
+              "Unicidad": {
+                "__metadata": {
+                  "type": "SP.FieldText"
+                },
+                "EnforceUniqueValues": true
+              },
+              "ExigeUnicidad": false,
+              "Propiedades": [
+                {
+                  "propiedad": "InternalName",
+                  "esperado": "ID_EJECUCION_FLUJO"
+                },
+                {
+                  "propiedad": "TypeAsString",
+                  "esperado": "Text"
+                },
+                {
+                  "propiedad": "Required",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Indexed",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "EnforceUniqueValues",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "Hidden",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "ReadOnlyField",
+                  "esperado": false
+                },
+                {
+                  "propiedad": "DefaultValue",
+                  "esperado": ""
+                }
+              ]
+            }
+          ],
+          "Ruta": "_api/web/lists/getbytitle('Depositos_Cargas')",
+          "Buscar": "_api/web/lists?$select=Title,BaseTemplate,ContentTypesEnabled,Hidden&$filter=Title eq 'Depositos_Cargas'&$top=2",
+          "Crear": {
+            "__metadata": {
+              "type": "SP.List"
+            },
+            "Title": "Depositos_Cargas",
+            "BaseTemplate": 100,
+            "ContentTypesEnabled": false
+          },
+          "TitleRequired": false
+        }
+      ],
+      "runAfter": {
+        "Sitio_SharePoint": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_diferencias": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "Diferencias",
+            "type": "array",
+            "value": []
+          }
+        ]
+      },
+      "runAfter": {
+        "Contrato_compilado": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_listas_verificadas": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "ListasVerificadas",
+            "type": "array",
+            "value": []
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_diferencias": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Provisionar_listas": {
+      "type": "Foreach",
+      "foreach": "@outputs('Contrato_compilado')",
+      "actions": {
+        "TRY_PROVISION_LISTA": {
+          "type": "Scope",
+          "actions": {
+            "Buscar_lista": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "@outputs('Sitio_SharePoint')",
+                  "parameters/method": "GET",
+                  "parameters/uri": "@items('Provisionar_listas')?['Buscar']",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=nometadata"
+                  }
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              },
+              "runAfter": {}
+            },
+            "Crear_lista_si_ausente": {
+              "type": "If",
+              "expression": "@equals(length(body('Buscar_lista')?['value']),0)",
+              "actions": {
+                "Crear_lista": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "@outputs('Sitio_SharePoint')",
+                      "parameters/method": "POST",
+                      "parameters/uri": "_api/web/lists",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=nometadata",
+                        "Content-Type": "application/json;odata=verbose"
+                      },
+                      "parameters/body": "@string(items('Provisionar_listas')?['Crear'])"
+                    },
+                    "authentication": "@parameters('$authentication')",
+                    "retryPolicy": {
+                      "type": "none"
+                    }
+                  },
+                  "runAfter": {}
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "Buscar_lista": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Leer_lista_pre": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "@outputs('Sitio_SharePoint')",
+                  "parameters/method": "GET",
+                  "parameters/uri": "@concat(items('Provisionar_listas')?['Ruta'],'?$select=Title,BaseTemplate,ContentTypesEnabled,Hidden')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=nometadata"
+                  }
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              },
+              "runAfter": {
+                "Crear_lista_si_ausente": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Lista_apta": {
+              "type": "If",
+              "expression": "@and(equals(body('Leer_lista_pre')?['Title'],items('Provisionar_listas')?['Nombre']),equals(body('Leer_lista_pre')?['BaseTemplate'],100),equals(body('Leer_lista_pre')?['ContentTypesEnabled'],false),equals(body('Leer_lista_pre')?['Hidden'],false))",
+              "actions": {
+                "Campos_antes": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "@outputs('Sitio_SharePoint')",
+                      "parameters/method": "GET",
+                      "parameters/uri": "@concat(items('Provisionar_listas')?['Ruta'],'/fields?$select=InternalName,Title,TypeAsString,Required,Indexed,EnforceUniqueValues,DefaultValue,SchemaXml,Hidden,ReadOnlyField,FromBaseType&$top=5000')",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=nometadata"
+                      }
+                    },
+                    "authentication": "@parameters('$authentication')",
+                    "retryPolicy": {
+                      "type": "none"
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "Sin_paginacion_pre": {
+                  "type": "If",
+                  "expression": "@and(empty(body('Campos_antes')?['odata.nextLink']),empty(body('Campos_antes')?['@odata.nextLink']),empty(body('Campos_antes')?['__next']))",
+                  "actions": {
+                    "Leer_Title": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "HttpRequest"
+                        },
+                        "parameters": {
+                          "dataset": "@outputs('Sitio_SharePoint')",
+                          "parameters/method": "GET",
+                          "parameters/uri": "@concat(items('Provisionar_listas')?['Ruta'],'/fields/getbyinternalnameortitle(''Title'')?$select=InternalName,Required')",
+                          "parameters/headers": {
+                            "Accept": "application/json;odata=nometadata"
+                          }
+                        },
+                        "authentication": "@parameters('$authentication')",
+                        "retryPolicy": {
+                          "type": "none"
+                        }
+                      },
+                      "runAfter": {}
+                    },
+                    "Liberar_Title_si_necesario": {
+                      "type": "If",
+                      "expression": "@not(equals(body('Leer_Title')?['Required'],items('Provisionar_listas')?['TitleRequired']))",
+                      "actions": {
+                        "Configurar_Title": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                              "connectionName": "shared_sharepointonline",
+                              "operationId": "HttpRequest"
+                            },
+                            "parameters": {
+                              "dataset": "@outputs('Sitio_SharePoint')",
+                              "parameters/method": "POST",
+                              "parameters/uri": "@concat(items('Provisionar_listas')?['Ruta'],'/fields/getbyinternalnameortitle(''Title'')')",
+                              "parameters/headers": {
+                                "Accept": "application/json;odata=nometadata",
+                                "Content-Type": "application/json;odata=verbose",
+                                "X-HTTP-Method": "MERGE",
+                                "IF-MATCH": "*"
+                              },
+                              "parameters/body": "@string(setProperty(json('{\"__metadata\":{\"type\":\"SP.FieldText\"}}'),'Required',items('Provisionar_listas')?['TitleRequired']))"
+                            },
+                            "authentication": "@parameters('$authentication')",
+                            "retryPolicy": {
+                              "type": "none"
+                            }
+                          },
+                          "runAfter": {}
+                        }
+                      },
+                      "else": {
+                        "actions": {}
+                      },
+                      "runAfter": {
+                        "Leer_Title": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Provisionar_columnas": {
+                      "type": "Foreach",
+                      "foreach": "@items('Provisionar_listas')?['Campos']",
+                      "actions": {
+                        "Colision_nombre_o_titulo": {
+                          "type": "Query",
+                          "inputs": {
+                            "from": "@body('Campos_antes')?['value']",
+                            "where": "@or(equals(toLower(item()?['InternalName']),toLower(items('Provisionar_columnas')?['Nombre'])),equals(toLower(item()?['Title']),toLower(items('Provisionar_columnas')?['Nombre'])))"
+                          },
+                          "runAfter": {}
+                        },
+                        "Crear_solo_si_ausente": {
+                          "type": "If",
+                          "expression": "@empty(body('Colision_nombre_o_titulo'))",
+                          "actions": {
+                            "Crear_columna": {
+                              "type": "OpenApiConnection",
+                              "inputs": {
+                                "host": {
+                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                                  "connectionName": "shared_sharepointonline",
+                                  "operationId": "HttpRequest"
+                                },
+                                "parameters": {
+                                  "dataset": "@outputs('Sitio_SharePoint')",
+                                  "parameters/method": "POST",
+                                  "parameters/uri": "@concat(items('Provisionar_listas')?['Ruta'],'/fields/createfieldasxml')",
+                                  "parameters/headers": {
+                                    "Accept": "application/json;odata=nometadata",
+                                    "Content-Type": "application/json;odata=verbose"
+                                  },
+                                  "parameters/body": "@string(items('Provisionar_columnas')?['Crear'])"
+                                },
+                                "authentication": "@parameters('$authentication')",
+                                "retryPolicy": {
+                                  "type": "none"
+                                }
+                              },
+                              "runAfter": {}
+                            },
+                            "Configurar_columna_nueva": {
+                              "type": "OpenApiConnection",
+                              "inputs": {
+                                "host": {
+                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                                  "connectionName": "shared_sharepointonline",
+                                  "operationId": "HttpRequest"
+                                },
+                                "parameters": {
+                                  "dataset": "@outputs('Sitio_SharePoint')",
+                                  "parameters/method": "POST",
+                                  "parameters/uri": "@concat(items('Provisionar_listas')?['Ruta'],'/fields(guid''',body('Crear_columna')?['Id'],''')')",
+                                  "parameters/headers": {
+                                    "Accept": "application/json;odata=nometadata",
+                                    "Content-Type": "application/json;odata=verbose",
+                                    "X-HTTP-Method": "MERGE",
+                                    "IF-MATCH": "*"
+                                  },
+                                  "parameters/body": "@string(items('Provisionar_columnas')?['Configurar'])"
+                                },
+                                "authentication": "@parameters('$authentication')",
+                                "retryPolicy": {
+                                  "type": "none"
+                                }
+                              },
+                              "runAfter": {
+                                "Crear_columna": [
+                                  "Succeeded"
+                                ]
+                              }
+                            },
+                            "Activar_unicidad_si_corresponde": {
+                              "type": "If",
+                              "expression": "@items('Provisionar_columnas')?['ExigeUnicidad']",
+                              "actions": {
+                                "Exigir_unicidad": {
+                                  "type": "OpenApiConnection",
+                                  "inputs": {
+                                    "host": {
+                                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                                      "connectionName": "shared_sharepointonline",
+                                      "operationId": "HttpRequest"
+                                    },
+                                    "parameters": {
+                                      "dataset": "@outputs('Sitio_SharePoint')",
+                                      "parameters/method": "POST",
+                                      "parameters/uri": "@concat(items('Provisionar_listas')?['Ruta'],'/fields(guid''',body('Crear_columna')?['Id'],''')')",
+                                      "parameters/headers": {
+                                        "Accept": "application/json;odata=nometadata",
+                                        "Content-Type": "application/json;odata=verbose",
+                                        "X-HTTP-Method": "MERGE",
+                                        "IF-MATCH": "*"
+                                      },
+                                      "parameters/body": "@string(items('Provisionar_columnas')?['Unicidad'])"
+                                    },
+                                    "authentication": "@parameters('$authentication')",
+                                    "retryPolicy": {
+                                      "type": "none"
+                                    }
+                                  },
+                                  "runAfter": {}
+                                }
+                              },
+                              "else": {
+                                "actions": {}
+                              },
+                              "runAfter": {
+                                "Configurar_columna_nueva": [
+                                  "Succeeded"
+                                ]
+                              }
+                            }
+                          },
+                          "else": {
+                            "actions": {}
+                          },
+                          "runAfter": {
+                            "Colision_nombre_o_titulo": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Error_creacion_columna": {
+                          "type": "AppendToArrayVariable",
+                          "inputs": {
+                            "name": "Diferencias",
+                            "value": {
+                              "lista": "@items('Provisionar_listas')?['Nombre']",
+                              "campo": "@items('Provisionar_columnas')?['Nombre']",
+                              "propiedad": "REST_CREACION",
+                              "esperado": "Columna creada y configurada",
+                              "actual": {
+                                "crear": "@actions('Crear_columna')?['status']",
+                                "http_crear": "@outputs('Crear_columna')?['statusCode']",
+                                "configurar": "@actions('Configurar_columna_nueva')?['status']",
+                                "http_configurar": "@outputs('Configurar_columna_nueva')?['statusCode']",
+                                "unicidad": "@actions('Exigir_unicidad')?['status']",
+                                "http_unicidad": "@outputs('Exigir_unicidad')?['statusCode']"
+                              }
+                            }
+                          },
+                          "runAfter": {
+                            "Crear_solo_si_ausente": [
+                              "Failed",
+                              "TimedOut"
+                            ]
+                          }
+                        }
+                      },
+                      "runtimeConfiguration": {
+                        "concurrency": {
+                          "repetitions": 1
+                        }
+                      },
+                      "runAfter": {
+                        "Liberar_Title_si_necesario": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "Paginacion_pre_no_admitida": {
+                        "type": "AppendToArrayVariable",
+                        "inputs": {
+                          "name": "Diferencias",
+                          "value": {
+                            "lista": "@items('Provisionar_listas')?['Nombre']",
+                            "campo": "",
+                            "propiedad": "PAGINACION",
+                            "esperado": "Inventario completo antes de escribir",
+                            "actual": "SharePoint devolvió una página parcial; no se crean columnas"
+                          }
+                        },
+                        "runAfter": {}
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Campos_antes": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Lista_incompatible": {
+                    "type": "AppendToArrayVariable",
+                    "inputs": {
+                      "name": "Diferencias",
+                      "value": {
+                        "lista": "@items('Provisionar_listas')?['Nombre']",
+                        "campo": "",
+                        "propiedad": "CONFIGURACION_LISTA",
+                        "esperado": {
+                          "BaseTemplate": 100,
+                          "ContentTypesEnabled": false,
+                          "Hidden": false
+                        },
+                        "actual": "@body('Leer_lista_pre')"
+                      }
+                    },
+                    "runAfter": {}
+                  }
+                }
+              },
+              "runAfter": {
+                "Leer_lista_pre": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "runAfter": {}
+        },
+        "CATCH_PROVISION_LISTA": {
+          "type": "AppendToArrayVariable",
+          "inputs": {
+            "name": "Diferencias",
+            "value": {
+              "lista": "@items('Provisionar_listas')?['Nombre']",
+              "campo": "",
+              "propiedad": "REST_PROVISION",
+              "esperado": "Provisión sin fallos de conector",
+              "actual": {
+                "buscar": "@outputs('Buscar_lista')?['statusCode']",
+                "crear": "@outputs('Crear_lista')?['statusCode']",
+                "leer": "@outputs('Leer_lista_pre')?['statusCode']",
+                "campos": "@outputs('Campos_antes')?['statusCode']",
+                "title": "@outputs('Configurar_Title')?['statusCode']",
+                "mensaje": "Consultar las acciones de esta lista y diferencias de columna"
+              }
+            }
+          },
+          "runAfter": {
+            "TRY_PROVISION_LISTA": [
+              "Failed",
+              "TimedOut"
+            ]
+          }
+        }
+      },
+      "runtimeConfiguration": {
+        "concurrency": {
+          "repetitions": 1
+        }
+      },
+      "runAfter": {
+        "Inicializar_listas_verificadas": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Verificar_listas": {
+      "type": "Foreach",
+      "foreach": "@outputs('Contrato_compilado')",
+      "actions": {
+        "TRY_VERIFICAR_LISTA": {
+          "type": "Scope",
+          "actions": {
+            "Leer_lista_final": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "@outputs('Sitio_SharePoint')",
+                  "parameters/method": "GET",
+                  "parameters/uri": "@concat(items('Verificar_listas')?['Ruta'],'?$select=Title,BaseTemplate,ContentTypesEnabled,Hidden')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=nometadata"
+                  }
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              },
+              "runAfter": {}
+            },
+            "Verificar_metadatos_lista": {
+              "type": "If",
+              "expression": "@not(and(equals(body('Leer_lista_final')?['Title'],items('Verificar_listas')?['Nombre']),equals(body('Leer_lista_final')?['BaseTemplate'],100),equals(body('Leer_lista_final')?['ContentTypesEnabled'],false),equals(body('Leer_lista_final')?['Hidden'],false)))",
+              "actions": {
+                "Diferencia_lista": {
+                  "type": "AppendToArrayVariable",
+                  "inputs": {
+                    "name": "Diferencias",
+                    "value": {
+                      "lista": "@items('Verificar_listas')?['Nombre']",
+                      "campo": "",
+                      "propiedad": "CONFIGURACION_LISTA",
+                      "esperado": {
+                        "Title": "@items('Verificar_listas')?['Nombre']",
+                        "BaseTemplate": 100,
+                        "ContentTypesEnabled": false,
+                        "Hidden": false
+                      },
+                      "actual": "@body('Leer_lista_final')"
+                    }
+                  },
+                  "runAfter": {}
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "Leer_lista_final": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Campos_finales": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "@outputs('Sitio_SharePoint')",
+                  "parameters/method": "GET",
+                  "parameters/uri": "@concat(items('Verificar_listas')?['Ruta'],'/fields?$select=InternalName,Title,TypeAsString,Required,Indexed,EnforceUniqueValues,DefaultValue,SchemaXml,Hidden,ReadOnlyField,FromBaseType&$top=5000')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=nometadata"
+                  }
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              },
+              "runAfter": {
+                "Verificar_metadatos_lista": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Verificar_paginacion": {
+              "type": "If",
+              "expression": "@or(not(empty(body('Campos_finales')?['odata.nextLink'])),not(empty(body('Campos_finales')?['@odata.nextLink'])),not(empty(body('Campos_finales')?['__next'])))",
+              "actions": {
+                "Diferencia_paginacion": {
+                  "type": "AppendToArrayVariable",
+                  "inputs": {
+                    "name": "Diferencias",
+                    "value": {
+                      "lista": "@items('Verificar_listas')?['Nombre']",
+                      "campo": "",
+                      "propiedad": "PAGINACION",
+                      "esperado": "Inventario completo",
+                      "actual": "La respuesta tiene más páginas; no se puede certificar"
+                    }
+                  },
+                  "runAfter": {}
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "Campos_finales": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Tecnicas_presentes": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Campos_finales')?['value']",
+                "where": "@contains(items('Verificar_listas')?['Nombres'],item()?['InternalName'])"
+              },
+              "runAfter": {
+                "Verificar_paginacion": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Comparar_cantidad": {
+              "type": "If",
+              "expression": "@not(equals(length(body('Tecnicas_presentes')),items('Verificar_listas')?['Cantidad']))",
+              "actions": {
+                "Diferencia_cantidad": {
+                  "type": "AppendToArrayVariable",
+                  "inputs": {
+                    "name": "Diferencias",
+                    "value": {
+                      "lista": "@items('Verificar_listas')?['Nombre']",
+                      "campo": "",
+                      "propiedad": "CANTIDAD_COLUMNAS_TECNICAS",
+                      "esperado": "@items('Verificar_listas')?['Cantidad']",
+                      "actual": "@length(body('Tecnicas_presentes'))"
+                    }
+                  },
+                  "runAfter": {}
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "Tecnicas_presentes": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Columnas_extra": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Campos_finales')?['value']",
+                "where": "@and(equals(item()?['FromBaseType'],false),equals(item()?['Hidden'],false),equals(item()?['ReadOnlyField'],false),not(equals(item()?['InternalName'],'Title')),not(contains(items('Verificar_listas')?['Nombres'],item()?['InternalName'])))"
+              },
+              "runAfter": {
+                "Comparar_cantidad": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Reportar_extras": {
+              "type": "Foreach",
+              "foreach": "@body('Columnas_extra')",
+              "actions": {
+                "Diferencia_extra": {
+                  "type": "AppendToArrayVariable",
+                  "inputs": {
+                    "name": "Diferencias",
+                    "value": {
+                      "lista": "@items('Verificar_listas')?['Nombre']",
+                      "campo": "@items('Reportar_extras')?['InternalName']",
+                      "propiedad": "COLUMNA_ADICIONAL",
+                      "esperado": "Ninguna columna de usuario fuera del contrato",
+                      "actual": "@items('Reportar_extras')?['Title']"
+                    }
+                  },
+                  "runAfter": {}
+                }
+              },
+              "runtimeConfiguration": {
+                "concurrency": {
+                  "repetitions": 1
+                }
+              },
+              "runAfter": {
+                "Columnas_extra": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Title_final": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "@outputs('Sitio_SharePoint')",
+                  "parameters/method": "GET",
+                  "parameters/uri": "@concat(items('Verificar_listas')?['Ruta'],'/fields/getbyinternalnameortitle(''Title'')?$select=InternalName,Required')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=nometadata"
+                  }
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              },
+              "runAfter": {
+                "Reportar_extras": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Comparar_Title": {
+              "type": "If",
+              "expression": "@not(equals(body('Title_final')?['Required'],items('Verificar_listas')?['TitleRequired']))",
+              "actions": {
+                "Diferencia_Title": {
+                  "type": "AppendToArrayVariable",
+                  "inputs": {
+                    "name": "Diferencias",
+                    "value": {
+                      "lista": "@items('Verificar_listas')?['Nombre']",
+                      "campo": "Title",
+                      "propiedad": "Required",
+                      "esperado": "@items('Verificar_listas')?['TitleRequired']",
+                      "actual": "@body('Title_final')?['Required']"
+                    }
+                  },
+                  "runAfter": {}
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "Title_final": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Verificar_columnas": {
+              "type": "Foreach",
+              "foreach": "@items('Verificar_listas')?['Campos']",
+              "actions": {
+                "TRY_VERIFICAR_COLUMNA": {
+                  "type": "Scope",
+                  "actions": {
+                    "Campo_por_nombre_exacto": {
+                      "type": "Query",
+                      "inputs": {
+                        "from": "@body('Campos_finales')?['value']",
+                        "where": "@equals(item()?['InternalName'],items('Verificar_columnas')?['Nombre'])"
+                      },
+                      "runAfter": {}
+                    },
+                    "Campo_unico": {
+                      "type": "If",
+                      "expression": "@equals(length(body('Campo_por_nombre_exacto')),1)",
+                      "actions": {
+                        "Propiedades_observadas": {
+                          "type": "Compose",
+                          "inputs": {
+                            "InternalName": "@first(body('Campo_por_nombre_exacto'))?['InternalName']",
+                            "TypeAsString": "@first(body('Campo_por_nombre_exacto'))?['TypeAsString']",
+                            "Required": "@first(body('Campo_por_nombre_exacto'))?['Required']",
+                            "Indexed": "@first(body('Campo_por_nombre_exacto'))?['Indexed']",
+                            "EnforceUniqueValues": "@first(body('Campo_por_nombre_exacto'))?['EnforceUniqueValues']",
+                            "Hidden": "@first(body('Campo_por_nombre_exacto'))?['Hidden']",
+                            "ReadOnlyField": "@first(body('Campo_por_nombre_exacto'))?['ReadOnlyField']",
+                            "DefaultValue": "@coalesce(first(body('Campo_por_nombre_exacto'))?['DefaultValue'],'')",
+                            "Choices": "@xpath(xml(first(body('Campo_por_nombre_exacto'))?['SchemaXml']),'/Field/CHOICES/CHOICE/text()')",
+                            "RichText": "@equals(toLower(xpath(xml(first(body('Campo_por_nombre_exacto'))?['SchemaXml']),'string(/Field/@RichText)')),'true')",
+                            "AppendOnly": "@equals(toLower(xpath(xml(first(body('Campo_por_nombre_exacto'))?['SchemaXml']),'string(/Field/@AppendOnly)')),'true')",
+                            "FillInChoice": "@equals(toLower(xpath(xml(first(body('Campo_por_nombre_exacto'))?['SchemaXml']),'string(/Field/@FillInChoice)')),'true')",
+                            "Percentage": "@equals(toLower(xpath(xml(first(body('Campo_por_nombre_exacto'))?['SchemaXml']),'string(/Field/@Percentage)')),'true')",
+                            "Format": "@xpath(xml(first(body('Campo_por_nombre_exacto'))?['SchemaXml']),'string(/Field/@Format)')",
+                            "Decimals": "@xpath(xml(first(body('Campo_por_nombre_exacto'))?['SchemaXml']),'string(/Field/@Decimals)')"
+                          },
+                          "runAfter": {}
+                        },
+                        "Verificar_propiedades": {
+                          "type": "Foreach",
+                          "foreach": "@items('Verificar_columnas')?['Propiedades']",
+                          "actions": {
+                            "Comparar_propiedad": {
+                              "type": "If",
+                              "expression": "@not(equals(outputs('Propiedades_observadas')?[items('Verificar_propiedades')?['propiedad']],items('Verificar_propiedades')?['esperado']))",
+                              "actions": {
+                                "Diferencia_propiedad": {
+                                  "type": "AppendToArrayVariable",
+                                  "inputs": {
+                                    "name": "Diferencias",
+                                    "value": {
+                                      "lista": "@items('Verificar_listas')?['Nombre']",
+                                      "campo": "@items('Verificar_columnas')?['Nombre']",
+                                      "propiedad": "@items('Verificar_propiedades')?['propiedad']",
+                                      "esperado": "@items('Verificar_propiedades')?['esperado']",
+                                      "actual": "@outputs('Propiedades_observadas')?[items('Verificar_propiedades')?['propiedad']]"
+                                    }
+                                  },
+                                  "runAfter": {}
+                                }
+                              },
+                              "else": {
+                                "actions": {}
+                              },
+                              "runAfter": {}
+                            }
+                          },
+                          "runtimeConfiguration": {
+                            "concurrency": {
+                              "repetitions": 1
+                            }
+                          },
+                          "runAfter": {
+                            "Propiedades_observadas": [
+                              "Succeeded"
+                            ]
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {
+                          "Diferencia_InternalName": {
+                            "type": "AppendToArrayVariable",
+                            "inputs": {
+                              "name": "Diferencias",
+                              "value": {
+                                "lista": "@items('Verificar_listas')?['Nombre']",
+                                "campo": "@items('Verificar_columnas')?['Nombre']",
+                                "propiedad": "InternalName",
+                                "esperado": "@items('Verificar_columnas')?['Nombre']",
+                                "actual": "Ausente o no único con ese nombre interno exacto"
+                              }
+                            },
+                            "runAfter": {}
+                          }
+                        }
+                      },
+                      "runAfter": {
+                        "Campo_por_nombre_exacto": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "CATCH_VERIFICAR_COLUMNA": {
+                  "type": "AppendToArrayVariable",
+                  "inputs": {
+                    "name": "Diferencias",
+                    "value": {
+                      "lista": "@items('Verificar_listas')?['Nombre']",
+                      "campo": "@items('Verificar_columnas')?['Nombre']",
+                      "propiedad": "LECTURA_PROPIEDADES",
+                      "esperado": "Propiedades y SchemaXml verificables",
+                      "actual": "No se pudo evaluar la configuración; revisar Propiedades_observadas"
+                    }
+                  },
+                  "runAfter": {
+                    "TRY_VERIFICAR_COLUMNA": [
+                      "Failed",
+                      "TimedOut"
+                    ]
+                  }
+                }
+              },
+              "runtimeConfiguration": {
+                "concurrency": {
+                  "repetitions": 1
+                }
+              },
+              "runAfter": {
+                "Comparar_Title": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Registrar_verificacion": {
+              "type": "AppendToArrayVariable",
+              "runAfter": {
+                "Verificar_columnas": [
+                  "Succeeded",
+                  "Failed",
+                  "Skipped",
+                  "TimedOut"
+                ]
+              },
+              "inputs": {
+                "name": "ListasVerificadas",
+                "value": {
+                  "lista": "@items('Verificar_listas')?['Nombre']",
+                  "esperadas": "@items('Verificar_listas')?['Cantidad']",
+                  "presentes": "@length(body('Tecnicas_presentes'))",
+                  "verificacion_columnas": "@actions('Verificar_columnas')?['status']"
+                }
+              }
+            }
+          },
+          "runAfter": {}
+        },
+        "CATCH_VERIFICAR_LISTA": {
+          "type": "AppendToArrayVariable",
+          "inputs": {
+            "name": "Diferencias",
+            "value": {
+              "lista": "@items('Verificar_listas')?['Nombre']",
+              "campo": "",
+              "propiedad": "REST_VERIFICACION",
+              "esperado": "Lectura y comprobación final completa",
+              "actual": {
+                "lista": "@outputs('Leer_lista_final')?['statusCode']",
+                "campos": "@outputs('Campos_finales')?['statusCode']",
+                "title": "@outputs('Title_final')?['statusCode']",
+                "mensaje": "Error de lectura o evaluación; no se certifica esta lista"
+              }
+            }
+          },
+          "runAfter": {
+            "TRY_VERIFICAR_LISTA": [
+              "Failed",
+              "TimedOut"
+            ]
+          }
+        }
+      },
+      "runtimeConfiguration": {
+        "concurrency": {
+          "repetitions": 1
+        }
+      },
+      "runAfter": {
+        "Provisionar_listas": [
+          "Succeeded",
+          "Failed",
+          "Skipped",
+          "TimedOut"
+        ]
+      }
+    },
+    "Estado_final": {
+      "type": "Compose",
+      "inputs": "@if(and(equals(length(variables('Diferencias')),0),equals(length(variables('ListasVerificadas')),length(outputs('Contrato_compilado'))),equals(actions('Verificar_listas')?['status'],'Succeeded')),'OK','FAIL')",
+      "runAfter": {
+        "Verificar_listas": [
+          "Succeeded",
+          "Failed",
+          "Skipped",
+          "TimedOut"
+        ]
+      }
+    },
+    "RESUMEN_FINAL": {
+      "type": "Compose",
+      "inputs": {
+        "PROVISION_P8": "@outputs('Estado_final')",
+        "resultado": "@concat('PROVISION_P8 = ',outputs('Estado_final'))",
+        "fuente": "p8/esquema_listas_p8.json",
+        "sha256_contrato": "9eab09805bc3e6ce2e1b3762fab804ea7c36ecfc648ec920d2a6550aaadfd228",
+        "listas": "@variables('ListasVerificadas')",
+        "diferencias": "@variables('Diferencias')",
+        "ejecucion": "@workflow()?['run']?['name']"
+      },
+      "runAfter": {
+        "Estado_final": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Finalizar": {
+      "type": "If",
+      "expression": "@equals(outputs('Estado_final'),'OK')",
+      "actions": {
+        "Terminar_OK": {
+          "type": "Terminate",
+          "inputs": {
+            "runStatus": "Succeeded"
+          },
+          "runAfter": {}
+        }
+      },
+      "else": {
+        "actions": {
+          "Terminar_FAIL": {
+            "type": "Terminate",
+            "inputs": {
+              "runStatus": "Failed",
+              "runError": {
+                "code": "PROVISION_P8_FAIL",
+                "message": "PROVISION_P8 = FAIL. Revisar RESUMEN_FINAL: diferencias por lista, columna y propiedad."
+              }
+            },
+            "runAfter": {}
+          }
+        }
+      },
+      "runAfter": {
+        "RESUMEN_FINAL": [
+          "Succeeded"
+        ]
+      }
+    }
+  },
+  "outputs": {}
+}
