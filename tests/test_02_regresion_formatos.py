@@ -2,8 +2,8 @@
 import re
 import pandas as pd
 import pytest
-from helpers import (CONTRATO, FIXTURES, FORMATOS_OK, GOLDEN, a_texto, contar_movimientos_independiente,
-                     leer_csv_texto, saldo_encadenado_ok)
+from helpers import (CONTRATO, ENCABEZADOS, FIXTURES, FORMATOS_OK, GOLDEN, HOJAS, a_texto,
+                     contar_movimientos_independiente, leer_csv_texto, saldo_encadenado_ok)
 
 pytestmark = pytest.mark.regresion
 TODOS = list(FIXTURES)
@@ -14,13 +14,21 @@ def test_deteccion_formato(motor, ruta_fixture, formato):
     assert motor.detectar_formato(ruta_fixture(formato)) == formato
 
 
+def _fila_encabezado(motor, raw, formato):
+    """Fila de encabezado con los encabezados esperados del contrato (helpers.ENCABEZADOS): mayor puntaje,
+    primera en empate. Desde P6 el motor ya no tiene encontrar_fila_encabezado / ENCABEZADOS_ESPERADOS."""
+    return motor.normalizador_registro()._fila_encabezado(raw, ENCABEZADOS[formato])
+
+
 @pytest.mark.parametrize("formato", FORMATOS_OK)
 def test_hoja_y_encabezado_reales(motor, ruta_fixture, formato):
     hojas = motor.leer_todas_hojas(ruta_fixture(formato))
-    assert motor.HOJAS_VALIDAS[formato] in hojas
-    raw = hojas[motor.HOJAS_VALIDAS[formato]]
-    _, puntaje, total = motor.encontrar_fila_encabezado(raw, formato)
-    assert puntaje == total, "el encabezado real debe coincidir con todos los ENCABEZADOS_ESPERADOS"
+    assert HOJAS[formato] in hojas
+    raw = hojas[HOJAS[formato]]
+    fila, puntaje, total = _fila_encabezado(motor, raw, formato)
+    assert puntaje == total, "el encabezado real debe coincidir con todos los encabezados esperados"
+    det = motor.detectar_extracto(ruta_fixture(formato))
+    assert (det.hoja, det.fila_encabezado) == (HOJAS[formato], fila)
 
 
 @pytest.mark.parametrize("formato", FORMATOS_OK)
@@ -92,9 +100,9 @@ def test_clave_consistente_con_columnas(motor, normalizado, formato):
 def test_cuenta_real_aparece_en_cabecera_y_es_unica(motor, ruta_fixture, formato):
     todas = {c for _, c, _ in CONTRATO.values()}
     hojas = motor.leer_todas_hojas(ruta_fixture(formato))
-    hoja = motor.HOJAS_VALIDAS[formato]
+    hoja = HOJAS[formato]
     raw = hojas[hoja]
-    fila_hdr, _, _ = motor.encontrar_fila_encabezado(raw, formato)
+    fila_hdr, _, _ = _fila_encabezado(motor, raw, formato)
     zona = " ".join(raw.iloc[:fila_hdr].fillna("").astype(str).values.flatten())
     zona = motor.normalizar_texto(zona)
     halladas = {c for c in todas if c in zona}
@@ -117,8 +125,9 @@ def test_totales_pie_de_pagina_coinciden(normalizado):
 
 
 # =====================  UNION_ME  (formato UNION_FECHAS_V1)  =====================
-# ESTRUCTURA UNION_ME = CONFIRMADA por codigo legado (motor: HOJAS_VALIDAS, ENCABEZADOS_ESPERADOS, detectar_formato,
-# normalizar_union) + captura real: hoja ExtractoMovimientosFechas, columnas
+# ESTRUCTURA UNION_ME = CONFIRMADA por codigo legado (HOJAS_VALIDAS, ENCABEZADOS_ESPERADOS, detectar_formato y
+# normalizar_union del motor original; desde P6 viven en registro_bancos.json) + captura real: hoja
+# ExtractoMovimientosFechas, columnas
 #   Fecha Movimiento | AG | Descripcion | Nro Documento | Monto | Saldo | Nro de verificasion   (cuenta 20000003224544)
 # COMPORTAMIENTO CON MOVIMIENTOS = PENDIENTE de fixture real (la unica muestra disponible esta VACIA).
 from helpers import UNION_ME_VACIO_REAL, UNION_ULTIMOS12, crear_xlsx_union_me_vacio
@@ -131,34 +140,46 @@ def test_union_ultimos12_no_es_fixture_de_union_me_y_se_rechaza(motor):
     UNION_ME valido. El motor debe rechazarlo con error visible, nunca normalizarlo en silencio."""
     assert UNION_ULTIMOS12.exists()
     with pytest.raises((ValueError, KeyError)):
-        motor.normalizar_archivo(str(UNION_ULTIMOS12), "UNION_ME", "L", pd.Timestamp("2026-01-01"),
-                                 nombre_origen="union_ultimos12.xls")
+        motor.normalizar_extracto(str(UNION_ULTIMOS12), "UNION_ME", "L", pd.Timestamp("2026-01-01"),
+                                  nombre_origen="union_ultimos12.xls")
 
 
-def test_union_me_contrato_legado_en_constantes_del_motor(motor):
-    """Contrato legado autoritativo, afirmado directamente sobre las constantes del motor."""
-    assert motor.HOJAS_VALIDAS["UNION_ME"] == "ExtractoMovimientosFechas"
-    assert motor.ENCABEZADOS_ESPERADOS["UNION_ME"] == ["FECHA MOVIMIENTO", "DESCRIPCION", "NRO DOCUMENTO", "MONTO", "SALDO"]
-    assert motor.ENCABEZADOS_ESPERADOS["UNION_ME"] == motor.ENCABEZADOS_ESPERADOS["UNION_MN"]  # UNION_FECHAS_V1 compartido
-    assert "AG" not in motor.ENCABEZADOS_ESPERADOS["UNION_ME"]                                  # AG es opcional
-    assert "NRO DE VERIFICASION" not in " ".join(motor.ENCABEZADOS_ESPERADOS["UNION_ME"])      # el motor legado no la contempla
-    assert "NRO DE VERIFICASION" not in [c.upper() for c in motor.COLUMNAS_LISTS]             # y no entra a las 26
+def _registro_union():
+    import json
+    from helpers import RAIZ
+    d = json.loads((RAIZ.parent / "registro_bancos.json").read_text(encoding="utf-8"))
+    cuentas = {c["id"]: c for c in d["CUENTAS"]}
+    return cuentas, d["FORMATOS"][cuentas["UNION_ME"]["formato"]]
 
 
-def test_union_me_normalizar_union_asigna_cuenta_y_moneda_en_codigo(motor):
-    """normalizar_union asigna cuenta 20000003224544 / USD a UNION_ME (verificado en el codigo fuente)."""
-    import inspect
-    src = inspect.getsource(motor.normalizar_union)
-    assert '"20000003224544"' in src and '"USD"' in src
-    assert 'buscar_columna_opcional' in src and '"AG"' in src   # AG opcional
-    assert 'Nro de verificasion' not in src and 'verificasion' not in src.lower()  # hoy se pierde
+def test_union_me_contrato_legado_en_el_registro(motor):
+    """Contrato legado autoritativo (antes constantes del motor; desde P6 solo en registro_bancos.json), comparado con
+    el contrato congelado de las pruebas."""
+    cuentas, fmt = _registro_union()
+    assert cuentas["UNION_ME"]["formato"] == cuentas["UNION_MN"]["formato"] == "UNION_FECHAS_V1"   # compartido
+    assert fmt["hojas_aceptadas"] == [HOJAS["UNION_ME"]] == ["ExtractoMovimientosFechas"]
+    assert fmt["encabezados"]["puntaje"] == ENCABEZADOS["UNION_ME"] == ["FECHA MOVIMIENTO", "DESCRIPCION",
+                                                                         "NRO DOCUMENTO", "MONTO", "SALDO"]
+    assert "AG" not in fmt["encabezados"]["puntaje"]                                             # AG es opcional
+    assert "NRO DE VERIFICASION" not in " ".join(fmt["encabezados"]["puntaje"])                  # no se exige
+    assert "NRO DE VERIFICASION" not in [c.upper() for c in motor.COLUMNAS_LISTS]                # y no entra a las 26
+
+
+def test_union_me_registro_asigna_cuenta_y_moneda():
+    """El registro asigna cuenta 20000003224544 / USD a UNION_ME (antes en el codigo de normalizar_union)."""
+    cuentas, fmt = _registro_union()
+    c = cuentas["UNION_ME"]
+    assert (c["banco"], c["cuenta"], c["moneda"]) == CONTRATO["UNION_ME"]
+    assert fmt["campos"]["AG"]["requerido"] is False                                             # AG opcional
+    alias = " ".join(a for cfg in fmt["campos"].values() for a in cfg.get("alias", []))
+    assert "verificasion" not in alias.lower()          # no entra a las 26 columnas (va a ORIGEN e historico)
 
 
 def test_union_me_estructura_proxy_sintetico_se_detecta(motor, tmp_path):
     """PROXY SINTETICO (no es el archivo real): hoja ExtractoMovimientosFechas + cuenta 20000003224544."""
     ruta = crear_xlsx_union_me_vacio(tmp_path / "u.xlsx")
     assert motor.detectar_formato(str(ruta)) == "UNION_ME"
-    assert motor.HOJAS_VALIDAS["UNION_ME"] == "ExtractoMovimientosFechas"
+    assert motor.detectar_extracto(str(ruta)).hoja == HOJAS["UNION_ME"] == "ExtractoMovimientosFechas"
 
 
 def _real_vacio():
@@ -173,7 +194,7 @@ def test_union_me_fixture_estructural_real_detecta_y_tiene_hoja_y_columnas(motor
     assert motor.detectar_formato(ruta) == "UNION_ME"
     hojas = motor.leer_todas_hojas(ruta)
     assert "ExtractoMovimientosFechas" in hojas
-    txt = motor.texto_de_archivo({"h": hojas["ExtractoMovimientosFechas"]})
+    txt = motor.normalizar_texto(" ".join(hojas["ExtractoMovimientosFechas"].fillna("").astype(str).values.flatten()))
     for col in ["FECHA MOVIMIENTO", "AG", "DESCRIPCION", "NRO DOCUMENTO", "MONTO", "SALDO", "NRO DE VERIFICASION"]:
         assert col in txt, f"falta la columna {col} en la hoja"
     assert "20000003224544" in txt
@@ -182,7 +203,7 @@ def test_union_me_fixture_estructural_real_detecta_y_tiene_hoja_y_columnas(motor
 def test_union_me_fixture_estructural_real_sin_movimientos_no_bloquea(motor):
     """Un UNION_ME sin movimientos debe tratarse como SIN MOVIMIENTOS (ver D-16b en test_04)."""
     ruta = _real_vacio()
-    df = motor.normalizar_archivo(ruta, "UNION_ME", "L", pd.Timestamp("2026-01-01"), nombre_origen="union_me_vacio.xls")
+    df, _ = motor.normalizar_extracto(ruta, "UNION_ME", "L", pd.Timestamp("2026-01-01"), nombre_origen="union_me_vacio.xls")
     assert len(df) == 0
 
 

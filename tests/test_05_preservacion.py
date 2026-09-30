@@ -17,8 +17,8 @@ import pytest
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils import get_column_letter
 
-from helpers import (COLUMNAS_LISTS_CONTRATO, CONTRATO, EXTRACTOS, FIXTURES, FORMATOS_OK, GOLDEN,
-                     MOTOR_PATH, RAIZ, UNION_ME_VACIO_REAL, contar_movimientos_independiente,
+from helpers import (COLUMNAS_LISTS_CONTRATO, CONTRATO, EXTRACTOS, FIXTURES, FORMATOS_OK, GOLDEN, HOJAS,
+                     MOTOR_PATH, RAIZ, UNION_ME_VACIO_REAL, contar_movimientos_independiente, contrato_origen,
                      crear_xlsx_union_me_con_movimiento, crear_xlsx_union_me_vacio, leer_csv_texto)
 
 pytestmark = pytest.mark.preservacion
@@ -336,9 +336,7 @@ def test_bnb_referencia_e_itf_conservan_el_valor_exacto_del_banco(origen, por_ar
 # =========================================================== 5. cabeceras y pies
 @pytest.mark.parametrize("fm", FORMATOS_OK)
 def test_cabecera_encabezado_y_pie_conservados(fm, corrida_lote, origen, por_archivo):
-    from helpers import cargar_motor
-    motor = cargar_motor()
-    hoja = motor.HOJAS_VALIDAS[fm]
+    hoja = HOJAS[fm]
     celdas = oraculo_celdas(str(EXTRACTOS / FIXTURES[fm]))[hoja]
     hdr = fila_encabezado_oraculo(celdas)
     d = por_archivo[FIXTURES[fm]]
@@ -395,10 +393,10 @@ def test_metadatos_esperados(fm, corrida_lote, origen):
     ruta = str(EXTRACTOS / FIXTURES[fm])
     assert m["ID_EXTRACTO"] == sha(ruta)
     assert int(m["TAMAÑO_BYTES"]) == Path(ruta).stat().st_size
-    assert m["FORMATO"] == fm and m["HOJA_LEIDA"] == motor.HOJAS_VALIDAS[fm]
+    assert m["FORMATO"] == fm and m["HOJA_LEIDA"] == HOJAS[fm]
     assert m["VERSION_CAPTURA"] == "P1-1.0"
     celdas = oraculo_celdas(ruta)
-    assert int(m["FILA_ENCABEZADO"]) == fila_encabezado_oraculo(celdas[motor.HOJAS_VALIDAS[fm]])
+    assert int(m["FILA_ENCABEZADO"]) == fila_encabezado_oraculo(celdas[HOJAS[fm]])
     n = contar_movimientos_independiente(motor, ruta, fm)
     assert int(m["FILAS_MOVIMIENTO"]) == n
     assert int(m["MOVIMIENTOS_CREDITO"]) + int(m["MOVIMIENTOS_DEBITO"]) == n
@@ -442,9 +440,8 @@ def test_ids_son_deterministas_entre_corridas(corrida_lote, origen, tmp_path, mo
 
 def test_ids_no_dependen_del_nombre_ni_de_la_ruta(motor, tmp_path):
     cap = cargar_captura()
-    contrato = {"hojas_validas": motor.HOJAS_VALIDAS, "encabezados_esperados": motor.ENCABEZADOS_ESPERADOS,
-                "encontrar_fila_encabezado": motor.encontrar_fila_encabezado}
     origen_f = EXTRACTOS / FIXTURES["BNB_MN"]
+    contrato = contrato_origen(motor, origen_f)
     copia = tmp_path / "otro" / "cualquier_nombre.xls"; copia.parent.mkdir()
     shutil.copy(origen_f, copia)
     a = cap.capturar_extracto(str(origen_f), FIXTURES["BNB_MN"], "BNB_MN", contrato, [])
@@ -456,9 +453,7 @@ def test_ids_no_dependen_del_nombre_ni_de_la_ruta(motor, tmp_path):
 # =========================================================== 8. columnas vacias existentes
 @pytest.mark.parametrize("fm", FORMATOS_OK)
 def test_columnas_vacias_del_formato_se_conservan_y_se_declaran(fm, corrida_lote, origen, por_archivo):
-    from helpers import cargar_motor
-    motor = cargar_motor()
-    hoja = motor.HOJAS_VALIDAS[fm]
+    hoja = HOJAS[fm]
     celdas = oraculo_celdas(str(EXTRACTOS / FIXTURES[fm]))[hoja]
     hdr = fila_encabezado_oraculo(celdas)
     encabezado = {c: str(v) for (r, c), v in celdas.items() if r == hdr}
@@ -543,16 +538,16 @@ def test_los_extractos_originales_no_se_modifican(corrida_lote):
 
 
 # =========================================================== UNION_ME (contrato legado confirmado)
-def _contrato(motor):
-    return {"hojas_validas": motor.HOJAS_VALIDAS, "encabezados_esperados": motor.ENCABEZADOS_ESPERADOS,
-            "encontrar_fila_encabezado": motor.encontrar_fila_encabezado}
+def _contrato(motor, ruta):
+    """Contrato de captura desde el registro (P6: el motor ya no tiene HOJAS_VALIDAS / ENCABEZADOS_ESPERADOS)."""
+    return contrato_origen(motor, ruta)
 
 
 def test_union_me_estructura_vacia_se_captura_con_nro_de_verificasion(motor, tmp_path):
     """PROXY SINTETICO del extracto vacio (contrato confirmado por codigo legado + captura real)."""
     cap = cargar_captura()
     ruta = crear_xlsx_union_me_vacio(tmp_path / "u.xlsx")
-    r = cap.capturar_extracto(str(ruta), "u.xlsx", "UNION_ME", _contrato(motor), [], tabla=pd.DataFrame(columns=COLUMNAS_LISTS_CONTRATO))
+    r = cap.capturar_extracto(str(ruta), "u.xlsx", "UNION_ME", _contrato(motor, ruta), [], tabla=pd.DataFrame(columns=COLUMNAS_LISTS_CONTRATO))
     m = dict(zip(cap.COLS_META, r["meta"][0]))
     cols = m["COLUMNAS_ORIGINALES"].split(" | ")
     for esperado in ("Fecha Movimiento", "AG", "Descripción", "Nro Documento", "Monto", "Saldo", "Nro de verificasion"):
@@ -568,10 +563,10 @@ def test_union_me_nro_de_verificasion_viaja_a_origen_y_no_a_lists_proxy_sintetic
     """Mecanica de captura con UNA fila SINTETICA: NO valida comportamiento real de UNION_ME."""
     cap = cargar_captura()
     ruta = crear_xlsx_union_me_con_movimiento(tmp_path / "u.xlsx")
-    df = motor.normalizar_archivo(str(ruta), "UNION_ME", "L", pd.Timestamp("2026-01-01"), nombre_origen="u.xlsx")
+    df, _ = motor.normalizar_extracto(str(ruta), "UNION_ME", "L", pd.Timestamp("2026-01-01"), nombre_origen="u.xlsx")
     assert len(df) == 1 and list(df.columns) == COLUMNAS_LISTS_CONTRATO  # no se agrega columna 27
-    assert "V-0001" not in " ".join(str(x) for x in df.iloc[0])  # hoy el motor legado la pierde
-    r = cap.capturar_extracto(str(ruta), "u.xlsx", "UNION_ME", _contrato(motor), list(df.index), tabla=df)
+    assert "V-0001" not in " ".join(str(x) for x in df.iloc[0])  # no entra a las 26 columnas (va a ORIGEN)
+    r = cap.capturar_extracto(str(ruta), "u.xlsx", "UNION_ME", _contrato(motor, ruta), list(df.index), tabla=df)
     ver = [f for f in r["datos"] if f[8] == "Nro de verificasion" and f[7] == "MOVIMIENTO"]
     assert len(ver) == 1 and ver[0][11] == "V-0001" and ver[0][5] == 17
     assert len(r["mapa"]) == 1 and r["mapa"][0][1] == ver[0][1] and r["mapa"][0][0] == df["CLAVE TRANSACCIÓN"].iloc[0]
@@ -588,7 +583,7 @@ def _real_vacio():
 def test_union_me_archivo_real_vacio_se_captura_completo(motor):
     ruta = _real_vacio()
     cap = cargar_captura()
-    r = cap.capturar_extracto(str(ruta), ruta.name, "UNION_ME", _contrato(motor), [])
+    r = cap.capturar_extracto(str(ruta), ruta.name, "UNION_ME", _contrato(motor, ruta), [])
     esperado = oraculo_celdas(str(ruta))
     assert len(r["datos"]) == sum(len(v) for v in esperado.values())
     assert "Nro de verificasion" in r["meta"][0][cap.COLS_META.index("COLUMNAS_ORIGINALES")]

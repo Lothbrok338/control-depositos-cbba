@@ -1,6 +1,6 @@
-# Informe de pruebas del normalizador (Fase 2 + P1/P2: captura y preservación de origen + P3: motor genérico en sombra + P3b: EXTRACTO_HISTORICO + P4: detección por registro + P5: normalización por registro)
+# Informe de pruebas del normalizador (Fase 2 + P1/P2: captura y preservación de origen + P3: motor genérico en sombra + P3b: EXTRACTO_HISTORICO + P4: detección por registro + P5: normalización por registro + P6: retiro del legado)
 
-Resumen: PASS=620, SKIP=24, XFAIL=14
+Resumen: PASS=575, SKIP=23, XFAIL=14
 
 ## 1. Regresión por banco/formato (extractos reales)
 
@@ -23,7 +23,7 @@ Resumen: PASS=620, SKIP=24, XFAIL=14
 **Desde P5 la matriz corre sobre la RUTA PRODUCTIVA (detección por registro + motor genérico).** UNION_ME se normaliza con `UNION_FECHAS_V1` (misma configuración que UNION_MN, identidad propia del registro): proxy sintético PASS; lo que depende de movimientos reales sigue SKIP.
 
 
-**Estructura UNION_ME = confirmada por código legado (`HOJAS_VALIDAS`, `ENCABEZADOS_ESPERADOS`, `detectar_formato`, `normalizar_union`) + captura real; comportamiento con movimientos = pendiente de fixture real.** UNION_ME es un formato válido (`UNION_FECHAS_V1`, hoja `ExtractoMovimientosFechas`, cuenta 20000003224544, columnas `Fecha Movimiento | AG | Descripción | Nro Documento | Monto | Saldo | Nro de verificasion`). `Nro de verificasion` proviene de la captura real; el motor legado no la lee (se pierde) y no entra a las 26 columnas. La muestra real está vacía y aún no está en el repositorio (`fixtures/extractos/union_me_vacio.xls`): sus pruebas estructurales se activan al colocarla. El reporte «Últimos 12 Movimientos» quedó como fixture **negativo** (`fixtures/negativos/`).
+**Estructura UNION_ME = confirmada por código legado (`HOJAS_VALIDAS`, `ENCABEZADOS_ESPERADOS`, `detectar_formato`, `normalizar_union` del motor original; desde P6 solo en `registro_bancos.json`) + captura real; comportamiento con movimientos = pendiente de fixture real.** UNION_ME es un formato válido (`UNION_FECHAS_V1`, hoja `ExtractoMovimientosFechas`, cuenta 20000003224544, columnas `Fecha Movimiento | AG | Descripción | Nro Documento | Monto | Saldo | Nro de verificasion`). `Nro de verificasion` proviene de la captura real; no entra a las 26 columnas (va a ORIGEN.xlsx y al EXTRACTO_HISTORICO). La muestra real está vacía y aún no está en el repositorio (`fixtures/extractos/union_me_vacio.xls`): sus pruebas estructurales se activan al colocarla. El reporte «Últimos 12 Movimientos» quedó como fixture **negativo** (`fixtures/negativos/`).
 
 ## 2. Contrato, lote completo y UNION_ME (estructura)
 
@@ -39,8 +39,8 @@ Resumen: PASS=620, SKIP=24, XFAIL=14
 | `test_02_regresion_formatos.py::test_bisa_me_sin_movimientos_es_valido` | 1 | PASS |
 | `test_02_regresion_formatos.py::test_totales_pie_de_pagina_coinciden` | 1 | PASS |
 | `test_02_regresion_formatos.py::test_union_ultimos12_no_es_fixture_de_union_me_y_se_rechaza` | 1 | PASS |
-| `test_02_regresion_formatos.py::test_union_me_contrato_legado_en_constantes_del_motor` | 1 | PASS |
-| `test_02_regresion_formatos.py::test_union_me_normalizar_union_asigna_cuenta_y_moneda_en_codigo` | 1 | PASS |
+| `test_02_regresion_formatos.py::test_union_me_contrato_legado_en_el_registro` | 1 | PASS |
+| `test_02_regresion_formatos.py::test_union_me_registro_asigna_cuenta_y_moneda` | 1 | PASS |
 | `test_02_regresion_formatos.py::test_union_me_estructura_proxy_sintetico_se_detecta` | 1 | PASS |
 | `test_02_regresion_formatos.py::test_union_me_fixture_estructural_real_detecta_y_tiene_hoja_y_columnas` | 1 | SKIP |
 | `test_02_regresion_formatos.py::test_union_me_fixture_estructural_real_sin_movimientos_no_bloquea` | 1 | SKIP |
@@ -66,10 +66,6 @@ Resumen: PASS=620, SKIP=24, XFAIL=14
 | `test_05_preservacion.py::test_union_me_real_completitud_con_movimientos` | 1 | SKIP |
 | `test_05_preservacion.py::test_union_me_real_debitos_completos` | 1 | SKIP |
 | `test_05_preservacion.py::test_union_me_real_nro_de_verificasion_y_mapa` | 1 | SKIP |
-| `test_06_sombra_p3.py::test_sombra_bisa_me_sin_movimientos_deja_df_vacio_como_el_legado` | 1 | PASS |
-| `test_06_sombra_p3.py::test_diferencia_union_ultimos12_resuelta_en_p4` | 1 | PASS |
-| `test_06_sombra_p3.py::test_sombra_union_me_proxy_sintetico_con_movimiento_coincide` | 1 | PASS |
-| `test_06_sombra_p3.py::test_sombra_union_me_vacio_proxy_falla_igual_que_el_legado_d16b` | 1 | PASS |
 
 ## 2b. Preservación de origen (P2, `test_05_preservacion.py`)
 
@@ -107,57 +103,41 @@ Resumen: PASS=620, SKIP=24, XFAIL=14
 | `test_union_me_real_debitos_completos` | 1 | SKIP×1 |
 | `test_union_me_real_nro_de_verificasion_y_mapa` | 1 | SKIP×1 |
 
-## 2c. Registro de bancos + comparador genérico ↔ legado (P3, `test_06_sombra_p3.py`)
+## 2c. Registro de bancos + motor genérico (P3-P6, `test_06_registro_generico.py`)
 
-Desde P5 la producción es la del motor genérico; los `normalizar_*` legados corren en sombra como referencia y solo reportan (`SOMBRA_REPORTE.json`, `SOMBRA_DIFERENCIAS.csv`).
+Desde P6 el motor genérico es la única normalización; el comparador con el legado y la sombra se retiraron (antes `test_06_sombra_p3.py`).
 
 | Prueba | Casos | Estado |
 |---|---|---|
 | `test_registro_es_valido` | 1 | PASS |
 | `test_registro_tiene_las_13_cuentas_actuales_y_coinciden_con_el_contrato` | 1 | PASS |
-| `test_registro_hojas_y_encabezados_coinciden_con_las_constantes_del_legado` | 1 | PASS |
+| `test_registro_hojas_y_encabezados_son_los_del_motor_original` | 1 | PASS |
 | `test_registro_formatos_de_la_misma_familia_se_comparten` | 1 | PASS |
 | `test_registro_invalido_se_detecta` | 15 | PASS |
 | `test_registro_json_roto_falla_con_mensaje` | 1 | PASS |
-| `test_motor_generico_no_usa_la_logica_bancaria_del_legado` | 1 | PASS |
+| `test_motor_generico_no_usa_la_logica_bancaria_del_motor` | 1 | PASS |
 | `test_primitivas_compartidas_son_solo_conversion_y_lectura` | 1 | PASS |
-| `test_registro_no_se_modifica_al_procesar` | 1 | PASS |
-| `test_sombra_formato_coincide_al_100_con_el_legado` | 12 | PASS |
-| `test_sombra_generico_reproduce_la_dorada` | 12 | PASS×11/SKIP×1 |
-| `test_generico_identidad_banco_cuenta_moneda_siempre_completa` | 12 | PASS |
-| `test_sombra_bisa_me_sin_movimientos_deja_df_vacio_como_el_legado` | 1 | PASS |
+| `test_faltan_primitivas_error_claro` | 1 | PASS |
+| `test_registro_no_se_modifica_al_normalizar` | 1 | PASS |
+| `test_bisa_me_sin_movimientos_deja_df_vacio_con_identidad` | 1 | PASS |
 | `test_generico_es_determinista` | 1 | PASS |
 | `test_campo_canonico_cubre_todos_los_encabezados_reales` | 12 | PASS |
 | `test_campo_canonico_ejemplos` | 1 | PASS |
 | `test_cuenta_nueva_de_formato_conocido_se_agrega_solo_con_configuracion` | 1 | PASS |
 | `test_cuenta_nueva_produce_lo_mismo_que_una_cuenta_conocida_con_el_mismo_contenido` | 1 | PASS |
 | `test_con_cuenta_rechaza_configuraciones_invalidas` | 1 | PASS |
-| `test_cuenta_ambigua_en_cabecera_se_reporta_como_ambiguo` | 1 | PASS |
-| `test_diferencia_d10_cuenta_dentro_de_una_glosa_resuelta_en_p4` | 1 | PASS |
-| `test_diferencia_d11_bmsc_con_otra_cuenta_resuelta_en_p4` | 1 | PASS |
-| `test_diferencia_union_ultimos12_resuelta_en_p4` | 1 | PASS |
-| `test_d09_encabezado_incompleto_lo_rechazan_el_generico_y_la_produccion` | 1 | PASS |
-| `test_sombra_bnb_orden_descendente_valida_saldos_igual_que_el_legado` | 1 | PASS |
-| `test_sombra_bnb_sinteticos_coinciden_con_el_legado` | 3 | PASS |
-| `test_sombra_union_me_proxy_sintetico_con_movimiento_coincide` | 1 | PASS |
-| `test_sombra_union_me_vacio_proxy_falla_igual_que_el_legado_d16b` | 1 | PASS |
-| `test_sombra_no_corrige_d16_bnb_sin_movimientos` | 1 | PASS |
-| `test_el_comparador_reporta_diferencias_inyectadas` | 7 | PASS |
-| `test_una_fuente_de_saldo_distinta_que_da_el_mismo_resultado_no_es_diferencia` | 1 | PASS |
-| `test_el_comparador_reporta_diferencia_de_validacion` | 1 | PASS |
-| `test_comparar_frames_detecta_columna_indice_y_familia_de_tipo` | 1 | PASS |
-| `test_lote_corre_con_la_referencia_legada_sin_diferencias_y_escribe_el_informe` | 1 | PASS |
+| `test_bnb_orden_descendente_valida_saldos` | 1 | PASS |
+| `test_bnb_sinteticos` | 3 | PASS |
+| `test_un_cambio_del_registro_cambia_exactamente_lo_que_describe` | 6 | PASS |
+| `test_una_fuente_de_saldo_distinta_que_da_el_mismo_resultado_no_cambia_la_validacion` | 1 | PASS |
+| `test_una_fuente_de_saldo_equivocada_rompe_la_validacion` | 1 | PASS |
 | `test_lote_la_produccion_generica_es_identica_a_la_dorada_del_legado` | 1 | PASS |
-| `test_referencia_encendida_o_apagada_da_exactamente_la_misma_produccion` | 1 | PASS |
-| `test_p5_el_registro_gobierna_la_normalizacion_y_la_referencia_legada_reporta_la_diferencia` | 1 | PASS |
-| `test_p5_identidad_del_registro_que_contradice_al_legado_se_reporta_en_la_referencia` | 1 | PASS |
+| `test_el_registro_gobierna_la_normalizacion_productiva` | 1 | PASS |
+| `test_la_identidad_sale_del_registro` | 1 | PASS |
 | `test_p4_sin_registro_valido_la_produccion_se_detiene_con_error_claro` | 3 | PASS |
 | `test_p5_registro_valido_para_detectar_pero_no_para_normalizar_detiene_la_produccion` | 1 | PASS |
-| `test_una_referencia_legada_que_explota_no_detiene_la_produccion` | 1 | PASS |
-| `test_un_normalizador_legado_que_falla_solo_se_reporta` | 1 | PASS |
 | `test_p5_motor_sin_motor_generico_al_lado_se_detiene_con_error_claro` | 1 | PASS |
-| `test_archivos_de_sombra_no_se_toman_como_extractos` | 1 | PASS |
-| `test_cli_compara_una_carpeta_sin_escribir_produccion` | 1 | PASS |
+| `test_archivos_de_sombra_de_corridas_anteriores_no_se_toman_como_extractos` | 1 | PASS |
 
 ## 2d. Capa 4 EXTRACTO_HISTORICO (P3b, `test_07_historico_p3b.py`)
 
@@ -212,13 +192,12 @@ Banco, cuenta, moneda y formato salen de `registro_bancos.json` (`deteccion_regi
 | `test_p4_formato_real_se_detecta_exactamente_como_hoy` | 12 | PASS |
 | `test_p4_detectar_formato_conserva_su_contrato` | 12 | PASS |
 | `test_p4_lote_12_salidas_identicas_y_deteccion_por_registro` | 1 | PASS |
-| `test_p4_registro_valido_para_detectar_y_coherente_con_los_normalizadores` | 1 | PASS |
-| `test_p4_registro_invalido_se_rechaza_al_cargar` | 12 | PASS |
+| `test_p4_registro_valido_para_detectar` | 1 | PASS |
+| `test_p4_registro_invalido_se_rechaza_al_cargar` | 8 | PASS |
 | `test_p4_cuenta_nueva_sin_registrar_se_rechaza_con_motivo` | 1 | PASS |
 | `test_p4_cuenta_nueva_se_incorpora_solo_con_una_entrada_en_cuentas` | 1 | PASS |
 | `test_p4_cuenta_nueva_tambien_llega_al_historico_p3b` | 1 | PASS |
-| `test_p4_cuenta_nueva_normaliza_igual_que_su_plantilla_salvo_la_identidad` | 1 | PASS |
-| `test_p4_cuenta_nueva_en_hoja_alternativa_usa_la_plantilla_de_esa_hoja` | 1 | PASS |
+| `test_p4_cuenta_nueva_en_hoja_alternativa_se_detecta_en_esa_hoja` | 1 | PASS |
 | `test_p4_cuenta_nueva_de_union_junto_al_lote_real` | 1 | PASS |
 | `test_p4_cuenta_nueva_no_modifica_el_registro_productivo` | 1 | PASS |
 | `test_p4_cuenta_en_glosa_no_altera_la_deteccion` | 1 | PASS |
@@ -243,19 +222,17 @@ Banco, cuenta, moneda y formato salen de `registro_bancos.json` (`deteccion_regi
 | `test_p4_union_ultimos12_aunque_traiga_saldo_se_rechaza_por_su_cabecera` | 1 | PASS |
 | `test_p4_union_me_proxy_sintetico_sigue_detectandose` | 1 | PASS |
 | `test_p4_la_deteccion_no_contiene_logica_de_normalizacion` | 1 | PASS |
-| `test_p4_cuenta_conocida_que_contradice_al_registro_no_se_corrige_en_silencio` | 1 | PASS |
 
 ## 2f. Normalización productiva por registro (P5, `test_09_normalizacion_p5.py`)
 
-archivo → detección por registro → normalización genérica (`motor_generico.py` + `registro_bancos.json`) → salida productiva. Los `normalizar_*` legados solo como referencia en sombra hasta P6.
+archivo → detección por registro → normalización genérica (`motor_generico.py` + `registro_bancos.json`) → salida productiva. Desde P6 la referencia legada es la congelada (doradas + manifest del motor original).
 
 | Prueba | Casos | Estado |
 |---|---|---|
 | `test_p5_ejecutar_motor_no_nombra_la_normalizacion_legada` | 1 | PASS |
 | `test_p5_lote_real_completo_sin_ningun_normalizador_legado` | 1 | PASS |
-| `test_p5_formato_real_identico_a_la_referencia_legada` | 12 | PASS |
+| `test_p5_formato_real_identico_a_la_referencia_legada_congelada` | 12 | PASS |
 | `test_p5_formato_real_clasificacion_banco_cuenta_moneda` | 12 | PASS |
-| `test_p5_lote_real_referencia_legada_sin_diferencias_ni_observaciones` | 1 | PASS |
 | `test_p5_la_normalizacion_lee_la_misma_hoja_y_fila_que_la_deteccion` | 1 | PASS |
 | `test_p5_registro_de_la_version_de_normalizacion` | 1 | PASS |
 | `test_p5_las_12_cuentas_reales_como_cuentas_nuevas_solo_por_configuracion` | 1 | PASS |
@@ -264,11 +241,27 @@ archivo → detección por registro → normalización genérica (`motor_generic
 | `test_p5_cuenta_nueva_bnb_en_hoja_alternativa_sin_plantilla_legada` | 1 | PASS |
 | `test_p5_cuenta_nueva_bmsc_sin_legado` | 1 | PASS |
 | `test_p5_cuenta_nueva_union_junto_al_lote_real_sin_legado` | 1 | PASS |
-| `test_p5_cuenta_nueva_la_referencia_legada_coincide` | 1 | PASS |
 | `test_p5_cuenta_sin_registrar_sigue_rechazada` | 1 | PASS |
 | `test_p5_union_me_proxy_sintetico_se_normaliza_por_registro` | 1 | PASS |
 | `test_p5_union_me_real_con_movimientos_se_normaliza_por_registro` | 1 | SKIP×1 |
 | `test_p5_union_me_real_validacion_y_debitos` | 1 | SKIP×1 |
+
+## 2g. Retiro del legado (P6, `test_10_retiro_legado_p6.py`)
+
+Ningún componente productivo define ni nombra la normalización legada; producción aislada con solo los 5 archivos productivos = doradas; sin sombra.
+
+| Prueba | Casos | Estado |
+|---|---|---|
+| `test_p6_componente_productivo_no_define_ni_nombra_el_legado` | 3 | PASS |
+| `test_p6_captura_origen_no_llama_al_legado` | 1 | PASS |
+| `test_p6_el_modulo_del_motor_no_expone_el_legado` | 1 | PASS |
+| `test_p6_el_motor_generico_no_tiene_comparador_ni_modo_script` | 1 | PASS |
+| `test_p6_el_registro_no_tiene_plantillas_legadas` | 1 | PASS |
+| `test_p6_las_primitivas_compartidas_siguen_en_el_motor_una_sola_vez` | 1 | PASS |
+| `test_p6_la_deteccion_ya_no_informa_campos_legados` | 1 | PASS |
+| `test_p6_produccion_aislada_da_la_salida_aprobada` | 1 | PASS |
+| `test_p6_sin_archivos_ni_estado_de_sombra` | 1 | PASS |
+| `test_p6_la_produccion_carga_sus_modulos_desde_la_carpeta_productiva` | 1 | PASS |
 
 ## 3. Defectos reales confirmados (fallan hoy; deben pasar tras corregir)
 
@@ -282,11 +275,11 @@ archivo → detección por registro → normalización genérica (`motor_generic
 | D-06 Fecha | FALLA (defecto vigente) | el filtro de filas usa pd.to_datetime(dayfirst) y descarta EN SILENCIO fechas '24/Ago/2026' (el Economico si las reconoce con normalizar_fecha): dos criterios distintos | `motor_generico.py · filtro_fecha del registro (P5; antes normalizar_*)` — Usar el mismo parser (normalizar_fecha) para FILTRAR filas y para el valor final, como ya hace normalizar_economico. |
 | D-07 Filas | FALLA (defecto vigente) | una fila con importe y fecha NO interpretable se descarta sin error ni conteo (deberia bloquear o informar filas descartadas) | `motor_generico.py · MotorGenerico.normalizar (P5; antes normalizar_*)` — Contar filas descartadas por fecha; si alguna tiene importe/saldo, lanzar ValueError (pies de pagina 'Total ...' siguen permitidos). |
 | D-08 Año | FALLA (defecto vigente) | el año 2026 esta fijo: un movimiento de 2027 bloquea toda la exportacion | `motor · ejecutar_motor (paso 6)` — Reemplazar 2026 fijo por año parametrizable (p. ej. derivado de FECHA A PROCESAR) sin bloquear enero 2027. |
-| D-09 Encabezado | CORREGIDO EN P5 (PASS) | sin encabezado reconocible la normalizacion productiva lanza ValueError (antes leia desde una fila cualquiera) | `motor_generico.py · MotorGenerico._leer_tabla (P5)` — CORREGIDO EN P5: la normalizacion productiva exige encabezados.puntaje_minimo del registro y lanza ValueError con los encabezados que faltan (la deteccion ya lo exigia desde P4). La primitiva legada encontrar_fila_encabezado queda sin cambios, solo como referencia (P6). |
-| D-09 Encabezado | CORREGIDO EN P5 (PASS) | encabezado parcial (3/7) = ValueError con los encabezados que faltan | `motor_generico.py · MotorGenerico._leer_tabla (P5)` — CORREGIDO EN P5: la normalizacion productiva exige encabezados.puntaje_minimo del registro y lanza ValueError con los encabezados que faltan (la deteccion ya lo exigia desde P4). La primitiva legada encontrar_fila_encabezado queda sin cambios, solo como referencia (P6). |
+| D-09 Encabezado | CORREGIDO EN P5 (PASS) | sin encabezado reconocible la normalizacion productiva lanza ValueError (antes leia desde una fila cualquiera) | `motor_generico.py · MotorGenerico._leer_tabla (P5)` — CORREGIDO EN P5: la normalizacion productiva exige encabezados.puntaje_minimo del registro y lanza ValueError con los encabezados que faltan (la deteccion ya lo exigia desde P4). La primitiva legada encontrar_fila_encabezado se retiro en P6. |
+| D-09 Encabezado | CORREGIDO EN P5 (PASS) | encabezado parcial (3/7) = ValueError con los encabezados que faltan | `motor_generico.py · MotorGenerico._leer_tabla (P5)` — CORREGIDO EN P5: la normalizacion productiva exige encabezados.puntaje_minimo del registro y lanza ValueError con los encabezados que faltan (la deteccion ya lo exigia desde P4). La primitiva legada encontrar_fila_encabezado se retiro en P6. |
 | D-10 Cuenta | CORREGIDO EN P4 (PASS) | un BNB_CLINICA cuya glosa menciona la cuenta BNB_MN ya NO se clasifica como BNB_MN | `deteccion_registro.py (P4)` — CORREGIDO EN P4: la cuenta se lee solo en la celda rotulada de la cabecera (filas previas al encabezado) y debe ser UNA cuenta registrada. |
 | D-11 Cuenta | CORREGIDO EN P4 (PASS) | un BMSC con otra cuenta ya NO se acepta con la cuenta fija 1000872489 | `deteccion_registro.py (P4)` — CORREGIDO EN P4: BMSC exige la cuenta 1000872489 registrada en la cabecera; otra cuenta = CUENTA_NO_REGISTRADA. |
-| D-12 Cuenta Nueva | CORREGIDO EN P5 (PASS) | una cuenta UNION nueva recibe su cuenta y moneda del registro, nunca las de UNION_ME | `motor_generico.py · MotorGenerico.normalizar (P5)` — CORREGIDO EN P5: BANCO / CUENTA BANCARIA / MONEDA salen de la entrada de CUENTAS del registro; la normalizacion productiva no tiene ramas por cuenta. Los 'else' de los normalizar_* legados quedan solo como referencia (P6). |
+| D-12 Cuenta Nueva | CORREGIDO EN P5 (PASS) | una cuenta UNION nueva recibe su cuenta y moneda del registro, nunca las de UNION_ME | `motor_generico.py · MotorGenerico.normalizar (P5)` — CORREGIDO EN P5: BANCO / CUENTA BANCARIA / MONEDA salen de la entrada de CUENTAS del registro; la normalizacion productiva no tiene ramas por cuenta. Los normalizar_* legados (y sus 'else') se retiraron en P6. |
 | D-16 Vacios | FALLA (defecto vigente) | un extracto BNB con encabezado y SIN movimientos lanza KeyError y bloquea todo el lote (solo BISA maneja 'sin movimientos', y por un efecto colateral de dropna) | `motor_generico.py · MotorGenerico._leer_tabla / normalizar (P5)` — Si el encabezado existe pero no hay filas, devolver DataFrame vacio con COLUMNAS_LISTS y estado SIN MOVIMIENTOS (patron ya usado por BISA). |
 | D-16b Vacios | FALLA (defecto vigente) | un UNION_ME por fechas SIN movimientos (formato confirmado por codigo legado + captura real, con 'Nro de verificasion') lanza KeyError y bloquearia todo el lote. Probado con PROXY SINTETICO: confirmar con el archivo real vacio | `motor_generico.py · MotorGenerico._leer_tabla / normalizar (P5)` — Un UNION_ME sin movimientos debe devolver 0 filas y estado SIN MOVIMIENTOS (mismo cambio que D-16); confirmar con el archivo real vacío. |
 | D-17 Columnas | FALLA (defecto vigente) | si la columna requerida 'Adicionales' viene completamente vacia el dia del extracto, dropna(axis=1) la elimina y buscar_columna lanza KeyError (bloquea todo el lote) | `motor_generico.py · MotorGenerico._leer_tabla (P5)` — No eliminar columnas vacias ANTES de buscar las requeridas (o tratarlas como presentes y vacias). |

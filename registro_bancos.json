@@ -1,7 +1,7 @@
 {
   "_ayuda": {
     "proposito": "Registro parametrizable de bancos (P3). FORMATOS describe la estructura de un reporte; CUENTAS describe una instancia (banco, cuenta, moneda). Una cuenta nueva de un formato ya conocido se agrega con UNA entrada en CUENTAS y cero codigo.",
-    "modo": "PRODUCTIVO. DETECCION (P4): deteccion_registro.py identifica banco, cuenta, moneda y formato con este registro. NORMALIZACION y VALIDACION DE SALDOS (P5): motor_generico.py normaliza a las 26 columnas y valida con este registro (motor_control_depositos_cbba.py). Los normalizar_* legados ya no producen salida: se comparan en sombra como referencia (SOMBRA_REPORTE.json) hasta P6.",
+    "modo": "PRODUCTIVO. DETECCION (P4): deteccion_registro.py identifica banco, cuenta, moneda y formato con este registro. NORMALIZACION y VALIDACION DE SALDOS (P5): motor_generico.py normaliza a las 26 columnas y valida con este registro (motor_control_depositos_cbba.py). P6: retirados los normalizar_* legados y su referencia en sombra; este registro es la unica fuente de hojas, encabezados, campos y saldos.",
     "agregar_cuenta": "Copiar una entrada de CUENTAS, cambiar id (unico), cuenta (texto tal como aparece en la cabecera del extracto), banco y moneda, y dejar el mismo 'formato'. No tocar FORMATOS.",
     "campos_de_formato": {
       "familia": "Solo informativo (agrupa formatos del mismo banco).",
@@ -9,10 +9,9 @@
       "aceptado": "false = reporte real que existe pero NO es un extracto: se rechaza con 'mensaje'.",
       "hojas_aceptadas": "Nombres de hoja validos; se usa la primera que exista en el libro.",
       "firma": "Texto (normalizado: mayusculas, sin tildes) que debe aparecer en la cabecera y el encabezado, nunca en los datos. 'todas' = todos; 'alguna' = al menos uno.",
-      "encabezados": "'puntaje' = encabezados esperados (define la fila de encabezado, igual que el legado); 'puntaje_minimo' = fraccion minima exigida. Por debajo del minimo el archivo se rechaza con la lista de encabezados que faltan.",
+      "encabezados": "'puntaje' = encabezados esperados (define la fila de encabezado: mayor puntaje, primera en empate); 'puntaje_minimo' = fraccion minima exigida. Por debajo del minimo el archivo se rechaza con la lista de encabezados que faltan.",
       "deteccion": "P4. 'zona_cuenta' CABECERA = filas de la hoja ANTERIORES al encabezado de la tabla (nunca glosas ni movimientos). 'etiquetas_cuenta' = rotulos exactos (sin ':' final) cuya celda siguiente a la derecha, o el resto de la misma celda 'ROTULO: n', trae el numero de cuenta. Debe leerse UNA cuenta registrada para el formato; cero, varias o una no registrada = error. 'cabecera_prohibida' = texto que, si aparece en la cabecera, rechaza el archivo con 'mensaje' aunque la estructura se parezca.",
-      "legado": "Solo REFERENCIA desde P5 (se retira en P6). 'plantilla_por_hoja' = id del normalizar_* legado que lee esa hoja; la comparacion en sombra lo usa para una cuenta nueva que el legado no conoce (plantilla + BANCO / CUENTA BANCARIA / MONEDA de CUENTAS). No interviene en la salida productiva: la normalizacion de cualquier cuenta sale de este registro.",
-      "filtro_fecha": "Como se decide si una fila es un movimiento: PANDAS_DAYFIRST (pd.to_datetime dayfirst, igual que el legado) o NORMALIZAR_FECHA (acepta 24/Ago/2026).",
+      "filtro_fecha": "Como se decide si una fila es un movimiento: PANDAS_DAYFIRST (pd.to_datetime dayfirst) o NORMALIZAR_FECHA (acepta 24/Ago/2026).",
       "sin_columna_fecha": "ERROR (KeyError) o SIN_MOVIMIENTOS (extracto valido vacio, solo BISA hoy).",
       "campos": "Rol -> {alias, requerido}. 'alias' son los encabezados posibles del banco; 'constante' fija un valor cuando el banco no trae la columna.",
       "importe": "DEBITO_CREDITO (dos columnas) o SIGNO (una columna con signo).",
@@ -53,7 +52,6 @@
         "zona_cuenta": "CABECERA",
         "etiquetas_cuenta": ["NUMERO DE CUENTA", "CUENTA"]
       },
-      "legado": {"plantilla_por_hoja": {"Hoja 1": "BNB_MN", "Hoja": "BNB_AHORRO"}},
       "filtro_fecha": "PANDAS_DAYFIRST",
       "sin_columna_fecha": "ERROR",
       "campos": {
@@ -121,7 +119,6 @@
         "zona_cuenta": "CABECERA",
         "etiquetas_cuenta": ["CUENTA"]
       },
-      "legado": {"plantilla_por_hoja": {"HistoricalAccountExcel": "BCP_MN"}},
       "filtro_fecha": "PANDAS_DAYFIRST",
       "sin_columna_fecha": "ERROR",
       "campos": {
@@ -196,7 +193,6 @@
         "zona_cuenta": "CABECERA",
         "etiquetas_cuenta": ["NUMERO DE CUENTA"]
       },
-      "legado": {"plantilla_por_hoja": {"Extracto de Movimientos": "BISA_MN"}},
       "filtro_fecha": "PANDAS_DAYFIRST",
       "sin_columna_fecha": "SIN_MOVIMIENTOS",
       "campos": {
@@ -284,7 +280,6 @@
         "zona_cuenta": "CABECERA",
         "etiquetas_cuenta": ["CUENTA"]
       },
-      "legado": {"plantilla_por_hoja": {"Extracto": "ECO_CTA_CTE"}},
       "filtro_fecha": "NORMALIZAR_FECHA",
       "sin_columna_fecha": "ERROR",
       "campos": {
@@ -354,7 +349,6 @@
         "zona_cuenta": "CABECERA",
         "etiquetas_cuenta": ["NRO DE CUENTA", "CUENTA"]
       },
-      "legado": {"plantilla_por_hoja": {"Excel": "BMSC"}},
       "filtro_fecha": "PANDAS_DAYFIRST",
       "sin_columna_fecha": "ERROR",
       "campos": {
@@ -461,7 +455,6 @@
         "etiquetas_cuenta": ["CUENTA"],
         "cabecera_prohibida": [{"contiene": "ULTIMOS 12 MOVIMIENTOS", "mensaje": "Reporte 'Ultimos 12 movimientos' de Banco Union: no cumple el contrato UNION_FECHAS_V1. Descargar el extracto por rango de fechas."}]
       },
-      "legado": {"plantilla_por_hoja": {"ExtractoMovimientosFechas": "UNION_MN"}},
       "filtro_fecha": "PANDAS_DAYFIRST",
       "sin_columna_fecha": "ERROR",
       "campos": {

@@ -1,0 +1,129 @@
+Fecha: 2026-09-30 · comandos (desde tests/, reloj fijado, 12 fixtures reales):
+  git worktree add <p5> 0b182e2 && python evidencia_p6_retiro.py <p5> 0b182e2
+Suite completa P6: 575 PASS · 23 SKIP · 14 XFAIL · 0 FAIL (P5: 620 · 24 · 14 · 0)
+
+EVIDENCIA P6 — retiro del legado · referencia: checkpoint P5 = 0b182e2 (<p5 = worktree de 0b182e2>)
+
+A) SALIDAS OPERATIVAS P5 vs P6 (12 fixtures reales, reloj fijo)
+IDENTICO  LISTS.csv (bytes)  1625443 bytes; sha defdae4bdf3065be
+IDENTICO  NORMALIZADO.xlsx hojas  ['LISTS', 'VALIDACION', 'RESUMEN', 'DIAGNOSTICO']
+IDENTICO  NORMALIZADO.xlsx · LISTS (valores+formatos+tablas)  78004 celdas
+IDENTICO  NORMALIZADO.xlsx · VALIDACION (valores+formatos+tablas)  130 celdas
+IDENTICO  NORMALIZADO.xlsx · RESUMEN (valores+formatos+tablas)  96 celdas
+IDENTICO  NORMALIZADO.xlsx · DIAGNOSTICO (valores+formatos+tablas)  52 celdas
+IDENTICO  ORIGEN.xlsx (4 hojas, valores+formatos)  {'DATOS_ORIGINALES': 411005, 'METADATOS_EXTRACTO': 343, 'METADATOS_EXTRA': 1187, 'MAPA_ORIGEN': 32520}
+IDENTICO  EXTRACTO_HISTORICO P3b (11 archivos, huella completa)  OK OK; advertencias 0/0
+IDENTICO  retorno['df_final']
+IDENTICO  retorno['df_validacion']
+IDENTICO  retorno['resumen']
+IDENTICO  retorno['df_resultado_archivos']
+IDENTICO  retorno['df_deteccion_final']
+IDENTICO  retorno['ruta_salida'] (misma ruta relativa)
+IDENTICO  retorno['ruta_lists_csv'] (misma ruta relativa)
+IDENTICO  retorno['origen_estado'] (estado, movimientos mapeados)  OK / 4064
+IDENTICO  retorno['deteccion_estado'] (sin FORMATO_LEGADO / CUENTA_NUEVA retirados)
+    claves del retorno retiradas: ['sombra_estado'] · nuevas: []
+IDENTICO  claves del retorno: solo se retira 'sombra_estado'
+IDENTICO  salida de consola (sin la línea de SOMBRA de P5)  117 líneas
+    archivos de salida P5: ['LISTS.csv', 'NORMALIZADO.xlsx', 'ORIGEN.xlsx', 'SOMBRA_DIFERENCIAS.csv', 'SOMBRA_REPORTE.json']
+    archivos de salida P6: ['LISTS.csv', 'NORMALIZADO.xlsx', 'ORIGEN.xlsx']
+IDENTICO  archivos de salida P6 = P5 sin SOMBRA_REPORTE.json / SOMBRA_DIFERENCIAS.csv
+
+B) POR ARCHIVO (LISTS.csv): movimientos, importes, saldos, claves, banco/cuenta/moneda
+IDENTICO  26 columnas (nombres y orden)  26 columnas
+IDENTICO  mismos archivos con movimientos  11 archivos (BISA_ME: 0 movimientos)
+IDENTICO  bcp_me_1.xls            mov=8 importe=5565.0 cred=5565.0 deb=0.0 saldo_fin=27888.54 claves=e77920a5ac7b ('BCP', '301-5005425-2-71', 'USD')
+IDENTICO  bcp_mn_3.xls            mov=2331 importe=4855140.95 cred=3807655.56 deb=1047485.39 saldo_fin=4840975.83 claves=defd73b586cf ('BCP', '301-5005684-3-97', 'BOB')
+IDENTICO  bisa_mn_2.xls           mov=1 importe=1139.0 cred=1139.0 deb=0.0 saldo_fin=63826.52 claves=d806a15dc720 ('BISA', '0696870039', 'BOB')
+IDENTICO  bnb_ahorro_2.xls        mov=95 importe=13070.0 cred=13070.0 deb=0.0 saldo_fin=269467.49 claves=e10034481e72 ('BNB', '3501936692', 'BOB')
+IDENTICO  bnb_me_1_1.xls          mov=7 importe=7030.85 cred=1477.25 deb=5553.6 saldo_fin=139590.84 claves=d17b8a9632c3 ('BNB', '3400041236', 'USD')
+IDENTICO  bnb_mn_3.xls            mov=1184 importe=20992191.82 cred=8909991.73 deb=12080920.09 saldo_fin=4116014.12 claves=c68ce7b45c0b ('BNB', '3000100152', 'BOB')
+IDENTICO  clinica_1.xls           mov=14 importe=68976.9 cred=68976.9 deb=0.0 saldo_fin=118301.76 claves=b8e795805b17 ('BNB', '3000100705', 'BOB')
+IDENTICO  economico_1.xlsx        mov=388 importe=469529.09 cred=440785.38 deb=28743.71 saldo_fin=647240.28 claves=0eeff904649d ('BANCO ECONÓMICO', '3041210569', 'BOB')
+IDENTICO  economico_ahorro.xlsx   mov=1 importe=6000.0 cred=6000.0 deb=0.0 saldo_fin=67601.86 claves=8e3087f3f418 ('BANCO ECONÓMICO', '3051446946', 'BOB')
+IDENTICO  mercantil_1.xls         mov=3 importe=7238.0 cred=7238.0 deb=0.0 saldo_fin=201662.79 claves=8299cc57a557 ('BMSC', '1000872489', 'BOB')
+IDENTICO  union_mn_2.xls          mov=32 importe=143466.2 cred=143466.2 deb=0.0 saldo_fin=379646.61 claves=197e4ca1bbe8 ('BANCO UNIÓN', '10000003224552', 'BOB')
+IDENTICO  validación de saldos (12 archivos, hoja VALIDACION)  {'OK': 12}
+
+C) PRODUCCIÓN SIN LEGADO: SOLO LOS 5 ARCHIVOS PRODUCTIVOS EN UNA CARPETA AISLADA (CBBA_MOTOR_SOMBRA=1)
+    carpeta: ['captura_origen.py', 'deteccion_registro.py', 'motor_control_depositos_cbba.py', 'motor_generico.py', 'registro_bancos.json']
+IDENTICO  LISTS.csv (bytes) aislado = P5
+IDENTICO  NORMALIZADO.xlsx (4 hojas) aislado = P5
+IDENTICO  ORIGEN.xlsx (4 hojas) aislado = P5
+IDENTICO  salidas aisladas = LISTS.csv, NORMALIZADO.xlsx, ORIGEN.xlsx (CBBA_MOTOR_SOMBRA sin efecto)
+IDENTICO  el motor aislado no expone ningún nombre retirado
+IDENTICO  nombres legados en el código de motor_control_depositos_cbba.py: P5=19 → P6=0
+IDENTICO  nombres legados en el código de deteccion_registro.py: P5=7 → P6=0
+IDENTICO  nombres legados en el código de motor_generico.py: P5=23 → P6=0
+IDENTICO  nombres legados en el código de captura_origen.py: P5=0 → P6=0
+    def normalizar_* en el motor P5: ['normalizar_archivo', 'normalizar_bcp', 'normalizar_bisa', 'normalizar_bmsc', 'normalizar_bnb', 'normalizar_economico', 'normalizar_extracto', 'normalizar_fecha', 'normalizar_hora', 'normalizar_texto', 'normalizar_union']
+    def normalizar_* en el motor P6: ['normalizar_extracto', 'normalizar_fecha', 'normalizar_hora', 'normalizar_texto'] (primitivas de texto/fecha/hora + la normalización por registro)
+
+D) CUENTAS NUEVAS SOLO POR CONFIGURACIÓN (13 ids renombrados *_CFG)
+IDENTICO  LISTS.csv (bytes) con cuentas nuevas = P5  FORMATO = ['BCP_ME_CFG', 'BCP_MN_CFG']...
+IDENTICO  ORIGEN.xlsx generado con cuentas nuevas  movimientos mapeados 4064
+
+E) COMPONENTES CONSERVADOS (0b182e2 vs. actual)
+IDENTICO  motor · COLUMNAS_LISTS (texto fuente)
+IDENTICO  motor · crear_clave (texto fuente)
+IDENTICO  motor · valor_clave_numero (texto fuente)
+IDENTICO  motor · finalizar_dataframe (texto fuente)
+IDENTICO  motor · ecuacion_saldo (texto fuente)
+IDENTICO  motor · extraer_nombre_bnb (texto fuente)
+IDENTICO  motor · numero (texto fuente)
+IDENTICO  motor · normalizar_fecha (texto fuente)
+IDENTICO  motor · normalizar_hora (texto fuente)
+IDENTICO  motor · codigo_texto (texto fuente)
+IDENTICO  motor · normalizar_texto (texto fuente)
+IDENTICO  motor · buscar_columna (texto fuente)
+IDENTICO  motor · buscar_columna_opcional (texto fuente)
+IDENTICO  motor · leer_excel_robusto (texto fuente)
+IDENTICO  motor · leer_todas_hojas (texto fuente)
+IDENTICO  motor · descubrir_archivos (texto fuente)
+IDENTICO  motor · PREFIJOS_SALIDA_SISTEMA (texto fuente)
+IDENTICO  motor · verificar_dependencias (texto fuente)
+IDENTICO  motor · modulo_deteccion (texto fuente)
+IDENTICO  motor · detectar_extracto (texto fuente)
+IDENTICO  motor · detectar_formato (texto fuente)
+IDENTICO  motor · modulo_generico (texto fuente)
+IDENTICO  motor · normalizador_registro (texto fuente)
+IDENTICO  motor · normalizar_extracto (texto fuente)
+IDENTICO  motor · validar_extracto (texto fuente)
+IDENTICO  motor · contrato_origen_registro (texto fuente)
+    motor · cambiados: ['detector_registro', 'ejecutar_motor']
+    motor · retirados: ['ENCABEZADOS_ESPERADOS', 'HOJAS_VALIDAS', 'aplicar_identidad_registro', 'encontrar_fila_encabezado', 'leer_tabla_movimientos', 'normalizar_archivo', 'normalizar_bcp', 'normalizar_bisa', 'normalizar_bmsc', 'normalizar_bnb', 'normalizar_economico', 'normalizar_union', 'texto_de_archivo', 'validar_archivo']
+    motor · nuevos   : []
+    motor_generico · Registro: retirados []; distintos []
+IDENTICO  motor_generico · Registro: métodos conservados idénticos (código sin docstrings)  13 idénticos
+    motor_generico · MotorGenerico: retirados ['_zona_cabecera', 'detectar', 'procesar']; distintos ['__init__']
+IDENTICO  motor_generico · MotorGenerico: métodos conservados idénticos (código sin docstrings)  10 idénticos
+IDENTICO  motor_generico · FILTROS_FECHA
+IDENTICO  motor_generico · MODOS_IMPORTE
+IDENTICO  motor_generico · ESTRATEGIAS_DEPOSITANTE
+IDENTICO  motor_generico · FUENTES_SALDO_INICIAL
+IDENTICO  motor_generico · FUENTES_SALDO_FINAL
+IDENTICO  motor_generico · ROLES_OBLIGATORIOS
+IDENTICO  motor_generico · RegistroError
+    motor_generico · retirados: ['Deteccion', 'MAX_EJEMPLOS_POR_COLUMNA', 'MODO_REFERENCIA', 'NOMBRE_REPORTE_CSV', 'NOMBRE_REPORTE_JSON', 'PRIMITIVAS_LEGADO', 'ResultadoGenerico', 'TOLERANCIA_VALIDACION', '_error_a_dict', '_es_nulo', '_familia_dtype', '_iguales', '_jsonable', '_numerico', 'armar_informe', 'cargar_legado', 'comparar_carpeta', 'comparar_deteccion', 'comparar_frames', 'comparar_validacion', 'ejecutar_referencia_legado', 'escribir_informe', 'namespace_legado', 'referencia_archivo', 'sombra_archivo']
+    motor_generico · renombrados: PRIMITIVAS_LEGADO → PRIMITIVAS_MOTOR, namespace_legado → namespace_primitivas (misma lista: True)
+    deteccion_registro · DetectorRegistro: retirados ['_formato_legado']; distintos ['__init__', 'cargar', 'detectar']
+IDENTICO  deteccion_registro · métodos de lectura/detección idénticos (salvo el tramo final de detectar)
+
+F) ARCHIVOS QUE NO DEBÍAN CAMBIAR (git diff vs referencia)
+IDENTICO  captura_origen.py
+IDENTICO  historico.py
+IDENTICO  NORMALIZADOR_POWER_AUTOMATE.zip
+IDENTICO  tests/golden
+IDENTICO  tests/fixtures
+IDENTICO  registro_bancos.json = P5 salvo _ayuda y los bloques 'legado' retirados  7 formatos, 13 cuentas
+
+G) TAMAÑO DEL CÓDIGO (líneas / bytes)
+    motor_control_depositos_cbba.py     4136 →  2276 líneas     93856 →   57726 bytes
+    motor_generico.py                   2034 →  1045 líneas     57731 →   30244 bytes
+    deteccion_registro.py                677 →   596 líneas     23000 →   19337 bytes
+    registro_bancos.json                 546 →   539 líneas     34730 →   33923 bytes
+    captura_origen.py                    511 →   511 líneas     21306 →   21306 bytes
+    historico.py                        1093 →  1093 líneas     47520 →   47520 bytes
+    TOTAL                               8997 →  6060 líneas   (-2937)
+
+RESULTADO: SIN REGRESIONES

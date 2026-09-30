@@ -13,7 +13,7 @@ Qué hace (la misma secuencia para todos los bancos, sin ramas por banco):
      archivo (p. ej. Unión «Últimos 12 movimientos») lo rechaza con su
      `mensaje`.
   2. Fila de encabezado = la de mayor puntaje con `encabezados.puntaje`
-     (primera en empate, igual que el legado). La `firma` se busca solo en
+     (primera en empate, mismo criterio que la normalización). La `firma` se busca solo en
      la cabecera y en esa fila, nunca en los movimientos.
   3. Encabezado por debajo de `puntaje_minimo` → error con la lista de
      encabezados que faltan (no se elige un formato «parecido»).
@@ -25,11 +25,10 @@ Qué hace (la misma secuencia para todos los bancos, sin ramas por banco):
      formato. Cero, varias, o una no registrada → error explícito.
   6. Más de un formato que cumple firma y encabezado → AMBIGUO (error).
 
-Qué NO hace: normalizar. En P4 la normalización sigue delegada a los
-`normalizar_*` del legado; para eso el resultado trae `formato_legado`
-(el id que entiende el normalizador legado: el de la propia cuenta si el
-legado ya la conoce, o la plantilla `legado.plantilla_por_hoja` del formato
-si es una cuenta nueva agregada solo por configuración).
+Qué NO hace: normalizar. La normalización (P5) la hace `motor_generico.py`
+con la cuenta, la hoja y la fila de encabezado que devuelve esta detección.
+P6 retiró el cruce con los normalizadores legados (`HOJAS_VALIDAS`,
+`ENCABEZADOS_ESPERADOS`, `legado.plantilla_por_hoja`, `formato_legado`).
 
 Agregar una cuenta de un formato conocido = una entrada en `CUENTAS`,
 cero código.
@@ -51,7 +50,7 @@ RUTA_REGISTRO_DEFECTO = os.path.join(
     "registro_bancos.json"
 )
 
-# Misma variable que usa la sombra (P3): un único registro para todo.
+# Un único registro para detección y normalización.
 VARIABLE_REGISTRO = "CBBA_REGISTRO_BANCOS"
 
 NO_RECONOCIDO = "NO_RECONOCIDO"
@@ -64,7 +63,6 @@ SIN_CUENTA = "SIN_CUENTA"                      # formato reconocido, sin cuenta 
 CUENTA_NO_REGISTRADA = "CUENTA_NO_REGISTRADA"
 AMBIGUO = "AMBIGUO"
 SIN_FORMATO = "SIN_FORMATO"                    # ninguna firma coincide
-HOJA_INCOMPATIBLE = "HOJA_INCOMPATIBLE"        # el normalizador legado lee otra hoja
 
 # Un número de cuenta tiene al menos estos dígitos (descarta «(Bs)», «M/N», etc.).
 MIN_DIGITOS_CUENTA = 4
@@ -87,15 +85,8 @@ def clave_cuenta(texto):
     return re.sub(r"\D", "", str(texto)).lstrip("0")
 
 
-def validar_registro_deteccion(datos, normalizar, hojas_legado=None,
-                               encabezados_legado=None):
-    """
-    Problemas del registro para DETECTAR (lista vacía = válido).
-    Con `hojas_legado` / `encabezados_legado` (HOJAS_VALIDAS y
-    ENCABEZADOS_ESPERADOS del motor) verifica además que cada cuenta llegue
-    a un normalizador legado que lee la MISMA hoja y busca el MISMO
-    encabezado que la detección comprobó.
-    """
+def validar_registro_deteccion(datos):
+    """Problemas del registro para DETECTAR (lista vacía = válido)."""
 
     p = []
 
@@ -141,28 +132,6 @@ def validar_registro_deteccion(datos, normalizar, hojas_legado=None,
             if not regla.get("contiene") or not regla.get("mensaje"):
                 falta("deteccion.cabecera_prohibida requiere 'contiene' y 'mensaje'")
 
-        plantillas = f.get("legado", {}).get("plantilla_por_hoja", {})
-
-        for hoja in f.get("hojas_aceptadas", []):
-            if hoja not in plantillas:
-                falta(f"legado.plantilla_por_hoja no cubre la hoja '{hoja}'")
-
-        if hojas_legado is not None:
-            for hoja, plantilla in plantillas.items():
-                if hojas_legado.get(plantilla) != hoja:
-                    falta(
-                        f"plantilla legado '{plantilla}' no lee la hoja '{hoja}'"
-                    )
-                elif (
-                    encabezados_legado is not None
-                    and [normalizar(x) for x in encabezados_legado.get(plantilla, [])]
-                    != [normalizar(x) for x in enc.get("puntaje", [])]
-                ):
-                    falta(
-                        f"plantilla legado '{plantilla}' busca otro encabezado "
-                        "que encabezados.puntaje"
-                    )
-
     ids = set()
     vistos = {}
 
@@ -205,24 +174,6 @@ def validar_registro_deteccion(datos, normalizar, hojas_legado=None,
         else:
             vistos[clave] = cid
 
-        # Una cuenta que el legado ya conoce por su id debe leer la misma
-        # hoja y el mismo encabezado que su formato del registro.
-        if hojas_legado is not None and cid in hojas_legado:
-            if hojas_legado[cid] not in f.get("hojas_aceptadas", []):
-                p.append(
-                    f"cuenta {cid}: la hoja del normalizador legado "
-                    f"'{hojas_legado[cid]}' no está en hojas_aceptadas"
-                )
-            if (
-                encabezados_legado is not None
-                and [normalizar(x) for x in encabezados_legado.get(cid, [])]
-                != [normalizar(x) for x in f.get("encabezados", {}).get("puntaje", [])]
-            ):
-                p.append(
-                    f"cuenta {cid}: el normalizador legado busca otro "
-                    "encabezado que encabezados.puntaje"
-                )
-
     return p
 
 
@@ -234,7 +185,7 @@ def validar_registro_deteccion(datos, normalizar, hojas_legado=None,
 class ResultadoDeteccion:
     estado: str
     motivo: str = ""
-    cuenta_id: str = None           # id de CUENTAS (= «formato» del legado)
+    cuenta_id: str = None           # id de CUENTAS (columna FORMATO de VALIDACION)
     formato_id: str = None          # id de FORMATOS
     banco: str = None
     cuenta: str = None
@@ -242,8 +193,6 @@ class ResultadoDeteccion:
     hoja: str = None
     fila_encabezado: int = None     # índice 0 dentro de la hoja
     cuenta_leida: str = None        # texto de la celda de la cabecera
-    formato_legado: str = None      # id que recibe el normalizar_* legado
-    cuenta_nueva: bool = False      # True = el legado no conoce esta cuenta
     candidatos: list = field(default_factory=list)
     observaciones: list = field(default_factory=list)
 
@@ -271,8 +220,6 @@ class ResultadoDeteccion:
                 else int(self.fila_encabezado) + 1
             ),
             "CUENTA_LEIDA": self.cuenta_leida,
-            "FORMATO_LEGADO": self.formato_legado,
-            "CUENTA_NUEVA": self.cuenta_nueva,
             "CANDIDATOS": list(self.candidatos),
             "OBSERVACIONES": list(self.observaciones),
         }
@@ -285,23 +232,19 @@ class ResultadoDeteccion:
 class DetectorRegistro:
     """
     `normalizar_texto` y `leer_todas_hojas` son las primitivas del motor
-    (mismo criterio de texto y mismo lector robusto que el legado).
+    (mismo criterio de texto y mismo lector robusto que la normalización).
     """
 
     def __init__(self, datos, normalizar_texto, leer_todas_hojas,
-                 hojas_legado=None, encabezados_legado=None,
                  ruta=None, sha256=None):
 
         self.datos = datos
         self._norm = normalizar_texto
         self._leer = leer_todas_hojas
-        self.hojas_legado = hojas_legado
         self.ruta = ruta
         self.sha256 = sha256
 
-        problemas = validar_registro_deteccion(
-            datos, normalizar_texto, hojas_legado, encabezados_legado
-        )
+        problemas = validar_registro_deteccion(datos)
 
         if problemas:
             raise RegistroDeteccionError(
@@ -310,7 +253,7 @@ class DetectorRegistro:
             )
 
     @classmethod
-    def cargar(cls, normalizar_texto, leer_todas_hojas, ruta=None, **kw):
+    def cargar(cls, normalizar_texto, leer_todas_hojas, ruta=None):
 
         ruta = ruta_registro(ruta)
 
@@ -331,7 +274,7 @@ class DetectorRegistro:
 
         return cls(
             datos, normalizar_texto, leer_todas_hojas, ruta=ruta,
-            sha256=hashlib.sha256(crudo).hexdigest(), **kw
+            sha256=hashlib.sha256(crudo).hexdigest()
         )
 
     # -- acceso ---------------------------------------------------
@@ -382,7 +325,7 @@ class DetectorRegistro:
         )
 
     def _fila_encabezado(self, raw, esperados):
-        """Mayor puntaje, primera fila en empate (criterio del legado)."""
+        """Mayor puntaje, primera fila en empate."""
 
         esperados_norm = [self._norm(e) for e in esperados]
 
@@ -454,21 +397,6 @@ class DetectorRegistro:
             for t in re.findall(r"[0-9][0-9\-]*[0-9]", texto)
             if len(clave_cuenta(t)) >= MIN_DIGITOS_CUENTA
         ]
-
-    def _formato_legado(self, cuenta, fmt, hoja):
-        """(id para normalizar_*, cuenta_nueva) o error si no es compatible."""
-
-        cid = cuenta["id"]
-
-        if self.hojas_legado is not None and cid in self.hojas_legado:
-            if self.hojas_legado[cid] != hoja:
-                raise ValueError(
-                    f"la cuenta {cid} llega en la hoja '{hoja}', pero su "
-                    f"normalizador legado lee '{self.hojas_legado[cid]}'"
-                )
-            return cid, False
-
-        return fmt["legado"]["plantilla_por_hoja"][hoja], True
 
     # -- detección ------------------------------------------------
 
@@ -657,21 +585,12 @@ class DetectorRegistro:
 
         cuenta = self.cuenta(coinciden[0])
 
-        try:
-            formato_legado, nueva = self._formato_legado(cuenta, fmt, hoja)
-        except ValueError as e:
-            return ResultadoDeteccion(
-                HOJA_INCOMPATIBLE, motivo=str(e), candidatos=coinciden, **base
-            )
-
         return ResultadoDeteccion(
             OK,
             cuenta_id=cuenta["id"],
             banco=cuenta["banco"],
             cuenta=cuenta["cuenta"],
             moneda=cuenta["moneda"],
-            formato_legado=formato_legado,
-            cuenta_nueva=nueva,
             candidatos=coinciden,
             **base
         )

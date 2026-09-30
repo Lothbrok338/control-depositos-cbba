@@ -15,10 +15,10 @@ CAMBIOS = {  # codigo -> (archivo/funcion, cambio minimo necesario)
  "D-06": ("motor_generico.py · filtro_fecha del registro (P5; antes normalizar_*)", "Usar el mismo parser (normalizar_fecha) para FILTRAR filas y para el valor final, como ya hace normalizar_economico."),
  "D-07": ("motor_generico.py · MotorGenerico.normalizar (P5; antes normalizar_*)", "Contar filas descartadas por fecha; si alguna tiene importe/saldo, lanzar ValueError (pies de pagina 'Total ...' siguen permitidos)."),
  "D-08": ("motor · ejecutar_motor (paso 6)", "Reemplazar 2026 fijo por año parametrizable (p. ej. derivado de FECHA A PROCESAR) sin bloquear enero 2027."),
- "D-09": ("motor_generico.py · MotorGenerico._leer_tabla (P5)", "CORREGIDO EN P5: la normalizacion productiva exige encabezados.puntaje_minimo del registro y lanza ValueError con los encabezados que faltan (la deteccion ya lo exigia desde P4). La primitiva legada encontrar_fila_encabezado queda sin cambios, solo como referencia (P6)."),
+ "D-09": ("motor_generico.py · MotorGenerico._leer_tabla (P5)", "CORREGIDO EN P5: la normalizacion productiva exige encabezados.puntaje_minimo del registro y lanza ValueError con los encabezados que faltan (la deteccion ya lo exigia desde P4). La primitiva legada encontrar_fila_encabezado se retiro en P6."),
  "D-10": ("deteccion_registro.py (P4)", "CORREGIDO EN P4: la cuenta se lee solo en la celda rotulada de la cabecera (filas previas al encabezado) y debe ser UNA cuenta registrada."),
  "D-11": ("deteccion_registro.py (P4)", "CORREGIDO EN P4: BMSC exige la cuenta 1000872489 registrada en la cabecera; otra cuenta = CUENTA_NO_REGISTRADA."),
- "D-12": ("motor_generico.py · MotorGenerico.normalizar (P5)", "CORREGIDO EN P5: BANCO / CUENTA BANCARIA / MONEDA salen de la entrada de CUENTAS del registro; la normalizacion productiva no tiene ramas por cuenta. Los 'else' de los normalizar_* legados quedan solo como referencia (P6)."),
+ "D-12": ("motor_generico.py · MotorGenerico.normalizar (P5)", "CORREGIDO EN P5: BANCO / CUENTA BANCARIA / MONEDA salen de la entrada de CUENTAS del registro; la normalizacion productiva no tiene ramas por cuenta. Los normalizar_* legados (y sus 'else') se retiraron en P6."),
  "D-13": ("motor · ejecutar_motor (inicio y paso 10-11)", "Eliminar/mover salidas previas al iniciar y escribir a temporal + renombrar al terminar."),
  "D-14": ("motor · bloque __main__ / ejecutar_motor", "sys.stdout.reconfigure(encoding='utf-8') (o quitar emojis) antes del primer print."),
  "D-15": ("motor · ejecutar_motor (CONFIGURAR LOTE)", "Usar hora de America/La_Paz en fecha_carga y lote."),
@@ -42,7 +42,7 @@ for r in res:
 def celda(r):
     if r is None: return "—"
     return {"PASS": "PASS", "FAIL": "**FAIL**", "SKIP": "SKIP", "XFAIL": "XFAIL", "XPASS": "XPASS"}[r["estado"]]
-L = ["# Informe de pruebas del normalizador (Fase 2 + P1/P2: captura y preservación de origen + P3: motor genérico en sombra + P3b: EXTRACTO_HISTORICO + P4: detección por registro + P5: normalización por registro)\n"]
+L = ["# Informe de pruebas del normalizador (Fase 2 + P1/P2: captura y preservación de origen + P3: motor genérico en sombra + P3b: EXTRACTO_HISTORICO + P4: detección por registro + P5: normalización por registro + P6: retiro del legado)\n"]
 CORREGIDOS_P4 = {"test_cuenta_dentro_de_glosa_no_cambia_la_deteccion": ("D-10", "Cuenta", "un BNB_CLINICA cuya glosa menciona la cuenta BNB_MN ya NO se clasifica como BNB_MN"),
                  "test_bmsc_con_otra_cuenta_no_se_acepta": ("D-11", "Cuenta", "un BMSC con otra cuenta ya NO se acepta con la cuenta fija 1000872489")}
 CORREGIDOS_P5 = {"test_encabezado_sin_coincidencias_debe_fallar": ("D-09", "Encabezado", "sin encabezado reconocible la normalizacion productiva lanza ValueError (antes leia desde una fila cualquiera)"),
@@ -60,8 +60,8 @@ for fm, fila in matriz.items():
     L.append(f"| {fm} | {FIXTURES[fm]} | " + " | ".join(celda(e) for e in est) + f" | {'**PASS**' if ok else '**FAIL**'} |")
 L.append("| UNION_ME (`UNION_FECHAS_V1`) | *sin extracto real en el repo* | PASS (proxy sintético) | PENDIENTE archivo real | — | — | — | — | — | — | — | — | **ESTRUCTURA: CONFIRMADA (código legado + captura real) · ARCHIVO REAL VACÍO: pendiente · MOVIMIENTOS: REQUIERE MUESTRA REAL CON MOVIMIENTOS** |")
 L.append("\n**Desde P5 la matriz corre sobre la RUTA PRODUCTIVA (detección por registro + motor genérico).** UNION_ME se normaliza con `UNION_FECHAS_V1` (misma configuración que UNION_MN, identidad propia del registro): proxy sintético PASS; lo que depende de movimientos reales sigue SKIP.\n")
-L.append("\n**Estructura UNION_ME = confirmada por código legado (`HOJAS_VALIDAS`, `ENCABEZADOS_ESPERADOS`, `detectar_formato`, `normalizar_union`) + captura real; comportamiento con movimientos = pendiente de fixture real.** UNION_ME es un formato válido (`UNION_FECHAS_V1`, hoja `ExtractoMovimientosFechas`, cuenta 20000003224544, columnas "
-         "`Fecha Movimiento | AG | Descripción | Nro Documento | Monto | Saldo | Nro de verificasion`). `Nro de verificasion` proviene de la captura real; el motor legado no la lee (se pierde) y no entra a las 26 columnas. La muestra real está vacía y "
+L.append("\n**Estructura UNION_ME = confirmada por código legado (`HOJAS_VALIDAS`, `ENCABEZADOS_ESPERADOS`, `detectar_formato`, `normalizar_union` del motor original; desde P6 solo en `registro_bancos.json`) + captura real; comportamiento con movimientos = pendiente de fixture real.** UNION_ME es un formato válido (`UNION_FECHAS_V1`, hoja `ExtractoMovimientosFechas`, cuenta 20000003224544, columnas "
+         "`Fecha Movimiento | AG | Descripción | Nro Documento | Monto | Saldo | Nro de verificasion`). `Nro de verificasion` proviene de la captura real; no entra a las 26 columnas (va a ORIGEN.xlsx y al EXTRACTO_HISTORICO). La muestra real está vacía y "
          "aún no está en el repositorio (`fixtures/extractos/union_me_vacio.xls`): sus pruebas estructurales se activan al colocarla. "
          "El reporte «Últimos 12 Movimientos» quedó como fixture **negativo** (`fixtures/negativos/`).\n")
 L.append("## 2. Contrato, lote completo y UNION_ME (estructura)\n")
@@ -71,7 +71,7 @@ for r in res:
     base = r["id"].split("[")[0]
     fn = base.split("/")[-1]
     n = fn.split("::")[-1]
-    if fn.startswith(("test_07", "test_08", "test_09")):
+    if fn.startswith(("test_06", "test_07", "test_08", "test_09", "test_10")):
         continue
     if fn.startswith(("test_01", "test_03")) or "union" in n or "bisa_me_sin" in n or "totales_pie" in n:
         grp.setdefault(fn, []).append(r["estado"])
@@ -87,8 +87,8 @@ for r in res:
         g5.setdefault(fn.split("[")[0].split("::")[-1], []).append(r["estado"])
 for n, est in g5.items():
     L.append(f"| `{n}` | {len(est)} | " + ("PASS" if all(e == "PASS" for e in est) else "/".join(f"{e}×{est.count(e)}" for e in sorted(set(est)))) + " |")
-L.append("\n## 2c. Registro de bancos + comparador genérico ↔ legado (P3, `test_06_sombra_p3.py`)\n")
-L.append("Desde P5 la producción es la del motor genérico; los `normalizar_*` legados corren en sombra como referencia y solo reportan (`SOMBRA_REPORTE.json`, `SOMBRA_DIFERENCIAS.csv`).\n")
+L.append("\n## 2c. Registro de bancos + motor genérico (P3-P6, `test_06_registro_generico.py`)\n")
+L.append("Desde P6 el motor genérico es la única normalización; el comparador con el legado y la sombra se retiraron (antes `test_06_sombra_p3.py`).\n")
 L.append("| Prueba | Casos | Estado |\n|---|---|---|")
 g6 = {}
 for r in res:
@@ -118,7 +118,7 @@ for r in res:
 for n, est in g8.items():
     L.append(f"| `{n}` | {len(est)} | " + ("PASS" if all(e == "PASS" for e in est) else "/".join(f"{e}×{est.count(e)}" for e in sorted(set(est)))) + " |")
 L.append("\n## 2f. Normalización productiva por registro (P5, `test_09_normalizacion_p5.py`)\n")
-L.append("archivo → detección por registro → normalización genérica (`motor_generico.py` + `registro_bancos.json`) → salida productiva. Los `normalizar_*` legados solo como referencia en sombra hasta P6.\n")
+L.append("archivo → detección por registro → normalización genérica (`motor_generico.py` + `registro_bancos.json`) → salida productiva. Desde P6 la referencia legada es la congelada (doradas + manifest del motor original).\n")
 L.append("| Prueba | Casos | Estado |\n|---|---|---|")
 g9 = {}
 for r in res:
@@ -126,6 +126,16 @@ for r in res:
     if fn.startswith("test_09"):
         g9.setdefault(fn.split("[")[0].split("::")[-1], []).append(r["estado"])
 for n, est in g9.items():
+    L.append(f"| `{n}` | {len(est)} | " + ("PASS" if all(e == "PASS" for e in est) else "/".join(f"{e}×{est.count(e)}" for e in sorted(set(est)))) + " |")
+L.append("\n## 2g. Retiro del legado (P6, `test_10_retiro_legado_p6.py`)\n")
+L.append("Ningún componente productivo define ni nombra la normalización legada; producción aislada con solo los 5 archivos productivos = doradas; sin sombra.\n")
+L.append("| Prueba | Casos | Estado |\n|---|---|---|")
+g10 = {}
+for r in res:
+    fn = r["id"].split("/")[-1]
+    if fn.startswith("test_10"):
+        g10.setdefault(fn.split("[")[0].split("::")[-1], []).append(r["estado"])
+for n, est in g10.items():
     L.append(f"| `{n}` | {len(est)} | " + ("PASS" if all(e == "PASS" for e in est) else "/".join(f"{e}×{est.count(e)}" for e in sorted(set(est)))) + " |")
 L.append("\n## 3. Defectos reales confirmados (fallan hoy; deben pasar tras corregir)\n")
 L.append("| Código | Estado hoy | Defecto demostrado | Cambio necesario (archivo · función) |\n|---|---|---|---|")

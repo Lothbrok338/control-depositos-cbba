@@ -4,7 +4,7 @@ quitar la marca. Codigos D-xx = numeracion de este informe.
 
 Desde P5 los defectos de NORMALIZACION se prueban sobre la RUTA PRODUCTIVA (`normalizar_extracto`: motor
 generico gobernado por registro_bancos.json), que es la que produce NORMALIZADO.xlsx / LISTS.csv. Los
-normalizar_* legados ya no producen salida (solo referencia hasta P6)."""
+normalizar_* legados se retiraron en P6."""
 import datetime as dt
 import json
 import os
@@ -90,7 +90,7 @@ def test_movimiento_de_2027_no_bloquea(motor, tmp_path):
 # ------------------------------- ENCABEZADO -------------------------------
 # D-09: CORREGIDO EN P5 (ruta productiva cerrada ya en P4 por la deteccion). La normalizacion productiva (motor
 # generico) exige encabezados.puntaje_minimo del registro antes de leer la tabla. La primitiva legada
-# encontrar_fila_encabezado sigue igual, pero ya no interviene en la salida (solo referencia; se retira en P6).
+# encontrar_fila_encabezado se retiro en P6.
 def _hoja_bnb(ruta, filas):
     from openpyxl import Workbook
     wb = Workbook(); ws = wb.active; ws.title = "Hoja 1"
@@ -133,7 +133,7 @@ def test_bmsc_con_otra_cuenta_no_se_acepta(motor, tmp_path):
 
 
 # D-12: CORREGIDO EN P5. La normalizacion productiva no tiene ramas por cuenta: BANCO / CUENTA BANCARIA / MONEDA
-# salen de la entrada de CUENTAS del registro. El 'else' de normalizar_union sigue en el legado (solo referencia).
+# salen de la entrada de CUENTAS del registro. El 'else' de normalizar_union se retiro con el legado en P6.
 def test_formato_union_nuevo_no_hereda_cuenta_ajena(motor, tmp_path):
     """D-12 (corregido en P5): una cuenta UNION nueva (solo registro) recibe SU cuenta y moneda, nunca las de
     UNION_ME (20000003224544 / USD) ni las de UNION_MN."""

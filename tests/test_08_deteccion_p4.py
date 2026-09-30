@@ -2,15 +2,15 @@
 
 Reglas que estas pruebas protegen:
   * los 12 extractos reales se detectan exactamente en su formato actual (mismo id, misma hoja y fila de
-    encabezado que lee su normalizar_* legado) y las salidas válidas no cambian;
+    encabezado que leía su normalizar_* legado, retirado en P6) y las salidas válidas no cambian;
   * una cuenta nueva de un formato conocido entra con UNA entrada en CUENTAS, sin código;
   * la cuenta se lee solo en la celda rotulada de la cabecera: una cuenta dentro de una glosa no cambia nada;
   * la cuenta se valida en todos los formatos, BMSC incluido;
   * encabezado insuficiente, cabecera ambigua o reporte Unión «Últimos 12» = error claro, nunca una elección
     silenciosa;
   * (P4) la normalización seguía en los normalizar_* legados. DESDE P5 la normaliza el motor genérico con el
-    registro (test_09_normalizacion_p5.py); `formato_legado` / `aplicar_identidad_registro` solo alimentan la
-    referencia legada en sombra. Estas pruebas de detección no cambian.
+    registro (test_09_normalizacion_p5.py). P6 retiró `formato_legado`, `cuenta_nueva`, la plantilla
+    `legado.plantilla_por_hoja` y `aplicar_identidad_registro`; las reglas de detección no cambian.
 """
 import copy
 import importlib.util
@@ -22,7 +22,7 @@ import pandas as pd
 import pytest
 from openpyxl import Workbook
 
-from helpers import (CONTRATO, EXTRACTOS, FIXTURES, FORMATOS_OK, GOLDEN, RAIZ, UNION_ULTIMOS12,
+from helpers import (CONTRATO, ENCABEZADOS, EXTRACTOS, FIXTURES, FORMATOS_OK, GOLDEN, HOJAS, RAIZ, UNION_ULTIMOS12,
                      crear_xlsx_bmsc_otra_cuenta, crear_xlsx_bnb, crear_xlsx_union_me_con_movimiento,
                      leer_csv_texto)
 
@@ -94,11 +94,10 @@ def test_p4_formato_real_se_detecta_exactamente_como_hoy(motor, detector, ruta_f
     assert r.estado == "OK", r.motivo
     assert r.cuenta_id == formato and r.formato_motor == formato
     assert (r.banco, r.cuenta, r.moneda) == CONTRATO[formato]
-    # el normalizador legado recibe el mismo id que antes y lee la misma hoja y la misma fila de encabezado
-    assert r.formato_legado == formato and r.cuenta_nueva is False
-    assert r.hoja == motor.HOJAS_VALIDAS[formato]
+    # misma hoja y misma fila de encabezado que leía el normalizador legado (contrato congelado en helpers)
+    assert r.hoja == HOJAS[formato]
     raw = motor.leer_todas_hojas(ruta_fixture(formato))[r.hoja]
-    fila, puntaje, total = motor.encontrar_fila_encabezado(raw, formato)
+    fila, puntaje, total = motor.normalizador_registro()._fila_encabezado(raw, ENCABEZADOS[formato])
     assert (r.fila_encabezado, puntaje) == (fila, total)
     # la cuenta salió de la celda rotulada de la cabecera, antes del encabezado
     assert r.fila_encabezado > 0 and CONTRATO[formato][1].replace("-", "") in r.cuenta_leida.replace("-", "")
@@ -117,34 +116,25 @@ def test_p4_lote_12_salidas_identicas_y_deteccion_por_registro(corrida_lote):
     d = res["deteccion_estado"]
     assert d["version_deteccion"] == "P4-1" and len(d["sha256_registro"]) == 64
     assert {a["CUENTA_ID"] for a in d["archivos"].values()} == set(FORMATOS_OK)
-    assert all(a["ESTADO"] == "OK" and a["CUENTA_NUEVA"] is False and a["FORMATO_LEGADO"] == a["CUENTA_ID"]
-               for a in d["archivos"].values())
+    assert all(a["ESTADO"] == "OK" and a["HOJA"] == HOJAS[a["CUENTA_ID"]] for a in d["archivos"].values())
+    assert all("FORMATO_LEGADO" not in a and "CUENTA_NUEVA" not in a for a in d["archivos"].values())   # P6
     assert list(res["df_deteccion_final"].columns) == ["ARCHIVO", "FORMATO", "ESTADO"]
     assert set(res["df_deteccion_final"]["ESTADO"]) == {"OK"}
-    assert res["sombra_estado"]["estado"] == "SIN_DIFERENCIAS"
 
 
 # =========================== 2. REGISTRO ===========================
-def test_p4_registro_valido_para_detectar_y_coherente_con_los_normalizadores(motor, dr, datos_registro):
-    assert dr.validar_registro_deteccion(datos_registro, motor.normalizar_texto,
-                                         motor.HOJAS_VALIDAS, motor.ENCABEZADOS_ESPERADOS) == []
+def test_p4_registro_valido_para_detectar(dr, datos_registro):
+    assert dr.validar_registro_deteccion(datos_registro) == []
     assert datos_registro["version_deteccion"] == "P4-1"
     for fid, f in datos_registro["FORMATOS"].items():
+        assert "legado" not in f, fid                                   # P6: sin plantillas legadas
         if f.get("aceptado", True) is False:
             continue
         assert f["deteccion"]["zona_cuenta"] == "CABECERA" and f["deteccion"]["etiquetas_cuenta"], fid
-        assert set(f["legado"]["plantilla_por_hoja"]) == set(f["hojas_aceptadas"]), fid
 
 
 MUTACIONES = {
     "sin_etiquetas_de_cuenta": lambda d: d["FORMATOS"]["BMSC_EXCEL_V1"]["deteccion"].update(etiquetas_cuenta=[]),
-    "plantilla_que_lee_otra_hoja": lambda d: d["FORMATOS"]["BNB_EXTRACTO_V1"]["legado"]["plantilla_por_hoja"].update(
-        {"Hoja": "BNB_MN"}),
-    "plantilla_de_otro_banco": lambda d: d["FORMATOS"]["BCP_EXTRACTO_V1"]["legado"].update(
-        plantilla_por_hoja={"HistoricalAccountExcel": "BISA_MN"}),
-    "hoja_sin_plantilla": lambda d: d["FORMATOS"]["BNB_EXTRACTO_V1"]["legado"]["plantilla_por_hoja"].pop("Hoja"),
-    "encabezado_distinto_al_del_normalizador": lambda d: d["FORMATOS"]["UNION_FECHAS_V1"]["encabezados"].update(
-        puntaje=["FECHA MOVIMIENTO", "DESCRIPCION", "MONTO", "SALDO"]),
     "mismo_numero_en_dos_formatos": lambda d: d["CUENTAS"].append(
         {"id": "X", "formato": "BMSC_EXCEL_V1", "banco": "BMSC", "cuenta": "3000100152", "moneda": "BOB"}),
     "id_repetido": lambda d: d["CUENTAS"].append(dict(d["CUENTAS"][0], cuenta="5555555555")),
@@ -186,7 +176,7 @@ def test_p4_cuenta_nueva_sin_registrar_se_rechaza_con_motivo(motor, tmp_path):
 
 def test_p4_cuenta_nueva_se_incorpora_solo_con_una_entrada_en_cuentas(motor, datos_registro, tmp_path):
     """Mismo motor, mismo código: solo el registro gana una entrada. La cuenta se procesa de punta a punta
-    (NORMALIZADO, LISTS, ORIGEN, referencia legada en sombra) con BANCO / CUENTA / MONEDA del registro."""
+    (NORMALIZADO, LISTS, ORIGEN) con BANCO / CUENTA / MONEDA del registro."""
     ruta = crear_xlsx_bnb(tmp_path / "nueva.xlsx", "3999000111", FILAS_BNB)
     reg = _registro_con(datos_registro, tmp_path, NUEVA_BNB)
     res = _correr(motor, _carpeta(tmp_path, ruta), tmp_path / "out", registro=reg)
@@ -200,12 +190,11 @@ def test_p4_cuenta_nueva_se_incorpora_solo_con_una_entrada_en_cuentas(motor, dat
     assert res["df_deteccion_final"]["FORMATO"].tolist() == ["BNB_NUEVA_USD"]
     assert res["df_validacion"]["ESTADO"].tolist() == ["OK"]
     det = res["deteccion_estado"]["archivos"]["nueva.xlsx"]
-    assert det["CUENTA_NUEVA"] is True and det["FORMATO_LEGADO"] == "BNB_MN"
+    assert (det["CUENTA_ID"], det["FORMATO_REGISTRO"], det["HOJA"]) == ("BNB_NUEVA_USD", "BNB_EXTRACTO_V1", "Hoja 1")
 
     lists = pd.read_csv(tmp_path / "out" / "LISTS.csv", encoding="utf-8-sig", dtype=str)
     assert set(lists["CUENTA BANCARIA"]) == {"3999000111"} and set(lists["MONEDA"]) == {"USD"}
     assert res["origen_estado"]["estado"] == "OK"            # la captura (P1) también la procesa
-    assert res["sombra_estado"]["estado"] == "SIN_DIFERENCIAS"   # el motor genérico llega a lo mismo
 
 
 def test_p4_cuenta_nueva_tambien_llega_al_historico_p3b(motor, datos_registro, tmp_path):
@@ -223,26 +212,11 @@ def test_p4_cuenta_nueva_tambien_llega_al_historico_p3b(motor, datos_registro, t
         ("EXTRACTO_HISTORICO_BNB_3999000111_2026-08.xlsx", "BNB_NUEVA_USD", 2)]
 
 
-def test_p4_cuenta_nueva_normaliza_igual_que_su_plantilla_salvo_la_identidad(motor, datos_registro, tmp_path):
-    """REFERENCIA (P4; desde P5 la usa solo la sombra): la plantilla legada + identidad del registro solo cambia
-    BANCO/CUENTA/MONEDA/CLAVE respecto de la plantilla."""
-    ruta = crear_xlsx_bnb(tmp_path / "nueva.xlsx", "3999000111", FILAS_BNB)
-    reg = _registro_con(datos_registro, tmp_path, NUEVA_BNB)
-    det = motor.detector_registro(str(reg)).detectar(str(ruta))
-    assert det.estado == "OK" and det.cuenta_id == "BNB_NUEVA_USD" and det.formato_legado == "BNB_MN"
-    plantilla = motor.normalizar_archivo(str(ruta), "BNB_MN", "L", TS, nombre_origen="nueva.xlsx")
-    nueva = motor.aplicar_identidad_registro(plantilla, det)
-    variables = ["BANCO", "CUENTA BANCARIA", "MONEDA", "CLAVE TRANSACCIÓN"]
-    pd.testing.assert_frame_equal(plantilla.drop(columns=variables), nueva.drop(columns=variables))
-    assert list(nueva.columns) == list(motor.COLUMNAS_LISTS)
-    assert set(plantilla["CUENTA BANCARIA"]) == {"3000100152"}   # plantilla intacta (copia)
-
-
-def test_p4_cuenta_nueva_en_hoja_alternativa_usa_la_plantilla_de_esa_hoja(motor, datos_registro, tmp_path):
+def test_p4_cuenta_nueva_en_hoja_alternativa_se_detecta_en_esa_hoja(motor, datos_registro, tmp_path):
     ruta = crear_xlsx_bnb(tmp_path / "nueva.xlsx", "3999000111", FILAS_BNB, hoja="Hoja")
     reg = _registro_con(datos_registro, tmp_path, dict(NUEVA_BNB, moneda="BOB"))
     res = _correr(motor, _carpeta(tmp_path, ruta), tmp_path / "out", registro=reg)
-    assert res["deteccion_estado"]["archivos"]["nueva.xlsx"]["FORMATO_LEGADO"] == "BNB_AHORRO"
+    assert res["deteccion_estado"]["archivos"]["nueva.xlsx"]["HOJA"] == "Hoja"
     assert set(res["df_final"]["CUENTA BANCARIA"]) == {"3999000111"} and set(res["df_final"]["MONEDA"]) == {"BOB"}
 
 
@@ -261,12 +235,11 @@ def test_p4_cuenta_nueva_de_union_junto_al_lote_real(motor, datos_registro, tmp_
     df = res["df_final"]
     nueva = df[df["ARCHIVO ORIGEN"] == "union_nueva.xlsx"]
     assert len(nueva) == 1 and set(nueva["CUENTA BANCARIA"]) == {"30000009990001"} and set(nueva["MONEDA"]) == {"USD"}
-    assert res["deteccion_estado"]["archivos"]["union_nueva.xlsx"]["FORMATO_LEGADO"] == "UNION_MN"
+    assert res["deteccion_estado"]["archivos"]["union_nueva.xlsx"]["FORMATO_REGISTRO"] == "UNION_FECHAS_V1"
     for fm in ("BNB_ME", "UNION_MN"):
         real = df[df["ARCHIVO ORIGEN"] == FIXTURES[fm]]
         esperado = pd.read_csv(GOLDEN / f"{fm}.csv", dtype=str, keep_default_na=False)
         assert real["CLAVE TRANSACCIÓN"].tolist() == esperado["CLAVE TRANSACCIÓN"].tolist(), fm
-    assert res["sombra_estado"]["estado"] == "SIN_DIFERENCIAS"
 
 
 def test_p4_cuenta_nueva_no_modifica_el_registro_productivo(datos_registro):
@@ -473,7 +446,7 @@ def test_p4_union_ultimos12_aunque_traiga_saldo_se_rechaza_por_su_cabecera(motor
 def test_p4_union_me_proxy_sintetico_sigue_detectandose(motor, tmp_path):
     """UNION_ME conserva sus pruebas estructurales/sintéticas hasta tener movimientos reales."""
     r = motor.detectar_extracto(str(crear_xlsx_union_me_con_movimiento(tmp_path / "u.xlsx")))
-    assert r.estado == "OK" and r.cuenta_id == "UNION_ME" and r.formato_legado == "UNION_ME"
+    assert r.estado == "OK" and r.cuenta_id == "UNION_ME" and r.hoja == HOJAS["UNION_ME"]
     assert (r.banco, r.cuenta, r.moneda) == CONTRATO["UNION_ME"]
 
 
@@ -488,15 +461,3 @@ def test_p4_la_deteccion_no_contiene_logica_de_normalizacion(dr):
                   "finalizar_dataframe", "validar_archivo", "ecuacion_saldo", "normalizar_archivo",
                   "texto_de_archivo", "COLUMNAS_LISTS"}
     assert nombres & prohibidos == set()
-
-
-def test_p4_cuenta_conocida_que_contradice_al_registro_no_se_corrige_en_silencio(motor, datos_registro, tmp_path):
-    """aplicar_identidad_registro no corrige en silencio una contradicción legado ↔ registro. Desde P5 no está en
-    la ruta productiva (la identidad sale solo del registro; la referencia legada reporta la diferencia, ver
-    test_06::test_p5_identidad_del_registro_que_contradice_al_legado_se_reporta_en_la_referencia)."""
-    det = motor.detector_registro(str(REPO / "registro_bancos.json")).detectar(
-        str(EXTRACTOS / FIXTURES["BNB_ME"]))
-    det.moneda = "BOB"
-    tabla = motor.normalizar_archivo(str(EXTRACTOS / FIXTURES["BNB_ME"]), "BNB_ME", "L", TS, nombre_origen="x")
-    with pytest.raises(ValueError, match="no coinciden en MONEDA para BNB_ME"):
-        motor.aplicar_identidad_registro(tabla, det)

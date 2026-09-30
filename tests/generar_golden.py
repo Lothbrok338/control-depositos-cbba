@@ -2,7 +2,9 @@
 Uso:  python generar_golden.py --force
 IMPORTANTE: son 'lo que el motor produce hoy', no una verdad externa. Deben contrastarse contra
 un NORMALIZADO.xlsx / LISTS.csv aprobados por el usuario cuando esten disponibles.
-Solo ejecutar con el motor productivo en un estado aprobado."""
+Solo ejecutar con el motor productivo en un estado aprobado.
+P6: usa normalizar_archivo / validar_archivo, retirados del motor en P6. Las doradas se regeneran SOLO contra el motor
+ORIGINAL (p. ej. `git worktree add <carpeta> checkpoint-p5` y MOTOR_PATH=<carpeta>/motor_control_depositos_cbba.py)."""
 import json, shutil, sys, tempfile
 from pathlib import Path
 import pandas as pd
@@ -11,6 +13,9 @@ from helpers import EXTRACTOS, FIXTURES, FORMATOS_OK, GOLDEN, a_texto, cargar_mo
 if "--force" not in sys.argv:
     sys.exit("Rechazado: usa --force para (re)generar las referencias doradas.")
 motor = cargar_motor()
+if not hasattr(motor, "normalizar_archivo"):
+    sys.exit("Rechazado: el motor en MOTOR_PATH no tiene la normalizacion legada (retirada en P6). Las doradas se "
+             "generan contra el motor ORIGINAL: MOTOR_PATH=<checkpoint-p5>/motor_control_depositos_cbba.py")
 GOLDEN.mkdir(exist_ok=True)
 manifest = {}
 ts = pd.Timestamp("2026-01-01")

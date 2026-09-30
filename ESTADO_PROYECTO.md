@@ -1,6 +1,6 @@
 # ESTADO DEL PROYECTO — CONTROL DE DEPÓSITOS CBBA (módulo de normalización)
 
-**Fecha del checkpoint P5:** 2026-09-30 (checkpoint P5 = rama remota `checkpoint-p5` = `main` al cerrar P5; anteriores: P4 = rama remota `checkpoint-p4` (`998158e`); P3b = rama remota `checkpoint-p3b`; P1+P2 = commit `8c9c09a`, tag local `checkpoint-p1-p2`; P3 = rama remota `checkpoint-p3`; el entorno no puede subir tags) · **Regla rectora:** NORMALIZAR NUNCA DEBE DESTRUIR INFORMACIÓN DE ORIGEN.
+**Fecha del checkpoint P5:** 2026-09-30 · **P6 terminado, pendiente de aprobación, sin checkpoint** (checkpoint P5 = rama remota `checkpoint-p5` = `main` al cerrar P5; anteriores: P4 = rama remota `checkpoint-p4` (`998158e`); P3b = rama remota `checkpoint-p3b`; P1+P2 = commit `8c9c09a`, tag local `checkpoint-p1-p2`; P3 = rama remota `checkpoint-p3`; el entorno no puede subir tags) · **Regla rectora:** NORMALIZAR NUNCA DEBE DESTRUIR INFORMACIÓN DE ORIGEN.
 
 ## 1. Estado
 
@@ -16,9 +16,11 @@
 | **P3b** Capa 4 (EXTRACTO_HISTORICO) | **TERMINADO Y APROBADO** | `historico.py` (función pura + escritor + CLI), bloque `historico` en `registro_bancos.json` (6 formatos), `tests/test_07_historico_p3b.py`, huella dorada `tests/golden/historico/MANIFEST_HISTORICO.json`. **No se integró a `ejecutar_motor`** (ver §5c) |
 | **P4** Detección productiva por registro | **TERMINADO Y APROBADO** (577 PASS · 22 SKIP · 16 XFAIL · 0 FAIL) | `deteccion_registro.py` (nuevo); bloques `deteccion` + `legado` por formato y `version_deteccion: P4-1` en `registro_bancos.json`; `detectar_formato` delega en el registro; `ejecutar_motor` usa la detección completa; `tests/test_08_deteccion_p4.py`. Normalización = legado (sin cambios). Ver §5d |
 | **P5** Normalización productiva por registro | **TERMINADO Y APROBADO** (620 PASS · 24 SKIP · 14 XFAIL · 0 FAIL) | La normalización productiva ya la ejecuta `motor_generico.py`: `ejecutar_motor` normaliza y valida con `motor_generico.py` + registro (pasos 2 y 7; ORIGEN con contrato del registro, paso 15); legado solo como referencia en sombra (paso 16); `tests/test_09_normalizacion_p5.py`; D-09 y D-12 corregidos. Ver §5e |
-| **P6** Retiro del legado | **SIGUIENTE FASE — no iniciada** (espera tu instrucción) | |
+| **P6** Retiro del legado | **TERMINADO — PENDIENTE DE TU APROBACIÓN** (575 PASS · 23 SKIP · 14 XFAIL · 0 FAIL; sin checkpoint) | Retirados los `normalizar_*`, `validar_archivo`, `HOJAS_VALIDAS`, `ENCABEZADOS_ESPERADOS`, `encontrar_fila_encabezado`, `leer_tabla_movimientos`, `texto_de_archivo`, `aplicar_identidad_registro`, la referencia en sombra (paso 16), el comparador y la detección P3 de `motor_generico.py`, el cruce legado de `deteccion_registro.py` y los bloques `legado` del registro. Salidas P5 = P6. Ver §5f |
 
 ## 2. Resultado de pruebas (suite completa)
+
+**Con P6 (pendiente de aprobación): 575 PASS · 23 SKIP · 14 XFAIL · 0 FAIL** (≈255 s). Diferencia con P5 (620 · 24 · 14): `test_06_sombra_p3.py` (112 PASS + 1 SKIP) se reemplaza por `test_06_registro_generico.py` (63 PASS; se retiran 49 pruebas y 1 SKIP que solo comparaban contra el legado o probaban el comparador/CLI); `test_08` −6 (4 mutaciones de la plantilla legada, 1 normalización con plantilla, 1 `aplicar_identidad_registro`); `test_09` −2 (referencia legada en sombra; las 12 comparaciones contra el legado pasan a compararse contra la referencia congelada: doradas + manifest); `test_10_retiro_legado_p6.py` +12. Los mismos 14 XFAIL. Salidas de los 12 fixtures idénticas a P5 (`tests/reports/EVIDENCIA_P6_RETIRO.txt`).
 
 **Con P5 (aprobado): 620 PASS · 24 SKIP · 14 XFAIL · 0 FAIL** (≈285 s). P5 agrega `test_09_normalizacion_p5.py` (39 PASS + 2 SKIP UNION_ME con movimientos reales), pasa D-09 y D-12 de XFAIL a PASS (+1 prueba de encabezado parcial) y la fixture `normalizado` corre la ruta productiva. Salidas de los 12 fixtures idénticas a P4 (`tests/reports/EVIDENCIA_P5_NORMALIZACION.txt`).
 
@@ -39,7 +41,7 @@
 6. **Registro parametrizable** `registro_bancos.json` (FORMATOS / CUENTAS): una cuenta nueva de un formato conocido = una entrada, cero código (P3). **Desde P4 es la fuente productiva de la detección** (banco, cuenta, moneda, formato).
 7. **UNION_ME** = `UNION_FECHAS_V1`: estructura **confirmada** por código legado + captura real (7 columnas, incl. `Nro de verificasion`, que el motor legado no lee y que va a ORIGEN e histórico, no a las 26 columnas). Comportamiento con movimientos: **pendiente de fixture real**.
 
-Plan: P1 ✔ · P2 ✔ · P3 ✔ · P3b ✔ · P4 ✔ · P5 ✔ · **P6 retiro del legado (siguiente, no iniciada)**.
+Plan: P1 ✔ · P2 ✔ · P3 ✔ · P3b ✔ · P4 ✔ · P5 ✔ · **P6 retiro del legado (hecho, pendiente de aprobación)**.
 
 ## 4. Pendientes
 
@@ -107,15 +109,27 @@ Capa 4 (`EXTRACTO_HISTORICO`, ver `DISENO_TRES_CAPAS.md` §6): bloque `historico
 * **Todavía depende del legado:** (a) primitivas compartidas del motor (número, fecha, hora, código, texto, lector de Excel, `buscar_columna*`, `finalizar_dataframe`/`crear_clave`, `ecuacion_saldo`, `extraer_nombre_bnb` = estrategia `legacy_bnb`), que son contrato congelado, no normalizadores; (b) la detección P4 valida el registro contra `HOJAS_VALIDAS` / `ENCABEZADOS_ESPERADOS` y calcula `formato_legado` (bloque `legado` del registro), hoy solo usado por la referencia; (c) el paso 16 (referencia en sombra) usa `normalizar_*`, `validar_archivo` y `aplicar_identidad_registro`. Todo esto se retira o se reubica en P6.
 * **Evidencia:** `tests/reports/EVIDENCIA_P5_NORMALIZACION.txt` (referencia = checkpoint P4 `998158e`): LISTS.csv idéntico byte a byte; NORMALIZADO.xlsx 4 hojas idénticas celda a celda; ORIGEN.xlsx 4 hojas idénticas; 11 EXTRACTO_HISTORICO idénticos; por archivo mismos movimientos, importes, saldos, claves y banco/cuenta/moneda; retorno y consola idénticos; producción sin ningún normalizador legado = P4 byte a byte.
 
+## 5f. P6 — retiro controlado del legado (hecho · PENDIENTE DE APROBACIÓN · sin checkpoint)
+
+* **Retirado del motor** (`motor_control_depositos_cbba.py`): `normalizar_bnb`, `normalizar_bcp`, `normalizar_union`, `normalizar_economico`, `normalizar_bisa`, `normalizar_bmsc`, `normalizar_archivo`, `validar_archivo`, `HOJAS_VALIDAS`, `ENCABEZADOS_ESPERADOS`, `encontrar_fila_encabezado`, `leer_tabla_movimientos`, `texto_de_archivo`, `aplicar_identidad_registro` y el paso 16 (referencia legada en sombra: `SOMBRA_REPORTE.json`, `SOMBRA_DIFERENCIAS.csv`, `CBBA_MOTOR_SOMBRA`, clave `sombra_estado` del retorno). `detector_registro` ya no pasa las constantes legadas; `ejecutar_motor` pierde el paso 16 y la línea de consola «cuenta registrada solo en registro_bancos.json» (todas lo están).
+* **Retirado de `motor_generico.py`**: comparador y sombra (`ejecutar_referencia_legado`, `referencia_archivo`, `sombra_archivo`, `comparar_*`, `armar_informe`, `escribir_informe`), `cargar_legado`, la detección propia de P3 (`MotorGenerico.detectar`, `procesar`, `Deteccion`, `ResultadoGenerico`; la productiva es `deteccion_registro.py` desde P4) y el modo script. `PRIMITIVAS_LEGADO` / `namespace_legado` pasan a `PRIMITIVAS_MOTOR` / `namespace_primitivas` (misma lista). `normalizar`, `validar` y `Registro` quedan con el mismo código (solo docstrings). Versión `P6-1` (no se escribe en ninguna salida).
+* **Retirado de `deteccion_registro.py`**: validación contra `HOJAS_VALIDAS` / `ENCABEZADOS_ESPERADOS` / `legado.plantilla_por_hoja`, `_formato_legado`, estado `HOJA_INCOMPATIBLE` y los campos `formato_legado` / `cuenta_nueva` (y `FORMATO_LEGADO` / `CUENTA_NUEVA` de `deteccion_estado`). Las reglas de detección no cambian (`version_deteccion` P4-1).
+* **Registro**: se quitan los 6 bloques `legado` y su ayuda; ninguna regla de formato ni cuenta cambia.
+* **Primitivas compartidas que permanecen en el motor (sin cambios, sin duplicar)**: `COLUMNAS_LISTS`, `crear_clave`, `valor_clave_numero`, `finalizar_dataframe` (26 columnas y CLAVE), `ecuacion_saldo` (validación), `extraer_nombre_bnb` (estrategia `legacy_bnb`, D-18/D-19), `numero`, `normalizar_fecha`, `normalizar_hora`, `codigo_texto`, `normalizar_texto`, `buscar_columna*`, `leer_excel_robusto`, `leer_todas_hojas` (usadas por `motor_generico.py` y `deteccion_registro.py`), `descubrir_archivos`. No se movieron a un módulo común para no agregar un archivo de despliegue.
+* **Archivos productivos**: `motor_control_depositos_cbba.py`, `deteccion_registro.py`, `motor_generico.py`, `registro_bancos.json`, `captura_origen.py` (+ `historico.py` para la capa 4). Probado: con solo esos 5 archivos en una carpeta aislada, los 12 fixtures dan LISTS.csv / NORMALIZADO.xlsx / ORIGEN.xlsx idénticos a P5.
+* **Pruebas**: `helpers.HOJAS` / `helpers.ENCABEZADOS` = copia congelada de las constantes legadas; la equivalencia con el legado queda fijada por las doradas; `test_06_registro_generico.py` (reemplaza `test_06_sombra_p3.py`) y `test_10_retiro_legado_p6.py` (nuevo). `generar_golden.py` exige un motor con legado (checkpoint ≤ P5).
+* **Evidencia**: `tests/reports/EVIDENCIA_P6_RETIRO.txt` (referencia = checkpoint P5 `0b182e2`): LISTS.csv idéntico byte a byte; NORMALIZADO.xlsx y ORIGEN.xlsx idénticos celda a celda; 11 EXTRACTO_HISTORICO idénticos; por archivo mismos movimientos, importes, saldos, claves y banco/cuenta/moneda; retorno idéntico salvo `sombra_estado`; nombres legados en el código productivo P5 = 19 / 23 / 7 → P6 = 0; `captura_origen.py`, `historico.py`, Power Automate, doradas y fixtures sin cambios; código productivo 8 997 → 6 060 líneas.
+* **Riesgos pendientes**: (1) quien leyera `sombra_estado`, `FORMATO_LEGADO` / `CUENTA_NUEVA` o `SOMBRA_REPORTE.json` deja de recibirlos (en el repositorio nadie; el consumidor de Power Automate no ejecuta Python); (2) carpetas de salida con `SOMBRA_*` de corridas anteriores: ya no se actualizan (se pueden borrar; no se toman como extractos); (3) desaparece la red de comparación en vivo contra el legado: la protección queda en las doradas y en las pruebas; (4) `evidencia_p4_extra.py` / `evidencia_p5_extra.py` y `generar_golden.py` solo corren sobre su checkpoint.
+
 ## 6. Componentes que todavía NO deben modificarse
 
 * `COLUMNAS_LISTS` (26 columnas, su orden y nombres) y `CLAVE TRANSACCIÓN` (fórmula).
-* Todas las funciones `normalizar_*` y `finalizar_dataframe`.
-* `ENCABEZADOS_ESPERADOS`, `HOJAS_VALIDAS`, `validar_archivo`, `encontrar_fila_encabezado`, `leer_tabla_movimientos` y el control del año 2026 fijo.
+* `finalizar_dataframe`, `crear_clave` y las primitivas compartidas del motor (desde P6 los `normalizar_*`, `validar_archivo`, `HOJAS_VALIDAS`, `ENCABEZADOS_ESPERADOS`, `encontrar_fila_encabezado` y `leer_tabla_movimientos` ya no existen).
+* El control del año 2026 fijo.
 * `deteccion_registro.py`, los bloques `deteccion` / `legado` del registro, `detectar_formato` y los pasos 1, 2, 7 y 15 de `ejecutar_motor` (P4): solo cambian con aprobación.
 * Estructura de `NORMALIZADO.xlsx` (4 hojas, `tblLISTS`) y `LISTS.csv` (UTF-8 con BOM).
 * El flujo de Power Automate `NORMALIZAR EXTRACTOS DIARIOS CBBA`, Microsoft Lists y Power Apps.
-* `captura_origen.py`, el paso 15 y el paso 16 (sombra) de `ejecutar_motor` (aprobados; solo cambian con nueva aprobación).
+* `captura_origen.py` y el paso 15 de `ejecutar_motor` (aprobados; solo cambian con nueva aprobación). El paso 16 (sombra) se retiró en P6.
 * `historico.py` y el bloque `historico` del registro (P3b): solo cambian con aprobación; su huella dorada se regenera con `tests/generar_golden_historico.py --force` y motivo explícito.
 * Las doradas (`tests/golden/`) y los fixtures reales: solo se regeneran con motivo explícito y contra el motor original.
 * Los archivos bancarios originales: siempre evidencia inalterada.

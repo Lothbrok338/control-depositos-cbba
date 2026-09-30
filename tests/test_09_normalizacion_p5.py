@@ -3,16 +3,16 @@
     archivo → detección por registro (P4) → normalización genérica (P5) → salida productiva
 
 Reglas que estas pruebas protegen:
-  * `ejecutar_motor` no usa ningún normalizar_* / validar_archivo / encontrar_fila_encabezado legado: con
-    todos ellos inutilizados, los 12 extractos reales producen exactamente la salida aprobada;
-  * para los 12 extractos reales la ruta productiva es idéntica a la referencia legada (26 columnas, índice,
-    tipos, valores y validación de saldos, sin tolerancia);
+  * `ejecutar_motor` no usa ningún normalizar_* / validar_archivo / encontrar_fila_encabezado legado (desde
+    P6 ya no existen: ver test_10_retiro_legado_p6.py) y los 12 extractos reales producen exactamente la salida
+    aprobada;
+  * para los 12 extractos reales la ruta productiva es idéntica a la referencia legada CONGELADA (doradas y
+    manifest generados con el motor original: 26 columnas, valores, validación de saldos);
   * una cuenta nueva de un formato existente se normaliza SOLO con su entrada en CUENTAS: sin normalizar_*
-    específico, sin plantilla legada y sin estar en HOJAS_VALIDAS / ENCABEZADOS_ESPERADOS;
+    específico ni plantilla legada;
   * UNION_ME se normaliza con UNION_FECHAS_V1 (contrato confirmado); lo que depende de movimientos reales
     queda SKIP hasta tener el fixture;
   * la normalización lee la misma hoja y la misma fila de encabezado que comprobó la detección.
-Los normalizar_* legados siguen en el motor como REFERENCIA (paso 16, en sombra) hasta P6.
 """
 import ast
 import copy
@@ -57,26 +57,13 @@ def _registro(datos, tmp_path, mutar=None, *cuentas):
     return ruta
 
 
-def _sin_legado(mp, motor):
-    """Inutiliza TODA la normalización / validación legada: si la producción la llamara, fallaría."""
-    def prohibido(nombre):
-        def f(*a, **k):
-            raise AssertionError(f"la producción usó el legado: {nombre}")
-        return f
-    for nombre in LEGADO:
-        mp.setattr(motor, nombre, prohibido(nombre))
-
-
-def _correr(motor, entrada, salida, registro=None, sin_legado=False, sombra=False):
+def _correr(motor, entrada, salida, registro=None):
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr(pd.Timestamp, "now", classmethod(lambda cls, tz=None: FIJO))
-        mp.setenv("CBBA_MOTOR_SOMBRA", "1" if sombra else "0")
         if registro is None:
             mp.delenv("CBBA_REGISTRO_BANCOS", raising=False)
         else:
             mp.setenv("CBBA_REGISTRO_BANCOS", str(registro))
-        if sin_legado:
-            _sin_legado(mp, motor)
         return motor.ejecutar_motor(str(entrada), str(salida / "NORMALIZADO.xlsx"))
 
 
@@ -137,28 +124,28 @@ def test_p5_ejecutar_motor_no_nombra_la_normalizacion_legada():
 
 
 def test_p5_lote_real_completo_sin_ningun_normalizador_legado(motor, tmp_path):
-    """Los 12 extractos reales con TODO el legado de normalización inutilizado: la salida es la aprobada."""
-    res = _correr(motor, _lote_12(tmp_path), tmp_path / "out", sin_legado=True)
+    """Los 12 extractos reales (sin ningún normalizar_* en el motor desde P6): la salida es la aprobada."""
+    assert not any(hasattr(motor, n) for n in LEGADO)
+    res = _correr(motor, _lote_12(tmp_path), tmp_path / "out")
     _salida_aprobada(tmp_path / "out", res)
     assert res["origen_estado"]["estado"] == "OK" and res["origen_estado"]["movimientos_mapeados"] == 4064
-    assert res["sombra_estado"]["estado"] == "DESACTIVADO"
 
 
-# =========================== 2. LOS 12 EXTRACTOS REALES: PRODUCCIÓN = REFERENCIA LEGADA ===========================
+# =========================== 2. LOS 12 EXTRACTOS REALES: PRODUCCIÓN = REFERENCIA LEGADA CONGELADA ================
 @pytest.mark.parametrize("formato", FORMATOS_OK)
-def test_p5_formato_real_identico_a_la_referencia_legada(normalizado, normalizado_legado, formato):
-    """26 columnas, orden, índice de fila, tipos y valores idénticos; validación de saldos idéntica (sin
-    tolerancia)."""
+def test_p5_formato_real_identico_a_la_referencia_legada_congelada(normalizado, formato):
+    """Desde P6 la referencia legada es la CONGELADA (doradas y manifest generados con el motor original): 26
+    columnas y valores idénticos a la dorada; movimientos, estado y saldos inicial/final de la validación
+    idénticos al manifest."""
     df, val = normalizado[formato]
-    df_l, val_l = normalizado_legado[formato]
-    assert list(df.columns) == COLUMNAS_LISTS_CONTRATO
-    if len(df_l):
-        pd.testing.assert_frame_equal(df, df_l, check_exact=True)
-    else:
-        assert len(df) == 0
-    assert val.keys() == val_l.keys()
-    for k in val:
-        assert (pd.isna(val[k]) and pd.isna(val_l[k])) or val[k] == val_l[k], (k, val[k], val_l[k])
+    ref = json.loads((GOLDEN / "manifest.json").read_text(encoding="utf-8"))[formato]
+    assert list(df.columns) == COLUMNAS_LISTS_CONTRATO and len(df) == ref["movimientos"]
+    if len(df):
+        from helpers import a_texto
+        assert a_texto(df) == (GOLDEN / f"{formato}.csv").read_text(encoding="utf-8")
+    assert val["ESTADO"] == ref["estado_validacion"]
+    for k, r in (("SALDO INICIAL", "saldo_inicial"), ("SALDO FINAL", "saldo_final")):
+        assert (pd.isna(val[k]) and ref[r] is None) or round(float(val[k]), 2) == ref[r], (k, val[k], ref[r])
 
 
 @pytest.mark.parametrize("formato", FORMATOS_OK)
@@ -172,14 +159,6 @@ def test_p5_formato_real_clasificacion_banco_cuenta_moneda(motor, ruta_fixture, 
     if len(df):
         assert {tuple(x) for x in df[["BANCO", "CUENTA BANCARIA", "MONEDA"]].values} == {CONTRATO[formato]}
     assert (ctx["hoja"], ctx["fila_encabezado"]) == (det.hoja, det.fila_encabezado)
-
-
-def test_p5_lote_real_referencia_legada_sin_diferencias_ni_observaciones(corrida_lote):
-    res, _ = corrida_lote
-    s = res["sombra_estado"]
-    assert (s["estado"], s["modo"]) == ("SIN_DIFERENCIAS", "REFERENCIA_LEGADO")
-    assert (s["archivos_comparados"], s["archivos_coinciden"], s["diferencias_total"], s["observaciones_total"]) == \
-           (12, 12, 0, 0)
 
 
 def test_p5_la_normalizacion_lee_la_misma_hoja_y_fila_que_la_deteccion(motor, ruta_fixture):
@@ -196,19 +175,16 @@ def test_p5_registro_de_la_version_de_normalizacion(datos_registro):
 
 # =========================== 3. CUENTA NUEVA SOLO POR CONFIGURACIÓN ===========================
 def test_p5_las_12_cuentas_reales_como_cuentas_nuevas_solo_por_configuracion(motor, datos_registro, tmp_path):
-    """Cada cuenta del registro cambia de id (p. ej. BNB_ME → BNB_ME_CFG): el legado no conoce ninguna (no
-    están en HOJAS_VALIDAS / ENCABEZADOS_ESPERADOS ni tienen normalizar_* propio). Con el legado inutilizado,
-    los 12 extractos reales dan exactamente las mismas filas; solo cambia el id en FORMATO."""
+    """Cada cuenta del registro cambia de id (p. ej. BNB_ME → BNB_ME_CFG): ningún id conocido por el motor original.
+    Los 12 extractos reales dan exactamente las mismas filas; solo cambia el id en FORMATO."""
     def renombrar(d):
         for c in d["CUENTAS"]:
             c["id"] += "_CFG"
     reg = _registro(datos_registro, tmp_path, renombrar)
-    assert not {c["id"] for c in json.loads(reg.read_text(encoding="utf-8"))["CUENTAS"]} & set(motor.HOJAS_VALIDAS)
-    res = _correr(motor, _lote_12(tmp_path), tmp_path / "out", registro=reg, sin_legado=True)
+    assert not {c["id"] for c in json.loads(reg.read_text(encoding="utf-8"))["CUENTAS"]} & set(FIXTURES)
+    res = _correr(motor, _lote_12(tmp_path), tmp_path / "out", registro=reg)
     _salida_aprobada(tmp_path / "out", res, ignorar_formato=True)
     assert sorted(res["df_deteccion_final"]["FORMATO"]) == sorted(f"{fm}_CFG" for fm in FORMATOS_OK)
-    det = res["deteccion_estado"]["archivos"]
-    assert all(d["CUENTA_NUEVA"] is True for d in det.values())
     assert res["origen_estado"]["estado"] == "OK" and res["origen_estado"]["movimientos_mapeados"] == 4064
 
 
@@ -239,14 +215,12 @@ def test_p5_cuenta_nueva_con_extracto_real_del_economico(motor, datos_registro, 
     reg = _registro(datos_registro, tmp_path, None, {"id": "ECO_NUEVA", "formato": "ECO_EXTRACTO_V1",
                                                      "banco": "BANCO ECONÓMICO", "cuenta": "3059990001",
                                                      "moneda": "BOB", "activa": True})
-    with pytest.MonkeyPatch.context() as mp:
-        _sin_legado(mp, motor)
-        det = motor.detector_registro(str(reg)).detectar(str(nueva))
-        assert det.estado == "OK" and det.cuenta_id == "ECO_NUEVA" and det.cuenta_nueva is True
-        norm = motor.normalizador_registro(str(reg))
-        df, ctx = motor.normalizar_extracto(str(nueva), det, "LOTE_TEST", TS, nombre_origen=FIXTURES[fm],
-                                            normalizador=norm)
-        val = motor.validar_extracto(str(nueva), det, df, ctx, normalizador=norm)
+    det = motor.detector_registro(str(reg)).detectar(str(nueva))
+    assert det.estado == "OK" and det.cuenta_id == "ECO_NUEVA"
+    norm = motor.normalizador_registro(str(reg))
+    df, ctx = motor.normalizar_extracto(str(nueva), det, "LOTE_TEST", TS, nombre_origen=FIXTURES[fm],
+                                        normalizador=norm)
+    val = motor.validar_extracto(str(nueva), det, df, ctx, normalizador=norm)
     real, val_real = normalizado[fm]
     assert set(df["CUENTA BANCARIA"]) == {"3059990001"} and set(df["BANCO"]) == {"BANCO ECONÓMICO"}
     assert all(c.startswith("BANCO ECONÓMICO|3059990001|") for c in df["CLAVE TRANSACCIÓN"])
@@ -255,10 +229,10 @@ def test_p5_cuenta_nueva_con_extracto_real_del_economico(motor, datos_registro, 
 
 
 def test_p5_cuenta_nueva_bnb_de_punta_a_punta_sin_legado(motor, datos_registro, tmp_path):
-    """NORMALIZADO, LISTS y ORIGEN con el legado inutilizado; identidad y CLAVE de la cuenta nueva."""
+    """NORMALIZADO, LISTS y ORIGEN sin legado; identidad y CLAVE de la cuenta nueva."""
     ruta = crear_xlsx_bnb(tmp_path / "nueva.xlsx", "3999000111", FILAS_BNB)
     reg = _registro(datos_registro, tmp_path, None, NUEVA_BNB)
-    res = _correr(motor, _carpeta(tmp_path, ruta), tmp_path / "out", registro=reg, sin_legado=True)
+    res = _correr(motor, _carpeta(tmp_path, ruta), tmp_path / "out", registro=reg)
     df = res["df_final"]
     assert df["IMPORTE"].tolist() == [100.0, 30.0] and df["TIPO MOVIMIENTO"].tolist() == ["CRÉDITO", "DÉBITO"]
     assert set(df["CUENTA BANCARIA"]) == {"3999000111"} and set(df["MONEDA"]) == {"USD"}
@@ -274,7 +248,7 @@ def test_p5_cuenta_nueva_bnb_en_hoja_alternativa_sin_plantilla_legada(motor, dat
     """La hoja alternativa del formato ('Hoja') se lee por el registro, no por la plantilla BNB_AHORRO."""
     ruta = crear_xlsx_bnb(tmp_path / "nueva.xlsx", "3999000111", FILAS_BNB, hoja="Hoja")
     reg = _registro(datos_registro, tmp_path, None, dict(NUEVA_BNB, moneda="BOB"))
-    res = _correr(motor, _carpeta(tmp_path, ruta), tmp_path / "out", registro=reg, sin_legado=True)
+    res = _correr(motor, _carpeta(tmp_path, ruta), tmp_path / "out", registro=reg)
     assert set(res["df_final"]["MONEDA"]) == {"BOB"} and len(res["df_final"]) == 2
     assert res["deteccion_estado"]["archivos"]["nueva.xlsx"]["HOJA"] == "Hoja"
 
@@ -307,20 +281,17 @@ def test_p5_cuenta_nueva_bmsc_sin_legado(motor, datos_registro, tmp_path):
     ruta = _bmsc_sintetico(tmp_path / "bmsc_nueva.xlsx", "4000123456")
     reg = _registro(datos_registro, tmp_path, None, {"id": "BMSC_2", "formato": "BMSC_EXCEL_V1", "banco": "BMSC",
                                                      "cuenta": "4000123456", "moneda": "BOB", "activa": True})
-    res = _correr(motor, _carpeta(tmp_path, ruta), tmp_path / "out", registro=reg, sin_legado=True)
+    res = _correr(motor, _carpeta(tmp_path, ruta), tmp_path / "out", registro=reg)
     df = res["df_final"]
     assert set(df["CUENTA BANCARIA"]) == {"4000123456"} and set(df["BANCO"]) == {"BMSC"}
     assert df[["IMPORTE", "TIPO MOVIMIENTO", "CÓDIGO DE ASIGNACIÓN"]].values.tolist() == [
         [3718.0, "CRÉDITO", "TT1"], [142.79, "DÉBITO", "TT2"]]
     assert res["df_validacion"]["ESTADO"].tolist() == ["OK"]
-    # la referencia legada (plantilla BMSC + identidad del registro) llega a lo mismo
-    ref = _correr(motor, tmp_path / "in", tmp_path / "out_ref", registro=reg, sombra=True)
-    assert ref["sombra_estado"]["estado"] == "SIN_DIFERENCIAS"
 
 
 def test_p5_cuenta_nueva_union_junto_al_lote_real_sin_legado(motor, datos_registro, tmp_path):
-    """Otro formato (UNION_FECHAS_V1) junto a extractos reales, con el legado inutilizado: las cuentas reales
-    salen igual que sus doradas y la nueva con su identidad."""
+    """Otro formato (UNION_FECHAS_V1) junto a extractos reales: las cuentas reales salen igual que sus doradas
+    y la nueva con su identidad."""
     ruta = crear_xlsx_union_me_con_movimiento(tmp_path / "union_nueva.xlsx")
     wb = load_workbook(ruta)
     wb.active["E8"] = "30000009990001"
@@ -329,7 +300,7 @@ def test_p5_cuenta_nueva_union_junto_al_lote_real_sin_legado(motor, datos_regist
                                                      "banco": "BANCO UNIÓN", "cuenta": "30000009990001",
                                                      "moneda": "USD", "activa": True})
     ent = _carpeta(tmp_path, ruta, EXTRACTOS / FIXTURES["BNB_ME"], EXTRACTOS / FIXTURES["UNION_MN"])
-    res = _correr(motor, ent, tmp_path / "out", registro=reg, sin_legado=True)
+    res = _correr(motor, ent, tmp_path / "out", registro=reg)
     df = res["df_final"]
     nueva = df[df["ARCHIVO ORIGEN"] == "union_nueva.xlsx"]
     assert len(nueva) == 1 and set(nueva["CUENTA BANCARIA"]) == {"30000009990001"} and set(nueva["MONEDA"]) == {"USD"}
@@ -337,17 +308,6 @@ def test_p5_cuenta_nueva_union_junto_al_lote_real_sin_legado(motor, datos_regist
         real = df[df["ARCHIVO ORIGEN"] == FIXTURES[fm]]
         esperado = pd.read_csv(GOLDEN / f"{fm}.csv", dtype=str, keep_default_na=False)
         assert real["CLAVE TRANSACCIÓN"].tolist() == esperado["CLAVE TRANSACCIÓN"].tolist(), fm
-
-
-def test_p5_cuenta_nueva_la_referencia_legada_coincide(motor, datos_registro, tmp_path):
-    """Con el legado disponible, la referencia en sombra (plantilla + identidad del registro) coincide con la
-    producción genérica para la cuenta nueva."""
-    ruta = crear_xlsx_bnb(tmp_path / "nueva.xlsx", "3999000111", FILAS_BNB)
-    reg = _registro(datos_registro, tmp_path, None, NUEVA_BNB)
-    res = _correr(motor, _carpeta(tmp_path, ruta), tmp_path / "out", registro=reg, sombra=True)
-    assert res["sombra_estado"]["estado"] == "SIN_DIFERENCIAS" and res["sombra_estado"]["archivos_coinciden"] == 1
-    informe = json.loads((tmp_path / "out" / "SOMBRA_REPORTE.json").read_text(encoding="utf-8"))
-    assert informe["archivos"][0]["formato_legado"] == "BNB_MN"          # plantilla, solo en la referencia
 
 
 def test_p5_cuenta_sin_registrar_sigue_rechazada(motor, tmp_path):
@@ -362,24 +322,19 @@ def test_p5_union_me_proxy_sintetico_se_normaliza_por_registro(motor, tmp_path):
     """PROXY SINTÉTICO (no es un extracto real): UNION_ME usa la misma configuración UNION_FECHAS_V1 que
     UNION_MN con su propia identidad; 'Nro de verificasion' no entra a las 26 columnas."""
     ruta = crear_xlsx_union_me_con_movimiento(tmp_path / "u.xlsx")
-    with pytest.MonkeyPatch.context() as mp:
-        _sin_legado(mp, motor)
-        det = motor.detectar_extracto(str(ruta))
-        df, ctx = motor.normalizar_extracto(str(ruta), det, "L", TS, nombre_origen="u.xlsx")
-        val = motor.validar_extracto(str(ruta), det, df, ctx)
+    det = motor.detectar_extracto(str(ruta))
+    df, ctx = motor.normalizar_extracto(str(ruta), det, "L", TS, nombre_origen="u.xlsx")
+    val = motor.validar_extracto(str(ruta), det, df, ctx)
     assert det.cuenta_id == "UNION_ME" and list(df.columns) == COLUMNAS_LISTS_CONTRATO
     assert (df["BANCO"].iloc[0], df["CUENTA BANCARIA"].iloc[0], df["MONEDA"].iloc[0]) == CONTRATO["UNION_ME"]
     assert df[["IMPORTE", "TIPO MOVIMIENTO", "CÓDIGO DE ASIGNACIÓN"]].values.tolist() == [[100.0, "CRÉDITO", "12345"]]
     assert df["INFORMACIÓN ADICIONAL"].iloc[0].startswith("AG: 201")   # el proxy guarda AG numérico (201 → 201.0)
     assert not df.astype(str).apply(lambda c: c.str.contains("V-0001")).any().any()
     assert val["ESTADO"] == "OK"
-    # la referencia legada llega a lo mismo
-    legado = motor.normalizar_archivo(str(ruta), "UNION_ME", "L", TS, nombre_origen="u.xlsx")
-    pd.testing.assert_frame_equal(df, legado)
 
 
 @pytest.mark.skip(reason=PENDIENTE_MOV + ": normalización genérica de movimientos reales (26 columnas, importes "
-                                         "con signo, AG, saldos) contra la referencia legada y una dorada")
+                                         "con signo, AG, saldos) contra una dorada")
 def test_p5_union_me_real_con_movimientos_se_normaliza_por_registro():
     pass
 

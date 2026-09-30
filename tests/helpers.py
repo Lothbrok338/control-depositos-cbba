@@ -50,6 +50,26 @@ CONTRATO = {
     "UNION_MN": ("BANCO UNIÓN", "10000003224552", "BOB"),
 }
 
+# Hoja de movimientos y encabezados esperados por cuenta. Copiados de HOJAS_VALIDAS / ENCABEZADOS_ESPERADOS del motor
+# original (retirados del motor en P6): contrato CONGELADO del lado de las pruebas, NO se leen del motor ni del registro.
+HOJAS = {
+    "ECO_AHORRO": "Extracto", "ECO_CTA_CTE": "Extracto", "BMSC": "Excel",
+    "UNION_ME": "ExtractoMovimientosFechas", "UNION_MN": "ExtractoMovimientosFechas",
+    "BCP_ME": "HistoricalAccountExcel", "BCP_MN": "HistoricalAccountExcel",
+    "BISA_ME": "Extracto de Movimientos", "BISA_MN": "Extracto de Movimientos",
+    "BNB_AHORRO": "Hoja", "BNB_ME": "Hoja 1", "BNB_MN": "Hoja 1", "BNB_CLINICA": "Hoja 1",
+}
+_ENC_UNION = ["FECHA MOVIMIENTO", "DESCRIPCION", "NRO DOCUMENTO", "MONTO", "SALDO"]
+_ENC_ECO = ["FECHA", "HORA", "NRO TRN./CHEQUE", "TRANSACCION", "MONTO", "SALDO"]
+_ENC_BNB = ["FECHA", "HORA", "DESCRIPCION", "CODIGO DE TRANSACCION", "DEBITOS", "CREDITOS", "SALDO"]
+_ENC_BISA = ["FECHA", "HORA", "DESCRIPCION", "IMPORTE", "SALDO", "NRO. REF."]
+_ENC_BCP = ["FECHA", "HORA", "GLOSA", "IMPORTE", "SALDO", "NRO. OPERACION"]
+ENCABEZADOS = {
+    "UNION_MN": _ENC_UNION, "UNION_ME": _ENC_UNION, "BMSC": ["FECHA", "HORA", "COD. BCA.", "DEBITO", "CREDITO", "SALDO"],
+    "ECO_CTA_CTE": _ENC_ECO, "ECO_AHORRO": _ENC_ECO, "BNB_CLINICA": _ENC_BNB, "BNB_MN": _ENC_BNB, "BNB_ME": _ENC_BNB,
+    "BNB_AHORRO": _ENC_BNB, "BISA_MN": _ENC_BISA, "BISA_ME": _ENC_BISA, "BCP_MN": _ENC_BCP, "BCP_ME": _ENC_BCP,
+}
+
 COLUMNAS_LISTS_CONTRATO = [
     "CLAVE TRANSACCIÓN", "CÓDIGO DE ASIGNACIÓN", "BANCO", "CUENTA BANCARIA", "MONEDA",
     "FECHA MOVIMIENTO", "HORA MOVIMIENTO", "IMPORTE", "DÉBITO", "CRÉDITO",
@@ -82,12 +102,20 @@ def leer_csv_texto(ruta_o_texto):
     return d.drop(columns=[c for c in COLS_VOLATILES if c in d.columns])
 
 
+def contrato_origen(motor, ruta, registro=None):
+    """Contrato de captura_origen.py (ORIGEN.xlsx) para UN extracto, armado como en produccion: detección +
+    registro (hoja y encabezado de su cuenta). Desde P6 no hay HOJAS_VALIDAS / ENCABEZADOS_ESPERADOS en el motor."""
+    det = motor.detector_registro(registro).detectar(str(ruta))
+    assert det.ok, (det.estado, det.motivo)
+    return motor.contrato_origen_registro({"x": det}, motor.normalizador_registro(registro))
+
+
 # ---------- Oraculo independiente (no reutiliza la logica de normalizacion) ----------
 DATE_RE = re.compile(r"^\s*\d{1,2}/(\d{1,2}|[A-Za-z]{3})/\d{2,4}\s*$")
 
 
 def contar_movimientos_independiente(motor, ruta, formato):
-    hoja = motor.HOJAS_VALIDAS[formato]
+    hoja = HOJAS[formato]
     raw = motor.leer_excel_robusto(ruta, sheet_name=hoja, header=None)
     fila_hdr = None
     for i in range(len(raw)):

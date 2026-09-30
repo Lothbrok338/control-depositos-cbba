@@ -21,7 +21,7 @@ import pandas as pd
 import pytest
 from openpyxl import Workbook
 
-from helpers import (COLUMNAS_LISTS_CONTRATO, EXTRACTOS, FIXTURES, GOLDEN, MOTOR_PATH, RAIZ, crear_xlsx_bnb,
+from helpers import (COLUMNAS_LISTS_CONTRATO, EXTRACTOS, FIXTURES, GOLDEN, MOTOR_PATH, RAIZ, contrato_origen, crear_xlsx_bnb,
                      crear_xlsx_union_me_con_movimiento, crear_xlsx_union_me_vacio, huella_historico,
                      leer_csv_texto, leer_historico)
 
@@ -130,10 +130,10 @@ def col(h, nombre):
 
 
 def capas_sinteticas(motor, cap, ruta, formato, nombre):
-    """ORIGEN (en memoria) + NORMALIZADO de un extracto sintético, con el mismo motor y la misma captura."""
-    df = motor.normalizar_archivo(str(ruta), formato, "L", pd.Timestamp("2026-01-01"), nombre_origen=nombre)
-    contrato = {"hojas_validas": motor.HOJAS_VALIDAS, "encabezados_esperados": motor.ENCABEZADOS_ESPERADOS,
-                "encontrar_fila_encabezado": motor.encontrar_fila_encabezado}
+    """ORIGEN (en memoria) + NORMALIZADO de un extracto sintético, con el mismo motor y la misma captura
+    (normalización productiva y contrato de ORIGEN desde el registro, como ejecutar_motor)."""
+    df, _ = motor.normalizar_extracto(str(ruta), formato, "L", pd.Timestamp("2026-01-01"), nombre_origen=nombre)
+    contrato = contrato_origen(motor, ruta)
     r = cap.capturar_extracto(str(ruta), nombre, formato, contrato, list(df.index), tabla=df)
     datos = [dict(zip(cap.COLS_DATOS, f)) for f in r["datos"]]
     mapa = [dict(zip(cap.COLS_MAPA, f)) for f in r["mapa"]]
@@ -593,8 +593,7 @@ def test_union_me_proxy_sintetico_con_movimiento_muestra_nro_de_verificasion(mot
 def test_union_me_vacio_no_genera_archivo_ni_bloquea(motor, cap, hist, tmp_path):
     """PROXY SINTÉTICO vacío: sin movimientos no hay archivo del mes y nada falla (no se espera muestra real)."""
     ruta = crear_xlsx_union_me_vacio(tmp_path / "u.xlsx")
-    contrato = {"hojas_validas": motor.HOJAS_VALIDAS, "encabezados_esperados": motor.ENCABEZADOS_ESPERADOS,
-                "encontrar_fila_encabezado": motor.encontrar_fila_encabezado}
+    contrato = contrato_origen(motor, ruta)
     r = cap.capturar_extracto(str(ruta), "u.xlsx", "UNION_ME", contrato, [],
                               tabla=pd.DataFrame(columns=COLUMNAS_LISTS_CONTRATO))
     datos = [dict(zip(cap.COLS_DATOS, f)) for f in r["datos"]]
