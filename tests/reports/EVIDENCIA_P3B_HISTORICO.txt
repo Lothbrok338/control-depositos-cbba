@@ -1,0 +1,18 @@
+EVIDENCIA P3b · capa 4 EXTRACTO_HISTORICO
+Fecha: 2026-09-30 · base: checkpoint P3 c7196ff
+
+1) Archivos del motor y de la captura IDENTICOS al checkpoint P3 (git diff vacio):
+   motor_control_depositos_cbba.py : SIN CAMBIOS  sha256=9e18a4ae2fd2e3c9
+   captura_origen.py : SIN CAMBIOS  sha256=1221ad239f3a0bcb
+   motor_generico.py : SIN CAMBIOS  sha256=df0d414fcf1e497f
+
+2) Doradas existentes sin cambios:
+   tests/golden/*.csv y manifest.json SIN CAMBIOS (solo se agrega golden/historico/)
+
+3) Suite completa: 505 PASS · 22 SKIP · 18 XFAIL · 0 FAIL (antes de P3b: 379 / 20 / 18).
+   P3b agrega 126 PASS y 2 SKIP (UNION_ME real con movimientos).
+   NORMALIZADO.xlsx (4 hojas) y LISTS.csv = doradas del motor original (test_05, test_06, test_07).
+   Generar historicos no cambia el SHA-256 de NORMALIZADO.xlsx, LISTS.csv ni ORIGEN.xlsx (test_07).
+
+4) Reconstruccion sin el banco: identica celda a celda desde ORIGEN.xlsx + NORMALIZADO.xlsx y desde
+   ORIGEN.xlsx + LISTS.csv, con open/xlrd/calamine bloqueados para cualquier extracto (test_07).

@@ -42,7 +42,7 @@ for r in res:
 def celda(r):
     if r is None: return "—"
     return {"PASS": "PASS", "FAIL": "**FAIL**", "SKIP": "SKIP", "XFAIL": "XFAIL", "XPASS": "XPASS"}[r["estado"]]
-L = ["# Informe de pruebas del normalizador (Fase 2 + P1/P2: captura y preservación de origen + P3: motor genérico en sombra)\n"]
+L = ["# Informe de pruebas del normalizador (Fase 2 + P1/P2: captura y preservación de origen + P3: motor genérico en sombra + P3b: EXTRACTO_HISTORICO)\n"]
 tot = {}
 for r in res: tot[r["estado"]] = tot.get(r["estado"], 0) + 1
 L.append("Resumen: " + ", ".join(f"{k}={v}" for k, v in sorted(tot.items())) + "\n")
@@ -65,6 +65,8 @@ for r in res:
     base = r["id"].split("[")[0]
     fn = base.split("/")[-1]
     n = fn.split("::")[-1]
+    if fn.startswith("test_07"):
+        continue
     if fn.startswith(("test_01", "test_03")) or "union" in n or "bisa_me_sin" in n or "totales_pie" in n:
         grp.setdefault(fn, []).append(r["estado"])
 for fn, est in grp.items():
@@ -88,6 +90,16 @@ for r in res:
     if fn.startswith("test_06"):
         g6.setdefault(fn.split("[")[0].split("::")[-1], []).append(r["estado"])
 for n, est in g6.items():
+    L.append(f"| `{n}` | {len(est)} | " + ("PASS" if all(e == "PASS" for e in est) else "/".join(f"{e}×{est.count(e)}" for e in sorted(set(est)))) + " |")
+L.append("\n## 2d. Capa 4 EXTRACTO_HISTORICO (P3b, `test_07_historico_p3b.py`)\n")
+L.append("Un Excel por banco/cuenta/mes para Contabilidad/Ingresos, construido solo con ORIGEN.xlsx + NORMALIZADO + registro; el motor no cambia.\n")
+L.append("| Prueba | Casos | Estado |\n|---|---|---|")
+g7 = {}
+for r in res:
+    fn = r["id"].split("/")[-1]
+    if fn.startswith("test_07"):
+        g7.setdefault(fn.split("[")[0].split("::")[-1], []).append(r["estado"])
+for n, est in g7.items():
     L.append(f"| `{n}` | {len(est)} | " + ("PASS" if all(e == "PASS" for e in est) else "/".join(f"{e}×{est.count(e)}" for e in sorted(set(est)))) + " |")
 L.append("\n## 3. Defectos reales confirmados (fallan hoy; deben pasar tras corregir)\n")
 L.append("| Código | Estado hoy | Defecto demostrado | Cambio necesario (archivo · función) |\n|---|---|---|---|")

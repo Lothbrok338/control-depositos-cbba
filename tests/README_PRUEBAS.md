@@ -30,3 +30,11 @@ Regla de uso: tras cada cambio al motor, la sección 1 (regresión) debe seguir 
 * `test_06_sombra_p3.py` (109 casos): registro válido y contrato de 13 cuentas; validación de registros inválidos; el genérico no usa la lógica bancaria del legado; los 12 formatos coinciden al 100 % en sombra (detección, movimientos, validación) y reproducen las doradas; `CAMPO_CANONICO` cubre todos los encabezados reales; cuenta nueva por configuración; diferencias D-09/D-10/D-11/«Últimos 12» reportadas; el comparador detecta diferencias inyectadas; con la sombra encendida, apagada, con registro alterado o roto, o con el genérico roto, `NORMALIZADO.xlsx`/`LISTS.csv` son idénticos.
 * `evidencia_ab.py <motor_referencia> <motor_actual>` ahora acepta las claves nuevas `origen_estado` y `sombra_estado` e ignora las líneas de ORIGEN/SOMBRA. Evidencia de P3: `reports/EVIDENCIA_P3_SOMBRA.txt` (referencia = motor del checkpoint `8c9c09a`).
 
+
+
+## P3b (capa 4, EXTRACTO_HISTORICO)
+
+* `../historico.py` (nuevo) y bloque `historico` de `../registro_bancos.json`. El motor NO cambia.
+* `test_07_historico_p3b.py` (126 PASS + 2 SKIP): 11 archivos por cuenta/mes con nombre esperado (BISA_ME sin archivo; extracto que cruza meses = 2 archivos); hoja única `EXTRACTO`; columnas del banco por formato y en el orden original + 3 operativas; conservación celda a celda de referencias, cheques, códigos, glosas y débitos (620 BNB_MN, 445 BCP_MN, 3 ECO); importes/fecha/hora = NORMALIZADO; formato `dd/mm/yyyy`; ESTADO/CONFIRMADO POR/FECHA DE CONFIRMACIÓN y tabla opcional de estados; orden cronológico con empates en orden del archivo; zona superior y saldos declarados = VALIDACION; bloqueo si un saldo declarado no cuadra o falta la fila de origen; reconstrucción idéntica **sin poder abrir ningún extracto** desde NORMALIZADO.xlsx y desde LISTS.csv; sin IDs/hashes visibles (CLAVE oculta); columna nueva del banco con advertencia; UNION_ME estructural con proxy sintético (`Nro de verificasion` como texto) y vacío sin archivo; NORMALIZADO.xlsx/LISTS.csv/ORIGEN.xlsx sin cambios; CLI.
+* SKIP (2): UNION_ME real con movimientos y con débitos — `REQUIERE MUESTRA REAL CON MOVIMIENTOS`.
+* `generar_golden_historico.py --force`: huella dorada `golden/historico/MANIFEST_HISTORICO.json` (sin copiar movimientos).

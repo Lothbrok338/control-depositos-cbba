@@ -1,0 +1,434 @@
+{
+ "EXTRACTO_HISTORICO_BANCO_ECONOMICO_3041210569_2026-08.xlsx": {
+  "columnas": [
+   "Fecha",
+   "Hora",
+   "Nro Trn./Cheque",
+   "Transacción",
+   "Nota",
+   "Monto",
+   "Saldo",
+   "ESTADO",
+   "CONFIRMADO POR",
+   "FECHA DE CONFIRMACIÓN",
+   "CLAVE TRANSACCIÓN"
+  ],
+  "filas": 388,
+  "hojas": [
+   "EXTRACTO"
+  ],
+  "ocultas": [
+   "CLAVE TRANSACCIÓN"
+  ],
+  "sha256_tabla": "757a4b66c5f520a9cb80a641e4f273ec0b6ea4bb70b987d7b5096b995b251f14",
+  "titulo": "EXTRACTO BANCARIO · BANCO ECONÓMICO · Cuenta 3041210569 · BOB · Agosto 2026",
+  "zona": {
+   "Administración": "Empresarial",
+   "Banco": "BANCO ECONÓMICO",
+   "Cuenta": "3041210569",
+   "Depósitos por confirmar": 0,
+   "Estado de la cuenta": "ACTIVA",
+   "Fondos reservados": 0,
+   "Moneda": "BOB",
+   "Movimientos del mes": "388 (del 01/08/2026 al 21/08/2026)",
+   "Periodo": "Agosto 2026",
+   "Período del extracto": "01/Ago/2026 al 21/Ago/2026",
+   "Producto": "BASICA-PERSONA JURIDICA",
+   "Retenciones judiciales": 0,
+   "Saldo final del extracto": 647240.28,
+   "Saldo inicial del extracto": 235198.61,
+   "Titular": "UNIVERSIDAD PRIVADA DEL VALLE S.A."
+  }
+ },
+ "EXTRACTO_HISTORICO_BANCO_ECONOMICO_3051446946_2026-08.xlsx": {
+  "columnas": [
+   "Fecha",
+   "Hora",
+   "Nro Trn./Cheque",
+   "Transacción",
+   "Nota",
+   "Monto",
+   "Saldo",
+   "ESTADO",
+   "CONFIRMADO POR",
+   "FECHA DE CONFIRMACIÓN",
+   "CLAVE TRANSACCIÓN"
+  ],
+  "filas": 1,
+  "hojas": [
+   "EXTRACTO"
+  ],
+  "ocultas": [
+   "CLAVE TRANSACCIÓN"
+  ],
+  "sha256_tabla": "7fe1338fd0d45ad1d00289458e0a458302154d8d494f0adee8355be4ecc25f89",
+  "titulo": "EXTRACTO BANCARIO · BANCO ECONÓMICO · Cuenta 3051446946 · BOB · Agosto 2026",
+  "zona": {
+   "Administración": "Empresarial",
+   "Banco": "BANCO ECONÓMICO",
+   "Cuenta": "3051446946",
+   "Depósitos por confirmar": 0,
+   "Estado de la cuenta": "ACTIVA",
+   "Fondos reservados": 0,
+   "Moneda": "BOB",
+   "Movimientos del mes": "1 (18/08/2026)",
+   "Periodo": "Agosto 2026",
+   "Período del extracto": "01/Ago/2026 al 21/Ago/2026",
+   "Producto": "BASICA",
+   "Retenciones judiciales": 0,
+   "Saldo final del extracto": 67601.86,
+   "Saldo inicial del extracto": 61601.86,
+   "Titular": "UNIVERSIDAD PRIVADA DEL VALLE S.A."
+  }
+ },
+ "EXTRACTO_HISTORICO_BANCO_UNION_10000003224552_2026-08.xlsx": {
+  "columnas": [
+   "Fecha Movimiento",
+   "AG",
+   "Descripción",
+   "Nro Documento",
+   "Monto",
+   "Saldo",
+   "ESTADO",
+   "CONFIRMADO POR",
+   "FECHA DE CONFIRMACIÓN",
+   "CLAVE TRANSACCIÓN"
+  ],
+  "filas": 32,
+  "hojas": [
+   "EXTRACTO"
+  ],
+  "ocultas": [
+   "CLAVE TRANSACCIÓN"
+  ],
+  "sha256_tabla": "259d3e0a9dc594fcc1483061de85cb8e762e360ef10f081b2cb15ccd60b20616",
+  "titulo": "EXTRACTO BANCARIO · BANCO UNIÓN · Cuenta 10000003224552 · BOB · Agosto 2026",
+  "zona": {
+   "Banco": "BANCO UNIÓN",
+   "Congelado": 40578.52,
+   "Consultado": 0,
+   "Cuenta": "10000003224552",
+   "Disponible": 339068.09,
+   "Moneda": "BOB",
+   "Movimientos del mes": "32 (del 01/08/2026 al 20/08/2026)",
+   "Periodo": "Agosto 2026",
+   "Período del extracto": "01/08/2026 al 21/08/2026",
+   "Producto": "UNICUENTA NORMAL PERSONA JURIDICA M/N",
+   "Sobregirado": 0,
+   "Titular": "UNIVERSIDAD PRIVADA DEL VALLE S.A.",
+   "Total (saldo final del extracto)": 379646.61,
+   "Total créditos": 143466.2,
+   "Total débitos": 0,
+   "Tránsito": 0
+  }
+ },
+ "EXTRACTO_HISTORICO_BCP_301-5005425-2-71_2026-07.xlsx": {
+  "columnas": [
+   "Fecha",
+   "Hora",
+   "Glosa",
+   "Tipo",
+   "Suc. Age.",
+   "Usuario",
+   "Importe",
+   "Saldo",
+   "Nro. Operación",
+   "ESTADO",
+   "CONFIRMADO POR",
+   "FECHA DE CONFIRMACIÓN",
+   "CLAVE TRANSACCIÓN"
+  ],
+  "filas": 8,
+  "hojas": [
+   "EXTRACTO"
+  ],
+  "ocultas": [
+   "CLAVE TRANSACCIÓN"
+  ],
+  "sha256_tabla": "b6c2888cfaa5a7b0e42430faba81db173456f86b5503e459f7c701663108453b",
+  "titulo": "EXTRACTO BANCARIO · BCP · Cuenta 301-5005425-2-71 · USD · Julio 2026",
+  "zona": {
+   "Banco": "BCP",
+   "Cuenta": "301-5005425-2-71",
+   "Emisión del extracto": "21/08/2026 08:56 AM",
+   "Moneda": "USD",
+   "Movimientos del mes": "8 (del 07/07/2026 al 31/07/2026)",
+   "Periodo": "Julio 2026",
+   "Saldo al cierre del extracto (31/07/2026)": 27888.54,
+   "Saldo inicial del extracto (07/07/2026)": 22323.54,
+   "Titular": "UNIVERSIDAD PRIVADA DEL VALLE S.A."
+  }
+ },
+ "EXTRACTO_HISTORICO_BCP_301-5005684-3-97_2026-08.xlsx": {
+  "columnas": [
+   "Fecha",
+   "Hora",
+   "Glosa",
+   "Tipo",
+   "Suc. Age.",
+   "Usuario",
+   "Importe",
+   "Saldo",
+   "Nro. Operación",
+   "ESTADO",
+   "CONFIRMADO POR",
+   "FECHA DE CONFIRMACIÓN",
+   "CLAVE TRANSACCIÓN"
+  ],
+  "filas": 2331,
+  "hojas": [
+   "EXTRACTO"
+  ],
+  "ocultas": [
+   "CLAVE TRANSACCIÓN"
+  ],
+  "sha256_tabla": "1ff622240252f2be36241545afc9a1b5a96b0dbd00fc224d02ae041f76ea50a7",
+  "titulo": "EXTRACTO BANCARIO · BCP · Cuenta 301-5005684-3-97 · BOB · Agosto 2026",
+  "zona": {
+   "Banco": "BCP",
+   "Cuenta": "301-5005684-3-97",
+   "Emisión del extracto": "21/08/2026 08:58 AM",
+   "Moneda": "BOB",
+   "Movimientos del mes": "2331 (del 01/08/2026 al 20/08/2026)",
+   "Periodo": "Agosto 2026",
+   "Saldo al cierre del extracto (20/08/2026)": 4840975.83,
+   "Saldo inicial del extracto (01/08/2026)": 2080805.66,
+   "Titular": "UNIVERSIDAD PRIVADA DEL VALLE S.A."
+  }
+ },
+ "EXTRACTO_HISTORICO_BISA_0696870039_2026-08.xlsx": {
+  "columnas": [
+   "Fecha",
+   "Hora",
+   "Nro. Cheque",
+   "Descripción",
+   "Importe",
+   "Saldo",
+   "Info. Complementaria",
+   "Sucursal",
+   "Canal",
+   "Nro. Ref.",
+   "Codigo",
+   "Nro. Lote",
+   "ESTADO",
+   "CONFIRMADO POR",
+   "FECHA DE CONFIRMACIÓN",
+   "CLAVE TRANSACCIÓN"
+  ],
+  "filas": 1,
+  "hojas": [
+   "EXTRACTO"
+  ],
+  "ocultas": [
+   "CLAVE TRANSACCIÓN"
+  ],
+  "sha256_tabla": "615a473f6d2b2e8ee9af47e57831e9101e96fea5c381ca1205df60ee7c4ebcc9",
+  "titulo": "EXTRACTO BANCARIO · BISA · Cuenta 0696870039 · BOB · Agosto 2026",
+  "zona": {
+   "Banco": "BISA",
+   "Cuenta": "0696870039",
+   "Emisión del extracto": "21/08/2026 08:53",
+   "Estado de la cuenta": "Activa",
+   "Moneda": "BOB",
+   "Movimientos del mes": "1 (17/08/2026)",
+   "Nombre de la cuenta": "UNIVALLE S.A.",
+   "Periodo": "Agosto 2026",
+   "Período del extracto": "01/08/2026 al 21/08/2026",
+   "Producto": "Bisa Gestion",
+   "Saldo inicial del extracto": 62687.52,
+   "Titular": "UNIVALLE S.A.",
+   "Total créditos": 1139,
+   "Total débitos": 0
+  }
+ },
+ "EXTRACTO_HISTORICO_BMSC_1000872489_2026-08.xlsx": {
+  "columnas": [
+   "Fecha",
+   "Hora",
+   "Cod. Bca.",
+   "Nro.Cheque",
+   "Nro/Nom.Plantilla",
+   "Cod.Dep.Num",
+   "Doc.Depositante",
+   "Nombre/Denominación Depositante",
+   "Tipo transact",
+   "Descripción",
+   "Oficina",
+   "Banco",
+   "Tipo dep",
+   "Nom.Destinatario",
+   "Glosa",
+   "Originador",
+   "Originador ACH",
+   "Ciudad Origen",
+   "Débito",
+   "Crédito",
+   "Saldo",
+   "ESTADO",
+   "CONFIRMADO POR",
+   "FECHA DE CONFIRMACIÓN",
+   "CLAVE TRANSACCIÓN"
+  ],
+  "filas": 3,
+  "hojas": [
+   "EXTRACTO"
+  ],
+  "ocultas": [
+   "CLAVE TRANSACCIÓN"
+  ],
+  "sha256_tabla": "a7eaeddbf9e95ce1d28765bb81fedf153754ae7c4a9ff96b10eb930ca4b86bc3",
+  "titulo": "EXTRACTO BANCARIO · BMSC · Cuenta 1000872489 · BOB · Agosto 2026",
+  "zona": {
+   "Banco": "BMSC",
+   "Cuenta": "1000872489",
+   "Emisión del extracto": "21/08/2026",
+   "Moneda": "BOB",
+   "Movimientos del mes": "3 (del 12/08/2026 al 17/08/2026)",
+   "Periodo": "Agosto 2026",
+   "Período del extracto": "01/08/2026 al 21/08/2026",
+   "Saldo a la fecha de emisión": 201662.79,
+   "Tipo de producto": "CUENTA CORRIENTE",
+   "Titular": "UNIVERSIDAD PRIVADA DEL VALLE S.A."
+  }
+ },
+ "EXTRACTO_HISTORICO_BNB_3000100152_2026-08.xlsx": {
+  "columnas": [
+   "Fecha",
+   "Hora",
+   "Oficina",
+   "Descripción",
+   "Referencia",
+   "Código de transacción",
+   "ITF",
+   "Débitos",
+   "Créditos",
+   "Saldo",
+   "Adicionales",
+   "ESTADO",
+   "CONFIRMADO POR",
+   "FECHA DE CONFIRMACIÓN",
+   "CLAVE TRANSACCIÓN"
+  ],
+  "filas": 1184,
+  "hojas": [
+   "EXTRACTO"
+  ],
+  "ocultas": [
+   "CLAVE TRANSACCIÓN"
+  ],
+  "sha256_tabla": "c0120bff9cbfb3e8a556e41a446880b7b633d5d8a1f6fb1314c46e83d8ee89e5",
+  "titulo": "EXTRACTO BANCARIO · BNB · Cuenta 3000100152 · BOB · Agosto 2026",
+  "zona": {
+   "Banco": "BNB",
+   "Cuenta": "3000100152",
+   "Moneda": "BOB",
+   "Movimientos del mes": "1184 (del 01/08/2026 al 20/08/2026)",
+   "Periodo": "Agosto 2026"
+  }
+ },
+ "EXTRACTO_HISTORICO_BNB_3000100705_2026-08.xlsx": {
+  "columnas": [
+   "Fecha",
+   "Hora",
+   "Oficina",
+   "Descripción",
+   "Referencia",
+   "Código de transacción",
+   "ITF",
+   "Débitos",
+   "Créditos",
+   "Saldo",
+   "Adicionales",
+   "ESTADO",
+   "CONFIRMADO POR",
+   "FECHA DE CONFIRMACIÓN",
+   "CLAVE TRANSACCIÓN"
+  ],
+  "filas": 14,
+  "hojas": [
+   "EXTRACTO"
+  ],
+  "ocultas": [
+   "CLAVE TRANSACCIÓN"
+  ],
+  "sha256_tabla": "d3b2c3fd278dee0dd23cf10e325c0a85d583d485d9ab49f12502232c707aaa44",
+  "titulo": "EXTRACTO BANCARIO · BNB · Cuenta 3000100705 · BOB · Agosto 2026",
+  "zona": {
+   "Banco": "BNB",
+   "Cuenta": "3000100705",
+   "Moneda": "BOB",
+   "Movimientos del mes": "14 (del 01/08/2026 al 20/08/2026)",
+   "Periodo": "Agosto 2026"
+  }
+ },
+ "EXTRACTO_HISTORICO_BNB_3400041236_2026-08.xlsx": {
+  "columnas": [
+   "Fecha",
+   "Hora",
+   "Oficina",
+   "Descripción",
+   "Referencia",
+   "Código de transacción",
+   "ITF",
+   "Débitos",
+   "Créditos",
+   "Saldo",
+   "Adicionales",
+   "ESTADO",
+   "CONFIRMADO POR",
+   "FECHA DE CONFIRMACIÓN",
+   "CLAVE TRANSACCIÓN"
+  ],
+  "filas": 7,
+  "hojas": [
+   "EXTRACTO"
+  ],
+  "ocultas": [
+   "CLAVE TRANSACCIÓN"
+  ],
+  "sha256_tabla": "9eb6944bb5f5d6850de0a043c667df3dfad46d2e72a552314f1cd3d31c4e3a3f",
+  "titulo": "EXTRACTO BANCARIO · BNB · Cuenta 3400041236 · USD · Agosto 2026",
+  "zona": {
+   "Banco": "BNB",
+   "Cuenta": "3400041236",
+   "Moneda": "USD",
+   "Movimientos del mes": "7 (del 04/08/2026 al 20/08/2026)",
+   "Periodo": "Agosto 2026"
+  }
+ },
+ "EXTRACTO_HISTORICO_BNB_3501936692_2026-08.xlsx": {
+  "columnas": [
+   "Fecha",
+   "Hora",
+   "Oficina",
+   "Descripción",
+   "Referencia",
+   "Código de transacción",
+   "ITF",
+   "Débitos",
+   "Créditos",
+   "Saldo",
+   "Adicionales",
+   "ESTADO",
+   "CONFIRMADO POR",
+   "FECHA DE CONFIRMACIÓN",
+   "CLAVE TRANSACCIÓN"
+  ],
+  "filas": 95,
+  "hojas": [
+   "EXTRACTO"
+  ],
+  "ocultas": [
+   "CLAVE TRANSACCIÓN"
+  ],
+  "sha256_tabla": "c4ea5aafacffa87153d6dc93d627832ba1d043d60343b1a94a7d63b51879c939",
+  "titulo": "EXTRACTO BANCARIO · BNB · Cuenta 3501936692 · BOB · Agosto 2026",
+  "zona": {
+   "Banco": "BNB",
+   "Cuenta": "3501936692",
+   "Moneda": "BOB",
+   "Movimientos del mes": "95 (del 03/08/2026 al 20/08/2026)",
+   "Periodo": "Agosto 2026"
+  }
+ }
+}

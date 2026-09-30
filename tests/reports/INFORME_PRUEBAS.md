@@ -1,6 +1,6 @@
-# Informe de pruebas del normalizador (Fase 2 + P1/P2: captura y preservación de origen + P3: motor genérico en sombra)
+# Informe de pruebas del normalizador (Fase 2 + P1/P2: captura y preservación de origen + P3: motor genérico en sombra + P3b: EXTRACTO_HISTORICO)
 
-Resumen: PASS=379, SKIP=20, XFAIL=18
+Resumen: PASS=505, SKIP=22, XFAIL=18
 
 ## 1. Regresión por banco/formato (extractos reales)
 
@@ -152,6 +152,50 @@ La producción sigue siendo la del motor legado; el genérico solo compara y rep
 | `test_motor_sin_motor_generico_al_lado_tampoco_falla` | 1 | PASS |
 | `test_archivos_de_sombra_no_se_toman_como_extractos` | 1 | PASS |
 | `test_cli_compara_una_carpeta_sin_escribir_produccion` | 1 | PASS |
+
+## 2d. Capa 4 EXTRACTO_HISTORICO (P3b, `test_07_historico_p3b.py`)
+
+Un Excel por banco/cuenta/mes para Contabilidad/Ingresos, construido solo con ORIGEN.xlsx + NORMALIZADO + registro; el motor no cambia.
+
+| Prueba | Casos | Estado |
+|---|---|---|
+| `test_once_archivos_uno_por_cuenta_y_mes_con_nombre_esperado` | 1 | PASS |
+| `test_movimientos_por_archivo_igual_a_normalizado` | 1 | PASS |
+| `test_extracto_que_cruza_dos_meses_genera_dos_archivos` | 1 | PASS |
+| `test_una_sola_hoja_visible_llamada_extracto` | 11 | PASS |
+| `test_columnas_visibles_son_las_del_banco_en_su_orden_mas_tres_operativas` | 11 | PASS |
+| `test_orden_de_columnas_igual_al_orden_original_del_banco` | 11 | PASS |
+| `test_registro_declara_el_bloque_historico_de_todos_los_formatos_aceptados` | 1 | PASS |
+| `test_registro_sigue_siendo_valido_para_el_motor_generico` | 1 | PASS |
+| `test_sin_perdida_cada_columna_bancaria_conserva_el_valor_del_banco` | 11 | PASS |
+| `test_codigos_cheques_y_referencias_son_texto_y_conservan_ceros` | 1 | PASS |
+| `test_glosas_nombres_y_datos_de_contraparte_se_conservan` | 1 | PASS |
+| `test_debitos_conservan_todas_las_columnas_del_banco` | 1 | PASS |
+| `test_importes_saldos_fecha_y_hora_son_los_de_normalizado` | 11 | PASS |
+| `test_formato_visible_de_fecha_dd_mm_yyyy_y_de_importes` | 11 | PASS |
+| `test_hora_bisa_respeta_el_formato_del_banco_hh_mm` | 1 | PASS |
+| `test_estado_confirmado_por_y_fecha_de_confirmacion_al_final` | 11 | PASS |
+| `test_tabla_estados_opcional_reemplaza_los_valores_operativos` | 1 | PASS |
+| `test_orden_cronologico_y_empates_en_el_orden_original_del_archivo` | 11 | PASS |
+| `test_empates_del_mismo_segundo_en_bnb_mn_siguen_el_orden_del_archivo` | 1 | PASS |
+| `test_zona_superior_muestra_lo_que_trae_cada_banco` | 1 | PASS |
+| `test_saldos_declarados_coinciden_con_la_validacion_del_motor` | 1 | PASS |
+| `test_un_saldo_declarado_que_no_cuadra_bloquea_el_archivo` | 1 | PASS |
+| `test_movimiento_sin_fila_de_origen_bloquea_solo_su_archivo` | 1 | PASS |
+| `test_reconstruccion_sin_el_banco_es_identica_celda_a_celda` | 2 | PASS |
+| `test_historico_no_depende_del_motor_ni_de_la_captura_ni_de_lectores_de_xls` | 1 | PASS |
+| `test_generacion_determinista_y_huella_dorada` | 1 | PASS |
+| `test_ningun_id_hash_ni_campo_tecnico_es_visible` | 11 | PASS |
+| `test_clave_oculta_permite_sincronizar_con_lists` | 1 | PASS |
+| `test_columna_nueva_del_banco_aparece_antes_de_las_operativas_con_advertencia` | 1 | PASS |
+| `test_union_me_proxy_sintetico_con_movimiento_muestra_nro_de_verificasion` | 1 | PASS |
+| `test_union_me_vacio_no_genera_archivo_ni_bloquea` | 1 | PASS |
+| `test_union_me_real_historico_con_movimientos` | 1 | SKIP×1 |
+| `test_union_me_real_historico_debitos` | 1 | SKIP×1 |
+| `test_generar_historicos_no_modifica_normalizado_lists_ni_origen` | 1 | PASS |
+| `test_normalizado_y_lists_siguen_identicos_a_sus_doradas` | 1 | PASS |
+| `test_el_motor_no_cambio_y_no_escribe_historicos` | 1 | PASS |
+| `test_cli_genera_desde_origen_y_lists_csv` | 1 | PASS |
 
 ## 3. Defectos reales confirmados (fallan hoy; deben pasar tras corregir)
 

@@ -18,10 +18,23 @@
       "info_adicional": "partes en orden; 'etiqueta' antepone 'ETIQUETA: '; sin etiqueta = valor crudo; se unen con 'separador'.",
       "filas_excluir": "Filas que no son movimientos (p. ej. SALDO INICIAL / SALDO AL CIERRE de BCP).",
       "saldo": "Fuentes de saldo inicial/final para la validacion (RECONSTRUIDO, ULTIMA_FILA, CELDA_FIJA, ETIQUETA, FILA_ROTULADA).",
-      "campos_canonicos": "Encabezado original del banco -> etiqueta comun para consultar entre bancos (llena CAMPO_CANONICO)."
-    }
+      "campos_canonicos": "Encabezado original del banco -> etiqueta comun para consultar entre bancos (llena CAMPO_CANONICO).",
+      "historico": "P3b (capa 4, EXTRACTO_HISTORICO). Lo lee historico.py. 'columnas' = columnas del banco que se muestran, en el orden del banco: 'origen' (+ 'alias') es el encabezado del extracto; 'fuente' ORIGINAL (texto del banco, recortando solo espacios de relleno) o NORMALIZADO:FECHA|HORA|DEBITO|CREDITO|IMPORTE_FIRMADO|SALDO (valor validado del operativo); 'tipo' texto|codigo (siempre texto, conserva ceros)|importe|fecha|hora; 'ancho'; 'opcional' = no avisar si el extracto no la trae. Una columna del extracto que no este aqui se muestra igual (antes de las operativas) y genera advertencia. 'encabezado' = datos de la zona superior: fuente ETIQUETA (etiqueta del banco; 'posicion' DERECHA o DEBAJO), PATRON (regex sobre una celda; 'plantilla' con {0},{1}), FILA_ROTULADA (fila no movimiento con 'rotulo'; valor de la 'columna'), CELDA ('celda' fija, p. ej. B6) o COMPUESTO ('partes' + 'plantilla'); 'tipo' importe convierte con 'separador_decimal'; 'verifica' SALDO_INICIAL|SALDO_FINAL|TOTAL_CREDITOS|TOTAL_DEBITOS obliga a que el valor cuadre con los movimientos antes de escribir."
+    },
+    "HISTORICO": "Parametros generales de la capa 4 (nombre de archivo, hoja unica, formatos visibles, colores, CLAVE TRANSACCION oculta). Las columnas operativas ESTADO / CONFIRMADO POR / FECHA DE CONFIRMACION son fijas por regla y no se configuran aqui."
   },
   "version_registro": "P3-1",
+  "version_historico": "P3b-1",
+  "HISTORICO": {
+    "hoja": "EXTRACTO",
+    "nombre_archivo": "EXTRACTO_HISTORICO_{BANCO}_{CUENTA}_{PERIODO}.xlsx",
+    "formato_fecha": "dd/mm/yyyy",
+    "formato_fecha_confirmacion": "dd/mm/yyyy hh:mm",
+    "formato_importe": "#,##0.00",
+    "clave_oculta": true,
+    "color_banco": "7B1E2B",
+    "color_operativo": "3F4447"
+  },
   "FORMATOS": {
     "BNB_EXTRACTO_V1": {
       "familia": "BNB",
@@ -65,6 +78,24 @@
         "Créditos": "CREDITO",
         "Saldo": "SALDO",
         "Adicionales": "ADICIONALES"
+      },
+      "historico": {
+        "separador_decimal": ".",
+        "formato_hora": "hh:mm:ss",
+        "columnas": [
+          {"origen": "Fecha", "fuente": "NORMALIZADO:FECHA", "tipo": "fecha", "ancho": 12},
+          {"origen": "Hora", "fuente": "NORMALIZADO:HORA", "tipo": "hora", "ancho": 10},
+          {"origen": "Oficina", "fuente": "ORIGINAL", "tipo": "texto", "ancho": 40},
+          {"origen": "Descripción", "fuente": "ORIGINAL", "tipo": "texto", "ancho": 30},
+          {"origen": "Referencia", "fuente": "ORIGINAL", "tipo": "codigo", "ancho": 16},
+          {"origen": "Código de transacción", "fuente": "ORIGINAL", "tipo": "codigo", "ancho": 15},
+          {"origen": "ITF", "fuente": "ORIGINAL", "tipo": "importe", "ancho": 10},
+          {"origen": "Débitos", "alias": ["Débito"], "fuente": "NORMALIZADO:DEBITO", "tipo": "importe", "ancho": 14},
+          {"origen": "Créditos", "alias": ["Crédito"], "fuente": "NORMALIZADO:CREDITO", "tipo": "importe", "ancho": 14},
+          {"origen": "Saldo", "fuente": "NORMALIZADO:SALDO", "tipo": "importe", "ancho": 16},
+          {"origen": "Adicionales", "fuente": "ORIGINAL", "tipo": "texto", "ancho": 70}
+        ],
+        "encabezado": []
       }
     },
 
@@ -114,6 +145,27 @@
         "Importe": "IMPORTE_FIRMADO",
         "Saldo": "SALDO",
         "Nro. Operación": "NRO_OPERACION"
+      },
+      "historico": {
+        "separador_decimal": ".",
+        "formato_hora": "hh:mm:ss",
+        "columnas": [
+          {"origen": "Fecha", "fuente": "NORMALIZADO:FECHA", "tipo": "fecha", "ancho": 12},
+          {"origen": "Hora", "fuente": "NORMALIZADO:HORA", "tipo": "hora", "ancho": 10},
+          {"origen": "Glosa", "fuente": "ORIGINAL", "tipo": "texto", "ancho": 26},
+          {"origen": "Tipo", "fuente": "ORIGINAL", "tipo": "codigo", "ancho": 8},
+          {"origen": "Suc. Age.", "fuente": "ORIGINAL", "tipo": "codigo", "ancho": 10},
+          {"origen": "Usuario", "fuente": "ORIGINAL", "tipo": "codigo", "ancho": 10},
+          {"origen": "Importe", "fuente": "NORMALIZADO:IMPORTE_FIRMADO", "tipo": "importe", "ancho": 14},
+          {"origen": "Saldo", "fuente": "NORMALIZADO:SALDO", "tipo": "importe", "ancho": 16},
+          {"origen": "Nro. Operación", "alias": ["Nro Operación"], "fuente": "ORIGINAL", "tipo": "codigo", "ancho": 14}
+        ],
+        "encabezado": [
+          {"seccion": "CUENTA", "titulo": "Titular", "fuente": "ETIQUETA", "etiqueta": "Titular:"},
+          {"seccion": "PERIODO", "titulo": "Emisión del extracto", "fuente": "COMPUESTO", "plantilla": "{0} {1}", "partes": [{"fuente": "ETIQUETA", "etiqueta": "Fecha:"}, {"fuente": "ETIQUETA", "etiqueta": "Hora:"}]},
+          {"seccion": "SALDOS", "titulo": "Saldo inicial del extracto", "fuente": "FILA_ROTULADA", "rotulo": "SALDO INICIAL", "columna": "Saldo", "columna_fecha": "Fecha", "tipo": "importe", "verifica": "SALDO_INICIAL"},
+          {"seccion": "SALDOS", "titulo": "Saldo al cierre del extracto", "fuente": "FILA_ROTULADA", "rotulo": "SALDO AL CIERRE", "columna": "Saldo", "columna_fecha": "Fecha", "tipo": "importe", "verifica": "SALDO_FINAL"}
+        ]
       }
     },
 
@@ -168,6 +220,35 @@
         "Nro. Ref.": "REFERENCIA",
         "Codigo": "CODIGO_BANCO_TRX",
         "Nro. Lote": "NRO_LOTE"
+      },
+      "historico": {
+        "separador_decimal": ",",
+        "formato_hora": "hh:mm",
+        "columnas": [
+          {"origen": "Fecha", "fuente": "NORMALIZADO:FECHA", "tipo": "fecha", "ancho": 12},
+          {"origen": "Hora", "fuente": "NORMALIZADO:HORA", "tipo": "hora", "ancho": 10},
+          {"origen": "Nro. Cheque", "fuente": "ORIGINAL", "tipo": "codigo", "ancho": 11},
+          {"origen": "Descripción", "fuente": "ORIGINAL", "tipo": "texto", "ancho": 30},
+          {"origen": "Importe", "fuente": "NORMALIZADO:IMPORTE_FIRMADO", "tipo": "importe", "ancho": 14},
+          {"origen": "Saldo", "fuente": "NORMALIZADO:SALDO", "tipo": "importe", "ancho": 16},
+          {"origen": "Info. Complementaria", "alias": ["Info Complementaria"], "fuente": "ORIGINAL", "tipo": "texto", "ancho": 60},
+          {"origen": "Sucursal", "fuente": "ORIGINAL", "tipo": "texto", "ancho": 16},
+          {"origen": "Canal", "fuente": "ORIGINAL", "tipo": "texto", "ancho": 12},
+          {"origen": "Nro. Ref.", "alias": ["Nro Ref."], "fuente": "ORIGINAL", "tipo": "codigo", "ancho": 14},
+          {"origen": "Codigo", "fuente": "ORIGINAL", "tipo": "codigo", "ancho": 8},
+          {"origen": "Nro. Lote", "fuente": "ORIGINAL", "tipo": "codigo", "ancho": 10}
+        ],
+        "encabezado": [
+          {"seccion": "CUENTA", "titulo": "Titular", "fuente": "ETIQUETA", "etiqueta": "Nombre:"},
+          {"seccion": "CUENTA", "titulo": "Nombre de la cuenta", "fuente": "ETIQUETA", "etiqueta": "Nombre de Cuenta:"},
+          {"seccion": "CUENTA", "titulo": "Producto", "fuente": "ETIQUETA", "etiqueta": "Producto:"},
+          {"seccion": "CUENTA", "titulo": "Estado de la cuenta", "fuente": "ETIQUETA", "etiqueta": "Estado de Cuenta:"},
+          {"seccion": "PERIODO", "titulo": "Período del extracto", "fuente": "COMPUESTO", "plantilla": "{0} al {1}", "partes": [{"fuente": "ETIQUETA", "etiqueta": "Desde:"}, {"fuente": "ETIQUETA", "etiqueta": "Hasta:"}]},
+          {"seccion": "PERIODO", "titulo": "Emisión del extracto", "fuente": "PATRON", "patron": "^Al:\\s*(.+)$"},
+          {"seccion": "SALDOS", "titulo": "Saldo inicial del extracto", "fuente": "ETIQUETA", "etiqueta": "Saldo Inicial:", "tipo": "importe", "verifica": "SALDO_INICIAL"},
+          {"seccion": "SALDOS", "titulo": "Total créditos", "fuente": "ETIQUETA", "etiqueta": "Total Creditos:", "tipo": "importe", "verifica": "TOTAL_CREDITOS"},
+          {"seccion": "SALDOS", "titulo": "Total débitos", "fuente": "ETIQUETA", "etiqueta": "Total Debitos:", "tipo": "importe", "verifica": "TOTAL_DEBITOS"}
+        ]
       }
     },
 
@@ -208,6 +289,31 @@
         "Nota": "NOTA",
         "Monto": "IMPORTE_FIRMADO",
         "Saldo": "SALDO"
+      },
+      "historico": {
+        "separador_decimal": ".",
+        "formato_hora": "hh:mm:ss",
+        "columnas": [
+          {"origen": "Fecha", "fuente": "NORMALIZADO:FECHA", "tipo": "fecha", "ancho": 12},
+          {"origen": "Hora", "fuente": "NORMALIZADO:HORA", "tipo": "hora", "ancho": 10},
+          {"origen": "Nro Trn./Cheque", "alias": ["Nro Trn / Cheque"], "fuente": "ORIGINAL", "tipo": "codigo", "ancho": 14},
+          {"origen": "Transacción", "fuente": "ORIGINAL", "tipo": "texto", "ancho": 32},
+          {"origen": "Nota", "fuente": "ORIGINAL", "tipo": "texto", "ancho": 60},
+          {"origen": "Monto", "fuente": "NORMALIZADO:IMPORTE_FIRMADO", "tipo": "importe", "ancho": 14},
+          {"origen": "Saldo", "fuente": "NORMALIZADO:SALDO", "tipo": "importe", "ancho": 16}
+        ],
+        "encabezado": [
+          {"seccion": "CUENTA", "titulo": "Titular", "fuente": "ETIQUETA", "etiqueta": "Titular:"},
+          {"seccion": "CUENTA", "titulo": "Producto", "fuente": "ETIQUETA", "etiqueta": "Producto:"},
+          {"seccion": "CUENTA", "titulo": "Estado de la cuenta", "fuente": "ETIQUETA", "etiqueta": "Estado:"},
+          {"seccion": "CUENTA", "titulo": "Administración", "fuente": "ETIQUETA", "etiqueta": "Administracion:"},
+          {"seccion": "PERIODO", "titulo": "Período del extracto", "fuente": "PATRON", "patron": "^Del\\s+(.+?)\\s+al\\s+(.+)$", "plantilla": "{0} al {1}"},
+          {"seccion": "SALDOS", "titulo": "Saldo inicial del extracto", "fuente": "ETIQUETA", "etiqueta": "Saldo Inicial:", "tipo": "importe", "verifica": "SALDO_INICIAL"},
+          {"seccion": "SALDOS", "titulo": "Saldo final del extracto", "fuente": "ETIQUETA", "etiqueta": "Saldo Final:", "tipo": "importe", "verifica": "SALDO_FINAL"},
+          {"seccion": "SALDOS", "titulo": "Retenciones judiciales", "fuente": "ETIQUETA", "etiqueta": "Retenciones Judiciales:", "tipo": "importe"},
+          {"seccion": "SALDOS", "titulo": "Fondos reservados", "fuente": "ETIQUETA", "etiqueta": "Fondos Reservados:", "tipo": "importe"},
+          {"seccion": "SALDOS", "titulo": "Depósitos por confirmar", "fuente": "ETIQUETA", "etiqueta": "Dep. por confirmar:", "tipo": "importe"}
+        ]
       }
     },
 
@@ -275,6 +381,40 @@
         "Débito": "DEBITO",
         "Crédito": "CREDITO",
         "Saldo": "SALDO"
+      },
+      "historico": {
+        "separador_decimal": ".",
+        "formato_hora": "hh:mm:ss",
+        "columnas": [
+          {"origen": "Fecha", "fuente": "NORMALIZADO:FECHA", "tipo": "fecha", "ancho": 12},
+          {"origen": "Hora", "fuente": "NORMALIZADO:HORA", "tipo": "hora", "ancho": 10},
+          {"origen": "Cod. Bca.", "alias": ["Cod Bca."], "fuente": "ORIGINAL", "tipo": "codigo", "ancho": 14},
+          {"origen": "Nro.Cheque", "fuente": "ORIGINAL", "tipo": "codigo", "ancho": 11},
+          {"origen": "Nro/Nom.Plantilla", "fuente": "ORIGINAL", "tipo": "texto", "ancho": 16},
+          {"origen": "Cod.Dep.Num", "fuente": "ORIGINAL", "tipo": "codigo", "ancho": 12},
+          {"origen": "Doc.Depositante", "alias": ["Doc. Depositante"], "fuente": "ORIGINAL", "tipo": "codigo", "ancho": 14},
+          {"origen": "Nombre/Denominación Depositante", "fuente": "ORIGINAL", "tipo": "texto", "ancho": 34},
+          {"origen": "Tipo transact", "fuente": "ORIGINAL", "tipo": "texto", "ancho": 12},
+          {"origen": "Descripción", "fuente": "ORIGINAL", "tipo": "texto", "ancho": 50},
+          {"origen": "Oficina", "fuente": "ORIGINAL", "tipo": "texto", "ancho": 14},
+          {"origen": "Banco", "fuente": "ORIGINAL", "tipo": "texto", "ancho": 30},
+          {"origen": "Tipo dep", "fuente": "ORIGINAL", "tipo": "texto", "ancho": 10},
+          {"origen": "Nom.Destinatario", "fuente": "ORIGINAL", "tipo": "texto", "ancho": 30},
+          {"origen": "Glosa", "fuente": "ORIGINAL", "tipo": "texto", "ancho": 24},
+          {"origen": "Originador", "fuente": "ORIGINAL", "tipo": "texto", "ancho": 28},
+          {"origen": "Originador ACH", "fuente": "ORIGINAL", "tipo": "texto", "ancho": 28},
+          {"origen": "Ciudad Origen", "fuente": "ORIGINAL", "tipo": "codigo", "ancho": 8},
+          {"origen": "Débito", "alias": ["Débitos"], "fuente": "NORMALIZADO:DEBITO", "tipo": "importe", "ancho": 14},
+          {"origen": "Crédito", "alias": ["Créditos"], "fuente": "NORMALIZADO:CREDITO", "tipo": "importe", "ancho": 14},
+          {"origen": "Saldo", "fuente": "NORMALIZADO:SALDO", "tipo": "importe", "ancho": 16}
+        ],
+        "encabezado": [
+          {"seccion": "CUENTA", "titulo": "Titular", "fuente": "ETIQUETA", "etiqueta": "Titular", "posicion": "DEBAJO"},
+          {"seccion": "CUENTA", "titulo": "Tipo de producto", "fuente": "ETIQUETA", "etiqueta": "Tipo de producto:"},
+          {"seccion": "PERIODO", "titulo": "Período del extracto", "fuente": "PATRON", "patron": "^(\\d{2}/\\d{2}/\\d{4})\\s*-\\s*(\\d{2}/\\d{2}/\\d{4})$", "plantilla": "{0} al {1}"},
+          {"seccion": "PERIODO", "titulo": "Emisión del extracto", "fuente": "ETIQUETA", "etiqueta": "Fecha de emisión:"},
+          {"seccion": "SALDOS", "titulo": "Saldo a la fecha de emisión", "fuente": "ETIQUETA", "etiqueta": "Saldo:", "tipo": "importe", "verifica": "SALDO_FINAL"}
+        ]
       }
     },
 
@@ -315,6 +455,32 @@
         "Monto": "IMPORTE_FIRMADO",
         "Saldo": "SALDO",
         "Nro de verificasion": "NRO_VERIFICACION"
+      },
+      "historico": {
+        "separador_decimal": ".",
+        "formato_hora": "hh:mm:ss",
+        "columnas": [
+          {"origen": "Fecha Movimiento", "fuente": "NORMALIZADO:FECHA", "tipo": "fecha", "ancho": 12},
+          {"origen": "AG", "alias": ["Agencia"], "fuente": "ORIGINAL", "tipo": "codigo", "ancho": 8},
+          {"origen": "Descripción", "fuente": "ORIGINAL", "tipo": "texto", "ancho": 44},
+          {"origen": "Nro Documento", "alias": ["Nro. Documento"], "fuente": "ORIGINAL", "tipo": "codigo", "ancho": 14},
+          {"origen": "Monto", "fuente": "NORMALIZADO:IMPORTE_FIRMADO", "tipo": "importe", "ancho": 14},
+          {"origen": "Saldo", "fuente": "NORMALIZADO:SALDO", "tipo": "importe", "ancho": 16},
+          {"origen": "Nro de verificasion", "alias": ["Nro de verificacion"], "fuente": "ORIGINAL", "tipo": "codigo", "ancho": 18, "opcional": true}
+        ],
+        "encabezado": [
+          {"seccion": "CUENTA", "titulo": "Titular", "fuente": "CELDA", "celda": "B6"},
+          {"seccion": "CUENTA", "titulo": "Producto", "fuente": "ETIQUETA", "etiqueta": "Producto:"},
+          {"seccion": "PERIODO", "titulo": "Período del extracto", "fuente": "PATRON", "patron": "^Desde:\\s*(\\S+)\\s+Hasta:\\s*(\\S+)", "plantilla": "{0} al {1}"},
+          {"seccion": "SALDOS", "titulo": "Total créditos", "fuente": "ETIQUETA", "etiqueta": "Total Créditos:", "tipo": "importe", "verifica": "TOTAL_CREDITOS"},
+          {"seccion": "SALDOS", "titulo": "Total débitos", "fuente": "ETIQUETA", "etiqueta": "Total Débitos:", "tipo": "importe", "verifica": "TOTAL_DEBITOS"},
+          {"seccion": "SALDOS", "titulo": "Tránsito", "fuente": "ETIQUETA", "etiqueta": "Tránsito", "posicion": "DEBAJO", "tipo": "importe"},
+          {"seccion": "SALDOS", "titulo": "Consultado", "fuente": "ETIQUETA", "etiqueta": "Consultado", "posicion": "DEBAJO", "tipo": "importe"},
+          {"seccion": "SALDOS", "titulo": "Congelado", "fuente": "ETIQUETA", "etiqueta": "Congelado", "posicion": "DEBAJO", "tipo": "importe"},
+          {"seccion": "SALDOS", "titulo": "Sobregirado", "fuente": "ETIQUETA", "etiqueta": "Sobregirado", "posicion": "DEBAJO", "tipo": "importe"},
+          {"seccion": "SALDOS", "titulo": "Disponible", "fuente": "ETIQUETA", "etiqueta": "Disponible", "posicion": "DEBAJO", "tipo": "importe"},
+          {"seccion": "SALDOS", "titulo": "Total (saldo final del extracto)", "fuente": "ETIQUETA", "etiqueta": "Total", "posicion": "DEBAJO", "tipo": "importe", "verifica": "SALDO_FINAL"}
+        ]
       }
     },
 

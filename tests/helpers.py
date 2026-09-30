@@ -219,3 +219,44 @@ def crear_xlsx_union_me_con_movimiento(ruta):
         ws[f"{col}17"] = v
     wb.save(ruta)
     return ruta
+
+
+# ---------- P3b: huella determinista de un EXTRACTO_HISTORICO (doradas sin copiar los datos) ----------
+def leer_historico(ruta):
+    """Lee un EXTRACTO_HISTORICO: devuelve dict con hojas, fila de encabezado de la tabla, columnas,
+    columnas ocultas, filas (valores) y la zona superior (etiqueta -> valor)."""
+    from openpyxl import load_workbook
+    wb = load_workbook(ruta)
+    ws = wb.worksheets[0]
+    tabla = next(iter(ws.tables.values()))
+    ini, fin = tabla.ref.split(":")
+    hr = int(re.sub(r"[A-Z]", "", ini))
+    ultima = int(re.sub(r"[A-Z]", "", fin))
+    ncol = ws.max_column
+    columnas = [ws.cell(hr, j).value for j in range(1, ncol + 1)]
+    ocultas = [ws.column_dimensions[ws.cell(hr, j).column_letter].hidden for j in range(1, ncol + 1)]
+    filas = [[ws.cell(i, j).value for j in range(1, ncol + 1)] for i in range(hr + 1, ultima + 1)]
+    celdas = [[ws.cell(i, j) for j in range(1, ncol + 1)] for i in range(hr + 1, ultima + 1)]
+    zona = {}
+    for i in range(2, hr):
+        vals = [(j, ws.cell(i, j).value) for j in range(1, ncol + 1) if ws.cell(i, j).value is not None]
+        vals = [(j, v) for j, v in vals if not str(v).startswith(("DATOS DE LA CUENTA", "SALDOS Y TOTALES"))]
+        for (j1, et), (j2, va) in zip(vals[0::2], vals[1::2]):
+            zona[str(et)] = va
+    return {"wb": wb, "ws": ws, "tabla": tabla, "hr": hr, "columnas": columnas, "ocultas": ocultas,
+            "visibles": [c for c, o in zip(columnas, ocultas) if not o], "filas": filas, "celdas": celdas,
+            "zona": zona, "titulo": ws.cell(1, 1).value}
+
+
+def huella_historico(ruta):
+    """Resumen estable de un EXTRACTO_HISTORICO: columnas, cantidad de filas, zona superior y SHA-256
+    de todos los valores de la tabla (incluida la CLAVE oculta) y de sus formatos de numero."""
+    import hashlib
+    h = leer_historico(ruta)
+    m = hashlib.sha256()
+    for fila in h["celdas"]:
+        m.update(repr([(c.value, c.number_format) for c in fila]).encode("utf-8"))
+    return {"hojas": h["wb"].sheetnames, "titulo": h["titulo"], "columnas": h["columnas"],
+            "ocultas": [c for c, o in zip(h["columnas"], h["ocultas"]) if o], "filas": len(h["filas"]),
+            "zona": {k: (round(v, 2) if isinstance(v, float) else v) for k, v in h["zona"].items()},
+            "sha256_tabla": m.hexdigest()}

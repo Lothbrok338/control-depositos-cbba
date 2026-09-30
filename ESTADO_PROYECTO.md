@@ -13,12 +13,12 @@
 | **P2** Pruebas de preservación | **Terminado** | `tests/test_05_preservacion.py` |
 | **D-20** salidas del sistema como extractos | **Corregido** | `descubrir_archivos` excluye `NORMALIZADO*`, `ORIGEN*.xlsx`, `EXTRACTO_HISTORICO_*.xlsx` |
 | **P3** Registro de bancos + motor genérico en modo sombra | **TERMINADO Y APROBADO** | `registro_bancos.json` (6 formatos + 1 rechazado, 13 cuentas), `motor_generico.py`, paso 16 pasivo en `ejecutar_motor`, `tests/test_06_sombra_p3.py`. Producción = solo legado |
-| **P3b** Capa 4 (EXTRACTO_HISTORICO) | **SIGUIENTE — no iniciado** | |
+| **P3b** Capa 4 (EXTRACTO_HISTORICO) | **TERMINADO — pendiente de tu aprobación** | `historico.py` (función pura + escritor + CLI), bloque `historico` en `registro_bancos.json` (6 formatos), `tests/test_07_historico_p3b.py`, huella dorada `tests/golden/historico/MANIFEST_HISTORICO.json`. **No se integró a `ejecutar_motor`** (ver §5c) |
 | P4 · P5 · P6 | No iniciados | |
 
 ## 2. Resultado de pruebas (suite completa)
 
-**379 PASS · 20 SKIP · 18 XFAIL · 0 FAIL** (≈130 s). **12 formatos reales coinciden al 100 % en sombra** (0 diferencias, 12/12 archivos). **UNION_ME: pendiente de fixture real** (solo proxy sintético en sombra). Base P1+P2: 270 / 19 / 18; P3 agrega 109 PASS y 1 SKIP (BISA_ME no tiene movimientos para comparar con su dorada).
+**Con P3b: 505 PASS · 22 SKIP · 18 XFAIL · 0 FAIL** (P3b agrega 126 PASS y 2 SKIP de UNION_ME con movimientos reales). Antes de P3b: **379 PASS · 20 SKIP · 18 XFAIL · 0 FAIL** (≈130 s). **12 formatos reales coinciden al 100 % en sombra** (0 diferencias, 12/12 archivos). **UNION_ME: pendiente de fixture real** (solo proxy sintético en sombra). Base P1+P2: 270 / 19 / 18; P3 agrega 109 PASS y 1 SKIP (BISA_ME no tiene movimientos para comparar con su dorada).
 
 * **PASS (270):** regresión de los 12 formatos contra doradas; lote de 12; preservación P2 (completitud celda a celda, reconstrucción del archivo, mapa 1:1, débitos, cabeceras/pies, metadatos, determinismo de IDs, columnas vacías, NORMALIZADO.xlsx y LISTS.csv idénticos a sus doradas); D-20 (9 nombres excluidos, 4 nombres reales que siguen incluidos, corrida completa con salida = entrada).
 * **SKIP (19):** todos por falta de muestra real. UNION_ME: `REQUIERE MUESTRA REAL CON MOVIMIENTOS` (movimientos, saldos, débitos, `Nro de verificasion`, completitud y mapa) y archivo vacío real pendiente (`union_me_vacio.xls`). 8 pruebas de débitos en formatos sin débitos en su fixture (BCP_ME, BISA_ME, BISA_MN, BMSC, ECO_AHORRO, BNB_AHORRO, BNB_CLINICA, UNION_MN).
@@ -35,7 +35,7 @@
 6. **Registro parametrizable** `registro_bancos.json` (FORMATOS / CUENTAS): una cuenta nueva de un formato conocido = una entrada, cero código (P3).
 7. **UNION_ME** = `UNION_FECHAS_V1`: estructura **confirmada** por código legado + captura real (7 columnas, incl. `Nro de verificasion`, que el motor legado no lee y que va a ORIGEN e histórico, no a las 26 columnas). Comportamiento con movimientos: **pendiente de fixture real**.
 
-Plan: P1 ✔ · P2 ✔ · **P3** registro + motor genérico en modo sombra · P3b generador de capa 4 · P4 detección al registro · P5 normalización al registro · P6 retiro del legado.
+Plan: P1 ✔ · P2 ✔ · P3 ✔ · **P3b** generador de capa 4 (hecho, por aprobar) · P4 detección al registro · P5 normalización al registro · P6 retiro del legado.
 
 ## 4. Pendientes
 
@@ -66,7 +66,17 @@ Plan: P1 ✔ · P2 ✔ · **P3** registro + motor genérico en modo sombra · P3
 * **Observación:** las sumas de créditos/débitos de la validación difieren ~1e-10 entre legado y genérico (orden de suma en coma flotante). Se informan como *observación* (tolerancia 1e-6, muy por debajo de la tolerancia 0.01 del motor) y no cuentan como diferencia.
 * Evidencia: `tests/reports/EVIDENCIA_P3_SOMBRA.txt` (A/B contra el motor del checkpoint: LISTS.csv idéntico byte a byte, NORMALIZADO.xlsx idéntico celda a celda, componentes congelados con texto fuente idéntico).
 
-## 5b. Siguiente paso: P3b (no iniciado; requiere aprobación para empezar)
+## 5c. P3b — capa 4 EXTRACTO_HISTORICO (hecho, pendiente de aprobación)
+
+* **Qué genera:** un `.xlsx` por banco / cuenta / mes (`EXTRACTO_HISTORICO_{BANCO}_{CUENTA}_{AAAA-MM}.xlsx`), con **una sola hoja `EXTRACTO`**: título, zona superior (banco, cuenta, moneda, titular, producto, período del mes y del extracto, emisión, y los saldos/totales que el banco declara), tabla con las **columnas propias de cada banco en su orden y con su nombre**, y al final **solo** `ESTADO · CONFIRMADO POR · FECHA DE CONFIRMACIÓN`. `CLAVE TRANSACCIÓN` va en una columna **oculta** de la misma tabla (para sincronizar después). Fecha visible `dd/mm/yyyy`.
+* **Fuentes:** solo `DATOS_ORIGINALES + MAPA_ORIGEN` (ORIGEN.xlsx) + `NORMALIZADO.xlsx` (hoja LISTS) **o** `LISTS.csv` + `registro_bancos.json`. No abre el extracto bancario, no importa el motor ni `captura_origen.py`, no escribe en NORMALIZADO/LISTS/ORIGEN.
+* **Valores:** fecha, hora, débito, crédito, importe con signo y saldo desde NORMALIZADO (mismos números que van a Lists); el resto, texto del banco sin los espacios de relleno. Códigos/cheques/referencias siempre texto (`0000335`, `034`, `4401`).
+* **Verificación antes de escribir:** cada movimiento con su fila de origen, mismas cantidades y sumas que NORMALIZADO, y saldos/totales declarados (marcados `verifica` en el registro) cuadran con los movimientos (tolerancia 0,01). Si falla, **ese** archivo no se escribe y se informa la causa.
+* **Uso:** `python historico.py <ORIGEN.xlsx> <NORMALIZADO.xlsx|LISTS.csv> <carpeta_salida> [registro.json]` o `generar_extractos_historicos(...)`.
+* **Resultado con los 12 fixtures:** 11 archivos (10 de agosto + BCP_ME de julio); BISA_ME sin movimientos no genera archivo; 0 advertencias, 0 errores.
+* **Desviaciones respecto del diseño §6/§8:** (1) **no** hay paso 17 en `ejecutar_motor`: el motor queda intacto y el histórico corre después, desde los archivos (la ruta de salida sigue sin definir y `test_06_sombra_p3` fija los archivos de la carpeta productiva); (2) nombre de archivo sin moneda, según tu ejemplo; (3) `version_registro` sigue en `P3-1` (lo exige la prueba de sombra) y se agrega `version_historico: P3b-1`; (4) la dorada de la capa 4 es una **huella** (columnas, filas, zona superior y SHA-256 de valores) para no duplicar movimientos reales en el repositorio.
+
+## 5b. (histórico) Plan original de P3b
 
 Capa 4 (`EXTRACTO_HISTORICO`, ver `DISENO_TRES_CAPAS.md` §6): bloque `historico` de los formatos en `registro_bancos.json`, `historico.py` (función pura + escritor) y `test_06_historico.py`, alimentado del `NORMALIZADO` legado. No depende de P4 ni P5. Sin decidir todavía: ruta de salida, lista de `ESTADO`, formato de fecha y convivencia con `PLANTILLA EXTRACTO.xlsx` (sección 4).
 
@@ -78,5 +88,6 @@ Capa 4 (`EXTRACTO_HISTORICO`, ver `DISENO_TRES_CAPAS.md` §6): bloque `historico
 * Estructura de `NORMALIZADO.xlsx` (4 hojas, `tblLISTS`) y `LISTS.csv` (UTF-8 con BOM).
 * El flujo de Power Automate `NORMALIZAR EXTRACTOS DIARIOS CBBA`, Microsoft Lists y Power Apps.
 * `captura_origen.py`, el paso 15 y el paso 16 (sombra) de `ejecutar_motor` (aprobados; solo cambian con nueva aprobación).
+* `historico.py` y el bloque `historico` del registro (P3b): solo cambian con aprobación; su huella dorada se regenera con `tests/generar_golden_historico.py --force` y motivo explícito.
 * Las doradas (`tests/golden/`) y los fixtures reales: solo se regeneran con motivo explícito y contra el motor original.
 * Los archivos bancarios originales: siempre evidencia inalterada.

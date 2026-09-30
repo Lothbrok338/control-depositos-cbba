@@ -604,3 +604,9 @@ Los defectos D-01 a D-17 siguen su propio carril (Fase 2). D-18 y D-19 **no se t
 * **Desviaciones respecto de este diseño:** (1) `hojas_aceptadas` por formato, sin sobrescritura por cuenta (BNB acepta «Hoja 1» y «Hoja»); (2) el formato declara `filtro_fecha` (`PANDAS_DAYFIRST` / `NORMALIZAR_FECHA`) para reproducir el criterio distinto de Económico (D-06), en lugar de unificarlo; (3) el saldo inicial de BISA sigue por celda fija G8 (`CELDA_FIJA`), no por etiqueta; (4) la detección exige `puntaje_minimo` 100 % (el legado no, D-09) y lee la cuenta solo en la cabecera (cierra D-10/D-11 **solo en el genérico**); (5) el bloque `historico` **no** se incluye todavía (P3b).
 * Sin tocar: `COLUMNAS_LISTS`, `CLAVE TRANSACCIÓN`, `normalizar_*`, `detectar_formato`, `validar_archivo`, `ENCABEZADOS_ESPERADOS`, `HOJAS_VALIDAS`, los 18 XFAIL, Power Automate, Lists y Power Apps.
 
+## 14. Estado de implementación: P3b (hecho, pendiente de aprobación)
+
+* `historico.py` + bloque `historico` por formato y bloque general `HISTORICO` en `registro_bancos.json`. Ver `ESTADO_PROYECTO.md` §5c.
+* **Desviaciones respecto de §6 y §8:** (1) sin paso 17 en `ejecutar_motor` (motor intacto; el histórico corre después desde ORIGEN.xlsx + NORMALIZADO); (2) nombre `EXTRACTO_HISTORICO_{BANCO}_{CUENTA}_{AAAA-MM}.xlsx` (sin moneda); (3) CLAVE TRANSACCIÓN = opción (a), columna oculta dentro de la tabla; (4) pruebas en `test_07_historico_p3b.py` (el número 06 ya lo usa la sombra); (5) dorada como huella SHA-256; (6) la zona superior agrupa «datos de la cuenta y período» a la izquierda y «saldos y totales del extracto (según el banco)» a la derecha; (7) un saldo o total declarado que no cuadra con los movimientos **bloquea** ese archivo (§6.6 paso 8).
+* Sin tocar: `motor_control_depositos_cbba.py`, `captura_origen.py`, `motor_generico.py`, `COLUMNAS_LISTS`, `CLAVE TRANSACCIÓN`, los 18 XFAIL, Power Automate, Lists y Power Apps.
+
