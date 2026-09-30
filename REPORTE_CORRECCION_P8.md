@@ -1,5 +1,23 @@
 # Corrección P8 después de auditoría
 
+## Actualización V3: nombre técnico HASH_SHA256
+
+Base de esta revisión: `93c16475bfe5b188cd05a53a999950daa22aa773`, rama `candidate/p8-m365-pilot`. V3 aprobada para publicar únicamente en esa rama y probar en tenant. Sin merge a main ni checkpoint.
+
+El tenant confirmó que V2 seguía creando `_x0053_HA256` pese a Name/StaticName/DisplayName SHA256, ID explícito y Options=9. Se retira ese intento. Depositos_Cargas usa ahora InternalName `HASH_SHA256`, con nombre lógico y visible `SHA256`.
+
+- Contrato: solo la entrada del hash cambia; agrega `nombre_logico` y `nombre_visible` y actualiza `nombre_tecnico`. Las 34 columnas de Activos y las otras 12 de Cargas permanecen idénticas.
+- Provisión: creación con Name/StaticName/DisplayName HASH_SHA256; MERGE por GUID del campo recién creado para establecer Title SHA256. Se exige InternalName y Title exactos al releer. Las columnas antiguas producen FAIL sin borrado, migración ni segunda columna del mismo título.
+- Carga: único cambio en el WDL, `item/SHA256` → `item/HASH_SHA256`. Se conserva `varSha256`, el valor de `sha256_archivo_fuente`, el Parse JSON P7, los contadores y la lógica bancaria/idempotencia.
+- Paquetes: nuevos `P8_PROVISIONAR_LISTAS_V3_HASH_SHA256.zip` y `P8_CARGA_DEPOSITOS_ACTIVOS_V3_HASH_SHA256.zip`. Los nombres visibles de los flujos son exactamente los de sus ZIP sin extensión; los manifiestos y las definiciones coinciden, con identificadores propios para importarlos como nuevos. Los ZIP anteriores del provisionador, de carga y el ZIP general anterior se conservan como históricos.
+- Pruebas P8: **78 PASS**, incluyendo regresión de nombres/título, listas antiguas con y sin datos, provisión + carga + reproceso usando el inventario de columnas provisionadas y rechazo de escrituras con los nombres internos anteriores.
+- Adaptador P7: **45 PASS**. Los 91 archivos del checkpoint P7 son idénticos byte por byte; también se compararon sin diferencias el contrato y el plan compilado de Activos y las otras 12 columnas de Cargas.
+- Pendiente: importación y ejecución real de V3 y de la carga actualizada en el tenant. Los ensayos locales no sustituyen esa aceptación.
+
+La evidencia actual está en `p8/provision/evidencia_validacion.json` y `pruebas_provision.log`. Las secciones siguientes documentan la auditoría anterior; sus cifras y estado corresponden a aquella entrega, no a V3.
+
+## Registro histórico de la auditoría anterior
+
 Estado: correcciones y ensayos locales completados; piloto Microsoft 365 pendiente. Sin commit ni checkpoint P8. HEAD/main y origin/checkpoint-p7 siguen en `673754a9b69072e6960bbf0c7ffb0f50dc5d2670`. Todos los archivos versionados de esa base son idénticos por SHA-256 en ambos árboles.
 
 ## 1. Comparación reproducida en el mismo entorno

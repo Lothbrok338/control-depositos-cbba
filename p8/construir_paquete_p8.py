@@ -21,16 +21,15 @@ P8_DIR = RAIZ / "p8"
 ESQUEMA_P7 = RAIZ / "esquema_parse_json_p7.json"
 DEFINICION_SALIDA = P8_DIR / "flujo_p8_definition.json"
 ESQUEMA_LISTAS_SALIDA = P8_DIR / "esquema_listas_p8.json"
-ZIP_SALIDA = RAIZ / "P8_CARGA_DEPOSITOS_ACTIVOS.zip"
-
-NOMBRE_FLUJO = "P8 - CARGA DEPOSITOS ACTIVOS"
+NOMBRE_FLUJO = "P8_CARGA_DEPOSITOS_ACTIVOS_V3_HASH_SHA256"
+ZIP_SALIDA = RAIZ / f"{NOMBRE_FLUJO}.zip"
 API_ID = "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
 CONEXION = "shared_sharepointonline"
 ESTADOS_EJECUCION = ["Succeeded", "Failed", "Skipped", "TimedOut"]
 
 
 def _uuid(nombre: str) -> str:
-    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"control-depositos-cbba:p8:{nombre}"))
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"control-depositos-cbba:p8:v3-hash-sha256:{nombre}"))
 
 
 FLOW_RESOURCE_ID = _uuid("flow-resource")
@@ -112,7 +111,8 @@ def construir_esquema_listas(columnas_m365) -> dict:
             "title_obligatorio": False,
             "columnas": [
                 {
-                    "nombre_tecnico": nombre,
+                    "nombre_tecnico": "HASH_SHA256" if nombre == "SHA256" else nombre,
+                    **({"nombre_logico": "SHA256", "nombre_visible": "SHA256"} if nombre == "SHA256" else {}),
                     "tipo": tipo,
                     "obligatoria": obligatoria,
                     "indexada": indexada,
@@ -210,8 +210,8 @@ def _archivos_paquete(definicion: dict) -> dict[str, dict]:
 def escribir_artefactos() -> tuple[Path, Path, Path]:
     adaptador = _cargar_adaptador()
     esquema_p7 = json.loads(ESQUEMA_P7.read_text(encoding="utf-8"))
-    definicion = construir_definicion(esquema_p7, adaptador.COLUMNAS_M365)
     esquema_listas = construir_esquema_listas(adaptador.COLUMNAS_M365)
+    definicion = construir_definicion(esquema_p7, adaptador.COLUMNAS_M365, esquema_listas)
 
     DEFINICION_SALIDA.write_text(
         json.dumps(definicion, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"

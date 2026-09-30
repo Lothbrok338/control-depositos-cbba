@@ -2,13 +2,12 @@
 import copy
 import hashlib
 import json
-import uuid
 import zipfile
 from xml.etree import ElementTree as ET
 
 import pytest
 
-from p8.provision.construir import CARPETA, FUENTE, PLANTILLA, RAIZ, SALIDA, compilar, construir_definicion, generar
+from p8.provision.construir import CARPETA, FUENTE, NOMBRE, PLANTILLA, RAIZ, SALIDA, compilar, construir_definicion, generar
 from p8.provision.ensayo import SharePointREST, ejecutar
 
 
@@ -95,32 +94,38 @@ def test_nombre_interno_codificado_no_se_confunde_con_titulo(definicion):
     assert any(d["propiedad"]=="CANTIDAD_COLUMNAS_TECNICAS" and d["actual"]==33 for d in resumen(e)["diferencias"])
 
 
-def test_sha256_definicion_exige_tres_nombres_exactos_e_identidad_explicita(definicion):
+def test_hash_sha256_creacion_tecnica_y_titulo_logico_por_guid(definicion):
     plan = definicion["actions"]["Contrato_compilado"]["inputs"]
     cargas = next(l for l in plan if l["Nombre"] == "Depositos_Cargas")
-    campo = next(c for c in cargas["Campos"] if c["Nombre"] == "SHA256")
+    campo = next(c for c in cargas["Campos"] if c["Nombre"] == "HASH_SHA256")
     parametros = campo["Crear"]["parameters"]
     xml = ET.fromstring(parametros["SchemaXml"])
     assert {a: xml.get(a) for a in ("Name", "StaticName", "DisplayName")} == {
-        "Name": "SHA256", "StaticName": "SHA256", "DisplayName": "SHA256"}
-    assert xml.get("ID") == "{" + str(uuid.uuid5(
-        uuid.NAMESPACE_URL, "control-depositos-cbba:p8:Depositos_Cargas:SHA256")) + "}"
+        "Name": "HASH_SHA256", "StaticName": "HASH_SHA256", "DisplayName": "HASH_SHA256"}
+    assert xml.get("ID") is None  # Retirado el intento V2 de forzar SHA256.
     assert parametros["Options"] == 1 | 8
-    assert {p["propiedad"]: p["esperado"] for p in campo["Propiedades"]}["InternalName"] == "SHA256"
-    assert [c["Nombre"] for l in plan for c in l["Campos"]
-            if ET.fromstring(c["Crear"]["parameters"]["SchemaXml"]).get("ID")] == ["SHA256"]
+    esperado = {p["propiedad"]: p["esperado"] for p in campo["Propiedades"]}
+    assert esperado["InternalName"] == "HASH_SHA256" and esperado["Title"] == "SHA256"
+    assert campo["Configurar"]["Title"] == campo["NombreVisible"] == "SHA256"
+    _, sp = ejecutar(definicion)
+    real = sp.listas["Depositos_Cargas"]["fields"]["HASH_SHA256"]
+    assert real["InternalName"] == "HASH_SHA256" and real["Title"] == "SHA256"
+    assert ET.fromstring(real["SchemaXml"]).get("DisplayName") == "SHA256"
+    cambios = [c for c in sp.llamadas if c["body"] and c["body"].get("Title") == "SHA256"]
+    assert len(cambios) == 1
+    assert cambios[0]["uri"].endswith("/fields(guid'" + real["Id"] + "')")
 
 
 def codificar_sha256_observado(lista, campo):
-    """Reproduce la respuesta REAL reportada; no modela un bypass hipotético."""
-    if lista == "Depositos_Cargas" and campo["InternalName"] == "SHA256":
+    """Inyecta el nombre interno rechazado en tenant para asegurar FAIL en V3."""
+    if lista == "Depositos_Cargas" and campo["InternalName"] == "HASH_SHA256":
         campo["InternalName"] = "_x0053_HA256"
         xml = ET.fromstring(campo["SchemaXml"])
         xml.set("Name", "_x0053_HA256")
         campo["SchemaXml"] = ET.tostring(xml, encoding="unicode")
 
 
-def comprobar_fallo_sha256(e):
+def comprobar_fallo_sha256(e, nombre_incorrecto="_x0053_HA256"):
     r = resumen(e)
     assert r["PROVISION_P8"] == "FAIL" and e.estado_final == "Failed"
     assert [(l["lista"], l["presentes"]) for l in r["listas"]] == [
@@ -128,41 +133,56 @@ def comprobar_fallo_sha256(e):
     assert r["diferencias"] == [
         {"lista": "Depositos_Cargas", "campo": "", "propiedad": "CANTIDAD_COLUMNAS_TECNICAS",
          "esperado": 13, "actual": 12},
-        {"lista": "Depositos_Cargas", "campo": "_x0053_HA256", "propiedad": "COLUMNA_ADICIONAL",
+        {"lista": "Depositos_Cargas", "campo": nombre_incorrecto, "propiedad": "COLUMNA_ADICIONAL",
          "esperado": "Ninguna columna de usuario fuera del contrato", "actual": "SHA256"},
-        {"lista": "Depositos_Cargas", "campo": "SHA256", "propiedad": "InternalName",
-         "esperado": "SHA256", "actual": "Ausente o no único con ese nombre interno exacto"},
+        {"lista": "Depositos_Cargas", "campo": "HASH_SHA256", "propiedad": "InternalName",
+         "esperado": "HASH_SHA256", "actual": "Ausente o no único con ese nombre interno exacto"},
     ]
 
 
 @pytest.mark.parametrize("con_datos", [False, True])
-def test_sha256_codificado_preexistente_falla_sin_reparar_ni_borrar(definicion, con_datos):
+@pytest.mark.parametrize("nombre_incorrecto", ["_x0053_HA256", "SHA256", "hash_sha256"])
+def test_hash_sha256_nombre_incorrecto_preexistente_no_se_migra(definicion, con_datos, nombre_incorrecto):
     _, sp = ejecutar(definicion)
     lista = sp.listas["Depositos_Cargas"]
-    campo = lista["fields"].pop("SHA256")
-    codificar_sha256_observado("Depositos_Cargas", campo)
+    campo = lista["fields"].pop("HASH_SHA256")
+    campo["InternalName"] = nombre_incorrecto
+    xml = ET.fromstring(campo["SchemaXml"])
+    xml.set("Name", nombre_incorrecto)
+    campo["SchemaXml"] = ET.tostring(xml, encoding="unicode")
     lista["fields"][campo["InternalName"]] = campo
     if con_datos:
-        lista["items"] = [{"ID": 1, "_x0053_HA256": "dato previo"}]
+        lista["items"] = [{"ID": 1, nombre_incorrecto: "dato previo"}]
     antes = copy.deepcopy(sp.listas)
     sp.llamadas.clear()
     e, _ = ejecutar(definicion, sp)
-    comprobar_fallo_sha256(e)
+    comprobar_fallo_sha256(e, nombre_incorrecto)
     assert sp.listas == antes
     assert all(c["metodo"] == "GET" for c in sp.llamadas)
 
 
-def test_sha256_post_200_con_nombre_codificado_no_certifica_exito(definicion):
+def test_hash_sha256_post_200_con_nombre_codificado_no_certifica_exito(definicion):
     sp = SharePointREST()
     sp.al_crear = codificar_sha256_observado
     e, _ = ejecutar(definicion, sp)
     comprobar_fallo_sha256(e)
     assert e.estados["Provisionar_listas"] == "Succeeded"
-    # Incluso si el servidor ignora la identidad explícita y responde HTTP 200,
-    # el verificador sigue rechazando exactamente el defecto del piloto real.
+    # Una respuesta HTTP 200 nunca sustituye a la comprobación del nombre real.
     campo = sp.listas["Depositos_Cargas"]["fields"]["_x0053_HA256"]
-    assert ET.fromstring(campo["SchemaXml"]).get("ID")
     assert campo["Title"] == "SHA256"
+
+
+@pytest.mark.parametrize("titulo", ["HASH_SHA256", "SHA 256"])
+def test_hash_sha256_titulo_visible_inexacto_falla_sin_modificar(definicion, titulo):
+    _, sp = ejecutar(definicion)
+    sp.listas["Depositos_Cargas"]["fields"]["HASH_SHA256"]["Title"] = titulo
+    antes = copy.deepcopy(sp.listas)
+    sp.llamadas.clear()
+    e, _ = ejecutar(definicion, sp)
+    assert resumen(e)["PROVISION_P8"] == "FAIL"
+    assert {"lista": "Depositos_Cargas", "campo": "HASH_SHA256", "propiedad": "Title",
+            "esperado": "SHA256", "actual": titulo} in resumen(e)["diferencias"]
+    assert sp.listas == antes and all(c["metodo"] == "GET" for c in sp.llamadas)
 
 
 def test_sha256_recrear_cargas_conserva_activos_y_es_idempotente(definicion):
@@ -180,11 +200,11 @@ def test_sha256_recrear_cargas_conserva_activos_y_es_idempotente(definicion):
     creaciones = [c for c in sp.llamadas if c["accion"] == "Crear_columna"]
     assert len(creaciones) == 13
     solicitud = next(c for c in creaciones if
-                     ET.fromstring(c["body"]["parameters"]["SchemaXml"]).get("Name") == "SHA256")
+                     ET.fromstring(c["body"]["parameters"]["SchemaXml"]).get("Name") == "HASH_SHA256")
     xml = ET.fromstring(solicitud["body"]["parameters"]["SchemaXml"])
-    campo = sp.listas["Depositos_Cargas"]["fields"]["SHA256"]
-    assert campo["Id"] == str(uuid.UUID(xml.get("ID")))
-    assert campo["InternalName"] == campo["Title"] == "SHA256"
+    campo = sp.listas["Depositos_Cargas"]["fields"]["HASH_SHA256"]
+    assert xml.get("Name") == campo["InternalName"] == "HASH_SHA256"
+    assert campo["Title"] == "SHA256"
     antes = copy.deepcopy(sp.listas)
     sp.llamadas.clear()
     e, _ = ejecutar(definicion, sp)
@@ -286,8 +306,71 @@ def test_contrato_unica_fuente():
     assert len(a[0]["Campos"])==34 and len(a[1]["Campos"])==13
 
 
+def test_hash_sha256_mapeo_logico_compartido_desde_contrato():
+    from p8 import construir_paquete_p8 as carga
+    from p8.validar_p8 import acciones_recursivas
+
+    esquema = json.loads(FUENTE.read_text())
+    campo = next(c for c in esquema["Depositos_Cargas"]["columnas"] if c.get("nombre_logico") == "SHA256")
+    assert campo["nombre_tecnico"] == "HASH_SHA256" and campo["nombre_visible"] == "SHA256"
+    # Cambiar el contrato en memoria debe alimentar ambas capas, sin otros
+    # nombres físicos hardcodeados en el provisionador ni en la bitácora.
+    campo["nombre_tecnico"] = "HASH_PRUEBA"
+    campo["nombre_visible"] = "Huella SHA256"
+    p = compilar(esquema)
+    compilado = next(c for c in p[1]["Campos"] if c["Nombre"] == "HASH_PRUEBA")
+    assert compilado["Configurar"]["Title"] == "Huella SHA256"
+    flujo = carga.construir_definicion(json.loads(carga.ESQUEMA_P7.read_text()),
+                                       carga._cargar_adaptador().COLUMNAS_M365, esquema)
+    params = dict(acciones_recursivas(flujo["actions"]))["Registrar_bitacora_del_lote"]["inputs"]["parameters"]
+    assert params["item/HASH_PRUEBA"] == "@variables('varSha256')"
+    assert "item/HASH_SHA256" not in params and "item/SHA256" not in params
+
+
+@pytest.mark.parametrize("nombre_antiguo", [None, "SHA256", "_x0053_HA256"])
+def test_provision_y_carga_bitacora_con_esquema_real_simulado(definicion, nombre_antiguo):
+    from p8 import construir_paquete_p8 as carga
+    from p8.ensayo_wdl import EnsayoWDL, SharePointSimulado, FalloConector
+    from p8.validar_p8 import EJEMPLO, acciones_recursivas
+
+    provision, sp = ejecutar(definicion)
+    assert resumen(provision)["PROVISION_P8"] == "OK"
+    columnas = set(sp.listas["Depositos_Cargas"]["fields"]) - {"Title"}
+    assert len(columnas) == 13 and "HASH_SHA256" in columnas and "SHA256" not in columnas
+
+    class ConectorConColumnasProvisionadas(SharePointSimulado):
+        def ejecutar(self, nombre, parametros):
+            if nombre == "Registrar_bitacora_del_lote":
+                recibidas = {k.split('/')[1] for k in parametros if k.startswith('item/')}
+                if recibidas != columnas:
+                    raise FalloConector("Failed", 400)
+            return super().ejecutar(nombre, parametros)
+
+    flujo = json.loads(carga.DEFINICION_SALIDA.read_text())
+    artefacto = json.loads(EJEMPLO.read_text())
+    if nombre_antiguo:
+        params = dict(acciones_recursivas(flujo["actions"]))["Registrar_bitacora_del_lote"]["inputs"]["parameters"]
+        params['item/' + nombre_antiguo] = params.pop('item/HASH_SHA256')
+    primera = ConectorConColumnasProvisionadas(artefacto)
+    ejecucion = EnsayoWDL(flujo, primera).ejecutar()
+    if nombre_antiguo:
+        assert ejecucion.estado_final == "Failed" and primera.bitacoras == []
+        return
+    segunda = ConectorConColumnasProvisionadas(artefacto, existentes=primera.activos)
+    reproceso = EnsayoWDL(flujo, segunda).ejecutar()
+    assert ejecucion.estado_final == reproceso.estado_final == "Succeeded"
+    assert len(primera.activos) == len(segunda.activos) == 8
+    assert len(primera.creaciones) == 8 and segunda.creaciones == []
+    for servidor, nuevos, existen in [(primera, 8, 0), (segunda, 0, 8)]:
+        b = servidor.bitacoras[0]
+        assert b["HASH_SHA256"] == artefacto["sha256_archivo_fuente"]
+        assert [b[k] for k in ("CANTIDAD_RECIBIDA", "CANTIDAD_NUEVA", "CANTIDAD_YA_EXISTE", "CANTIDAD_ERROR")] == [8, nuevos, existen, 0]
+        assert b["ESTADO_LOTE/Value"] == "COMPLETADO"
+
+
 def test_paquete_independiente_reproducible_y_grafo_valido(definicion):
-    antes={p:hashlib.sha256(p.read_bytes()).hexdigest() for p in [FUENTE,PLANTILLA,RAIZ/'p8/flujo_p8_definition.json']}
+    anteriores = [RAIZ/'P8_PROVISIONAR_LISTAS.zip', RAIZ/'P8_PROVISIONAR_LISTAS_V2_SHA256.zip']
+    antes={p:hashlib.sha256(p.read_bytes()).hexdigest() for p in [FUENTE,PLANTILLA,RAIZ/'p8/flujo_p8_definition.json', *anteriores]}
     generar();zip1=SALIDA.read_bytes();generar();assert SALIDA.read_bytes()==zip1
     assert all(hashlib.sha256(p.read_bytes()).hexdigest()==h for p,h in antes.items())
     nombres=[]
@@ -304,7 +387,15 @@ def test_paquete_independiente_reproducible_y_grafo_valido(definicion):
     with zipfile.ZipFile(SALIDA) as z,zipfile.ZipFile(PLANTILLA) as carga:
         assert z.testzip() is None and len(z.namelist())==5
         m=json.loads(z.read('manifest.json'));m0=json.loads(carga.read('manifest.json'))
+        assert m['details']['displayName'] == NOMBRE
+        recurso = next(r for r in m['resources'].values() if r['type'] == 'Microsoft.Flow/flows')
+        assert recurso['details']['displayName'] == NOMBRE
+        assert recurso['suggestedCreationType'] == 'New'
         assert not set(m['resources']) & set(m0['resources'])
         flujo=json.loads(z.read(next(n for n in z.namelist() if n.endswith('/definition.json'))))
         assert flujo['properties']['definition']==definicion
-        assert flujo['properties']['displayName']=='P8_PROVISIONAR_LISTAS'
+        assert SALIDA.name == 'P8_PROVISIONAR_LISTAS_V3_HASH_SHA256.zip'
+        assert flujo['properties']['displayName'] == NOMBRE
+        for anterior in anteriores:
+            with zipfile.ZipFile(anterior) as viejo:
+                assert not set(m['resources']) & set(json.loads(viejo.read('manifest.json'))['resources'])

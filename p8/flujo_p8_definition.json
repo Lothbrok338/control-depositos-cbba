@@ -1523,7 +1523,7 @@
               "item/LOTE_ID": "@variables('varLoteId')",
               "item/FECHA_HORA_PROCESO": "@utcNow()",
               "item/ARCHIVO_FUENTE": "@variables('varArchivoFuente')",
-              "item/SHA256": "@variables('varSha256')",
+              "item/HASH_SHA256": "@variables('varSha256')",
               "item/CANTIDAD_RECIBIDA": "@variables('varCantidadRecibida')",
               "item/CANTIDAD_VALIDA": "@variables('varCantidadValida')",
               "item/CANTIDAD_NUEVA": "@variables('varCantidadNueva')",

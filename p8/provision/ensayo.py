@@ -55,8 +55,7 @@ class SharePointREST:
         self.llamadas = []
         self.fallos = {}
         self.al_verificar = None
-        # Inyectar respuestas observadas sin suponer que un ID XML impide
-        # la normalización del nombre en todas las versiones de SharePoint.
+        # Inyectar respuestas reales o incompatibles en pruebas de verificación.
         self.al_crear = None
         self.paginar = set()
 
@@ -145,6 +144,8 @@ class SharePointREST:
             if k == "__metadata":
                 continue
             campo[k] = v
+            if k == "Title":
+                schema.set("DisplayName", v)
             if isinstance(v, bool):
                 schema.set(k, str(v).upper())
         campo["SchemaXml"] = ET.tostring(schema, encoding="unicode")

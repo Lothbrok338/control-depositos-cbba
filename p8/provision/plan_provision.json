@@ -1,6 +1,6 @@
 {
   "fuente": "p8/esquema_listas_p8.json",
-  "sha256": "9eab09805bc3e6ce2e1b3762fab804ea7c36ecfc648ec920d2a6550aaadfd228",
+  "sha256": "6fbd6a618b9b990c698abcf5693ad9684e86e3c6b725c007d84861c40dad7563",
   "listas": [
     {
       "Nombre": "Depositos_Activos",
@@ -2234,7 +2234,7 @@
         "LOTE_ID",
         "FECHA_HORA_PROCESO",
         "ARCHIVO_FUENTE",
-        "SHA256",
+        "HASH_SHA256",
         "CANTIDAD_RECIBIDA",
         "CANTIDAD_VALIDA",
         "CANTIDAD_NUEVA",
@@ -2434,13 +2434,14 @@
           ]
         },
         {
-          "Nombre": "SHA256",
+          "Nombre": "HASH_SHA256",
+          "NombreVisible": "SHA256",
           "Crear": {
             "parameters": {
               "__metadata": {
                 "type": "SP.XmlSchemaFieldCreationInformation"
               },
-              "SchemaXml": "<Field Name=\"SHA256\" StaticName=\"SHA256\" DisplayName=\"SHA256\" Type=\"Text\" Required=\"TRUE\" Hidden=\"FALSE\" ID=\"{e8466569-991d-50aa-b274-0f432a943ae2}\" MaxLength=\"255\" />",
+              "SchemaXml": "<Field Name=\"HASH_SHA256\" StaticName=\"HASH_SHA256\" DisplayName=\"HASH_SHA256\" Type=\"Text\" Required=\"TRUE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
               "Options": 9
             }
           },
@@ -2450,7 +2451,8 @@
             },
             "Required": true,
             "Indexed": false,
-            "DefaultValue": ""
+            "DefaultValue": "",
+            "Title": "SHA256"
           },
           "Unicidad": {
             "__metadata": {
@@ -2462,7 +2464,7 @@
           "Propiedades": [
             {
               "propiedad": "InternalName",
-              "esperado": "SHA256"
+              "esperado": "HASH_SHA256"
             },
             {
               "propiedad": "TypeAsString",
@@ -2491,6 +2493,10 @@
             {
               "propiedad": "DefaultValue",
               "esperado": ""
+            },
+            {
+              "propiedad": "Title",
+              "esperado": "SHA256"
             }
           ]
         },

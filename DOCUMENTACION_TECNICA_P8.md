@@ -1,10 +1,12 @@
-# P8 · CARGA DEPOSITOS ACTIVOS
+# P8_CARGA_DEPOSITOS_ACTIVOS_V3_HASH_SHA256
 
-Estado: P8 corregido tras auditoría, con ensayos locales del WDL. Importación y ejecución Microsoft 365 pendientes. P7/P6, motor y doradas conservados. Sin commit ni checkpoint P8.
+Estado: revisión P8 V3 de la bitácora SHA256, aprobada para publicación en `candidate/p8-m365-pilot` y prueba en tenant. Validación de esta revisión en Microsoft 365 pendiente. P7/P6, motor, adaptador, doradas y Depositos_Activos conservados. Sin merge a main ni checkpoint.
+
+**Compatibilidad V3:** el campo lógico y visible `SHA256` de Depositos_Cargas tiene InternalName `HASH_SHA256`. El flujo escribe `item/HASH_SHA256` con el mismo valor de `sha256_archivo_fuente` entregado por P7. Usar este paquete de carga actualizado junto a `P8_PROVISIONAR_LISTAS_V3_HASH_SHA256.zip`; las versiones anteriores escribían en otro nombre interno y no son compatibles con Cargas V3.
 
 ## 1. Entregables
 
-- `P8_CARGA_DEPOSITOS_ACTIVOS.zip`: paquete para importar construido sobre la estructura real de `NORMALIZADOR_POWER_AUTOMATE.zip` existente en el repositorio. No contiene URL de sitio, carpeta, usuario, tenant, conexión ni credencial real. La importación efectiva debe validarse en Power Automate.
+- `P8_CARGA_DEPOSITOS_ACTIVOS_V3_HASH_SHA256.zip`: paquete de carga para importar. El flujo, el recurso del manifiesto y el paquete tienen el nombre visible `P8_CARGA_DEPOSITOS_ACTIVOS_V3_HASH_SHA256`. Usa identificadores de paquete distintos de versiones anteriores y se importa como nuevo. Conserva la estructura real de `NORMALIZADOR_POWER_AUTOMATE.zip`. No contiene URL de sitio, carpeta, usuario, tenant, conexión ni credencial real.
 - `p8/flujo_p8_definition.json`: definición legible y versionable del flujo.
 - `p8/esquema_listas_p8.json`: contrato completo de las dos listas, con tipos, obligatoriedad, índices, unicidad y opciones.
 - `p8/construir_paquete_p8.py`: generador reproducible del JSON, el contrato de listas y el ZIP.
@@ -26,7 +28,7 @@ Los UUID del paquete son internos, deterministas y generados localmente. No iden
 
 ## 2. Flujo implementado
 
-Nombre exacto: `P8 - CARGA DEPOSITOS ACTIVOS`.
+Nombre exacto: `P8_CARGA_DEPOSITOS_ACTIVOS_V3_HASH_SHA256`.
 
 ```text
 Archivo nuevo en carpeta SharePoint
@@ -165,14 +167,14 @@ No agregar estados operativos adicionales en P8. Se definirán con Power Apps en
 
 ## 6. Crear `Depositos_Cargas`
 
-Crear otra lista en el mismo sitio con nombre exacto `Depositos_Cargas`. Dejar `Title` no obligatorio y oculto. Crear las columnas con sus nombres técnicos exactos:
+Usar `P8_PROVISIONAR_LISTAS_V3_HASH_SHA256.zip` para crear y verificar automáticamente `Depositos_Cargas` en el sitio. El provisionador deja la columna de sistema `Title` no obligatoria y conserva su visibilidad. No es necesario crear columnas manualmente; la tabla siguiente documenta el contrato técnico:
 
 | Nombre técnico | Tipo | Obligatoria | Índice / valores |
 |---|---|---:|---|
 | `LOTE_ID` | Texto de una línea | Sí | Indexada; no única porque el reproceso crea otra bitácora |
 | `FECHA_HORA_PROCESO` | Fecha y hora, incluir hora | Sí | Indexada; valor `utcNow()` del flujo |
 | `ARCHIVO_FUENTE` | Texto de una línea | Sí | |
-| `SHA256` | Texto de una línea | Sí | |
+| `HASH_SHA256` | Texto de una línea | Sí | Nombre lógico y visible: `SHA256` |
 | `CANTIDAD_RECIBIDA` | Número, 0 decimales | Sí | |
 | `CANTIDAD_VALIDA` | Número, 0 decimales | Sí | |
 | `CANTIDAD_NUEVA` | Número, 0 decimales | Sí | |
@@ -183,7 +185,11 @@ Crear otra lista en el mismo sitio con nombre exacto `Depositos_Cargas`. Dejar `
 | `ARCHIVO_JSON` | Texto de una línea | No | Nombre del archivo disparador |
 | `ID_EJECUCION_FLUJO` | Texto de una línea | No | `workflow()?['run']?['name']` |
 
-El flujo crea un registro final por ejecución. `ARCHIVO_JSON` se inicializa desde el trigger antes de leer el archivo. JSON ilegible, versión/columnas inválidas o propiedad obligatoria ausente alcanzan `FINALLY` y escriben `FALLIDO`; los metadatos todavía desconocidos usan `DESCONOCIDO` y los conteos desconocidos, 0. No se invoca `Terminar` dentro de `TRY` ni `CATCH`.
+El contrato P8 representa explícitamente `nombre_tecnico=HASH_SHA256`, `nombre_logico=SHA256` y `nombre_visible=SHA256` solo para esta columna. El constructor de carga resuelve el nombre técnico desde ese mismo contrato. No cambia la propiedad P7 `sha256_archivo_fuente`, el algoritmo, el valor ni las 26 columnas de movimientos. El provisionador crea primero el campo con nombre/título HASH_SHA256 y después cambia solo su título visible a SHA256 por GUID; la verificación exige ambos valores exactos.
+
+Para actualizar el piloto, seguir `DOCUMENTACION_PROVISION_P8.md`: conservar Activos, recrear Cargas solo si sigue vacía y la eliminación es manual, comprobar provisión OK, importar/configurar esta versión de carga y desactivar la anterior antes de activar el nuevo trigger. Una Cargas con datos no se migra ni se borra automáticamente. Si la lista fue recreada, seleccionar su identificador actual en la configuración del flujo. El ZIP general anterior es histórico y no contiene esta actualización.
+
+El flujo crea un registro final por ejecución. `ARCHIVO_JSON` se inicializa desde el trigger antes de leer el archivo. JSON ilegible, versión/columnas inválidas o propiedad obligatoria ausente alcanzan `FINALLY` y escriben `FALLIDO`; los metadatos todavía desconocidos, incluido HASH_SHA256, usan `DESCONOCIDO` y los conteos desconocidos, 0. No se invoca `Terminar` dentro de `TRY` ni `CATCH`.
 
 `Finalizar_ejecucion` solo admite `FINALLY = Succeeded`; por tanto `Terminar_FALLIDO` ocurre después de la escritura confirmada. Si SharePoint está inaccesible o rechaza la propia bitácora, ningún flujo puede garantizar persistencia allí: la ejecución queda fallida, no invoca `Terminar_procesado` y conserva el historial para diagnóstico/reproceso. Esta limitación externa está cubierta por una prueba local y requiere supervisión en el piloto.
 
@@ -221,7 +227,7 @@ El disparador es «Cuando se crea un archivo (solo propiedades)». Sobrescribir 
 ## 8. Importar y parametrizar el flujo
 
 1. Power Automate → Mis flujos → Importar → Importar paquete heredado.
-2. Subir `P8_CARGA_DEPOSITOS_ACTIVOS.zip`.
+2. Subir `P8_CARGA_DEPOSITOS_ACTIVOS_V3_HASH_SHA256.zip` y elegir **Crear como nuevo**. Comprobar el nombre visible exacto antes de activar el flujo.
 3. En el recurso del flujo elegir Crear como nuevo.
 4. En el recurso de conexión SharePoint elegir la conexión autorizada para el sitio piloto.
 5. Importar y mantener el flujo desactivado mientras se configura.

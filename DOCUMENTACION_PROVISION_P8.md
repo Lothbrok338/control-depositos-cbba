@@ -1,38 +1,49 @@
-# P8_PROVISIONAR_LISTAS
+# P8_PROVISIONAR_LISTAS_V3_HASH_SHA256
 
 Flujo manual e independiente para crear y verificar las listas de SharePoint de P8 sin crear columnas a mano. Su única fuente de nombres, tipos, obligatoriedad, índices, unicidad, opciones y predeterminados es `p8/esquema_listas_p8.json`. El contrato se compila y queda incluido dentro del flujo: no hay que subir ese JSON a SharePoint ni configurar una carpeta.
 
-Estado de entrega: ZIP regenerado sobre la plantilla real ya utilizada para P8. La primera ejecución real, reportada por el usuario, terminó en `FAIL`: Activos 34/34 y Cargas 12/13 por el nombre interno `_x0053_HA256`. Esta revisión es un **candidato pendiente de validación real**: completa la identidad XML de SHA256 con un ID explícito. Las pruebas locales no demuestran que SharePoint deje de codificar ese nombre. No se declara resuelto el incidente hasta obtener `InternalName = SHA256` en el tenant. Evidencia en `p8/provision/evidencia_validacion.json`.
+Estado de entrega: V3 generada y probada localmente; ejecución de V3 en tenant pendiente. El usuario confirmó que V2 también terminó con `Title = SHA256` e `InternalName = _x0053_HA256`, incluso con ID explícito y Options=9. Se abandona el intento de crear InternalName=SHA256. La solución P8 usa **InternalName=HASH_SHA256** y **Title/DisplayName=SHA256**. Evidencia en `p8/provision/evidencia_validacion.json`.
 
-## Incidente SHA256: causa, cambio y validación pendiente
+## Mapeo P8: nombre lógico, visible e interno
 
-El resultado observado coincide con la normalización especial de nombres que parecen referencias de celda Excel A1: `SHA256` tiene tres letras seguidas de números. SharePoint puede codificar la primera letra; `_x0053_` corresponde a `S`. Existe un caso documentado equivalente con `SSL2` → `_x0053_SL2` en [Internal name encoding in SharePoint](https://stackoverflow.com/questions/1600647/internal-name-encoding-in-sharepoint#43458196). Esa fuente explica el comportamiento, pero no demuestra un bypass mediante REST para este tenant.
+El resultado observado coincide con la normalización especial de nombres que parecen referencias de celda Excel A1: `SHA256` tiene tres letras seguidas de números; `_x0053_` corresponde a `S`. [Caso documentado equivalente](https://stackoverflow.com/questions/1600647/internal-name-encoding-in-sharepoint#43458196). V3 utiliza un nombre técnico que no tiene ese patrón y no intenta desactivar la normalización de SharePoint.
 
-La revisión del paquete anterior confirmó que **ya enviaba** `Name="SHA256"`, `StaticName="SHA256"`, `DisplayName="SHA256"` y `Options = 9`. Por tanto, el defecto no era la omisión de `AddFieldInternalNameHint`: el bit 8 ya estaba presente. Cambiar simplemente 9 por 8 no añade esa opción. `StaticName` y el título tampoco garantizan el nombre interno; no se usan como equivalentes durante la verificación.
+El único campo del contrato que cambia es el hash de `Depositos_Cargas`:
 
-El único cambio en la solicitud de creación es agregar a **Depositos_Cargas.SHA256** un `ID="{GUID}"` estable, generado con UUIDv5 a partir de la identidad lógica del campo. El [esquema Field de Microsoft](https://learn.microsoft.com/en-us/sharepoint/dev/schema/field-element-field) define ID como la identidad del campo; esta revisión completa esa identidad declarativa. Es un identificador nuevo de la definición, no un ID supuesto de una lista o conexión real. Se conservan los tres nombres exactos y `Options = 9`. Las solicitudes de las otras 46 columnas y el verificador final no cambian.
+```json
+{"nombre_tecnico": "HASH_SHA256", "nombre_logico": "SHA256", "nombre_visible": "SHA256"}
+```
 
-**Límite de la corrección candidata:** la documentación consultada no garantiza que agregar ID evite la codificación A1. No se atribuye al ID una garantía que Microsoft no documenta. Si el servidor vuelve a responder con `_x0053_HA256`, la ejecución seguirá terminando en `FAIL`; una prueba específica inyecta precisamente esa respuesta, incluso con ID y HTTP 200.
+`nombre_tecnico` significa InternalName SharePoint. Los otros dos atributos son explícitos solo para este campo; las otras 46 columnas conservan sus definiciones. El JSON P7 sigue entregando `sha256_archivo_fuente`; el significado lógico y el valor del hash no cambian.
+
+La creación tiene dos pasos, ambos automáticos:
+
+1. `createfieldasxml` recibe `<Field Name="HASH_SHA256" StaticName="HASH_SHA256" DisplayName="HASH_SHA256" Type="Text" Required="TRUE" Hidden="FALSE" MaxLength="255" />`, con `Options=9`. El título inicial también es técnico para que SHA256 no participe en la generación del nombre interno. Se retiró el ID especial de V2.
+2. `Configurar_columna_nueva` hace MERGE **por el GUID devuelto por el POST**, con `Title="SHA256"` y las propiedades del contrato. Cambia únicamente el título de la columna que acaba de crear. El nombre interno permanece HASH_SHA256.
+
+La lectura final exige `InternalName=HASH_SHA256` y `Title=SHA256`, además del resto de propiedades. Ni `SHA256` ni `_x0053_HA256` son nombres internos aceptables. El título inicial HASH_SHA256 tampoco supera la verificación si no se completó el segundo paso.
 
 Para repetir el piloto indicado por el usuario:
 
 1. Conservar `Depositos_Activos`, que ya está correcta en 34/34.
 2. Confirmar que `Depositos_Cargas` continúa vacía y eliminar **manualmente solo esa lista**, como se acordó para este piloto. El flujo no incluye borrados ni reparaciones destructivas.
-3. Importar este ZIP como una revisión independiente del provisionador y seleccionar la conexión SharePoint. No reemplazar el flujo de carga.
-4. Ejecutar e inspeccionar la solicitud y respuesta de `Crear_columna` para SHA256. El XML enviado debe tener ID y los tres atributos de nombre exactos.
-5. Consultar nuevamente los campos con `GET _api/web/lists/getbytitle('Depositos_Cargas')/fields?$select=Id,InternalName,Title,SchemaXml&$filter=Title eq 'SHA256'`. Debe devolver una sola columna con **InternalName y Title exactamente SHA256**. Buscar por título solo sirve para diagnosticar; no sustituye el criterio de aceptación.
-6. Exigir `RESUMEN_FINAL.PROVISION_P8 = OK`, Activos 34/34, Cargas 13/13 y ninguna diferencia. Repetir para comprobar idempotencia. Si persiste `_x0053_HA256`, conservar el diagnóstico y no usar el flujo de carga con ese contrato incompatible.
+3. Importar **P8_PROVISIONAR_LISTAS_V3_HASH_SHA256.zip** como flujo nuevo y seleccionar la conexión SharePoint. Mantener desactivados los provisionadores anteriores.
+4. Ejecutar e inspeccionar `Crear_columna` y `Configurar_columna_nueva` para HASH_SHA256: primero nombre y título técnicos, luego título SHA256 por GUID.
+5. Consultar `GET _api/web/lists/getbytitle('Depositos_Cargas')/fields?$select=Id,InternalName,Title,SchemaXml&$filter=Title eq 'SHA256'`. Debe devolver una sola columna con **InternalName=HASH_SHA256 y Title=SHA256**. La consulta por título es diagnóstica; el verificador compara InternalName exacto.
+6. Exigir `RESUMEN_FINAL.PROVISION_P8 = OK`, Activos 34/34, Cargas 13/13 y ninguna diferencia. Repetir para comprobar cero escrituras.
+7. Importar/configurar **P8_CARGA_DEPOSITOS_ACTIVOS_V3_HASH_SHA256.zip** como nuevo y comprobar que el flujo se llame exactamente **P8_CARGA_DEPOSITOS_ACTIVOS_V3_HASH_SHA256**: la escritura de bitácora usa `item/HASH_SHA256`. Desactivar la versión anterior de carga antes de activar la nueva para no tener dos triggers sobre la misma carpeta. Conservar la conexión, carpeta y parámetros reales del piloto; si la lista Cargas se recreó, seleccionar su nuevo identificador donde corresponda.
+8. Cargar el ejemplo de 8 movimientos y reprocesarlo: primera 8 nuevas/0 existentes/0 errores; segunda 0 nuevas/8 existentes/0 errores; 8 Activos finales. Las dos bitácoras deben mostrar SHA256 con el valor exacto de `sha256_archivo_fuente`.
 
-Si se ejecuta sobre la lista incorrecta todavía existente, el provisionador la conserva y reporta nuevamente las tres diferencias originales. Esto se prueba tanto con una lista vacía como con elementos. No se renombra automáticamente ninguna columna preexistente.
+Si permanece la columna antigua titulada SHA256, se detecta su colisión por título y no se crea una segunda columna. La verificación devuelve FAIL, 12/13, columna adicional antigua y ausencia de HASH_SHA256. También rechaza el nombre interno SHA256 sin codificar. Esto se prueba con y sin elementos. No hay migración ni borrado automático; una lista con datos requiere un plan separado.
 
 ## Uso: importar, conectar, indicar sitio y ejecutar
 
-1. Power Automate → **Mis flujos → Importar → Importar paquete heredado**. Seleccionar `P8_PROVISIONAR_LISTAS.zip` y **Crear como nuevo**.
+1. Power Automate → **Mis flujos → Importar → Importar paquete heredado**. Seleccionar `P8_PROVISIONAR_LISTAS_V3_HASH_SHA256.zip` y **Crear como nuevo**.
 2. Seleccionar o autenticar una conexión **SharePoint** con los permisos indicados más abajo. Es una conexión estándar, sin HTTP premium, aplicación de Azure ni secreto adicional.
-3. Abrir el flujo importado `P8_PROVISIONAR_LISTAS` y pulsar **Ejecutar**. En el único campo **Sitio SharePoint**, introducir la URL completa del sitio real. Todas las acciones REST usan esa entrada; no hay que sustituir URLs en cada acción.
+3. Abrir el flujo importado `P8_PROVISIONAR_LISTAS_V3_HASH_SHA256` y pulsar **Ejecutar**. En el único campo **Sitio SharePoint**, introducir la URL completa del sitio real. Todas las acciones REST usan esa entrada; no hay que sustituir URLs en cada acción.
 4. Ejecutar una vez y abrir **RESUMEN_FINAL** en el historial. Debe mostrar `PROVISION_P8 = OK`, las dos listas verificadas, 34/34 y 13/13 columnas técnicas, y `diferencias: []`.
 
-No hay que crear listas, columnas, índices, opciones ni restricciones manualmente. El flujo de carga P8 existente sigue siendo independiente; este paquete no lo configura ni lo modifica.
+No hay que crear listas, columnas, índices, opciones ni restricciones manualmente. El provisionador sigue siendo independiente: no modifica el flujo de carga instalado. Por eso se entrega también su ZIP actualizado, que debe usarse con el contrato V3.
 
 Para comprobar idempotencia puede ejecutarse de nuevo sobre el mismo sitio. Si ambas listas coinciden, la segunda ejecución hace únicamente lecturas REST: cero creaciones de listas/columnas y cero actualizaciones. No se borran ni reemplazan elementos de las listas.
 
@@ -49,14 +60,14 @@ El generador `p8/provision/construir.py` lee directamente el contrato existente.
 
 Los artefactos generados son:
 
-- `P8_PROVISIONAR_LISTAS.zip`: segundo flujo importable.
+- `P8_PROVISIONAR_LISTAS_V3_HASH_SHA256.zip`: provisionador V3 importable. Los ZIP anteriores se conservan como versiones históricas y no deben usarse para este piloto.
 - `p8/provision/flujo_provision_definition.json`: definición WDL que contiene el plan derivado del contrato.
 - `p8/provision/plan_provision.json`: solicitudes y expectativas compiladas, con ruta y SHA-256 de la fuente.
 - `p8/provision/construir.py`: generador reproducible.
 - `p8/provision/ensayo.py` y `tests/test_13_provision_p8.py`: ejecución local del WDL con REST simulado.
 - `p8/provision/evidencia_validacion.json` y `pruebas_provision.log`: resultados de validación.
 
-La estructura del ZIP se deriva de `P8_CARGA_DEPOSITOS_ACTIVOS.zip`, basado a su vez en `NORMALIZADOR_POWER_AUTOMATE.zip`, una exportación real disponible en el repositorio. Los identificadores de recursos del paquete son nuevos y deterministas; no coinciden con los del flujo de carga y no identifican recursos reales del tenant. La conexión se asigna durante la importación. No hay IDs, sitios, credenciales ni rutas de entrada reales inventados.
+La estructura del ZIP se deriva del paquete histórico `P8_CARGA_DEPOSITOS_ACTIVOS.zip`, basado a su vez en `NORMALIZADOR_POWER_AUTOMATE.zip`, una exportación real disponible en el repositorio; su definición se sustituye por la del provisionador V3. Para ejecutar la carga se usa exclusivamente `P8_CARGA_DEPOSITOS_ACTIVOS_V3_HASH_SHA256.zip`. Ambos paquetes V3 tienen nombres visibles e identificadores de recursos propios y deterministas, distintos de versiones anteriores; no identifican recursos reales del tenant. La conexión se asigna durante la importación. No hay IDs, sitios, credenciales ni rutas de entrada reales inventados.
 
 ## Diseño e idempotencia
 
@@ -67,8 +78,8 @@ El trigger manual y todos los bucles tienen concurrencia 1. La provisión se rea
 3. Leer el inventario de campos. Si la respuesta indica paginación, no crear columnas a partir de una página incompleta y reportar `FAIL`.
 4. Liberar `Title` de obligatoriedad si todavía lo requiere.
 5. Para cada columna del contrato, detectar coincidencias tanto por `InternalName` como por título, incluyendo colisiones de mayúsculas/minúsculas. Si existe alguna coincidencia, no recrear ni actualizar esa columna: la segunda pasada decidirá si coincide exactamente.
-6. Si falta, crearla con `createfieldasxml`. `Name`, `StaticName` y `DisplayName` reciben el mismo nombre técnico. SHA256 incluye además la identidad XML explícita descrita arriba. `Options = 9` combina `AddToDefaultContentType (1)` y `AddFieldInternalNameHint (8)`. La pista de nombre no se considera garantía: la verificación posterior exige el nombre interno exacto.
-7. Sobre el **GUID devuelto por esa creación**, configurar `Required`, `Indexed` y `DefaultValue`. Solo para la columna que exige unicidad, activar después `EnforceUniqueValues = true`. No se actualiza por un nombre que pudiera pertenecer a otra columna creada concurrentemente.
+6. Si falta, crearla con `createfieldasxml`. `Name`, `StaticName` y `DisplayName` reciben el mismo nombre técnico inicial. `Options = 9` combina `AddToDefaultContentType (1)` y `AddFieldInternalNameHint (8)`. La verificación posterior exige el nombre interno exacto.
+7. Sobre el **GUID devuelto por esa creación**, configurar `Required`, `Indexed` y `DefaultValue`; solo donde el contrato define `nombre_visible`, asignar también `Title` (HASH_SHA256 → SHA256). Para la columna que exige unicidad, activar después `EnforceUniqueValues = true`. No se actualiza una columna preexistente.
 8. Volver a leer las listas y sus campos; comparar todas las propiedades y emitir el resultado.
 
 Para `CLAVE_TRANSACCION` la secuencia efectiva es: crear Text requerido → habilitar índice → activar unicidad. La lectura final debe confirmar simultáneamente `Required = true`, `Indexed = true` y `EnforceUniqueValues = true`.
@@ -87,7 +98,7 @@ Una columna preexistente con configuración distinta produce `FAIL` y un detalle
 | Numero, 0 decimales | Number, Decimals = 0, Percentage = FALSE | 0 decimales y sin porcentaje |
 | Opcion | Choice, CHOICES y FillInChoice tomados del contrato | Opciones exactas, orden y relleno |
 
-Se comprueba también en **cada** columna: `InternalName`, `TypeAsString`, `Required`, `Indexed`, `EnforceUniqueValues`, `Hidden`, `ReadOnlyField` y `DefaultValue`. Las columnas técnicas deben ser visibles y escribibles para que el flujo de carga las use.
+Se comprueba también en **cada** columna: `InternalName`, `TypeAsString`, `Required`, `Indexed`, `EnforceUniqueValues`, `Hidden`, `ReadOnlyField` y `DefaultValue`. Cuando existe `nombre_visible` explícito, se verifica además `Title`. Las columnas técnicas deben ser visibles y escribibles para que el flujo de carga las use.
 
 `ESTADO_ASIGNACION` recibe el único valor `DISPONIBLE` y su predeterminado `DISPONIBLE`. `ESTADO_LOTE` recibe exactamente `COMPLETADO`, `COMPLETADO_CON_ERRORES`, `FALLIDO`, sin predeterminado añadido. Donde el contrato no indica predeterminado, se deja sin él y se verifica vacío; no se inventan valores operativos.
 
@@ -149,21 +160,22 @@ No se necesita ser administrador global de Microsoft 365. Un propietario del sit
 Regenerar desde la raíz del repositorio:
 
 ```bash
+python -m p8.construir_paquete_p8
 python -m p8.provision.construir
 python -m pytest -q tests/test_12_flujo_p8.py tests/test_13_provision_p8.py
 ```
 
 Las pruebas ejecutan la definición WDL generada con REST simulado. Cubren creación 34/13, segundo intento sin escrituras, listas parciales, conservación de elementos, diferencias en tipos/obligatoriedad/índices/unicidad/predeterminados, fechas/decimales/texto sin formato/Choice, colisiones de nombre, campos adicionales, 403/404/500/timeout, XML inválido y lectura final independiente. También validan grafo, límite de ocho niveles, nombres de acción únicos, recursos de paquete distintos y reproducibilidad del ZIP.
 
-Esta revisión añade cinco casos de prueba: XML exacto e ID estable para SHA256, rechazo del campo codificado preexistente con y sin datos, rechazo de una respuesta de creación HTTP 200 con nombre codificado, y recreación simulada de Cargas conservando Activos seguida de un reproceso sin escrituras. El simulador permite inyectar el defecto real; no supone que ID lo corrija ni reproduce el algoritmo interno de nombres de SharePoint.
+Resultado de V3: 78 pruebas P8 aprobadas. Las regresiones comprueban creación técnica y cambio de título por GUID, rechazo de nombres internos antiguos o con otra capitalización, rechazo de título visible incorrecto, conservación de datos, recreación simulada de Cargas sin escrituras sobre Activos y reproceso sin POST. Un ensayo conjunto usa las columnas realmente producidas por el provisionador simulado para aceptar o rechazar las escrituras del flujo de carga: HASH_SHA256 funciona; SHA256 y _x0053_HA256 fallan. Se comprueba que el hash P7 no cambie y que 8 + reproceso deje 8 Activos.
 
-Pendientes del tenant para esta revisión: aceptar el nuevo ZIP, comprobar que SHA256 conserve el nombre interno exacto tras la creación y repetir para comprobar cero POST. La ejecución real anterior demuestra que la estructura original podía importarse y llamar al conector, pero no certifica esta revisión. No hay acceso al tenant desde este entorno.
+Pendientes del tenant: importar V3 y la carga actualizada, comprobar InternalName HASH_SHA256 / Title SHA256, 34/34 y 13/13, repetir provisión y ejecutar carga/reproceso con bitácoras correctas. Las pruebas locales no certifican la ejecución de esta revisión en Microsoft 365.
 
 No hay transacción global ni rollback: una interrupción puede dejar listas o columnas ya creadas. Se conservan para diagnóstico y reproceso. La ejecución manual puede cancelarse; un corte del propio servicio puede impedir el resumen, por lo que no se declara una garantía de ejecución frente a indisponibilidad total.
 
 La compatibilidad prevista es SharePoint Online, listas genéricas sin tipos de contenido personalizados. Se consulta hasta 5000 campos y se falla expresamente si hay paginación; no se certifica una respuesta incompleta. No se optimiza para provisiones masivas ni para ediciones concurrentes de administradores durante el piloto.
 
-P6/P7, motor, doradas, esquema fuente, ZIP/JSON del flujo de carga y su documentación permanecen sin cambios. Esta revisión posterior a `046e31cba50143c8a667e322b03b9ff469d42df4` no incluye commit, push, merge a main ni checkpoint.
+P6/P7, motor/adaptador, doradas, las 26 columnas de movimientos y la definición de Depositos_Activos permanecen sin cambios. Solo se actualizan las capas P8 de hash de bitácora, provisión, verificación, documentación y pruebas. Los ZIP anteriores del provisionador, el de carga sin sufijo V3 y el ZIP general anterior se conservan como históricos; no son la entrega V3. La publicación autorizada de esta revisión posterior a `93c16475bfe5b188cd05a53a999950daa22aa773` se limita a `candidate/p8-m365-pilot`, sin merge a main ni checkpoint.
 
 Referencias:
 

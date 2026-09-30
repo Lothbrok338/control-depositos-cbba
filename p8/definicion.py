@@ -183,7 +183,14 @@ def procesar(columnas):
     return acciones
 
 
-def construir_definicion(esquema_p7, columnas):
+def construir_definicion(esquema_p7, columnas, esquema_listas):
+    # El nombre lógico SHA256 pertenece a la bitácora P8. El JSON P7 y sus
+    # 26 columnas permanecen intactos; la escritura usa el InternalName del
+    # mismo contrato que consume el provisionador.
+    campos_hash = [c["nombre_tecnico"] for c in esquema_listas["Depositos_Cargas"]["columnas"]
+                   if c.get("nombre_logico", c["nombre_tecnico"]) == "SHA256"]
+    assert len(campos_hash) == 1, "Debe existir un único campo lógico SHA256 en Depositos_Cargas"
+    campo_hash = campos_hash[0]
     nombres = [c[1] for c in columnas]
     vars_iniciales = {
         "varCantidadRecibida": ("integer", 0), "varCantidadValida": ("integer", 0),
@@ -280,7 +287,7 @@ def construir_definicion(esquema_p7, columnas):
         Registrar_bitacora_del_lote=sp("PostItem", {
             **lista("DEPOSITOS_CARGAS"),
             "item/LOTE_ID": "@variables('varLoteId')", "item/FECHA_HORA_PROCESO": "@utcNow()",
-            "item/ARCHIVO_FUENTE": "@variables('varArchivoFuente')", "item/SHA256": "@variables('varSha256')",
+            "item/ARCHIVO_FUENTE": "@variables('varArchivoFuente')", f"item/{campo_hash}": "@variables('varSha256')",
             **{f"item/{columna}": f"@variables('{variable}')" for columna, variable in [
                 ("CANTIDAD_RECIBIDA", "varCantidadRecibida"), ("CANTIDAD_VALIDA", "varCantidadValida"),
                 ("CANTIDAD_NUEVA", "varCantidadNueva"), ("CANTIDAD_YA_EXISTE", "varCantidadYaExiste"),

@@ -19,7 +19,7 @@ def acciones_recursivas(acciones):
 def resumen(sp):
     return {**{k: v for k, v in sp.bitacoras[-1].items() if k.startswith("CANTIDAD_") or k == "ESTADO_LOTE/Value"},
             "coincidencias_preconsulta": sp.coincidencias_preconsulta, "intentos_crear": len(sp.creaciones),
-            "elementos_finales": len(sp.activos)}
+            "elementos_finales": len(sp.activos), "HASH_SHA256": sp.bitacoras[-1]["HASH_SHA256"]}
 
 
 def validar():
@@ -40,6 +40,9 @@ def validar():
     columnas = paquete._cargar_adaptador().COLUMNAS_TECNICAS
     mapeadas = {k[5:] for k in acciones["Crear_movimiento"]["inputs"]["parameters"] if k.startswith("item/")}
     assert mapeadas == set(columnas) | {"ESTADO_ASIGNACION/Value"}
+    bitacora = acciones["Registrar_bitacora_del_lote"]["inputs"]["parameters"]
+    assert bitacora["item/HASH_SHA256"] == "@variables('varSha256')"
+    assert "item/SHA256" not in bitacora and "item/_x0053_HA256" not in bitacora
     assert definicion["actions"]["Finalizar_ejecucion"]["runAfter"] == {"FINALLY": ["Succeeded"]}
     with zipfile.ZipFile(paquete.ZIP_SALIDA) as z:
         assert set(z.namelist()) == set(paquete._archivos_paquete(definicion))
@@ -54,6 +57,7 @@ def validar():
     EnsayoWDL(definicion, segunda).ejecutar()
     assert len(primera.creaciones) == 8 and len(primera.activos) == 8
     assert segunda.coincidencias_preconsulta == 8 and len(segunda.creaciones) == 0 and len(segunda.activos) == 8
+    assert primera.bitacoras[0]["HASH_SHA256"] == segunda.bitacoras[0]["HASH_SHA256"] == artefacto["sha256_archivo_fuente"]
     return {"flujo": paquete.NOMBRE_FLUJO, "tipo_de_evidencia": "Ensayo local del WDL; no ejecución Microsoft",
             "primera_ejecucion": resumen(primera), "segunda_ejecucion": resumen(segunda)}
 

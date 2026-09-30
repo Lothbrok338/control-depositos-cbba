@@ -1,493 +1,183 @@
 {
-  "estado": "CANDIDATO_LOCAL_OK_CORRECCION_TENANT_NO_CONFIRMADA",
-  "comando_pruebas": "python -m pytest -q tests/test_12_flujo_p8.py tests/test_13_provision_p8.py",
-  "resultados": {
-    "PASS": 68
-  },
-  "pruebas": [
-    {
-      "id": "test_12_flujo_p8.py::test_paquete_y_fuente_son_reproducibles",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_piloto_8_y_reproceso_sin_intentos_de_creacion",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_estructural_siempre_registra_antes_de_terminar[ilegible]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_estructural_siempre_registra_antes_de_terminar[version]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_estructural_siempre_registra_antes_de_terminar[columnas]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_estructural_siempre_registra_antes_de_terminar[propiedad_raiz]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_estructural_siempre_registra_antes_de_terminar[propiedad_movimiento]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_estructural_siempre_registra_antes_de_terminar[omitido_invalido]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_creacion_fallida_o_timeout_reconsulta_y_continua[False-Failed]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_creacion_fallida_o_timeout_reconsulta_y_continua[False-TimedOut]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_creacion_fallida_o_timeout_reconsulta_y_continua[True-Failed]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_creacion_fallida_o_timeout_reconsulta_y_continua[True-TimedOut]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_reconsulta_fallida_es_error_de_fila_y_no_del_lote[Failed]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_reconsulta_fallida_es_error_de_fila_y_no_del_lote[TimedOut]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_fallo_preconsulta_es_estructural_y_cero_creaciones",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_fallo_lectura_tiene_archivo_del_trigger",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_fallo_escritura_bitacora_no_se_oculta_ni_termina_exitoso",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_trigger_sharepoint_filtra_nombres_reales[MANIFIESTO_P7__x.json-False]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_trigger_sharepoint_filtra_nombres_reales[DEPOSITOS_ACTIVOS__x.csv-False]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_trigger_sharepoint_filtra_nombres_reales[otro.json-False]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_trigger_sharepoint_filtra_nombres_reales[DEPOSITOS_ACTIVOS__x.json-True]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_configuracion_binaria_no_adivina_otra_forma",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_error_con_omitidos_conserva_fila_original_y_no_expone_secreto",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_diagnostico_acotado_mantiene_json_valido_con_textos_largos",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_extremos_con_utc_y_fecha_testigo_julio_nueve",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_apostrofos_odata_se_escapan_sin_modificar_clave",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_conjunto_ampliado_cubre_fixtures_sin_cambios",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_12_flujo_p8.py::test_lote_vacio_valido",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_provision_y_reproceso_sin_ninguna_escritura",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_diferencias_no_reparan_ni_destruyen_datos[Required-False]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_diferencias_no_reparan_ni_destruyen_datos[Indexed-False]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_diferencias_no_reparan_ni_destruyen_datos[EnforceUniqueValues-False]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_diferencias_no_reparan_ni_destruyen_datos[TypeAsString-Number]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_diferencias_no_reparan_ni_destruyen_datos[Hidden-True]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_diferencias_no_reparan_ni_destruyen_datos[ReadOnlyField-True]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_diferencias_no_reparan_ni_destruyen_datos[DefaultValue-otro]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_formato_xml_final_se_comprueba[FECHA_MOVIMIENTO-Format-DateTime]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_formato_xml_final_se_comprueba[FECHA_HORA_ASIGNACION-Format-DateOnly]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_formato_xml_final_se_comprueba[IMPORTE-Decimals-0]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_formato_xml_final_se_comprueba[IMPORTE-Percentage-TRUE]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_formato_xml_final_se_comprueba[OBSERVACION-RichText-TRUE]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_formato_xml_final_se_comprueba[OBSERVACION-AppendOnly-TRUE]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_formato_xml_final_se_comprueba[ESTADO_ASIGNACION-FillInChoice-TRUE]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_opciones_exactas_y_predeterminado",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_nombre_interno_codificado_no_se_confunde_con_titulo",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_sha256_definicion_exige_tres_nombres_exactos_e_identidad_explicita",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_sha256_codificado_preexistente_falla_sin_reparar_ni_borrar[False]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_sha256_codificado_preexistente_falla_sin_reparar_ni_borrar[True]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_sha256_post_200_con_nombre_codificado_no_certifica_exito",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_sha256_recrear_cargas_conserva_activos_y_es_idempotente",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_lista_parcial_agrega_solo_lo_que_falta_y_conserva_title",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_columna_adicional_se_reporta_y_conserva",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_errores_no_producen_ok_y_siempre_resumen[Buscar_lista-Failed-403]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_errores_no_producen_ok_y_siempre_resumen[Crear_lista-TimedOut-504]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_errores_no_producen_ok_y_siempre_resumen[Crear_columna-Failed-500]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_errores_no_producen_ok_y_siempre_resumen[Configurar_columna_nueva-Failed-403]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_errores_no_producen_ok_y_siempre_resumen[Exigir_unicidad-Failed-400]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_errores_no_producen_ok_y_siempre_resumen[Campos_finales-TimedOut-504]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_errores_no_producen_ok_y_siempre_resumen[Leer_lista_final-Failed-404]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_errores_no_producen_ok_y_siempre_resumen[Configurar_Title-Failed-403]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_exito_post_no_sustituye_a_verificacion_final",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_schema_xml_invalido_identifica_columna_y_continua",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_paginacion_no_certifica_inventario_parcial[Campos_antes]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_paginacion_no_certifica_inventario_parcial[Campos_finales]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_listas_incompatibles_no_se_alteran[ContentTypesEnabled-True]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_listas_incompatibles_no_se_alteran[BaseTemplate-101]",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_contrato_unica_fuente",
-      "estado": "PASS",
-      "motivo": ""
-    },
-    {
-      "id": "test_13_provision_p8.py::test_paquete_independiente_reproducible_y_grafo_valido",
-      "estado": "PASS",
-      "motivo": ""
-    }
-  ],
-  "fuente": "p8/esquema_listas_p8.json",
-  "sha256_fuente": "9eab09805bc3e6ce2e1b3762fab804ea7c36ecfc648ec920d2a6550aaadfd228",
-  "zip": "P8_PROVISIONAR_LISTAS.zip",
-  "sha256_zip": "a10b23c095b13280af0fa9422ae17a8ccff4a2982aa4dba36adb001cd84a107d",
-  "sha256_plantilla_carga_preservada": "3bcb8d5ba1ab12dcdc3d846ea1f0314c91b0ffbce33b13be20071fa59b13906c",
+  "revision": "V3_HASH_SHA256",
+  "estado": "VALIDACION_LOCAL_OK_TENANT_V3_PENDIENTE",
   "rama": "candidate/p8-m365-pilot",
-  "HEAD_sin_nuevo_commit": "046e31cba50143c8a667e322b03b9ff469d42df4",
   "main": "673754a9b69072e6960bbf0c7ffb0f50dc5d2670",
-  "archivos_preexistentes_identicos": 118,
-  "diff_versionado": [
+  "contrato": {
+    "fuente": "p8/esquema_listas_p8.json",
+    "sha256": "6fbd6a618b9b990c698abcf5693ad9684e86e3c6b725c007d84861c40dad7563",
+    "nombre_logico": "SHA256",
+    "nombre_visible": "SHA256",
+    "InternalName": "HASH_SHA256"
+  },
+  "creacion": {
+    "Name": "HASH_SHA256",
+    "StaticName": "HASH_SHA256",
+    "DisplayName_inicial": "HASH_SHA256",
+    "Options": 9,
+    "ID_especial": false,
+    "actualizacion_por_GUID": "Title=SHA256"
+  },
+  "verificacion_final": {
+    "InternalName": "HASH_SHA256",
+    "Title": "SHA256"
+  },
+  "bitacora": {
+    "parametro": "item/HASH_SHA256",
+    "valor": "@variables('varSha256')",
+    "origen_P7": "sha256_archivo_fuente",
+    "unico_cambio_en_WDL_de_carga": true
+  },
+  "pruebas": {
+    "p8": {
+      "comando": "python -m pytest -q tests/test_12_flujo_p8.py tests/test_13_provision_p8.py",
+      "PASS": 78,
+      "FAIL": 0,
+      "log": "p8/provision/pruebas_provision.log",
+      "salida": "........................................................................ [ 92%]\n......                                                                   [100%]\n78 passed in 14.56s\n"
+    },
+    "p7_adaptador": {
+      "comando": "python -m pytest -q tests/test_11_adaptador_m365_p7.py",
+      "PASS": 45,
+      "FAIL": 0,
+      "salida": ".............................................                            [100%]\n45 passed in 19.01s\n"
+    },
+    "nombres_visibles_y_recursos_independientes": true
+  },
+  "proteccion": {
+    "archivos_P6_P7_motor_adaptador_doradas_identicos": 91,
+    "Depositos_Activos_contrato_y_plan_identicos": true,
+    "otras_12_columnas_Cargas_identicas": true,
+    "paquetes_historicos_identicos": [
+      "P8_CARGA_DEPOSITOS_ACTIVOS.zip",
+      "P8_PROVISIONAR_LISTAS.zip",
+      "P8_PROVISIONAR_LISTAS_V2_SHA256.zip",
+      "ENTREGABLES_P8_CONTROL_DEPOSITOS_CBBA.zip"
+    ]
+  },
+  "paquetes": {
+    "P8_PROVISIONAR_LISTAS_V3_HASH_SHA256.zip": {
+      "bytes": 8454,
+      "sha256": "fec77dd0d40c4bf869ed006d4da140bd8e36d8f50f0d8615e7f6a3694fa1dc43",
+      "integridad_zip": true,
+      "nombre_visible": "P8_PROVISIONAR_LISTAS_V3_HASH_SHA256",
+      "nombre_manifiesto_y_definicion_verificado": true
+    },
+    "P8_CARGA_DEPOSITOS_ACTIVOS_V3_HASH_SHA256.zip": {
+      "bytes": 6861,
+      "sha256": "16403a21a18985aabf59238fa128f895d09416c2bb2cdc0685562a5fa503fafc",
+      "integridad_zip": true,
+      "nombre_visible": "P8_CARGA_DEPOSITOS_ACTIVOS_V3_HASH_SHA256",
+      "nombre_manifiesto_y_definicion_verificado": true
+    }
+  },
+  "provision_primera_simulada": {
+    "PROVISION_P8": "OK",
+    "resultado": "PROVISION_P8 = OK",
+    "fuente": "p8/esquema_listas_p8.json",
+    "sha256_contrato": "6fbd6a618b9b990c698abcf5693ad9684e86e3c6b725c007d84861c40dad7563",
+    "listas": [
+      {
+        "lista": "Depositos_Activos",
+        "esperadas": 34,
+        "presentes": 34,
+        "verificacion_columnas": "Succeeded"
+      },
+      {
+        "lista": "Depositos_Cargas",
+        "esperadas": 13,
+        "presentes": 13,
+        "verificacion_columnas": "Succeeded"
+      }
+    ],
+    "diferencias": [],
+    "ejecucion": "EJECUCION_LOCAL_NO_TENANT"
+  },
+  "provision_reproceso_simulado": {
+    "resumen": {
+      "PROVISION_P8": "OK",
+      "resultado": "PROVISION_P8 = OK",
+      "fuente": "p8/esquema_listas_p8.json",
+      "sha256_contrato": "6fbd6a618b9b990c698abcf5693ad9684e86e3c6b725c007d84861c40dad7563",
+      "listas": [
+        {
+          "lista": "Depositos_Activos",
+          "esperadas": 34,
+          "presentes": 34,
+          "verificacion_columnas": "Succeeded"
+        },
+        {
+          "lista": "Depositos_Cargas",
+          "esperadas": 13,
+          "presentes": 13,
+          "verificacion_columnas": "Succeeded"
+        }
+      ],
+      "diferencias": [],
+      "ejecucion": "EJECUCION_LOCAL_NO_TENANT"
+    },
+    "POST": 0
+  },
+  "carga_y_reproceso_simulados": {
+    "flujo": "P8_CARGA_DEPOSITOS_ACTIVOS_V3_HASH_SHA256",
+    "tipo_de_evidencia": "Ensayo local del WDL; no ejecución Microsoft",
+    "primera_ejecucion": {
+      "CANTIDAD_RECIBIDA": 8,
+      "CANTIDAD_VALIDA": 8,
+      "CANTIDAD_NUEVA": 8,
+      "CANTIDAD_YA_EXISTE": 0,
+      "CANTIDAD_ERROR": 0,
+      "ESTADO_LOTE/Value": "COMPLETADO",
+      "coincidencias_preconsulta": 0,
+      "intentos_crear": 8,
+      "elementos_finales": 8,
+      "HASH_SHA256": "3af418fcadd6fd848a5957af5225222a8f9e753254269514cd719a718d35c83e"
+    },
+    "segunda_ejecucion": {
+      "CANTIDAD_RECIBIDA": 8,
+      "CANTIDAD_VALIDA": 8,
+      "CANTIDAD_NUEVA": 0,
+      "CANTIDAD_YA_EXISTE": 8,
+      "CANTIDAD_ERROR": 0,
+      "ESTADO_LOTE/Value": "COMPLETADO",
+      "coincidencias_preconsulta": 8,
+      "intentos_crear": 0,
+      "elementos_finales": 8,
+      "HASH_SHA256": "3af418fcadd6fd848a5957af5225222a8f9e753254269514cd719a718d35c83e"
+    }
+  },
+  "observacion_real_V2_reportada_por_usuario": {
+    "Title": "SHA256",
+    "InternalName": "_x0053_HA256",
+    "ID_explicito_no_resolvio": true
+  },
+  "tenant_V3_ejecutado": false,
+  "migracion_automatica": false,
+  "borrado_automatico": false,
+  "diff_archivos": [
     "DOCUMENTACION_PROVISION_P8.md",
-    "P8_PROVISIONAR_LISTAS.zip",
+    "DOCUMENTACION_TECNICA_P8.md",
+    "P8_CARGA_DEPOSITOS_ACTIVOS_V3_HASH_SHA256.zip",
+    "P8_PROVISIONAR_LISTAS_V3_HASH_SHA256.zip",
+    "REPORTE_CORRECCION_P8.md",
+    "p8/construir_paquete_p8.py",
+    "p8/definicion.py",
+    "p8/esquema_listas_p8.json",
+    "p8/flujo_p8_definition.json",
     "p8/provision/construir.py",
     "p8/provision/ensayo.py",
     "p8/provision/evidencia_validacion.json",
     "p8/provision/flujo_provision_definition.json",
     "p8/provision/plan_provision.json",
     "p8/provision/pruebas_provision.log",
+    "p8/validar_p8.py",
+    "tests/test_12_flujo_p8.py",
     "tests/test_13_provision_p8.py"
   ],
-  "ensayo_primera_ejecucion": {
-    "resumen": {
-      "PROVISION_P8": "OK",
-      "resultado": "PROVISION_P8 = OK",
-      "fuente": "p8/esquema_listas_p8.json",
-      "sha256_contrato": "9eab09805bc3e6ce2e1b3762fab804ea7c36ecfc648ec920d2a6550aaadfd228",
-      "listas": [
-        {
-          "lista": "Depositos_Activos",
-          "esperadas": 34,
-          "presentes": 34,
-          "verificacion_columnas": "Succeeded"
-        },
-        {
-          "lista": "Depositos_Cargas",
-          "esperadas": 13,
-          "presentes": 13,
-          "verificacion_columnas": "Succeeded"
-        }
-      ],
-      "diferencias": [],
-      "ejecucion": "EJECUCION_LOCAL_NO_TENANT"
-    },
-    "GET": 14,
-    "POST": 99,
-    "alcance": "SIMULACION_LOCAL_NO_TENANT"
-  },
-  "ensayo_reproceso": {
-    "resumen": {
-      "PROVISION_P8": "OK",
-      "resultado": "PROVISION_P8 = OK",
-      "fuente": "p8/esquema_listas_p8.json",
-      "sha256_contrato": "9eab09805bc3e6ce2e1b3762fab804ea7c36ecfc648ec920d2a6550aaadfd228",
-      "listas": [
-        {
-          "lista": "Depositos_Activos",
-          "esperadas": 34,
-          "presentes": 34,
-          "verificacion_columnas": "Succeeded"
-        },
-        {
-          "lista": "Depositos_Cargas",
-          "esperadas": 13,
-          "presentes": 13,
-          "verificacion_columnas": "Succeeded"
-        }
-      ],
-      "diferencias": [],
-      "ejecucion": "EJECUCION_LOCAL_NO_TENANT"
-    },
-    "GET": 14,
-    "alcance": "SIMULACION_LOCAL_NO_TENANT",
-    "POST": 0
-  },
-  "importacion_tenant_verificada": false,
-  "archivos_p7_identicos": 91,
-  "definicion_cambio_unico": "Contrato_compilado: Depositos_Cargas.SHA256.Crear.parameters.SchemaXml.ID",
-  "verificador_identico_a_commit_anterior": true,
-  "correccion_sha256_verificada_en_tenant": false,
-  "observacion_real_usuario": {
-    "PROVISION_P8": "FAIL",
-    "Depositos_Activos": {
-      "esperadas": 34,
-      "presentes": 34
-    },
-    "Depositos_Cargas": {
-      "esperadas": 13,
-      "presentes": 12,
-      "SHA256": {
-        "InternalName": "_x0053_HA256",
-        "Title": "SHA256"
-      }
-    }
-  },
-  "limite": "El ID explícito completa la identidad XML, pero su efecto sobre la normalización A1 no está confirmado. Las pruebas locales NO prueban que SharePoint conserve SHA256.",
-  "ensayo_respuesta_codificada_con_id": {
-    "resumen": {
-      "PROVISION_P8": "FAIL",
-      "resultado": "PROVISION_P8 = FAIL",
-      "fuente": "p8/esquema_listas_p8.json",
-      "sha256_contrato": "9eab09805bc3e6ce2e1b3762fab804ea7c36ecfc648ec920d2a6550aaadfd228",
-      "listas": [
-        {
-          "lista": "Depositos_Activos",
-          "esperadas": 34,
-          "presentes": 34,
-          "verificacion_columnas": "Succeeded"
-        },
-        {
-          "lista": "Depositos_Cargas",
-          "esperadas": 13,
-          "presentes": 12,
-          "verificacion_columnas": "Succeeded"
-        }
-      ],
-      "diferencias": [
-        {
-          "lista": "Depositos_Cargas",
-          "campo": "",
-          "propiedad": "CANTIDAD_COLUMNAS_TECNICAS",
-          "esperado": 13,
-          "actual": 12
-        },
-        {
-          "lista": "Depositos_Cargas",
-          "campo": "_x0053_HA256",
-          "propiedad": "COLUMNA_ADICIONAL",
-          "esperado": "Ninguna columna de usuario fuera del contrato",
-          "actual": "SHA256"
-        },
-        {
-          "lista": "Depositos_Cargas",
-          "campo": "SHA256",
-          "propiedad": "InternalName",
-          "esperado": "SHA256",
-          "actual": "Ausente o no único con ese nombre interno exacto"
-        }
-      ],
-      "ejecucion": "EJECUCION_LOCAL_NO_TENANT"
-    },
-    "GET": 14,
-    "POST": 99,
-    "alcance": "SIMULACION_LOCAL_NO_TENANT"
+  "commit_base_validado": "93c16475bfe5b188cd05a53a999950daa22aa773",
+  "publicacion_autorizada": {
+    "rama": "candidate/p8-m365-pilot",
+    "main_sin_cambios": true,
+    "checkpoint_p8": false
   }
 }

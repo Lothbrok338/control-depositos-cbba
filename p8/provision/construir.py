@@ -17,8 +17,8 @@ RAIZ = Path(__file__).resolve().parents[2]
 CARPETA = Path(__file__).resolve().parent
 FUENTE = RAIZ / "p8/esquema_listas_p8.json"
 PLANTILLA = RAIZ / "P8_CARGA_DEPOSITOS_ACTIVOS.zip"
-SALIDA = RAIZ / "P8_PROVISIONAR_LISTAS.zip"
-NOMBRE = "P8_PROVISIONAR_LISTAS"
+NOMBRE = "P8_PROVISIONAR_LISTAS_V3_HASH_SHA256"
+SALIDA = RAIZ / f"{NOMBRE}.zip"
 TODOS = ["Succeeded", "Failed", "Skipped", "TimedOut"]
 FALLOS = ["Failed", "TimedOut"]
 API = "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
@@ -50,21 +50,17 @@ def compilar(esquema):
             # unicidad vía REST. Solo se actualizan los campos creados aquí.
             attrs = dict(Name=n, StaticName=n, DisplayName=n, Type=tipo,
                          Required=str(c["obligatoria"]).upper(), Hidden="FALSE")
-            if nombre == "Depositos_Cargas" and n == "SHA256":
-                # Identidad declarativa completa para el campo afectado por la
-                # normalización de nombres A1 de SharePoint. Es un ID NUEVO de
-                # nuestra definición, no un identificador supuesto del tenant.
-                # No cambiar Options=9: ya contiene AddFieldInternalNameHint=8.
-                # El ID no sustituye la comprobación final de InternalName;
-                # su efecto sobre la codificación A1 requiere prueba real.
-                attrs["ID"] = "{" + str(uuid.uuid5(
-                    uuid.NAMESPACE_URL, "control-depositos-cbba:p8:Depositos_Cargas:SHA256"
-                )) + "}"
+            # Crear siempre con el nombre técnico también como título inicial.
+            # Si existe un título lógico distinto, se asigna después por GUID:
+            # así SHA256 nunca participa en la generación del InternalName.
             esperado = {"InternalName": n, "TypeAsString": tipo,
                         "Required": c["obligatoria"], "Indexed": c["indexada"],
                         "EnforceUniqueValues": c["valores_unicos"],
                         "Hidden": False, "ReadOnlyField": False,
                         "DefaultValue": c.get("predeterminado", "")}
+            if "nombre_visible" in c:
+                assert isinstance(c["nombre_visible"], str) and 0 < len(c["nombre_visible"]) <= 255
+                esperado["Title"] = c["nombre_visible"]
             if tipo == "Text":
                 attrs["MaxLength"] = "255"
             elif tipo == "Note":
@@ -90,10 +86,12 @@ def compilar(esquema):
                 ET.SubElement(xml, "Default").text = c["predeterminado"]
             campos.append({
                 "Nombre": n,
+                **({"NombreVisible": c["nombre_visible"]} if "nombre_visible" in c else {}),
                 "Crear": {"parameters": {"__metadata": {"type": "SP.XmlSchemaFieldCreationInformation"},
                           "SchemaXml": ET.tostring(xml, encoding="unicode"), "Options": 9}},
                 "Configurar": {"__metadata": {"type": metadata}, "Required": c["obligatoria"],
-                               "Indexed": c["indexada"], "DefaultValue": c.get("predeterminado", "")},
+                               "Indexed": c["indexada"], "DefaultValue": c.get("predeterminado", ""),
+                               **({"Title": c["nombre_visible"]} if "nombre_visible" in c else {})},
                 "Unicidad": {"__metadata": {"type": metadata}, "EnforceUniqueValues": True},
                 "ExigeUnicidad": c["valores_unicos"],
                 "Propiedades": [{"propiedad": k, "esperado": v} for k, v in esperado.items()],
@@ -173,7 +171,7 @@ def observado():
     xml = f"xml({campo}?['SchemaXml'])"
     # SchemaXml es leído, nunca comparado como texto crudo; SharePoint puede
     # reordenar atributos. Atributos booleanos XML ausentes tienen valor false.
-    result = {p: f"@{campo}?['{p}']" for p in ["InternalName", "TypeAsString", "Required", "Indexed", "EnforceUniqueValues", "Hidden", "ReadOnlyField"]}
+    result = {p: f"@{campo}?['{p}']" for p in ["InternalName", "Title", "TypeAsString", "Required", "Indexed", "EnforceUniqueValues", "Hidden", "ReadOnlyField"]}
     result["DefaultValue"] = f"@coalesce({campo}?['DefaultValue'],'')"
     result["Choices"] = f"@xpath({xml},'/Field/CHOICES/CHOICE/text()')"
     for p in ["RichText", "AppendOnly", "FillInChoice", "Percentage"]:
@@ -200,7 +198,7 @@ def construir_definicion(plan, sha):
         "unicidad": "@actions('Exigir_unicidad')?['status']", "http_unicidad": "@outputs('Exigir_unicidad')?['statusCode']"})
     error_campo["runAfter"] = {"Crear_solo_si_ausente": FALLOS}
     columnas = cada("@items('Provisionar_listas')?['Campos']", secuencia(
-        Colision_nombre_o_titulo=query("@body('Campos_antes')?['value']", "@or(equals(toLower(item()?['InternalName']),toLower(items('Provisionar_columnas')?['Nombre'])),equals(toLower(item()?['Title']),toLower(items('Provisionar_columnas')?['Nombre'])))"),
+        Colision_nombre_o_titulo=query("@body('Campos_antes')?['value']", "@or(equals(toLower(item()?['InternalName']),toLower(items('Provisionar_columnas')?['Nombre'])),equals(toLower(item()?['Title']),toLower(items('Provisionar_columnas')?['Nombre'])),equals(toLower(item()?['Title']),toLower(coalesce(items('Provisionar_columnas')?['NombreVisible'],items('Provisionar_columnas')?['Nombre']))))"),
         Crear_solo_si_ausente=crear_campo, Error_creacion_columna=error_campo))
     preparar = secuencia(
         Buscar_lista=http("GET", "@items('Provisionar_listas')?['Buscar']"),
@@ -295,7 +293,7 @@ def empaquetar(definicion):
     manifest = archivos["manifest.json"]
     definition_path = next(n for n in archivos if n.endswith("/definition.json"))
     ids = list(manifest["resources"]) + [archivos[definition_path]["name"], manifest["details"]["packageTelemetryId"]]
-    replacements = {old: str(uuid.uuid5(uuid.NAMESPACE_URL, "control-depositos-cbba:provision-p8:" + old)) for old in ids}
+    replacements = {old: str(uuid.uuid5(uuid.NAMESPACE_URL, "control-depositos-cbba:provision-p8:v3-hash-sha256:" + old)) for old in ids}
     def sustituir(valor):
         if isinstance(valor, dict):
             return {sustituir(k): sustituir(v) for k, v in valor.items()}
