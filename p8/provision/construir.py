@@ -50,6 +50,16 @@ def compilar(esquema):
             # unicidad vía REST. Solo se actualizan los campos creados aquí.
             attrs = dict(Name=n, StaticName=n, DisplayName=n, Type=tipo,
                          Required=str(c["obligatoria"]).upper(), Hidden="FALSE")
+            if nombre == "Depositos_Cargas" and n == "SHA256":
+                # Identidad declarativa completa para el campo afectado por la
+                # normalización de nombres A1 de SharePoint. Es un ID NUEVO de
+                # nuestra definición, no un identificador supuesto del tenant.
+                # No cambiar Options=9: ya contiene AddFieldInternalNameHint=8.
+                # El ID no sustituye la comprobación final de InternalName;
+                # su efecto sobre la codificación A1 requiere prueba real.
+                attrs["ID"] = "{" + str(uuid.uuid5(
+                    uuid.NAMESPACE_URL, "control-depositos-cbba:p8:Depositos_Cargas:SHA256"
+                )) + "}"
             esperado = {"InternalName": n, "TypeAsString": tipo,
                         "Required": c["obligatoria"], "Indexed": c["indexada"],
                         "EnforceUniqueValues": c["valores_unicos"],

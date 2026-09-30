@@ -55,11 +55,15 @@ class SharePointREST:
         self.llamadas = []
         self.fallos = {}
         self.al_verificar = None
+        # Inyectar respuestas observadas sin suponer que un ID XML impide
+        # la normalización del nombre en todas las versiones de SharePoint.
+        self.al_crear = None
         self.paginar = set()
 
     def _campo_xml(self, schema, base=False):
         e = ET.fromstring(schema)
-        return {"Id": str(uuid.uuid5(uuid.NAMESPACE_DNS, schema)), "InternalName": e.get("Name"),
+        identificador = uuid.UUID(e.get("ID")) if e.get("ID") else uuid.uuid5(uuid.NAMESPACE_DNS, schema)
+        return {"Id": str(identificador), "InternalName": e.get("Name"),
                 "Title": e.get("DisplayName", e.get("Name")), "TypeAsString": e.get("Type"),
                 "Required": e.get("Required", "FALSE").upper() == "TRUE",
                 "Indexed": e.get("Indexed", "FALSE").upper() == "TRUE", "EnforceUniqueValues": False,
@@ -114,6 +118,8 @@ class SharePointREST:
             assert data["Options"] == 9
             assert data["__metadata"]["type"] == "SP.XmlSchemaFieldCreationInformation"
             campo = self._campo_xml(data["SchemaXml"])
+            if self.al_crear:
+                self.al_crear(titulo, campo)
             if campo["InternalName"] in lista["fields"]:
                 raise FalloConector("Failed", 409)
             lista["fields"][campo["InternalName"]] = campo

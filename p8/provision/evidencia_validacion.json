@@ -1,8 +1,8 @@
 {
-  "estado": "VALIDACION_LOCAL_OK_TENANT_PENDIENTE",
+  "estado": "CANDIDATO_LOCAL_OK_CORRECCION_TENANT_NO_CONFIRMADA",
   "comando_pruebas": "python -m pytest -q tests/test_12_flujo_p8.py tests/test_13_provision_p8.py",
   "resultados": {
-    "PASS": 63
+    "PASS": 68
   },
   "pruebas": [
     {
@@ -231,6 +231,31 @@
       "motivo": ""
     },
     {
+      "id": "test_13_provision_p8.py::test_sha256_definicion_exige_tres_nombres_exactos_e_identidad_explicita",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_sha256_codificado_preexistente_falla_sin_reparar_ni_borrar[False]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_sha256_codificado_preexistente_falla_sin_reparar_ni_borrar[True]",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_sha256_post_200_con_nombre_codificado_no_certifica_exito",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
+      "id": "test_13_provision_p8.py::test_sha256_recrear_cargas_conserva_activos_y_es_idempotente",
+      "estado": "PASS",
+      "motivo": ""
+    },
+    {
       "id": "test_13_provision_p8.py::test_lista_parcial_agrega_solo_lo_que_falta_y_conserva_title",
       "estado": "PASS",
       "motivo": ""
@@ -324,13 +349,23 @@
   "fuente": "p8/esquema_listas_p8.json",
   "sha256_fuente": "9eab09805bc3e6ce2e1b3762fab804ea7c36ecfc648ec920d2a6550aaadfd228",
   "zip": "P8_PROVISIONAR_LISTAS.zip",
-  "sha256_zip": "2b67614a2ac760505a4d873d474b0ba3195f3c03dca34169f68b33d1084462a8",
+  "sha256_zip": "a10b23c095b13280af0fa9422ae17a8ccff4a2982aa4dba36adb001cd84a107d",
   "sha256_plantilla_carga_preservada": "3bcb8d5ba1ab12dcdc3d846ea1f0314c91b0ffbce33b13be20071fa59b13906c",
   "rama": "candidate/p8-m365-pilot",
-  "HEAD_sin_nuevo_commit": "a0c1697aefde79366e6cddea4b0a9fe15b2f8edc",
+  "HEAD_sin_nuevo_commit": "046e31cba50143c8a667e322b03b9ff469d42df4",
   "main": "673754a9b69072e6960bbf0c7ffb0f50dc5d2670",
   "archivos_preexistentes_identicos": 118,
-  "diff_versionado": [],
+  "diff_versionado": [
+    "DOCUMENTACION_PROVISION_P8.md",
+    "P8_PROVISIONAR_LISTAS.zip",
+    "p8/provision/construir.py",
+    "p8/provision/ensayo.py",
+    "p8/provision/evidencia_validacion.json",
+    "p8/provision/flujo_provision_definition.json",
+    "p8/provision/plan_provision.json",
+    "p8/provision/pruebas_provision.log",
+    "tests/test_13_provision_p8.py"
+  ],
   "ensayo_primera_ejecucion": {
     "resumen": {
       "PROVISION_P8": "OK",
@@ -355,7 +390,8 @@
       "ejecucion": "EJECUCION_LOCAL_NO_TENANT"
     },
     "GET": 14,
-    "POST": 99
+    "POST": 99,
+    "alcance": "SIMULACION_LOCAL_NO_TENANT"
   },
   "ensayo_reproceso": {
     "resumen": {
@@ -381,7 +417,77 @@
       "ejecucion": "EJECUCION_LOCAL_NO_TENANT"
     },
     "GET": 14,
+    "alcance": "SIMULACION_LOCAL_NO_TENANT",
     "POST": 0
   },
-  "importacion_tenant_verificada": false
+  "importacion_tenant_verificada": false,
+  "archivos_p7_identicos": 91,
+  "definicion_cambio_unico": "Contrato_compilado: Depositos_Cargas.SHA256.Crear.parameters.SchemaXml.ID",
+  "verificador_identico_a_commit_anterior": true,
+  "correccion_sha256_verificada_en_tenant": false,
+  "observacion_real_usuario": {
+    "PROVISION_P8": "FAIL",
+    "Depositos_Activos": {
+      "esperadas": 34,
+      "presentes": 34
+    },
+    "Depositos_Cargas": {
+      "esperadas": 13,
+      "presentes": 12,
+      "SHA256": {
+        "InternalName": "_x0053_HA256",
+        "Title": "SHA256"
+      }
+    }
+  },
+  "limite": "El ID explícito completa la identidad XML, pero su efecto sobre la normalización A1 no está confirmado. Las pruebas locales NO prueban que SharePoint conserve SHA256.",
+  "ensayo_respuesta_codificada_con_id": {
+    "resumen": {
+      "PROVISION_P8": "FAIL",
+      "resultado": "PROVISION_P8 = FAIL",
+      "fuente": "p8/esquema_listas_p8.json",
+      "sha256_contrato": "9eab09805bc3e6ce2e1b3762fab804ea7c36ecfc648ec920d2a6550aaadfd228",
+      "listas": [
+        {
+          "lista": "Depositos_Activos",
+          "esperadas": 34,
+          "presentes": 34,
+          "verificacion_columnas": "Succeeded"
+        },
+        {
+          "lista": "Depositos_Cargas",
+          "esperadas": 13,
+          "presentes": 12,
+          "verificacion_columnas": "Succeeded"
+        }
+      ],
+      "diferencias": [
+        {
+          "lista": "Depositos_Cargas",
+          "campo": "",
+          "propiedad": "CANTIDAD_COLUMNAS_TECNICAS",
+          "esperado": 13,
+          "actual": 12
+        },
+        {
+          "lista": "Depositos_Cargas",
+          "campo": "_x0053_HA256",
+          "propiedad": "COLUMNA_ADICIONAL",
+          "esperado": "Ninguna columna de usuario fuera del contrato",
+          "actual": "SHA256"
+        },
+        {
+          "lista": "Depositos_Cargas",
+          "campo": "SHA256",
+          "propiedad": "InternalName",
+          "esperado": "SHA256",
+          "actual": "Ausente o no único con ese nombre interno exacto"
+        }
+      ],
+      "ejecucion": "EJECUCION_LOCAL_NO_TENANT"
+    },
+    "GET": 14,
+    "POST": 99,
+    "alcance": "SIMULACION_LOCAL_NO_TENANT"
+  }
 }

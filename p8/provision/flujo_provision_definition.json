@@ -2486,7 +2486,7 @@
                   "__metadata": {
                     "type": "SP.XmlSchemaFieldCreationInformation"
                   },
-                  "SchemaXml": "<Field Name=\"SHA256\" StaticName=\"SHA256\" DisplayName=\"SHA256\" Type=\"Text\" Required=\"TRUE\" Hidden=\"FALSE\" MaxLength=\"255\" />",
+                  "SchemaXml": "<Field Name=\"SHA256\" StaticName=\"SHA256\" DisplayName=\"SHA256\" Type=\"Text\" Required=\"TRUE\" Hidden=\"FALSE\" ID=\"{e8466569-991d-50aa-b274-0f432a943ae2}\" MaxLength=\"255\" />",
                   "Options": 9
                 }
               },

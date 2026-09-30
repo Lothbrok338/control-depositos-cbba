@@ -2,6 +2,7 @@
 import copy
 import hashlib
 import json
+import uuid
 import zipfile
 from xml.etree import ElementTree as ET
 
@@ -92,6 +93,104 @@ def test_nombre_interno_codificado_no_se_confunde_con_titulo(definicion):
     assert "CLAVE_TRANSACCION" not in l["fields"]
     assert any(d["campo"]=="CLAVE_TRANSACCION" and d["propiedad"]=="InternalName" for d in resumen(e)["diferencias"])
     assert any(d["propiedad"]=="CANTIDAD_COLUMNAS_TECNICAS" and d["actual"]==33 for d in resumen(e)["diferencias"])
+
+
+def test_sha256_definicion_exige_tres_nombres_exactos_e_identidad_explicita(definicion):
+    plan = definicion["actions"]["Contrato_compilado"]["inputs"]
+    cargas = next(l for l in plan if l["Nombre"] == "Depositos_Cargas")
+    campo = next(c for c in cargas["Campos"] if c["Nombre"] == "SHA256")
+    parametros = campo["Crear"]["parameters"]
+    xml = ET.fromstring(parametros["SchemaXml"])
+    assert {a: xml.get(a) for a in ("Name", "StaticName", "DisplayName")} == {
+        "Name": "SHA256", "StaticName": "SHA256", "DisplayName": "SHA256"}
+    assert xml.get("ID") == "{" + str(uuid.uuid5(
+        uuid.NAMESPACE_URL, "control-depositos-cbba:p8:Depositos_Cargas:SHA256")) + "}"
+    assert parametros["Options"] == 1 | 8
+    assert {p["propiedad"]: p["esperado"] for p in campo["Propiedades"]}["InternalName"] == "SHA256"
+    assert [c["Nombre"] for l in plan for c in l["Campos"]
+            if ET.fromstring(c["Crear"]["parameters"]["SchemaXml"]).get("ID")] == ["SHA256"]
+
+
+def codificar_sha256_observado(lista, campo):
+    """Reproduce la respuesta REAL reportada; no modela un bypass hipotético."""
+    if lista == "Depositos_Cargas" and campo["InternalName"] == "SHA256":
+        campo["InternalName"] = "_x0053_HA256"
+        xml = ET.fromstring(campo["SchemaXml"])
+        xml.set("Name", "_x0053_HA256")
+        campo["SchemaXml"] = ET.tostring(xml, encoding="unicode")
+
+
+def comprobar_fallo_sha256(e):
+    r = resumen(e)
+    assert r["PROVISION_P8"] == "FAIL" and e.estado_final == "Failed"
+    assert [(l["lista"], l["presentes"]) for l in r["listas"]] == [
+        ("Depositos_Activos", 34), ("Depositos_Cargas", 12)]
+    assert r["diferencias"] == [
+        {"lista": "Depositos_Cargas", "campo": "", "propiedad": "CANTIDAD_COLUMNAS_TECNICAS",
+         "esperado": 13, "actual": 12},
+        {"lista": "Depositos_Cargas", "campo": "_x0053_HA256", "propiedad": "COLUMNA_ADICIONAL",
+         "esperado": "Ninguna columna de usuario fuera del contrato", "actual": "SHA256"},
+        {"lista": "Depositos_Cargas", "campo": "SHA256", "propiedad": "InternalName",
+         "esperado": "SHA256", "actual": "Ausente o no único con ese nombre interno exacto"},
+    ]
+
+
+@pytest.mark.parametrize("con_datos", [False, True])
+def test_sha256_codificado_preexistente_falla_sin_reparar_ni_borrar(definicion, con_datos):
+    _, sp = ejecutar(definicion)
+    lista = sp.listas["Depositos_Cargas"]
+    campo = lista["fields"].pop("SHA256")
+    codificar_sha256_observado("Depositos_Cargas", campo)
+    lista["fields"][campo["InternalName"]] = campo
+    if con_datos:
+        lista["items"] = [{"ID": 1, "_x0053_HA256": "dato previo"}]
+    antes = copy.deepcopy(sp.listas)
+    sp.llamadas.clear()
+    e, _ = ejecutar(definicion, sp)
+    comprobar_fallo_sha256(e)
+    assert sp.listas == antes
+    assert all(c["metodo"] == "GET" for c in sp.llamadas)
+
+
+def test_sha256_post_200_con_nombre_codificado_no_certifica_exito(definicion):
+    sp = SharePointREST()
+    sp.al_crear = codificar_sha256_observado
+    e, _ = ejecutar(definicion, sp)
+    comprobar_fallo_sha256(e)
+    assert e.estados["Provisionar_listas"] == "Succeeded"
+    # Incluso si el servidor ignora la identidad explícita y responde HTTP 200,
+    # el verificador sigue rechazando exactamente el defecto del piloto real.
+    campo = sp.listas["Depositos_Cargas"]["fields"]["_x0053_HA256"]
+    assert ET.fromstring(campo["SchemaXml"]).get("ID")
+    assert campo["Title"] == "SHA256"
+
+
+def test_sha256_recrear_cargas_conserva_activos_y_es_idempotente(definicion):
+    _, sp = ejecutar(definicion)
+    sp.listas["Depositos_Activos"]["items"] = [{"ID": 1, "CLAVE_TRANSACCION": "conservar"}]
+    activos = copy.deepcopy(sp.listas["Depositos_Activos"])
+    # Estado inicial del ensayo tras la eliminación MANUAL autorizada para
+    # el piloto vacío. El flujo no realiza esta operación.
+    del sp.listas["Depositos_Cargas"]
+    sp.llamadas.clear()
+    e, _ = ejecutar(definicion, sp)
+    assert resumen(e)["PROVISION_P8"] == "OK"
+    assert sp.listas["Depositos_Activos"] == activos
+    assert not any(c["metodo"] == "POST" and "Depositos_Activos" in c["uri"] for c in sp.llamadas)
+    creaciones = [c for c in sp.llamadas if c["accion"] == "Crear_columna"]
+    assert len(creaciones) == 13
+    solicitud = next(c for c in creaciones if
+                     ET.fromstring(c["body"]["parameters"]["SchemaXml"]).get("Name") == "SHA256")
+    xml = ET.fromstring(solicitud["body"]["parameters"]["SchemaXml"])
+    campo = sp.listas["Depositos_Cargas"]["fields"]["SHA256"]
+    assert campo["Id"] == str(uuid.UUID(xml.get("ID")))
+    assert campo["InternalName"] == campo["Title"] == "SHA256"
+    antes = copy.deepcopy(sp.listas)
+    sp.llamadas.clear()
+    e, _ = ejecutar(definicion, sp)
+    assert resumen(e)["PROVISION_P8"] == "OK"
+    assert sp.listas == antes
+    assert all(c["metodo"] == "GET" for c in sp.llamadas)
 
 
 def test_lista_parcial_agrega_solo_lo_que_falta_y_conserva_title(definicion):
