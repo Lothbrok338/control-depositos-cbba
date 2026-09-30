@@ -1,6 +1,6 @@
 # ESTADO DEL PROYECTO — CONTROL DE DEPÓSITOS CBBA (módulo de normalización)
 
-**Fecha:** 2026-09-29 (checkpoint P1+P2 = commit `8c9c09a`, tag `checkpoint-p1-p2`; P3 encima) · **Regla rectora:** NORMALIZAR NUNCA DEBE DESTRUIR INFORMACIÓN DE ORIGEN.
+**Fecha del checkpoint P3:** 2026-09-30 (checkpoint anterior P1+P2 = commit `8c9c09a`, tag local `checkpoint-p1-p2`; checkpoint P3 = rama remota `checkpoint-p3`, el entorno no puede subir tags) · **Regla rectora:** NORMALIZAR NUNCA DEBE DESTRUIR INFORMACIÓN DE ORIGEN.
 
 ## 1. Estado
 
@@ -12,12 +12,13 @@
 | **P1** Captura íntegra de origen | **Terminado** | `captura_origen.py` + paso 15 de `ejecutar_motor` → `ORIGEN.xlsx` |
 | **P2** Pruebas de preservación | **Terminado** | `tests/test_05_preservacion.py` |
 | **D-20** salidas del sistema como extractos | **Corregido** | `descubrir_archivos` excluye `NORMALIZADO*`, `ORIGEN*.xlsx`, `EXTRACTO_HISTORICO_*.xlsx` |
-| **P3** Registro de bancos + motor genérico en modo sombra | **Terminado** | `registro_bancos.json` (6 formatos + 1 rechazado, 13 cuentas), `motor_generico.py`, paso 16 pasivo en `ejecutar_motor`, `tests/test_06_sombra_p3.py`. Producción = solo legado |
-| P3b · P4 · P5 · P6 | No iniciados | |
+| **P3** Registro de bancos + motor genérico en modo sombra | **TERMINADO Y APROBADO** | `registro_bancos.json` (6 formatos + 1 rechazado, 13 cuentas), `motor_generico.py`, paso 16 pasivo en `ejecutar_motor`, `tests/test_06_sombra_p3.py`. Producción = solo legado |
+| **P3b** Capa 4 (EXTRACTO_HISTORICO) | **SIGUIENTE — no iniciado** | |
+| P4 · P5 · P6 | No iniciados | |
 
 ## 2. Resultado de pruebas (suite completa)
 
-**379 PASS · 20 SKIP · 18 XFAIL · 0 FAIL** (≈130 s). Base P1+P2: 270 / 19 / 18; P3 agrega 109 PASS y 1 SKIP (BISA_ME no tiene movimientos para comparar con su dorada).
+**379 PASS · 20 SKIP · 18 XFAIL · 0 FAIL** (≈130 s). **12 formatos reales coinciden al 100 % en sombra** (0 diferencias, 12/12 archivos). **UNION_ME: pendiente de fixture real** (solo proxy sintético en sombra). Base P1+P2: 270 / 19 / 18; P3 agrega 109 PASS y 1 SKIP (BISA_ME no tiene movimientos para comparar con su dorada).
 
 * **PASS (270):** regresión de los 12 formatos contra doradas; lote de 12; preservación P2 (completitud celda a celda, reconstrucción del archivo, mapa 1:1, débitos, cabeceras/pies, metadatos, determinismo de IDs, columnas vacías, NORMALIZADO.xlsx y LISTS.csv idénticos a sus doradas); D-20 (9 nombres excluidos, 4 nombres reales que siguen incluidos, corrida completa con salida = entrada).
 * **SKIP (19):** todos por falta de muestra real. UNION_ME: `REQUIERE MUESTRA REAL CON MOVIMIENTOS` (movimientos, saldos, débitos, `Nro de verificasion`, completitud y mapa) y archivo vacío real pendiente (`union_me_vacio.xls`). 8 pruebas de débitos en formatos sin débitos en su fixture (BCP_ME, BISA_ME, BISA_MN, BMSC, ECO_AHORRO, BNB_AHORRO, BNB_CLINICA, UNION_MN).
@@ -65,9 +66,9 @@ Plan: P1 ✔ · P2 ✔ · **P3** registro + motor genérico en modo sombra · P3
 * **Observación:** las sumas de créditos/débitos de la validación difieren ~1e-10 entre legado y genérico (orden de suma en coma flotante). Se informan como *observación* (tolerancia 1e-6, muy por debajo de la tolerancia 0.01 del motor) y no cuentan como diferencia.
 * Evidencia: `tests/reports/EVIDENCIA_P3_SOMBRA.txt` (A/B contra el motor del checkpoint: LISTS.csv idéntico byte a byte, NORMALIZADO.xlsx idéntico celda a celda, componentes congelados con texto fuente idéntico).
 
-## 5b. Siguiente paso: P3b (no iniciado)
+## 5b. Siguiente paso: P3b (no iniciado; requiere aprobación para empezar)
 
-`registro_bancos.json` con los 13 formatos actuales (`FORMATOS` + `CUENTAS`, con bloque `historico`) y `motor_generico.py` en **modo sombra**: corre en paralelo, compara contra el legado y ante cualquier diferencia falla la prueba, no la producción. La salida sigue siendo la del legado. También llena `CAMPO_CANONICO`, y `BANCO/CUENTA/MONEDA` de extractos sin movimientos.
+Capa 4 (`EXTRACTO_HISTORICO`, ver `DISENO_TRES_CAPAS.md` §6): bloque `historico` de los formatos en `registro_bancos.json`, `historico.py` (función pura + escritor) y `test_06_historico.py`, alimentado del `NORMALIZADO` legado. No depende de P4 ni P5. Sin decidir todavía: ruta de salida, lista de `ESTADO`, formato de fecha y convivencia con `PLANTILLA EXTRACTO.xlsx` (sección 4).
 
 ## 6. Componentes que todavía NO deben modificarse
 
