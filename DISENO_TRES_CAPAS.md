@@ -627,7 +627,16 @@ Los defectos D-01 a D-17 siguen su propio carril (Fase 2). D-18 y D-19 **no se t
 * Sin tocar: `COLUMNAS_LISTS`, `CLAVE TRANSACCIÓN` (`crear_clave`, `valor_clave_numero`, `finalizar_dataframe`), los `normalizar_*`, `validar_archivo`, `encontrar_fila_encabezado`, `leer_tabla_movimientos`, `HOJAS_VALIDAS`, `ENCABEZADOS_ESPERADOS`, primitivas de número/fecha/hora/lectura, `deteccion_registro.py`, `captura_origen.py`, `historico.py`, Power Automate, Lists y Power Apps.
 
 
-## 17. Estado de implementación: P6 (hecho, pendiente de aprobación)
+## 17. Estado de implementación: P6 (hecho y aprobado · checkpoint `checkpoint-p6`)
+
+**Checkpoint P6 (rama remota `checkpoint-p6` = `main` al cerrar P6), vigente desde el checkpoint:**
+1. **P6 es el primer checkpoint sin motor legado ni sombra**: no existen `normalizar_*` por banco, `validar_archivo`, `HOJAS_VALIDAS`, `ENCABEZADOS_ESPERADOS`, `encontrar_fila_encabezado`, `leer_tabla_movimientos`, `aplicar_identidad_registro`, el paso 16 ni el comparador de `motor_generico.py`.
+2. **P5 (`checkpoint-p5`, `0b182e2`) es el último checkpoint capaz de ejecutar la comparación contra el legado** (referencia en sombra, `evidencia_p5_extra.py`, `generar_golden.py`). Para comparar contra el legado: `git worktree add <carpeta> checkpoint-p5`.
+3. **Las doradas actuales (`tests/golden/`, generadas con el motor original) siguen siendo la referencia de regresión histórica**; no se regeneraron en P6 y solo se regeneran con motivo explícito y contra el motor original (checkpoint ≤ P5).
+4. **`CBBA_MOTOR_SOMBRA` queda obsoleto y sin efecto**: el motor ya no lo lee; definirlo no cambia nada.
+5. **Los artefactos `SOMBRA_REPORTE.json` / `SOMBRA_DIFERENCIAS.csv` de corridas anteriores pueden eliminarse**: no forman parte del runtime, ya no se generan ni se actualizan, y `descubrir_archivos` no los toma como extractos.
+6. **Archivos productivos requeridos (únicos)**: `motor_control_depositos_cbba.py`, `deteccion_registro.py`, `motor_generico.py`, `registro_bancos.json`, `captura_origen.py`; más `historico.py` solo para la capa 4 (EXTRACTO_HISTORICO).
+
 
 * Retiro controlado del legado de normalización. Ver `ESTADO_PROYECTO.md` §5f y `tests/reports/EVIDENCIA_P6_RETIRO.txt`.
 * **Retirado:** del motor, los 6 `normalizar_*` por banco, `normalizar_archivo`, `validar_archivo`, `HOJAS_VALIDAS`, `ENCABEZADOS_ESPERADOS`, `encontrar_fila_encabezado`, `leer_tabla_movimientos`, `texto_de_archivo`, `aplicar_identidad_registro` y el paso 16 (referencia legada en sombra, `SOMBRA_REPORTE.json` / `SOMBRA_DIFERENCIAS.csv`, `CBBA_MOTOR_SOMBRA`, clave `sombra_estado`); de `motor_generico.py`, el comparador, la sombra, la detección propia de P3 y el modo script; de `deteccion_registro.py`, el cruce con los normalizadores legados (`formato_legado`, `cuenta_nueva`, `HOJA_INCOMPATIBLE`); del registro, `legado.plantilla_por_hoja`.
