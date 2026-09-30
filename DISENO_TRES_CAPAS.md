@@ -619,7 +619,7 @@ Los defectos D-01 a D-17 siguen su propio carril (Fase 2). D-18 y D-19 **no se t
 * Sin tocar: `COLUMNAS_LISTS`, `CLAVE TRANSACCIÓN`, `normalizar_*`, `finalizar_dataframe`, `validar_archivo`, `encontrar_fila_encabezado`, `leer_tabla_movimientos`, `HOJAS_VALIDAS`, `ENCABEZADOS_ESPERADOS`, `captura_origen.py`, `historico.py`, `motor_generico.py`, Power Automate, Lists y Power Apps.
 
 
-## 16. Estado de implementación: P5 (hecho, pendiente de aprobación)
+## 16. Estado de implementación: P5 (hecho y aprobado)
 
 * Normalización productiva por registro: `ejecutar_motor` normaliza (paso 2) y valida saldos (paso 7) con `motor_generico.py` gobernado por `registro_bancos.json` (`normalizar_extracto` / `validar_extracto`); el contrato de `ORIGEN.xlsx` (paso 15) toma hoja y encabezado del registro (`contrato_origen_registro`). Flujo: archivo → detección por registro (P4) → normalización genérica (P5) → salida productiva. Ver `ESTADO_PROYECTO.md` §5e.
 * **Cómo se cumple §3 (motor genérico, pasos 4–6) en producción:** tabla leída desde el encabezado que cumple `puntaje_minimo` (D-09 cerrado también en la normalización); campos por alias del registro; importe `DEBITO_CREDITO` / `SIGNO`; depositante e información adicional por estrategia con nombre; identidad BANCO / CUENTA BANCARIA / MONEDA de `CUENTAS` (D-12 cerrado); `finalizar_dataframe` (26 columnas y `CLAVE TRANSACCIÓN` congeladas); validación con `ecuacion_saldo` y fuentes de saldo del registro, sobre las mismas filas que antes (sin ruido de coma flotante).
