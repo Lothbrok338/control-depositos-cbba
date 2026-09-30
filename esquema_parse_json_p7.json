@@ -1,0 +1,287 @@
+{
+  "type": "object",
+  "properties": {
+    "esquema": {
+      "type": "string"
+    },
+    "lote_id": {
+      "type": "string"
+    },
+    "archivo_fuente": {
+      "type": "string"
+    },
+    "sha256_archivo_fuente": {
+      "type": "string"
+    },
+    "columnas": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "movimientos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "CLAVE_TRANSACCION": {
+            "type": "string"
+          },
+          "CODIGO_ASIGNACION": {
+            "type": "string"
+          },
+          "BANCO": {
+            "type": "string"
+          },
+          "CUENTA_BANCARIA": {
+            "type": "string"
+          },
+          "MONEDA": {
+            "type": "string"
+          },
+          "FECHA_MOVIMIENTO": {
+            "type": "string"
+          },
+          "HORA_MOVIMIENTO": {
+            "type": "string"
+          },
+          "IMPORTE": {
+            "type": "string"
+          },
+          "DEBITO": {
+            "type": "string"
+          },
+          "CREDITO": {
+            "type": "string"
+          },
+          "TIPO_MOVIMIENTO": {
+            "type": "string"
+          },
+          "SALDO": {
+            "type": "string"
+          },
+          "DESCRIPCION": {
+            "type": "string"
+          },
+          "DEPOSITANTE_ORIGINANTE": {
+            "type": "string"
+          },
+          "INFORMACION_ADICIONAL": {
+            "type": "string"
+          },
+          "MOTOR_ESTADO": {
+            "type": "string"
+          },
+          "MOTOR_ESTUDIANTE": {
+            "type": "string"
+          },
+          "MOTOR_SOLICITADO_POR": {
+            "type": "string"
+          },
+          "MOTOR_SEDE_SOLICITANTE": {
+            "type": "string"
+          },
+          "MOTOR_CONFIRMADO_POR": {
+            "type": "string"
+          },
+          "MOTOR_FECHA_CONFIRMACION": {
+            "type": "string"
+          },
+          "MOTOR_OBSERVACION": {
+            "type": "string"
+          },
+          "TEXTO_BUSQUEDA": {
+            "type": "string"
+          },
+          "ARCHIVO_ORIGEN": {
+            "type": "string"
+          },
+          "LOTE_CARGA": {
+            "type": "string"
+          },
+          "FECHA_CARGA": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "CLAVE_TRANSACCION",
+          "CODIGO_ASIGNACION",
+          "BANCO",
+          "CUENTA_BANCARIA",
+          "MONEDA",
+          "FECHA_MOVIMIENTO",
+          "HORA_MOVIMIENTO",
+          "IMPORTE",
+          "DEBITO",
+          "CREDITO",
+          "TIPO_MOVIMIENTO",
+          "SALDO",
+          "DESCRIPCION",
+          "DEPOSITANTE_ORIGINANTE",
+          "INFORMACION_ADICIONAL",
+          "MOTOR_ESTADO",
+          "MOTOR_ESTUDIANTE",
+          "MOTOR_SOLICITADO_POR",
+          "MOTOR_SEDE_SOLICITANTE",
+          "MOTOR_CONFIRMADO_POR",
+          "MOTOR_FECHA_CONFIRMACION",
+          "MOTOR_OBSERVACION",
+          "TEXTO_BUSQUEDA",
+          "ARCHIVO_ORIGEN",
+          "LOTE_CARGA",
+          "FECHA_CARGA"
+        ]
+      }
+    },
+    "omitidos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "fila": {
+            "type": "integer"
+          },
+          "estado": {
+            "type": "string"
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "errores": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "valores": {
+            "type": "object",
+            "properties": {
+              "CLAVE_TRANSACCION": {
+                "type": "string"
+              },
+              "CODIGO_ASIGNACION": {
+                "type": "string"
+              },
+              "BANCO": {
+                "type": "string"
+              },
+              "CUENTA_BANCARIA": {
+                "type": "string"
+              },
+              "MONEDA": {
+                "type": "string"
+              },
+              "FECHA_MOVIMIENTO": {
+                "type": "string"
+              },
+              "HORA_MOVIMIENTO": {
+                "type": "string"
+              },
+              "IMPORTE": {
+                "type": "string"
+              },
+              "DEBITO": {
+                "type": "string"
+              },
+              "CREDITO": {
+                "type": "string"
+              },
+              "TIPO_MOVIMIENTO": {
+                "type": "string"
+              },
+              "SALDO": {
+                "type": "string"
+              },
+              "DESCRIPCION": {
+                "type": "string"
+              },
+              "DEPOSITANTE_ORIGINANTE": {
+                "type": "string"
+              },
+              "INFORMACION_ADICIONAL": {
+                "type": "string"
+              },
+              "MOTOR_ESTADO": {
+                "type": "string"
+              },
+              "MOTOR_ESTUDIANTE": {
+                "type": "string"
+              },
+              "MOTOR_SOLICITADO_POR": {
+                "type": "string"
+              },
+              "MOTOR_SEDE_SOLICITANTE": {
+                "type": "string"
+              },
+              "MOTOR_CONFIRMADO_POR": {
+                "type": "string"
+              },
+              "MOTOR_FECHA_CONFIRMACION": {
+                "type": "string"
+              },
+              "MOTOR_OBSERVACION": {
+                "type": "string"
+              },
+              "TEXTO_BUSQUEDA": {
+                "type": "string"
+              },
+              "ARCHIVO_ORIGEN": {
+                "type": "string"
+              },
+              "LOTE_CARGA": {
+                "type": "string"
+              },
+              "FECHA_CARGA": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "CLAVE_TRANSACCION",
+              "CODIGO_ASIGNACION",
+              "BANCO",
+              "CUENTA_BANCARIA",
+              "MONEDA",
+              "FECHA_MOVIMIENTO",
+              "HORA_MOVIMIENTO",
+              "IMPORTE",
+              "DEBITO",
+              "CREDITO",
+              "TIPO_MOVIMIENTO",
+              "SALDO",
+              "DESCRIPCION",
+              "DEPOSITANTE_ORIGINANTE",
+              "INFORMACION_ADICIONAL",
+              "MOTOR_ESTADO",
+              "MOTOR_ESTUDIANTE",
+              "MOTOR_SOLICITADO_POR",
+              "MOTOR_SEDE_SOLICITANTE",
+              "MOTOR_CONFIRMADO_POR",
+              "MOTOR_FECHA_CONFIRMACION",
+              "MOTOR_OBSERVACION",
+              "TEXTO_BUSQUEDA",
+              "ARCHIVO_ORIGEN",
+              "LOTE_CARGA",
+              "FECHA_CARGA"
+            ]
+          }
+        },
+        "required": [
+          "fila",
+          "estado",
+          "motivo",
+          "errores",
+          "valores"
+        ]
+      }
+    }
+  },
+  "required": [
+    "esquema",
+    "lote_id",
+    "archivo_fuente",
+    "sha256_archivo_fuente",
+    "columnas",
+    "movimientos",
+    "omitidos"
+  ]
+}

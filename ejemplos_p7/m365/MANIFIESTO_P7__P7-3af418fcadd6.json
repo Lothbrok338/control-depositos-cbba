@@ -1,0 +1,39 @@
+{
+  "esquema": "P7_MANIFIESTO_V1",
+  "version_adaptador": "P7.1",
+  "lote_id": "P7-3af418fcadd6",
+  "generado_en": "2026-09-30T12:00:00Z",
+  "archivo_fuente": "LISTS.csv",
+  "sha256_archivo_fuente": "3af418fcadd6fd848a5957af5225222a8f9e753254269514cd719a718d35c83e",
+  "bytes_archivo_fuente": 3099,
+  "cantidad_recibida": 8,
+  "cantidad_valida": 8,
+  "cantidad_a_cargar": 8,
+  "cantidad_repetida_en_lote": 0,
+  "cantidad_error": 0,
+  "rango_fechas": {
+    "desde": "2026-07-07",
+    "hasta": "2026-07-31"
+  },
+  "bancos": [
+    "BCP"
+  ],
+  "cuentas": [
+    {
+      "banco": "BCP",
+      "cuenta": "301-5005425-2-71",
+      "moneda": "USD",
+      "movimientos": 8
+    }
+  ],
+  "lotes_motor": [
+    "20260930_120727"
+  ],
+  "archivos_origen": [
+    "bcp_me_1.xls"
+  ],
+  "artefacto": {
+    "archivo": "DEPOSITOS_ACTIVOS__P7-3af418fcadd6.json",
+    "sha256": "80893e7fe411451a61f23ae465ca967f0c5e23284e00c26eb8b95eeda419a724"
+  }
+}
