@@ -1,6 +1,6 @@
 # ESTADO DEL PROYECTO — CONTROL DE DEPÓSITOS CBBA (módulo de normalización)
 
-**Fecha del checkpoint P6:** 2026-09-30 (checkpoint P6 = rama remota `checkpoint-p6` = `main` al cerrar P6; anteriores: P5 = rama remota `checkpoint-p5` (`0b182e2`); P4 = rama remota `checkpoint-p4` (`998158e`); P3b = rama remota `checkpoint-p3b`; P1+P2 = commit `8c9c09a`, tag local `checkpoint-p1-p2`; P3 = rama remota `checkpoint-p3`; el entorno no puede subir tags) · **Regla rectora:** NORMALIZAR NUNCA DEBE DESTRUIR INFORMACIÓN DE ORIGEN.
+**Fecha del checkpoint P7:** 2026-09-30 (checkpoint P7 = rama remota `checkpoint-p7` = `main` al cerrar P7; anteriores: P6 = rama remota `checkpoint-p6` (`6d5922c`); P5 = rama remota `checkpoint-p5` (`0b182e2`); P4 = rama remota `checkpoint-p4` (`998158e`); P3b = rama remota `checkpoint-p3b`; P1+P2 = commit `8c9c09a`, tag local `checkpoint-p1-p2`; P3 = rama remota `checkpoint-p3`; el entorno no puede subir tags) · **Regla rectora:** NORMALIZAR NUNCA DEBE DESTRUIR INFORMACIÓN DE ORIGEN.
 
 ## 1. Estado
 
@@ -17,8 +17,11 @@
 | **P4** Detección productiva por registro | **TERMINADO Y APROBADO** (577 PASS · 22 SKIP · 16 XFAIL · 0 FAIL) | `deteccion_registro.py` (nuevo); bloques `deteccion` + `legado` por formato y `version_deteccion: P4-1` en `registro_bancos.json`; `detectar_formato` delega en el registro; `ejecutar_motor` usa la detección completa; `tests/test_08_deteccion_p4.py`. Normalización = legado (sin cambios). Ver §5d |
 | **P5** Normalización productiva por registro | **TERMINADO Y APROBADO** (620 PASS · 24 SKIP · 14 XFAIL · 0 FAIL) | La normalización productiva ya la ejecuta `motor_generico.py`: `ejecutar_motor` normaliza y valida con `motor_generico.py` + registro (pasos 2 y 7; ORIGEN con contrato del registro, paso 15); legado solo como referencia en sombra (paso 16); `tests/test_09_normalizacion_p5.py`; D-09 y D-12 corregidos. Ver §5e |
 | **P6** Retiro del legado | **TERMINADO Y APROBADO** (575 PASS · 23 SKIP · 14 XFAIL · 0 FAIL; checkpoint `checkpoint-p6`) | Retirados los `normalizar_*`, `validar_archivo`, `HOJAS_VALIDAS`, `ENCABEZADOS_ESPERADOS`, `encontrar_fila_encabezado`, `leer_tabla_movimientos`, `texto_de_archivo`, `aplicar_identidad_registro`, la referencia en sombra (paso 16), el comparador y la detección P3 de `motor_generico.py`, el cruce legado de `deteccion_registro.py` y los bloques `legado` del registro. Salidas P5 = P6. Ver §5f |
+| **P7** Puente P6 → Microsoft 365 | **TERMINADO Y APROBADO (validación local)** (620 PASS · 23 SKIP · 14 XFAIL · 0 FAIL; checkpoint `checkpoint-p7`) | `adaptador_m365.py` (LISTS.csv → JSON + manifiesto, contrato fail-fast de 26 columnas, clasificación NUEVO / YA_EXISTE / ERROR), diseño de `Depositos_Activos` y bitácora `Depositos_Cargas`, especificación del flujo `P7 - CARGA DEPOSITOS ACTIVOS`. **NO certifica la integración end-to-end con SharePoint / Power Automate** (pendiente del piloto). Ver §5g |
 
 ## 2. Resultado de pruebas (suite completa)
+
+**Con P7 (aprobado, validación local): 620 PASS · 23 SKIP · 14 XFAIL · 0 FAIL** (≈280 s). Diferencia con P6 (575 · 23 · 14): `test_11_adaptador_m365_p7.py` +45 PASS. Sin regresiones: mismos 23 SKIP y 14 XFAIL; P6 y las doradas no se tocaron.
 
 **Con P6 (aprobado): 575 PASS · 23 SKIP · 14 XFAIL · 0 FAIL** (≈255 s). Diferencia con P5 (620 · 24 · 14): `test_06_sombra_p3.py` (112 PASS + 1 SKIP) se reemplaza por `test_06_registro_generico.py` (63 PASS; se retiran 49 pruebas y 1 SKIP que solo comparaban contra el legado o probaban el comparador/CLI); `test_08` −6 (4 mutaciones de la plantilla legada, 1 normalización con plantilla, 1 `aplicar_identidad_registro`); `test_09` −2 (referencia legada en sombra; las 12 comparaciones contra el legado pasan a compararse contra la referencia congelada: doradas + manifest); `test_10_retiro_legado_p6.py` +12. Los mismos 14 XFAIL. Salidas de los 12 fixtures idénticas a P5 (`tests/reports/EVIDENCIA_P6_RETIRO.txt`).
 
@@ -41,7 +44,7 @@
 6. **Registro parametrizable** `registro_bancos.json` (FORMATOS / CUENTAS): una cuenta nueva de un formato conocido = una entrada, cero código (P3). **Desde P4 es la fuente productiva de la detección** (banco, cuenta, moneda, formato).
 7. **UNION_ME** = `UNION_FECHAS_V1`: estructura **confirmada** por código legado + captura real (7 columnas, incl. `Nro de verificasion`, que el motor legado no lee y que va a ORIGEN e histórico, no a las 26 columnas). Comportamiento con movimientos: **pendiente de fixture real**.
 
-Plan: P1 ✔ · P2 ✔ · P3 ✔ · P3b ✔ · P4 ✔ · P5 ✔ · P6 ✔ (checkpoint `checkpoint-p6`). Siguiente fase: sin definir (espera tu instrucción).
+Plan: P1 ✔ · P2 ✔ · P3 ✔ · P3b ✔ · P4 ✔ · P5 ✔ · P6 ✔ (checkpoint `checkpoint-p6`) · P7 ✔ (checkpoint `checkpoint-p7`, validación local del puente P6 → artefacto M365; **sin certificación end-to-end**). Siguiente fase: piloto en el tenant de Microsoft 365 / Power Apps (sin definir; espera tu instrucción).
 
 ## 4. Pendientes
 
@@ -130,6 +133,22 @@ Capa 4 (`EXTRACTO_HISTORICO`, ver `DISENO_TRES_CAPAS.md` §6): bloque `historico
 * **Pruebas**: `helpers.HOJAS` / `helpers.ENCABEZADOS` = copia congelada de las constantes legadas; la equivalencia con el legado queda fijada por las doradas; `test_06_registro_generico.py` (reemplaza `test_06_sombra_p3.py`) y `test_10_retiro_legado_p6.py` (nuevo). `generar_golden.py` exige un motor con legado (checkpoint ≤ P5).
 * **Evidencia**: `tests/reports/EVIDENCIA_P6_RETIRO.txt` (referencia = checkpoint P5 `0b182e2`): LISTS.csv idéntico byte a byte; NORMALIZADO.xlsx y ORIGEN.xlsx idénticos celda a celda; 11 EXTRACTO_HISTORICO idénticos; por archivo mismos movimientos, importes, saldos, claves y banco/cuenta/moneda; retorno idéntico salvo `sombra_estado`; nombres legados en el código productivo P5 = 19 / 23 / 7 → P6 = 0; `captura_origen.py`, `historico.py`, Power Automate, doradas y fixtures sin cambios; código productivo 8 997 → 6 060 líneas.
 * **Riesgos pendientes**: (1) quien leyera `sombra_estado`, `FORMATO_LEGADO` / `CUENTA_NUEVA` o `SOMBRA_REPORTE.json` deja de recibirlos (en el repositorio nadie; el consumidor de Power Automate no ejecuta Python); (2) carpetas de salida con `SOMBRA_*` de corridas anteriores: ya no se actualizan (se pueden borrar; no se toman como extractos); (3) desaparece la red de comparación en vivo contra el legado: la protección queda en las doradas y en las pruebas; (4) `evidencia_p4_extra.py` / `evidencia_p5_extra.py` y `generar_golden.py` solo corren sobre su checkpoint.
+
+## 5g. P7 — puente P6 → Microsoft 365 (hecho y aprobado · checkpoint `checkpoint-p7`)
+
+**Alcance de P7:** P7 valida **localmente** el puente P6 → artefacto M365 (`LISTS.csv` → JSON + manifiesto, clasificación `NUEVO` / `YA_EXISTE` / `ERROR`, determinismo, contrato fail-fast de 26 columnas). P7 **NO certifica** la integración end-to-end con SharePoint / Power Automate: la lista `Depositos_Activos`, la bitácora `Depositos_Cargas` y el flujo `P7 - CARGA DEPOSITOS ACTIVOS` están **especificados, no ejecutados contra un tenant de Microsoft 365**.
+
+**Checkpoint P7 (rama remota `checkpoint-p7` = `main` al cerrar P7), vigente desde el checkpoint:**
+1. P7 valida **localmente** el puente P6 → artefacto M365 (`LISTS.csv` → JSON + manifiesto, clasificación `NUEVO` / `YA_EXISTE` / `ERROR`, determinismo, contrato fail-fast de 26 columnas). P7 **NO certifica** la integración end-to-end con SharePoint / Power Automate: la lista `Depositos_Activos`, la bitácora `Depositos_Cargas` y el flujo `P7 - CARGA DEPOSITOS ACTIVOS` están **especificados, no ejecutados contra un tenant de Microsoft 365**.
+2. **P6 queda congelado y no se modificó**: `motor_control_depositos_cbba.py`, `motor_generico.py`, `deteccion_registro.py`, `captura_origen.py`, `historico.py`, `registro_bancos.json` y las doradas (`tests/golden/`) son idénticos a `checkpoint-p6` (`6d5922c`). `LISTS.csv`, `NORMALIZADO.xlsx` y `ORIGEN.xlsx` salen exactamente igual.
+3. **Capa nueva y separada** `adaptador_m365.py` (solo biblioteca estándar; no importa el motor): lee `LISTS.csv` y escribe `DEPOSITOS_ACTIVOS__<lote>.json` + `MANIFIESTO_P7__<lote>.json` en otra carpeta. Esquema para «Analizar JSON»: `esquema_parse_json_p7.json`. Ejemplo real (fixture BCP_ME): `ejemplos_p7/`.
+4. **Contrato fail-fast:** antes de leer o escribir, el adaptador exige que su contrato de columnas coincida exactamente con las 26 `COLUMNAS_LISTS` de P6 (tabla interna y código fuente del motor leído con `ast`, sin importarlo); si hay desviación, `ERROR de contrato` (salida 2) y no escribe nada.
+5. **Clave anti-duplicados:** la `CLAVE TRANSACCIÓN` de P6 (`crear_clave`) se copia tal cual; identifica al movimiento (`NUEVO` / `YA_EXISTE` / `ERROR`). El lote P7 es determinista (`P7-` + 12 hex del SHA-256 de `LISTS.csv`).
+6. **Decisiones aprobadas:** D-1 = las 26 columnas de P6 se conservan; las que chocan con campos operativos llevan prefijo `MOTOR_*` (ocultables después en Power Apps). D-2 = `Depositos_Cargas` es la bitácora oficial de procesamiento por lote.
+7. **Pendiente del piloto (requiere tenant, no bloquea P7):** zona horaria de la fecha, sintaxis del filtro por fecha y paginación, forma del contenido de «Obtener contenido del archivo», mensaje de unicidad, comparación de claves con acentos y **rendimiento con lotes de ~4000 elementos (no optimizado en P7)**.
+8. **`FECHA DE CARGA` no se modificó:** el defecto D-15 (hora local de la máquina del motor) sigue documentado como XFAIL.
+9. **Documentos:** `DISENO_LISTA_DEPOSITOS_ACTIVOS.md`, `ESPECIFICACION_FLUJO_P7_CARGA_DEPOSITOS_ACTIVOS.md`. Pruebas: `tests/test_11_adaptador_m365_p7.py` (45).
+
 
 ## 6. Componentes que todavía NO deben modificarse
 
