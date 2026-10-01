@@ -26,9 +26,9 @@
           "operationId": "GetOnNewFileItems"
         },
         "parameters": {
-          "dataset": "<SITIO_SHAREPOINT>",
-          "table": "<BIBLIOTECA_DOCUMENTOS>",
-          "folderPath": "<CARPETA_ENTRADA_M365>"
+          "dataset": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
+          "table": "2a9d48e4-7ed6-4cef-9967-22d189c809bd",
+          "folderPath": "/Documents/P8_PILOTO"
         },
         "authentication": "@parameters('$authentication')",
         "retryPolicy": {
@@ -53,7 +53,7 @@
       "actions": {
         "PARAM_SITIO_SHAREPOINT": {
           "type": "Compose",
-          "inputs": "<SITIO_SHAREPOINT>",
+          "inputs": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
           "runAfter": {}
         },
         "PARAM_LISTA_DEPOSITOS_ACTIVOS": {
@@ -941,8 +941,8 @@
                       "operationId": "GetItems"
                     },
                     "parameters": {
-                      "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
-                      "table": "@outputs('PARAM_LISTA_DEPOSITOS_ACTIVOS')",
+                      "dataset": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
+                      "table": "296c450a-25d6-415b-ad10-c909c74817cb",
                       "$filter": "@concat('CLAVE_TRANSACCION eq ''',replace(items('Preconsultar_claves')?['CLAVE_TRANSACCION'],'''',''''''),'''')",
                       "$top": 1
                     },
@@ -1066,8 +1066,8 @@
                                 "operationId": "PostItem"
                               },
                               "parameters": {
-                                "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
-                                "table": "@outputs('PARAM_LISTA_DEPOSITOS_ACTIVOS')",
+                                "dataset": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
+                                "table": "296c450a-25d6-415b-ad10-c909c74817cb",
                                 "item/CLAVE_TRANSACCION": "@outputs('Movimiento_actual')?['CLAVE_TRANSACCION']",
                                 "item/CODIGO_ASIGNACION": "@outputs('Movimiento_actual')?['CODIGO_ASIGNACION']",
                                 "item/BANCO": "@outputs('Movimiento_actual')?['BANCO']",
@@ -1129,8 +1129,8 @@
                                 "operationId": "GetItems"
                               },
                               "parameters": {
-                                "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
-                                "table": "@outputs('PARAM_LISTA_DEPOSITOS_ACTIVOS')",
+                                "dataset": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
+                                "table": "296c450a-25d6-415b-ad10-c909c74817cb",
                                 "$filter": "@concat('CLAVE_TRANSACCION eq ''',replace(outputs('Movimiento_actual')?['CLAVE_TRANSACCION'],'''',''''''),'''')",
                                 "$top": 1
                               },
@@ -1518,8 +1518,8 @@
               "operationId": "PostItem"
             },
             "parameters": {
-              "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
-              "table": "@outputs('PARAM_LISTA_DEPOSITOS_CARGAS')",
+              "dataset": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
+              "table": "677aab03-28d0-4893-83cf-1f394850c515",
               "item/LOTE_ID": "@variables('varLoteId')",
               "item/FECHA_HORA_PROCESO": "@utcNow()",
               "item/ARCHIVO_FUENTE": "@variables('varArchivoFuente')",

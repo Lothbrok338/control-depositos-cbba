@@ -38,7 +38,7 @@ def test_paquete_y_fuente_son_reproducibles():
     paquete.escribir_artefactos()
     assert all(p.read_bytes() == valor for p, valor in originales.items())
     assert anterior.read_bytes() == bytes_anteriores
-    nombre = "P8_CARGA_DEPOSITOS_ACTIVOS_V3_HASH_SHA256"
+    nombre = "P8_CARGA_DEPOSITOS_ACTIVOS_V5_TENANT_LISTAS_REALES"
     assert paquete.ZIP_SALIDA.name == nombre + ".zip"
     with zipfile.ZipFile(paquete.ZIP_SALIDA) as z, zipfile.ZipFile(anterior) as viejo:
         manifest = json.loads(z.read("manifest.json"))
@@ -51,6 +51,23 @@ def test_paquete_y_fuente_son_reproducibles():
         assert contenido["properties"]["displayName"] == nombre
         assert not set(manifest["resources"]) & set(json.loads(viejo.read("manifest.json"))["resources"])
     validar()
+
+
+def test_acciones_de_listas_usan_table_literal_del_tenant_piloto(definicion):
+    sitio = "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu"
+    esperado = {"DEPOSITOS_ACTIVOS": "296c450a-25d6-415b-ad10-c909c74817cb",
+                "DEPOSITOS_CARGAS": "677aab03-28d0-4893-83cf-1f394850c515"}
+    por_accion = {"Obtener_clave_preexistente": "DEPOSITOS_ACTIVOS", "Crear_movimiento": "DEPOSITOS_ACTIVOS",
+                  "Reconsultar_CLAVE_TRANSACCION": "DEPOSITOS_ACTIVOS", "Registrar_bitacora_del_lote": "DEPOSITOS_CARGAS"}
+    vistas = {}
+    for nombre, accion in acciones_recursivas(definicion["actions"]):
+        if nombre in por_accion:
+            vistas[nombre] = accion["inputs"]["parameters"]
+    assert set(vistas) == set(por_accion)
+    for nombre, parametros in vistas.items():
+        assert parametros["dataset"] == sitio
+        assert parametros["table"] == esperado[por_accion[nombre]]
+        assert not str(parametros["table"]).startswith("@")
 
 
 def test_piloto_8_y_reproceso_sin_intentos_de_creacion(definicion, artefacto):

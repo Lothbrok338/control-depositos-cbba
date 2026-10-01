@@ -21,7 +21,7 @@ P8_DIR = RAIZ / "p8"
 ESQUEMA_P7 = RAIZ / "esquema_parse_json_p7.json"
 DEFINICION_SALIDA = P8_DIR / "flujo_p8_definition.json"
 ESQUEMA_LISTAS_SALIDA = P8_DIR / "esquema_listas_p8.json"
-NOMBRE_FLUJO = "P8_CARGA_DEPOSITOS_ACTIVOS_V3_HASH_SHA256"
+NOMBRE_FLUJO = "P8_CARGA_DEPOSITOS_ACTIVOS_V5_TENANT_LISTAS_REALES"
 ZIP_SALIDA = RAIZ / f"{NOMBRE_FLUJO}.zip"
 API_ID = "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
 CONEXION = "shared_sharepointonline"
@@ -29,7 +29,7 @@ ESTADOS_EJECUCION = ["Succeeded", "Failed", "Skipped", "TimedOut"]
 
 
 def _uuid(nombre: str) -> str:
-    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"control-depositos-cbba:p8:v3-hash-sha256:{nombre}"))
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"control-depositos-cbba:p8:v5-tenant-listas-reales:{nombre}"))
 
 
 FLOW_RESOURCE_ID = _uuid("flow-resource")

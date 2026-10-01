@@ -5,6 +5,17 @@ MAX_ERRORES = 8
 MAX_MENSAJE = 8000
 API = "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
 
+# Ubicación real del tenant piloto, obtenida desde Code view de Power Automate.
+SITIO_SHAREPOINT = "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu"
+BIBLIOTECA_ID = "2a9d48e4-7ed6-4cef-9967-22d189c809bd"
+CARPETA_ENTRADA = "/Documents/P8_PILOTO"
+# GUID reales de las listas del tenant piloto: Power Automate necesita un `table`
+# literal para resolver el esquema de item/* al importar el paquete.
+LISTAS_ID = {
+    "DEPOSITOS_ACTIVOS": "296c450a-25d6-415b-ad10-c909c74817cb",
+    "DEPOSITOS_CARGAS": "677aab03-28d0-4893-83cf-1f394850c515",
+}
+
 
 def secuencia(**acciones):
     anterior = None
@@ -51,7 +62,7 @@ def sp(operacion, parametros):
 
 
 def lista(nombre):
-    return {"dataset": "@outputs('PARAM_SITIO_SHAREPOINT')", "table": f"@outputs('PARAM_LISTA_{nombre}')"}
+    return {"dataset": SITIO_SHAREPOINT, "table": LISTAS_ID[nombre]}
 
 
 def consulta(clave):
@@ -205,7 +216,7 @@ def construir_definicion(esquema_p7, columnas, esquema_listas):
     }
     acciones = secuencia(
         CONFIGURACION=ambito(secuencia(
-            PARAM_SITIO_SHAREPOINT=redactar("<SITIO_SHAREPOINT>"),
+            PARAM_SITIO_SHAREPOINT=redactar(SITIO_SHAREPOINT),
             PARAM_LISTA_DEPOSITOS_ACTIVOS=redactar("Depositos_Activos"),
             PARAM_LISTA_DEPOSITOS_CARGAS=redactar("Depositos_Cargas"),
         )),
@@ -312,7 +323,7 @@ def construir_definicion(esquema_p7, columnas, esquema_listas):
         "triggers": {"Cuando_se_crea_un_archivo": {
             "type": "OpenApiConnection", "recurrence": {"interval": 1, "frequency": "Minute"},
             "splitOn": "@triggerOutputs()?['body/value']",
-            "inputs": sp("GetOnNewFileItems", {"dataset": "<SITIO_SHAREPOINT>", "table": "<BIBLIOTECA_DOCUMENTOS>", "folderPath": "<CARPETA_ENTRADA_M365>"})["inputs"],
+            "inputs": sp("GetOnNewFileItems", {"dataset": SITIO_SHAREPOINT, "table": BIBLIOTECA_ID, "folderPath": CARPETA_ENTRADA})["inputs"],
             "conditions": [{"expression": "@and(equals(triggerBody()?['{IsFolder}'],false),startsWith(coalesce(triggerBody()?['{FilenameWithExtension}'],''),'DEPOSITOS_ACTIVOS__'),endsWith(coalesce(triggerBody()?['{FilenameWithExtension}'],''),'.json'))"}],
             "runtimeConfiguration": {"concurrency": {"runs": 1}},
         }},
