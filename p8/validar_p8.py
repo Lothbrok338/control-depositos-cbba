@@ -3,6 +3,7 @@ import json
 import zipfile
 from pathlib import Path
 from p8 import construir_paquete_p8 as paquete
+from p8.definicion import esquema_con_control_origen
 from p8.ensayo_wdl import EnsayoWDL, SharePointSimulado
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -34,7 +35,8 @@ def validar():
             comprobar_dependencias(accion.get('actions', {}))
             comprobar_dependencias(accion.get('else', {}).get('actions', {}))
     comprobar_dependencias(definicion['actions'])
-    assert acciones["Analizar_JSON"]["inputs"]["schema"] == esquema
+    assert acciones["Analizar_JSON"]["inputs"]["schema"] == esquema_con_control_origen(esquema)
+    assert "control_origen" not in esquema["properties"]  # esquema_parse_json_p7.json intacto
     assert acciones["Obtener_contenido_del_archivo"]["inputs"]["parameters"]["inferContentType"] is False
     assert "result(" not in json.dumps(definicion)
     columnas = paquete._cargar_adaptador().COLUMNAS_TECNICAS

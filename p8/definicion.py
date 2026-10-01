@@ -1,4 +1,5 @@
 """Definición WDL P8. Solo conectores estándar SharePoint y acciones integradas."""
+import copy
 
 TODOS = ["Succeeded", "Failed", "TimedOut", "Skipped"]
 MAX_ERRORES = 8
@@ -73,6 +74,47 @@ def consulta(clave):
     })
 
 
+# Identidad financiera que certifica P8.5. LOTE_CARGA y ARCHIVO_ORIGEN no se comparan:
+# una misma transacción puede reaparecer en una descarga posterior.
+CAMPOS_IDENTIDAD = ["CLAVE_TRANSACCION", "BANCO", "CUENTA_BANCARIA", "FECHA_MOVIMIENTO", "HORA_MOVIMIENTO",
+                    "CODIGO_ASIGNACION", "TIPO_MOVIMIENTO", "IMPORTE", "SALDO"]
+CAMPOS_NUMERICOS = {"IMPORTE", "SALDO"}
+
+
+def diferencias(esperado, almacenado):
+    """Expresión WDL: nombres (cada uno seguido de ';') de los campos de identidad que difieren.
+    Compara solo con datos ya obtenidos; no hace llamadas a SharePoint."""
+    partes = []
+    for campo in CAMPOS_IDENTIDAD:
+        e, a = f"{esperado}?['{campo}']", f"{almacenado}?['{campo}']"
+        if campo in CAMPOS_NUMERICOS:
+            igual = f"if(equals({a},null),false,equals(float({a}),float({e})))"
+        elif campo == "FECHA_MOVIMIENTO":
+            # SharePoint devuelve la fecha como fecha-hora ISO; se compara la parte AAAA-MM-DD.
+            igual = f"equals(take(string(coalesce({a},'')),10),coalesce({e},''))"
+        else:
+            igual = f"equals(coalesce({a},''),coalesce({e},''))"
+        partes.append(f"if({igual},'','{campo};')")
+    return "concat(" + ",".join(partes) + ")"
+
+
+def certificar(sufijo, esperado, almacenado, clave=None, fila=None):
+    """Compara el registro almacenado (ya obtenido) con el esperado: CONFIRMADO o DIFERENCIA."""
+    dif = f"Diferencias_{sufijo}"
+    return {
+        dif: redactar("@" + diferencias(esperado, almacenado)),
+        f"Certificar_{sufijo}": {**condicion(
+            f"@empty(outputs('{dif}'))",
+            {f"Contar_CONFIRMADO_{sufijo}": incrementar("varCantidadConfirmada")},
+            secuencia(**{
+                f"Contar_DIFERENCIA_{sufijo}": incrementar("varCantidadDiferencia"),
+                f"Registrar_diferencia_{sufijo}": diagnostico_fila(
+                    f"dif_{sufijo}", "Identidad almacenada distinta de la esperada.",
+                    f"@concat('DIF:',outputs('{dif}'))", clave, fila),
+            })), "runAfter": {dif: ["Succeeded"]}},
+    }
+
+
 def diagnostico_fila(sufijo, motivo, codigo, clave=None, fila=None):
     """No copia cuerpos, cabeceras, mensajes arbitrarios ni result()."""
     entrada = {
@@ -110,7 +152,8 @@ def crear_y_clasificar(columnas):
         Reconsultar_CLAVE_TRANSACCION=consulta("outputs('Movimiento_actual')?['CLAVE_TRANSACCION']"),
         Clasificar_reconsulta=condicion(
             "@greater(length(body('Reconsultar_CLAVE_TRANSACCION')?['value']),0)",
-            {"Resultado_YA_EXISTE": asignar("varResultadoFila", "YA_EXISTE")},
+            secuencia(Resultado_YA_EXISTE=asignar("varResultadoFila", "YA_EXISTE"), **certificar(
+                "reconsulta", "outputs('Movimiento_actual')", "body('Reconsultar_CLAVE_TRANSACCION')?['value'][0]")),
             secuencia(
                 Resultado_ERROR=asignar("varResultadoFila", "ERROR"),
                 Registrar_clave_ausente=diagnostico_fila(
@@ -137,6 +180,9 @@ def crear_y_clasificar(columnas):
         "CATCH_CREAR_MOVIMIENTO": ambito(catch, {"TRY_CREAR_MOVIMIENTO": ["Failed", "TimedOut"]}),
     }
     resultado["Crear_OK"]["runAfter"] = {"TRY_CREAR_MOVIMIENTO": ["Succeeded"]}
+    cert = certificar("nuevo", "outputs('Movimiento_actual')", "body('Crear_movimiento')")
+    cert["Diferencias_nuevo"]["runAfter"] = {"Crear_OK": ["Succeeded"]}
+    resultado.update(cert)
     return resultado
 
 
@@ -171,8 +217,11 @@ def procesar(columnas):
                 Obtener_clave_preexistente=consulta("items('Preconsultar_claves')?['CLAVE_TRANSACCION']"),
                 Existe_en_preconsulta=condicion(
                     "@greater(length(body('Obtener_clave_preexistente')?['value']),0)",
-                    {"Guardar_clave_existente": {"type": "AppendToArrayVariable", "inputs": {
-                        "name": "varClavesExistentes", "value": "@items('Preconsultar_claves')?['CLAVE_TRANSACCION']"}}},
+                    secuencia(Guardar_clave_existente={"type": "AppendToArrayVariable", "inputs": {
+                        "name": "varClavesExistentes", "value": "@items('Preconsultar_claves')?['CLAVE_TRANSACCION']"}},
+                        **certificar("preexistente", "items('Preconsultar_claves')",
+                                     "body('Obtener_clave_preexistente')?['value'][0]",
+                                     "@take(items('Preconsultar_claves')?['CLAVE_TRANSACCION'],255)", "PRECONSULTA")),
                 ),
             ),
         },
@@ -194,6 +243,14 @@ def procesar(columnas):
     return acciones
 
 
+def esquema_con_control_origen(esquema_p7):
+    """Esquema de «Analizar JSON» del flujo: el contrato P7 + `control_origen` OPCIONAL (P8.5).
+    No modifica esquema_parse_json_p7.json ni el adaptador."""
+    esquema = copy.deepcopy(esquema_p7)
+    esquema["properties"]["control_origen"] = {"type": "object"}
+    return esquema
+
+
 def construir_definicion(esquema_p7, columnas, esquema_listas):
     # El nombre lógico SHA256 pertenece a la bitácora P8. El JSON P7 y sus
     # 26 columnas permanecen intactos; la escritura usa el InternalName del
@@ -206,7 +263,9 @@ def construir_definicion(esquema_p7, columnas, esquema_listas):
     vars_iniciales = {
         "varCantidadRecibida": ("integer", 0), "varCantidadValida": ("integer", 0),
         "varCantidadNueva": ("integer", 0), "varCantidadYaExiste": ("integer", 0),
-        "varCantidadError": ("integer", 0), "varClasificados": ("integer", 0),
+        "varCantidadError": ("integer", 0), "varCantidadConfirmada": ("integer", 0),
+        "varCantidadDiferencia": ("integer", 0), "varClasificados": ("integer", 0),
+        "varIntegridadOrigen": ("string", "ERROR"), "varOrigenVacioDemostrado": ("boolean", False),
         "varFilaActual": ("integer", 0), "varDetalle": ("array", []),
         "varClavesExistentes": ("array", []), "varResultadoFila": ("string", "PENDIENTE"),
         "varFalloEstructural": ("boolean", True), "varProcesamientoCompleto": ("boolean", False),
@@ -231,6 +290,15 @@ def construir_definicion(esquema_p7, columnas, esquema_listas):
         Guardar_validos=asignar("varCantidadValida", "@sub(variables('varCantidadRecibida'),length(body('Omitidos_ERROR')))"),
         Contar_omitidos_error=asignar("varCantidadError", "@length(body('Omitidos_ERROR'))"),
         Contar_omitidos_existentes=asignar("varCantidadYaExiste", "@length(body('Omitidos_YA_EXISTE'))"),
+        # P8.5: el control de origen viaja dentro del JSON; sin bloque, sin hash coincidente o con otro
+        # total de filas, la integridad de origen NO está demostrada. Sin llamadas SharePoint.
+        Guardar_integridad_origen=asignar("varIntegridadOrigen",
+            "@if(and(equals(body('Analizar_JSON')?['control_origen']?['integridad_origen'],'OK'),"
+            "equals(body('Analizar_JSON')?['control_origen']?['sha256_lists'],body('Analizar_JSON')?['sha256_archivo_fuente']),"
+            "equals(body('Analizar_JSON')?['control_origen']?['movimientos_normalizados'],variables('varCantidadRecibida'))),'OK','ERROR')"),
+        Guardar_origen_vacio_demostrado=asignar("varOrigenVacioDemostrado",
+            "@and(equals(variables('varIntegridadOrigen'),'OK'),"
+            "equals(body('Analizar_JSON')?['control_origen']?['origen_vacio_demostrado'],true))"),
         Detallar_omitidos={"type": "Foreach", "foreach": f"@take(body('Omitidos_ERROR'),{MAX_ERRORES})",
             "runtimeConfiguration": {"concurrency": {"repetitions": 1}}, "actions": {
                 "Registrar_detalle_omitido": diagnostico_fila("omitido", "Fila rechazada por adaptador P7; ver omitidos del JSON.",
@@ -262,7 +330,7 @@ def construir_definicion(esquema_p7, columnas, esquema_listas):
         Etapa_parse=asignar("varEtapa", "PARSE_JSON"),
         Analizar_JSON={"type": "ParseJson", "inputs": {
             "content": "@json(base64ToString(body('Obtener_contenido_del_archivo')?['$content']))",
-            "schema": esquema_p7,
+            "schema": esquema_con_control_origen(esquema_p7),
         }},
         Etapa_contrato=asignar("varEtapa", "CONTRATO"),
         Guardar_recibidos=asignar("varCantidadRecibida", "@add(length(body('Analizar_JSON')?['movimientos']),length(body('Analizar_JSON')?['omitidos']))"),
@@ -282,16 +350,23 @@ def construir_definicion(esquema_p7, columnas, esquema_listas):
         }),
         Invariante=redactar("@equals(variables('varCantidadRecibida'),add(add(variables('varCantidadNueva'),variables('varCantidadYaExiste')),variables('varCantidadError')))"),
         Estado_final=redactar("@if(not(outputs('Invariante')),'COMPLETADO_CON_ERRORES',if(variables('varFalloEstructural'),'FALLIDO',if(greater(variables('varCantidadError'),0),'COMPLETADO_CON_ERRORES','COMPLETADO')))"),
+        Cantidad_faltante=redactar("@max(0,sub(sub(variables('varCantidadValida'),variables('varCantidadConfirmada')),variables('varCantidadDiferencia')))"),
+        Estado_certificacion=redactar(
+            "@if(and(not(variables('varFalloEstructural')),variables('varProcesamientoCompleto'),outputs('Invariante'),"
+            "equals(variables('varIntegridadOrigen'),'OK'),or(greater(variables('varCantidadValida'),0),variables('varOrigenVacioDemostrado')),"
+            "equals(variables('varCantidadValida'),variables('varCantidadConfirmada')),equals(outputs('Cantidad_faltante'),0),"
+            "equals(variables('varCantidadDiferencia'),0),equals(variables('varCantidadError'),0)),'CERTIFICADO','NO_CERTIFICADO')"),
         Diagnostico=redactar({
             "etapa": "@variables('varEtapa')", "archivo": "@variables('varArchivoJson')",
-            "mensaje": "@if(variables('varFalloEstructural'),'Fallo estructural: revisar la etapa indicada en el historial. Las filas sin resultado confirmado se cuentan como ERROR.',if(outputs('Invariante'),'Errores de filas manejados; ver detalle.','Conteos inconsistentes.'))",
+            "mensaje": "@if(variables('varFalloEstructural'),'Fallo estructural: revisar la etapa indicada en el historial. Las filas sin resultado confirmado se cuentan como ERROR.',if(not(outputs('Invariante')),'Conteos inconsistentes.',if(greater(variables('varCantidadError'),0),'Errores de filas manejados; ver detalle.',if(greater(variables('varCantidadDiferencia'),0),'Diferencias de identidad financiera; ver detalle.',if(not(equals(variables('varIntegridadOrigen'),'OK')),'Integridad de origen no demostrada: el control de origen falta, falló o no corresponde a este lote.','No certificado: hay movimientos esperados sin confirmar.')))))",
+            "certificacion": "@outputs('Estado_certificacion')", "integridad_origen": "@variables('varIntegridadOrigen')",
             "ejecucion": "@take(workflow()?['run']?['name'],128)",
             "errores": "@variables('varDetalle')",
             "cantidad_error": "@variables('varCantidadError')",
-            "detalle_omitido": "@max(0,sub(variables('varCantidadError'),length(variables('varDetalle'))))",
+            "detalle_omitido": "@max(0,sub(add(variables('varCantidadError'),variables('varCantidadDiferencia')),length(variables('varDetalle'))))",
         }),
         Mensaje_acotado=redactar(
-            f"@if(equals(outputs('Estado_final'),'COMPLETADO'),'',if(lessOrEquals(length(string(outputs('Diagnostico'))),{MAX_MENSAJE}),"
+            f"@if(and(equals(outputs('Estado_final'),'COMPLETADO'),equals(outputs('Estado_certificacion'),'CERTIFICADO')),'',if(lessOrEquals(length(string(outputs('Diagnostico'))),{MAX_MENSAJE}),"
             "string(outputs('Diagnostico')),string(setProperty(setProperty(outputs('Diagnostico'),'errores',json('[]')),"
             "'mensaje','Detalle excedio el limite de 8000 caracteres; revisar historial mediante ejecucion.'))))"
         ),
@@ -304,7 +379,11 @@ def construir_definicion(esquema_p7, columnas, esquema_listas):
                 ("CANTIDAD_NUEVA", "varCantidadNueva"), ("CANTIDAD_YA_EXISTE", "varCantidadYaExiste"),
                 ("CANTIDAD_ERROR", "varCantidadError")
             ]},
-            "item/ESTADO_LOTE/Value": "@outputs('Estado_final')", "item/MENSAJE_ERROR": "@outputs('Mensaje_acotado')",
+            "item/CANTIDAD_ESPERADA": "@variables('varCantidadValida')", "item/CANTIDAD_CONFIRMADA": "@variables('varCantidadConfirmada')",
+            "item/CANTIDAD_FALTANTE": "@outputs('Cantidad_faltante')", "item/CANTIDAD_DIFERENCIA": "@variables('varCantidadDiferencia')",
+            "item/ESTADO_LOTE/Value": "@outputs('Estado_final')", "item/ESTADO_CERTIFICACION/Value": "@outputs('Estado_certificacion')",
+            "item/INTEGRIDAD_ORIGEN/Value": "@variables('varIntegridadOrigen')",
+            "item/MENSAJE_ERROR": "@outputs('Mensaje_acotado')",
             "item/ARCHIVO_JSON": "@variables('varArchivoJson')", "item/ID_EJECUCION_FLUJO": "@workflow()?['run']?['name']",
         }),
     )

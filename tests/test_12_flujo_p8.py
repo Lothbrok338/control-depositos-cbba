@@ -38,7 +38,7 @@ def test_paquete_y_fuente_son_reproducibles():
     paquete.escribir_artefactos()
     assert all(p.read_bytes() == valor for p, valor in originales.items())
     assert anterior.read_bytes() == bytes_anteriores
-    nombre = "P8_CARGA_DEPOSITOS_ACTIVOS_V5_TENANT_LISTAS_REALES"
+    nombre = "P8_CARGA_DEPOSITOS_ACTIVOS_V7_CERTIFICACION_E2E_ORIGEN"
     assert paquete.ZIP_SALIDA.name == nombre + ".zip"
     with zipfile.ZipFile(paquete.ZIP_SALIDA) as z, zipfile.ZipFile(anterior) as viejo:
         manifest = json.loads(z.read("manifest.json"))

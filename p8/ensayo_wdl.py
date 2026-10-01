@@ -87,16 +87,28 @@ def validar_esquema(valor, esquema):
 
 
 class SharePointSimulado:
-    def __init__(self, contenido, existentes=None, fallos=None, nombre="DEPOSITOS_ACTIVOS__piloto.json", directo=False):
+    def __init__(self, contenido, existentes=None, fallos=None, nombre="DEPOSITOS_ACTIVOS__piloto.json", directo=False,
+                 alteraciones=None):
         self.contenido = contenido if isinstance(contenido, str) else json.dumps(contenido, ensure_ascii=False)
         self.activos = copy.deepcopy(existentes or {})
         self.fallos = fallos or {}
+        # {(accion, clave): {campo: valor}}: altera solo el registro DEVUELTO por SharePoint
+        # (preconsulta, respuesta del POST o reconsulta), no el almacenado.
+        self.alteraciones = alteraciones or {}
         self.nombre = nombre
         self.directo = directo
         self.bitacoras = []
         self.llamadas = []
         self.creaciones = []
         self.coincidencias_preconsulta = 0
+
+    def _registro(self, nombre, clave, fila):
+        """Registro tal como lo devuelve SharePoint: la fecha solo-fecha llega como fecha-hora ISO."""
+        r = copy.deepcopy(fila)
+        if isinstance(r.get("FECHA_MOVIMIENTO"), str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", r["FECHA_MOVIMIENTO"]):
+            r["FECHA_MOVIMIENTO"] += "T00:00:00Z"
+        r.update(self.alteraciones.get((nombre, clave), {}))
+        return r
 
     def ejecutar(self, nombre, parametros):
         self.llamadas.append((nombre, copy.deepcopy(parametros)))
@@ -122,7 +134,7 @@ class SharePointSimulado:
             encontrados = [m for k, m in self.activos.items() if k.casefold() == clave.casefold()]
             if nombre == "Obtener_clave_preexistente":
                 self.coincidencias_preconsulta += len(encontrados[:1])
-            return {"body": {"value": encontrados[:1]}, "statusCode": 200}
+            return {"body": {"value": [self._registro(nombre, clave, m) for m in encontrados[:1]]}, "statusCode": 200}
         if nombre == "Crear_movimiento":
             self.creaciones.append(copy.deepcopy(parametros))
             clave = parametros["item/CLAVE_TRANSACCION"]
@@ -136,7 +148,7 @@ class SharePointSimulado:
             if any(k.casefold() == clave.casefold() for k in self.activos):
                 raise FalloConector("Failed", 409)
             self.activos[clave] = fila
-            return {"body": {"ID": len(self.activos)}, "statusCode": 201}
+            return {"body": {"ID": len(self.activos), **self._registro(nombre, clave, fila)}, "statusCode": 201}
         raise NotImplementedError(nombre)
 
 

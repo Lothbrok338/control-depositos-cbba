@@ -1,0 +1,59 @@
+{
+  "Depositos_Cargas": {
+    "columnas_nuevas": [
+      {
+        "nombre_tecnico": "CANTIDAD_ESPERADA",
+        "tipo": "Numero, 0 decimales",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false
+      },
+      {
+        "nombre_tecnico": "CANTIDAD_CONFIRMADA",
+        "tipo": "Numero, 0 decimales",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false
+      },
+      {
+        "nombre_tecnico": "CANTIDAD_FALTANTE",
+        "tipo": "Numero, 0 decimales",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false
+      },
+      {
+        "nombre_tecnico": "CANTIDAD_DIFERENCIA",
+        "tipo": "Numero, 0 decimales",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false
+      },
+      {
+        "nombre_tecnico": "ESTADO_CERTIFICACION",
+        "tipo": "Opcion",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false,
+        "valores": [
+          "CERTIFICADO",
+          "NO_CERTIFICADO"
+        ],
+        "permitir_relleno": false
+      },
+      {
+        "nombre_tecnico": "INTEGRIDAD_ORIGEN",
+        "tipo": "Opcion",
+        "obligatoria": false,
+        "indexada": false,
+        "valores_unicos": false,
+        "valores": [
+          "OK",
+          "ERROR"
+        ],
+        "permitir_relleno": false
+      }
+    ],
+    "total_columnas_nuevas": 6
+  }
+}

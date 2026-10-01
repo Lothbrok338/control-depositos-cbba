@@ -162,6 +162,40 @@
         ]
       }
     },
+    "Inicializar_varCantidadConfirmada": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varCantidadConfirmada",
+            "type": "integer",
+            "value": 0
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varCantidadError": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varCantidadDiferencia": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varCantidadDiferencia",
+            "type": "integer",
+            "value": 0
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varCantidadConfirmada": [
+          "Succeeded"
+        ]
+      }
+    },
     "Inicializar_varClasificados": {
       "type": "InitializeVariable",
       "inputs": {
@@ -174,7 +208,41 @@
         ]
       },
       "runAfter": {
-        "Inicializar_varCantidadError": [
+        "Inicializar_varCantidadDiferencia": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varIntegridadOrigen": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varIntegridadOrigen",
+            "type": "string",
+            "value": "ERROR"
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varClasificados": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varOrigenVacioDemostrado": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varOrigenVacioDemostrado",
+            "type": "boolean",
+            "value": false
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varIntegridadOrigen": [
           "Succeeded"
         ]
       }
@@ -191,7 +259,7 @@
         ]
       },
       "runAfter": {
-        "Inicializar_varClasificados": [
+        "Inicializar_varOrigenVacioDemostrado": [
           "Succeeded"
         ]
       }
@@ -680,6 +748,9 @@
                       "valores"
                     ]
                   }
+                },
+                "control_origen": {
+                  "type": "object"
                 }
               },
               "required": [
@@ -855,6 +926,30 @@
                 ]
               }
             },
+            "Guardar_integridad_origen": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varIntegridadOrigen",
+                "value": "@if(and(equals(body('Analizar_JSON')?['control_origen']?['integridad_origen'],'OK'),equals(body('Analizar_JSON')?['control_origen']?['sha256_lists'],body('Analizar_JSON')?['sha256_archivo_fuente']),equals(body('Analizar_JSON')?['control_origen']?['movimientos_normalizados'],variables('varCantidadRecibida'))),'OK','ERROR')"
+              },
+              "runAfter": {
+                "Contar_omitidos_existentes": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Guardar_origen_vacio_demostrado": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varOrigenVacioDemostrado",
+                "value": "@and(equals(variables('varIntegridadOrigen'),'OK'),equals(body('Analizar_JSON')?['control_origen']?['origen_vacio_demostrado'],true))"
+              },
+              "runAfter": {
+                "Guardar_integridad_origen": [
+                  "Succeeded"
+                ]
+              }
+            },
             "Detallar_omitidos": {
               "type": "Foreach",
               "foreach": "@take(body('Omitidos_ERROR'),8)",
@@ -906,7 +1001,7 @@
                 }
               },
               "runAfter": {
-                "Contar_omitidos_existentes": [
+                "Guardar_origen_vacio_demostrado": [
                   "Succeeded"
                 ]
               }
@@ -962,6 +1057,91 @@
                       "inputs": {
                         "name": "varClavesExistentes",
                         "value": "@items('Preconsultar_claves')?['CLAVE_TRANSACCION']"
+                      },
+                      "runAfter": {}
+                    },
+                    "Diferencias_preexistente": {
+                      "type": "Compose",
+                      "inputs": "@concat(if(equals(coalesce(body('Obtener_clave_preexistente')?['value'][0]?['CLAVE_TRANSACCION'],''),coalesce(items('Preconsultar_claves')?['CLAVE_TRANSACCION'],'')),'','CLAVE_TRANSACCION;'),if(equals(coalesce(body('Obtener_clave_preexistente')?['value'][0]?['BANCO'],''),coalesce(items('Preconsultar_claves')?['BANCO'],'')),'','BANCO;'),if(equals(coalesce(body('Obtener_clave_preexistente')?['value'][0]?['CUENTA_BANCARIA'],''),coalesce(items('Preconsultar_claves')?['CUENTA_BANCARIA'],'')),'','CUENTA_BANCARIA;'),if(equals(take(string(coalesce(body('Obtener_clave_preexistente')?['value'][0]?['FECHA_MOVIMIENTO'],'')),10),coalesce(items('Preconsultar_claves')?['FECHA_MOVIMIENTO'],'')),'','FECHA_MOVIMIENTO;'),if(equals(coalesce(body('Obtener_clave_preexistente')?['value'][0]?['HORA_MOVIMIENTO'],''),coalesce(items('Preconsultar_claves')?['HORA_MOVIMIENTO'],'')),'','HORA_MOVIMIENTO;'),if(equals(coalesce(body('Obtener_clave_preexistente')?['value'][0]?['CODIGO_ASIGNACION'],''),coalesce(items('Preconsultar_claves')?['CODIGO_ASIGNACION'],'')),'','CODIGO_ASIGNACION;'),if(equals(coalesce(body('Obtener_clave_preexistente')?['value'][0]?['TIPO_MOVIMIENTO'],''),coalesce(items('Preconsultar_claves')?['TIPO_MOVIMIENTO'],'')),'','TIPO_MOVIMIENTO;'),if(if(equals(body('Obtener_clave_preexistente')?['value'][0]?['IMPORTE'],null),false,equals(float(body('Obtener_clave_preexistente')?['value'][0]?['IMPORTE']),float(items('Preconsultar_claves')?['IMPORTE']))),'','IMPORTE;'),if(if(equals(body('Obtener_clave_preexistente')?['value'][0]?['SALDO'],null),false,equals(float(body('Obtener_clave_preexistente')?['value'][0]?['SALDO']),float(items('Preconsultar_claves')?['SALDO']))),'','SALDO;'))",
+                      "runAfter": {
+                        "Guardar_clave_existente": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "Certificar_preexistente": {
+                      "type": "If",
+                      "expression": "@empty(outputs('Diferencias_preexistente'))",
+                      "actions": {
+                        "Contar_CONFIRMADO_preexistente": {
+                          "type": "IncrementVariable",
+                          "inputs": {
+                            "name": "varCantidadConfirmada",
+                            "value": 1
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {
+                          "Contar_DIFERENCIA_preexistente": {
+                            "type": "IncrementVariable",
+                            "inputs": {
+                              "name": "varCantidadDiferencia",
+                              "value": 1
+                            },
+                            "runAfter": {}
+                          },
+                          "Registrar_diferencia_preexistente": {
+                            "type": "If",
+                            "expression": "@less(length(variables('varDetalle')),8)",
+                            "actions": {
+                              "Detalle_dif_preexistente": {
+                                "type": "Compose",
+                                "inputs": {
+                                  "fila": "PRECONSULTA",
+                                  "CLAVE_TRANSACCION": "@take(items('Preconsultar_claves')?['CLAVE_TRANSACCION'],255)",
+                                  "motivo": "Identidad almacenada distinta de la esperada.",
+                                  "codigo": "@concat('DIF:',outputs('Diferencias_preexistente'))"
+                                },
+                                "runAfter": {}
+                              },
+                              "Detalle_acotado_dif_preexistente": {
+                                "type": "Compose",
+                                "inputs": "@if(lessOrEquals(length(string(outputs('Detalle_dif_preexistente'))),800),outputs('Detalle_dif_preexistente'),setProperty(outputs('Detalle_dif_preexistente'),'CLAVE_TRANSACCION',take(outputs('Detalle_dif_preexistente')?['CLAVE_TRANSACCION'],64)))",
+                                "runAfter": {
+                                  "Detalle_dif_preexistente": [
+                                    "Succeeded"
+                                  ]
+                                }
+                              },
+                              "Anotar_dif_preexistente": {
+                                "type": "AppendToArrayVariable",
+                                "inputs": {
+                                  "name": "varDetalle",
+                                  "value": "@outputs('Detalle_acotado_dif_preexistente')"
+                                },
+                                "runAfter": {
+                                  "Detalle_acotado_dif_preexistente": [
+                                    "Succeeded"
+                                  ]
+                                }
+                              }
+                            },
+                            "else": {
+                              "actions": {}
+                            },
+                            "runAfter": {
+                              "Contar_DIFERENCIA_preexistente": [
+                                "Succeeded"
+                              ]
+                            }
+                          }
+                        }
+                      },
+                      "runAfter": {
+                        "Diferencias_preexistente": [
+                          "Succeeded"
+                        ]
                       }
                     }
                   },
@@ -1150,6 +1330,91 @@
                                 "inputs": {
                                   "name": "varResultadoFila",
                                   "value": "YA_EXISTE"
+                                },
+                                "runAfter": {}
+                              },
+                              "Diferencias_reconsulta": {
+                                "type": "Compose",
+                                "inputs": "@concat(if(equals(coalesce(body('Reconsultar_CLAVE_TRANSACCION')?['value'][0]?['CLAVE_TRANSACCION'],''),coalesce(outputs('Movimiento_actual')?['CLAVE_TRANSACCION'],'')),'','CLAVE_TRANSACCION;'),if(equals(coalesce(body('Reconsultar_CLAVE_TRANSACCION')?['value'][0]?['BANCO'],''),coalesce(outputs('Movimiento_actual')?['BANCO'],'')),'','BANCO;'),if(equals(coalesce(body('Reconsultar_CLAVE_TRANSACCION')?['value'][0]?['CUENTA_BANCARIA'],''),coalesce(outputs('Movimiento_actual')?['CUENTA_BANCARIA'],'')),'','CUENTA_BANCARIA;'),if(equals(take(string(coalesce(body('Reconsultar_CLAVE_TRANSACCION')?['value'][0]?['FECHA_MOVIMIENTO'],'')),10),coalesce(outputs('Movimiento_actual')?['FECHA_MOVIMIENTO'],'')),'','FECHA_MOVIMIENTO;'),if(equals(coalesce(body('Reconsultar_CLAVE_TRANSACCION')?['value'][0]?['HORA_MOVIMIENTO'],''),coalesce(outputs('Movimiento_actual')?['HORA_MOVIMIENTO'],'')),'','HORA_MOVIMIENTO;'),if(equals(coalesce(body('Reconsultar_CLAVE_TRANSACCION')?['value'][0]?['CODIGO_ASIGNACION'],''),coalesce(outputs('Movimiento_actual')?['CODIGO_ASIGNACION'],'')),'','CODIGO_ASIGNACION;'),if(equals(coalesce(body('Reconsultar_CLAVE_TRANSACCION')?['value'][0]?['TIPO_MOVIMIENTO'],''),coalesce(outputs('Movimiento_actual')?['TIPO_MOVIMIENTO'],'')),'','TIPO_MOVIMIENTO;'),if(if(equals(body('Reconsultar_CLAVE_TRANSACCION')?['value'][0]?['IMPORTE'],null),false,equals(float(body('Reconsultar_CLAVE_TRANSACCION')?['value'][0]?['IMPORTE']),float(outputs('Movimiento_actual')?['IMPORTE']))),'','IMPORTE;'),if(if(equals(body('Reconsultar_CLAVE_TRANSACCION')?['value'][0]?['SALDO'],null),false,equals(float(body('Reconsultar_CLAVE_TRANSACCION')?['value'][0]?['SALDO']),float(outputs('Movimiento_actual')?['SALDO']))),'','SALDO;'))",
+                                "runAfter": {
+                                  "Resultado_YA_EXISTE": [
+                                    "Succeeded"
+                                  ]
+                                }
+                              },
+                              "Certificar_reconsulta": {
+                                "type": "If",
+                                "expression": "@empty(outputs('Diferencias_reconsulta'))",
+                                "actions": {
+                                  "Contar_CONFIRMADO_reconsulta": {
+                                    "type": "IncrementVariable",
+                                    "inputs": {
+                                      "name": "varCantidadConfirmada",
+                                      "value": 1
+                                    }
+                                  }
+                                },
+                                "else": {
+                                  "actions": {
+                                    "Contar_DIFERENCIA_reconsulta": {
+                                      "type": "IncrementVariable",
+                                      "inputs": {
+                                        "name": "varCantidadDiferencia",
+                                        "value": 1
+                                      },
+                                      "runAfter": {}
+                                    },
+                                    "Registrar_diferencia_reconsulta": {
+                                      "type": "If",
+                                      "expression": "@less(length(variables('varDetalle')),8)",
+                                      "actions": {
+                                        "Detalle_dif_reconsulta": {
+                                          "type": "Compose",
+                                          "inputs": {
+                                            "fila": "@variables('varFilaActual')",
+                                            "CLAVE_TRANSACCION": "@take(outputs('Movimiento_actual')?['CLAVE_TRANSACCION'],255)",
+                                            "motivo": "Identidad almacenada distinta de la esperada.",
+                                            "codigo": "@concat('DIF:',outputs('Diferencias_reconsulta'))"
+                                          },
+                                          "runAfter": {}
+                                        },
+                                        "Detalle_acotado_dif_reconsulta": {
+                                          "type": "Compose",
+                                          "inputs": "@if(lessOrEquals(length(string(outputs('Detalle_dif_reconsulta'))),800),outputs('Detalle_dif_reconsulta'),setProperty(outputs('Detalle_dif_reconsulta'),'CLAVE_TRANSACCION',take(outputs('Detalle_dif_reconsulta')?['CLAVE_TRANSACCION'],64)))",
+                                          "runAfter": {
+                                            "Detalle_dif_reconsulta": [
+                                              "Succeeded"
+                                            ]
+                                          }
+                                        },
+                                        "Anotar_dif_reconsulta": {
+                                          "type": "AppendToArrayVariable",
+                                          "inputs": {
+                                            "name": "varDetalle",
+                                            "value": "@outputs('Detalle_acotado_dif_reconsulta')"
+                                          },
+                                          "runAfter": {
+                                            "Detalle_acotado_dif_reconsulta": [
+                                              "Succeeded"
+                                            ]
+                                          }
+                                        }
+                                      },
+                                      "else": {
+                                        "actions": {}
+                                      },
+                                      "runAfter": {
+                                        "Contar_DIFERENCIA_reconsulta": [
+                                          "Succeeded"
+                                        ]
+                                      }
+                                    }
+                                  }
+                                },
+                                "runAfter": {
+                                  "Diferencias_reconsulta": [
+                                    "Succeeded"
+                                  ]
                                 }
                               }
                             },
@@ -1285,6 +1550,90 @@
                           "TRY_CREAR_MOVIMIENTO": [
                             "Failed",
                             "TimedOut"
+                          ]
+                        }
+                      },
+                      "Diferencias_nuevo": {
+                        "type": "Compose",
+                        "inputs": "@concat(if(equals(coalesce(body('Crear_movimiento')?['CLAVE_TRANSACCION'],''),coalesce(outputs('Movimiento_actual')?['CLAVE_TRANSACCION'],'')),'','CLAVE_TRANSACCION;'),if(equals(coalesce(body('Crear_movimiento')?['BANCO'],''),coalesce(outputs('Movimiento_actual')?['BANCO'],'')),'','BANCO;'),if(equals(coalesce(body('Crear_movimiento')?['CUENTA_BANCARIA'],''),coalesce(outputs('Movimiento_actual')?['CUENTA_BANCARIA'],'')),'','CUENTA_BANCARIA;'),if(equals(take(string(coalesce(body('Crear_movimiento')?['FECHA_MOVIMIENTO'],'')),10),coalesce(outputs('Movimiento_actual')?['FECHA_MOVIMIENTO'],'')),'','FECHA_MOVIMIENTO;'),if(equals(coalesce(body('Crear_movimiento')?['HORA_MOVIMIENTO'],''),coalesce(outputs('Movimiento_actual')?['HORA_MOVIMIENTO'],'')),'','HORA_MOVIMIENTO;'),if(equals(coalesce(body('Crear_movimiento')?['CODIGO_ASIGNACION'],''),coalesce(outputs('Movimiento_actual')?['CODIGO_ASIGNACION'],'')),'','CODIGO_ASIGNACION;'),if(equals(coalesce(body('Crear_movimiento')?['TIPO_MOVIMIENTO'],''),coalesce(outputs('Movimiento_actual')?['TIPO_MOVIMIENTO'],'')),'','TIPO_MOVIMIENTO;'),if(if(equals(body('Crear_movimiento')?['IMPORTE'],null),false,equals(float(body('Crear_movimiento')?['IMPORTE']),float(outputs('Movimiento_actual')?['IMPORTE']))),'','IMPORTE;'),if(if(equals(body('Crear_movimiento')?['SALDO'],null),false,equals(float(body('Crear_movimiento')?['SALDO']),float(outputs('Movimiento_actual')?['SALDO']))),'','SALDO;'))",
+                        "runAfter": {
+                          "Crear_OK": [
+                            "Succeeded"
+                          ]
+                        }
+                      },
+                      "Certificar_nuevo": {
+                        "type": "If",
+                        "expression": "@empty(outputs('Diferencias_nuevo'))",
+                        "actions": {
+                          "Contar_CONFIRMADO_nuevo": {
+                            "type": "IncrementVariable",
+                            "inputs": {
+                              "name": "varCantidadConfirmada",
+                              "value": 1
+                            }
+                          }
+                        },
+                        "else": {
+                          "actions": {
+                            "Contar_DIFERENCIA_nuevo": {
+                              "type": "IncrementVariable",
+                              "inputs": {
+                                "name": "varCantidadDiferencia",
+                                "value": 1
+                              },
+                              "runAfter": {}
+                            },
+                            "Registrar_diferencia_nuevo": {
+                              "type": "If",
+                              "expression": "@less(length(variables('varDetalle')),8)",
+                              "actions": {
+                                "Detalle_dif_nuevo": {
+                                  "type": "Compose",
+                                  "inputs": {
+                                    "fila": "@variables('varFilaActual')",
+                                    "CLAVE_TRANSACCION": "@take(outputs('Movimiento_actual')?['CLAVE_TRANSACCION'],255)",
+                                    "motivo": "Identidad almacenada distinta de la esperada.",
+                                    "codigo": "@concat('DIF:',outputs('Diferencias_nuevo'))"
+                                  },
+                                  "runAfter": {}
+                                },
+                                "Detalle_acotado_dif_nuevo": {
+                                  "type": "Compose",
+                                  "inputs": "@if(lessOrEquals(length(string(outputs('Detalle_dif_nuevo'))),800),outputs('Detalle_dif_nuevo'),setProperty(outputs('Detalle_dif_nuevo'),'CLAVE_TRANSACCION',take(outputs('Detalle_dif_nuevo')?['CLAVE_TRANSACCION'],64)))",
+                                  "runAfter": {
+                                    "Detalle_dif_nuevo": [
+                                      "Succeeded"
+                                    ]
+                                  }
+                                },
+                                "Anotar_dif_nuevo": {
+                                  "type": "AppendToArrayVariable",
+                                  "inputs": {
+                                    "name": "varDetalle",
+                                    "value": "@outputs('Detalle_acotado_dif_nuevo')"
+                                  },
+                                  "runAfter": {
+                                    "Detalle_acotado_dif_nuevo": [
+                                      "Succeeded"
+                                    ]
+                                  }
+                                }
+                              },
+                              "else": {
+                                "actions": {}
+                              },
+                              "runAfter": {
+                                "Contar_DIFERENCIA_nuevo": [
+                                  "Succeeded"
+                                ]
+                              }
+                            }
+                          }
+                        },
+                        "runAfter": {
+                          "Diferencias_nuevo": [
+                            "Succeeded"
                           ]
                         }
                       }
@@ -1483,26 +1832,46 @@
             ]
           }
         },
-        "Diagnostico": {
+        "Cantidad_faltante": {
           "type": "Compose",
-          "inputs": {
-            "etapa": "@variables('varEtapa')",
-            "archivo": "@variables('varArchivoJson')",
-            "mensaje": "@if(variables('varFalloEstructural'),'Fallo estructural: revisar la etapa indicada en el historial. Las filas sin resultado confirmado se cuentan como ERROR.',if(outputs('Invariante'),'Errores de filas manejados; ver detalle.','Conteos inconsistentes.'))",
-            "ejecucion": "@take(workflow()?['run']?['name'],128)",
-            "errores": "@variables('varDetalle')",
-            "cantidad_error": "@variables('varCantidadError')",
-            "detalle_omitido": "@max(0,sub(variables('varCantidadError'),length(variables('varDetalle'))))"
-          },
+          "inputs": "@max(0,sub(sub(variables('varCantidadValida'),variables('varCantidadConfirmada')),variables('varCantidadDiferencia')))",
           "runAfter": {
             "Estado_final": [
               "Succeeded"
             ]
           }
         },
+        "Estado_certificacion": {
+          "type": "Compose",
+          "inputs": "@if(and(not(variables('varFalloEstructural')),variables('varProcesamientoCompleto'),outputs('Invariante'),equals(variables('varIntegridadOrigen'),'OK'),or(greater(variables('varCantidadValida'),0),variables('varOrigenVacioDemostrado')),equals(variables('varCantidadValida'),variables('varCantidadConfirmada')),equals(outputs('Cantidad_faltante'),0),equals(variables('varCantidadDiferencia'),0),equals(variables('varCantidadError'),0)),'CERTIFICADO','NO_CERTIFICADO')",
+          "runAfter": {
+            "Cantidad_faltante": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Diagnostico": {
+          "type": "Compose",
+          "inputs": {
+            "etapa": "@variables('varEtapa')",
+            "archivo": "@variables('varArchivoJson')",
+            "mensaje": "@if(variables('varFalloEstructural'),'Fallo estructural: revisar la etapa indicada en el historial. Las filas sin resultado confirmado se cuentan como ERROR.',if(not(outputs('Invariante')),'Conteos inconsistentes.',if(greater(variables('varCantidadError'),0),'Errores de filas manejados; ver detalle.',if(greater(variables('varCantidadDiferencia'),0),'Diferencias de identidad financiera; ver detalle.',if(not(equals(variables('varIntegridadOrigen'),'OK')),'Integridad de origen no demostrada: el control de origen falta, falló o no corresponde a este lote.','No certificado: hay movimientos esperados sin confirmar.')))))",
+            "certificacion": "@outputs('Estado_certificacion')",
+            "integridad_origen": "@variables('varIntegridadOrigen')",
+            "ejecucion": "@take(workflow()?['run']?['name'],128)",
+            "errores": "@variables('varDetalle')",
+            "cantidad_error": "@variables('varCantidadError')",
+            "detalle_omitido": "@max(0,sub(add(variables('varCantidadError'),variables('varCantidadDiferencia')),length(variables('varDetalle'))))"
+          },
+          "runAfter": {
+            "Estado_certificacion": [
+              "Succeeded"
+            ]
+          }
+        },
         "Mensaje_acotado": {
           "type": "Compose",
-          "inputs": "@if(equals(outputs('Estado_final'),'COMPLETADO'),'',if(lessOrEquals(length(string(outputs('Diagnostico'))),8000),string(outputs('Diagnostico')),string(setProperty(setProperty(outputs('Diagnostico'),'errores',json('[]')),'mensaje','Detalle excedio el limite de 8000 caracteres; revisar historial mediante ejecucion.'))))",
+          "inputs": "@if(and(equals(outputs('Estado_final'),'COMPLETADO'),equals(outputs('Estado_certificacion'),'CERTIFICADO')),'',if(lessOrEquals(length(string(outputs('Diagnostico'))),8000),string(outputs('Diagnostico')),string(setProperty(setProperty(outputs('Diagnostico'),'errores',json('[]')),'mensaje','Detalle excedio el limite de 8000 caracteres; revisar historial mediante ejecucion.'))))",
           "runAfter": {
             "Diagnostico": [
               "Succeeded"
@@ -1529,7 +1898,13 @@
               "item/CANTIDAD_NUEVA": "@variables('varCantidadNueva')",
               "item/CANTIDAD_YA_EXISTE": "@variables('varCantidadYaExiste')",
               "item/CANTIDAD_ERROR": "@variables('varCantidadError')",
+              "item/CANTIDAD_ESPERADA": "@variables('varCantidadValida')",
+              "item/CANTIDAD_CONFIRMADA": "@variables('varCantidadConfirmada')",
+              "item/CANTIDAD_FALTANTE": "@outputs('Cantidad_faltante')",
+              "item/CANTIDAD_DIFERENCIA": "@variables('varCantidadDiferencia')",
               "item/ESTADO_LOTE/Value": "@outputs('Estado_final')",
+              "item/ESTADO_CERTIFICACION/Value": "@outputs('Estado_certificacion')",
+              "item/INTEGRIDAD_ORIGEN/Value": "@variables('varIntegridadOrigen')",
               "item/MENSAJE_ERROR": "@outputs('Mensaje_acotado')",
               "item/ARCHIVO_JSON": "@variables('varArchivoJson')",
               "item/ID_EJECUCION_FLUJO": "@workflow()?['run']?['name']"

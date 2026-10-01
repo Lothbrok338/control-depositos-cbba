@@ -21,7 +21,8 @@ P8_DIR = RAIZ / "p8"
 ESQUEMA_P7 = RAIZ / "esquema_parse_json_p7.json"
 DEFINICION_SALIDA = P8_DIR / "flujo_p8_definition.json"
 ESQUEMA_LISTAS_SALIDA = P8_DIR / "esquema_listas_p8.json"
-NOMBRE_FLUJO = "P8_CARGA_DEPOSITOS_ACTIVOS_V5_TENANT_LISTAS_REALES"
+ESQUEMA_CERTIFICACION_SALIDA = P8_DIR / "esquema_certificacion_p8_5.json"
+NOMBRE_FLUJO = "P8_CARGA_DEPOSITOS_ACTIVOS_V7_CERTIFICACION_E2E_ORIGEN"
 ZIP_SALIDA = RAIZ / f"{NOMBRE_FLUJO}.zip"
 API_ID = "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
 CONEXION = "shared_sharepointonline"
@@ -29,7 +30,7 @@ ESTADOS_EJECUCION = ["Succeeded", "Failed", "Skipped", "TimedOut"]
 
 
 def _uuid(nombre: str) -> str:
-    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"control-depositos-cbba:p8:v5-tenant-listas-reales:{nombre}"))
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"control-depositos-cbba:p8:v7-certificacion-e2e-origen:{nombre}"))
 
 
 FLOW_RESOURCE_ID = _uuid("flow-resource")
@@ -126,6 +127,22 @@ def construir_esquema_listas(columnas_m365) -> dict:
     }
 
 
+def construir_esquema_certificacion() -> dict:
+    """Columnas ADITIVAS de Depositos_Cargas que escribe el flujo P8.5.
+
+    Se mantienen fuera de esquema_listas_p8.json para no alterar el contrato que compila
+    y verifica el provisionador P8 (ya validado en tenant). Se crean antes de importar V6."""
+    numero = "Numero, 0 decimales"
+    columnas = [
+        {"nombre_tecnico": nombre, "tipo": numero, "obligatoria": False, "indexada": False, "valores_unicos": False}
+        for nombre in ("CANTIDAD_ESPERADA", "CANTIDAD_CONFIRMADA", "CANTIDAD_FALTANTE", "CANTIDAD_DIFERENCIA")
+    ] + [{"nombre_tecnico": "ESTADO_CERTIFICACION", "tipo": "Opcion", "obligatoria": False, "indexada": False,
+          "valores_unicos": False, "valores": ["CERTIFICADO", "NO_CERTIFICADO"], "permitir_relleno": False},
+         {"nombre_tecnico": "INTEGRIDAD_ORIGEN", "tipo": "Opcion", "obligatoria": False, "indexada": False,
+          "valores_unicos": False, "valores": ["OK", "ERROR"], "permitir_relleno": False}]
+    return {"Depositos_Cargas": {"columnas_nuevas": columnas, "total_columnas_nuevas": len(columnas)}}
+
+
 def _envolver_definicion(definicion: dict) -> dict:
     return {
         "name": FLOW_DEFINITION_ID,
@@ -218,6 +235,10 @@ def escribir_artefactos() -> tuple[Path, Path, Path]:
     )
     ESQUEMA_LISTAS_SALIDA.write_text(
         json.dumps(esquema_listas, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+
+    ESQUEMA_CERTIFICACION_SALIDA.write_text(
+        json.dumps(construir_esquema_certificacion(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
 
     archivos = _archivos_paquete(definicion)

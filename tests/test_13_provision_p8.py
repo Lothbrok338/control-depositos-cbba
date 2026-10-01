@@ -337,6 +337,11 @@ def test_provision_y_carga_bitacora_con_esquema_real_simulado(definicion, nombre
     assert resumen(provision)["PROVISION_P8"] == "OK"
     columnas = set(sp.listas["Depositos_Cargas"]["fields"]) - {"Title"}
     assert len(columnas) == 13 and "HASH_SHA256" in columnas and "SHA256" not in columnas
+    # P8.5: el flujo de carga V7 escribe además 6 columnas ADITIVAS de certificación, que se crean
+    # fuera del contrato del provisionador (p8/esquema_certificacion_p8_5.json).
+    adicionales = json.loads((RAIZ / "p8/esquema_certificacion_p8_5.json").read_text())["Depositos_Cargas"]["columnas_nuevas"]
+    columnas |= {c["nombre_tecnico"] for c in adicionales}
+    assert len(adicionales) == 6 and len(columnas) == 19
 
     class ConectorConColumnasProvisionadas(SharePointSimulado):
         def ejecutar(self, nombre, parametros):
