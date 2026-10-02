@@ -17,7 +17,7 @@ from p9 import contrato as C  # noqa: E402
 pytestmark = pytest.mark.p9
 
 RUTA = RAIZ / "p9/powerapps/P9_CONTROL_INGRESOS_FINAL_2M_SIN_CODIGO_ESTUDIANTE.txt"
-SHA = "eb68f73700d259bfb4db43d787e4a2ff050ee8c08754b7b5138468f003e050c8"
+SHA = "3de2d78fe1c789ff5aea0ce76d6b9ea7ae5411d226558022c83990986c06298b"
 BASE = RAIZ / "p9/powerapps/_base_validada_tenant/P9_CONTROL_INGRESOS_FINAL_VALIDADO_TENANT.txt"
 SHA_BASE = "595a95b4434f4e0f9d1a2737a35dcfaf0f993db1e3193c9050a5187bb828fc64"
 LIMITE = "DateAdd(Today(), -2, TimeUnit.Months)"

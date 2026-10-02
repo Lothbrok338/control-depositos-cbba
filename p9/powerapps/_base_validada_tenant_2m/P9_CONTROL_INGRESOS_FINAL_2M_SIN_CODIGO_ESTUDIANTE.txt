@@ -654,7 +654,7 @@
                   Color: =RGBA(123, 22, 50, 1)
                   Fill: =RGBA(255, 255, 255, 1)
                   Font: =Font.'Segoe UI'
-                  Height: =If(ThisItem.ESTADO_ASIGNACION.Value = "ASIGNADO", 28, 32)
+                  Height: =32
                   OnSelect: |-
                     =Set(varDepositoSeleccionado, ThisItem);
                     Refresh(Depositos_Activos);
@@ -673,53 +673,7 @@
                   Text: =If(ThisItem.ESTADO_ASIGNACION.Value = "ASIGNADO", "VER", "CONFIRMAR")
                   Width: =110
                   X: =Parent.TemplateWidth - 125
-                  Y: =If(ThisItem.ESTADO_ASIGNACION.Value = "ASIGNADO", 6, 22)
-            - btnAbrirComprobanteP9:
-                Control: Classic/Button@2.2.0
-                Properties:
-                  BorderStyle: =BorderStyle.None
-                  Color: =RGBA(255, 255, 255, 1)
-                  DisplayMode: =If(Coalesce(varP9ComprobanteCargando, false), DisplayMode.Disabled, DisplayMode.Edit)
-                  Fill: =RGBA(123, 22, 50, 1)
-                  Font: =Font.'Segoe UI'
-                  FontWeight: =FontWeight.Bold
-                  Height: =28
-                  OnSelect: |-
-                    =Set(varP9ComprobanteID, ThisItem.ID);
-                    Set(varP9Comprobante, Blank());
-                    Set(varP9ComprobanteCargando, true);
-                    IfError(
-                        Refresh(Depositos_Activos),
-                        Set(varP9Comprobante, Blank());
-                        Set(varP9ComprobanteID, Blank());
-                        Notify("No se pudo consultar SharePoint. Vuelve a intentar abrir el comprobante.", NotificationType.Warning);
-                        false,
-                        IfError(
-                            With(
-                                {registroP9: LookUp(Depositos_Activos, ID = varP9ComprobanteID)},
-                                If(
-                                    IsBlank(registroP9.ID) || registroP9.ESTADO_ASIGNACION.Value <> "ASIGNADO",
-                                    Set(varP9ComprobanteID, Blank());
-                                    Notify("El ingreso no existe o ya no está CONFIRMADO. No se puede abrir el comprobante.", NotificationType.Warning);
-                                    false,
-                                    Set(varP9Comprobante, registroP9);
-                                    Navigate('COMPROBANTE PDF', ScreenTransition.None)
-                                )
-                            ),
-                            Set(varP9Comprobante, Blank());
-                            Set(varP9ComprobanteID, Blank());
-                            Notify("No se pudo leer el ingreso desde SharePoint. Vuelve a intentarlo.", NotificationType.Warning);
-                            false
-                        )
-                    );
-                    Set(varP9ComprobanteCargando, false)
-                  Size: =7
-                  Text: ="PDF"
-                  Tooltip: ="Ver comprobante e imprimir o guardar como PDF"
-                  Visible: =ThisItem.ESTADO_ASIGNACION.Value = "ASIGNADO"
-                  Width: =110
-                  X: =Parent.TemplateWidth - 125
-                  Y: =40
+                  Y: =22
             - sepFilaP9:
                 Control: Rectangle@2.3.0
                 Properties:
