@@ -1,0 +1,615 @@
+Screens:
+  COMPROBANTE PDF:
+    Properties:
+      Fill: =RGBA(255, 255, 255, 1)
+      Height: =1123
+      LoadingSpinnerColor: =RGBA(123, 22, 50, 1)
+      Width: =794
+      OnVisible: |-
+        =If(
+            IsBlank(varP9ComprobanteID) || IsBlank(varP9Comprobante.ID) ||
+            varP9Comprobante.ID <> varP9ComprobanteID ||
+            varP9Comprobante.ESTADO_ASIGNACION.Value <> "ASIGNADO",
+            Set(varP9Comprobante, Blank());
+            Set(varP9ComprobanteID, Blank());
+            Notify("No hay un ingreso CONFIRMADO para mostrar. Abre el comprobante desde P9.", NotificationType.Warning);
+            Back()
+        )
+      OnHidden: |-
+        =Set(varP9Comprobante, Blank());
+        Set(varP9ComprobanteID, Blank())
+    Children:
+      - cntComprobantePDF:
+          Control: GroupContainer@1.5.0
+          Variant: ManualLayout
+          Properties:
+            DropShadow: =DropShadow.None
+            Fill: =RGBA(255, 255, 255, 1)
+            Height: =lblFirmaPDF.Y + lblFirmaPDF.Height + 16
+            RadiusBottomLeft: =8
+            RadiusBottomRight: =8
+            RadiusTopLeft: =8
+            RadiusTopRight: =8
+            Width: =Parent.Width - 80
+            X: =40
+            Y: =70
+            Visible: =!IsBlank(varP9ComprobanteID) && !IsBlank(varP9Comprobante.ID) && varP9Comprobante.ID = varP9ComprobanteID && varP9Comprobante.ESTADO_ASIGNACION.Value = "ASIGNADO"
+          Children:
+            - rectLineaSuperiorPDF:
+                Control: Rectangle@2.3.0
+                Properties:
+                  BorderStyle: =BorderStyle.None
+                  Fill: =RGBA(123, 22, 50, 1)
+                  Height: =8
+                  Width: =Parent.Width
+            - lblInstitucionPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Align: =Align.Center
+                  Color: =RGBA(94, 16, 38, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =28
+                  Size: =12
+                  Text: ="UNIVERSIDAD PRIVADA DEL VALLE"
+                  Width: =Parent.Width - 80
+                  X: =40
+                  Y: =25
+                  Wrap: =true
+            - lblAreaPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(94, 16, 38, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =22
+                  Size: =10
+                  Text: ="CONTROL DE INGRESOS"
+                  Width: =Parent.Width - 80
+                  X: =40
+                  Y: =53
+                  Wrap: =true
+                  Align: =Align.Center
+            - lblTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Align: =Align.Center
+                  Color: =RGBA(52, 55, 58, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =52
+                  Size: =18
+                  Text: ="COMPROBANTE DE CONFIRMACIÓN"
+                  Width: =Parent.Width - 80
+                  X: =40
+                  Y: =79
+                  Wrap: =true
+            - lblCodigoTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Align: =Align.Center
+                  Color: =RGBA(98, 102, 106, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Semibold
+                  Height: =24
+                  Size: =9
+                  Text: ="CÓDIGO DE ASIGNACIÓN"
+                  Width: =Parent.Width - 80
+                  X: =40
+                  Y: =141
+                  Wrap: =true
+            - lblCodigoValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Align: =Align.Center
+                  Color: =RGBA(123, 22, 50, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =48
+                  Size: =26
+                  Text: =Coalesce(varP9Comprobante.CODIGO_ASIGNACION, "—")
+                  Width: =Parent.Width - 80
+                  X: =40
+                  Y: =165
+                  Wrap: =true
+                  AutoHeight: =true
+            - rectSeparadorPDF1:
+                Control: Rectangle@2.3.0
+                Properties:
+                  BorderStyle: =BorderStyle.None
+                  Fill: =RGBA(225, 225, 225, 1)
+                  Height: =1
+                  Width: =Parent.Width - 80
+                  X: =40
+                  Y: =lblCodigoValorPDF.Y + lblCodigoValorPDF.Height + 18
+            - lblBancoTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: ="BANCO"
+                  Width: =Parent.Width / 3 - 45
+                  X: =50
+                  Y: =lblMovimientoPDF.Y + 26
+                  Font: =Font.'Segoe UI'
+                  Wrap: =true
+            - lblBancoValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  FontWeight: =FontWeight.Bold
+                  Height: =30
+                  Size: =12
+                  Text: =Coalesce(varP9Comprobante.BANCO, "—")
+                  Width: =Parent.Width / 3 - 45
+                  X: =50
+                  Y: =lblBancoTituloPDF.Y + 22
+                  Font: =Font.'Segoe UI'
+                  Wrap: =true
+                  AutoHeight: =true
+            - lblCuentaTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: ="NÚMERO DE CUENTA BANCARIA"
+                  Width: =Parent.Width / 3 - 45
+                  X: =Parent.Width / 3 + 25
+                  Y: =lblMovimientoPDF.Y + 26
+                  Font: =Font.'Segoe UI'
+                  Wrap: =true
+            - lblCuentaValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  FontWeight: =FontWeight.Bold
+                  Height: =30
+                  Size: =12
+                  Text: =Coalesce(varP9Comprobante.CUENTA_BANCARIA, "—")
+                  Width: =Parent.Width / 3 - 45
+                  X: =Parent.Width / 3 + 25
+                  Y: =lblCuentaTituloPDF.Y + 22
+                  Font: =Font.'Segoe UI'
+                  Wrap: =true
+                  AutoHeight: =true
+            - lblCuentaContableTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: =""
+                  Width: =Parent.Width / 3 - 55
+                  X: =2 * Parent.Width / 3
+                  Y: =212
+                  Font: =Font.'Segoe UI'
+                  Wrap: =true
+                  Visible: =false
+            - lblCuentaContableValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(94, 16, 38, 1)
+                  FontWeight: =FontWeight.Bold
+                  Height: =34
+                  Size: =15
+                  Text: =""
+                  Width: =Parent.Width / 3 - 55
+                  X: =2 * Parent.Width / 3
+                  Y: =234
+                  Font: =Font.'Segoe UI'
+                  Wrap: =true
+                  Visible: =false
+            - lblFechaMovTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: ="FECHA Y HORA DEL MOVIMIENTO"
+                  Width: =Parent.Width / 3 - 45
+                  X: =50
+                  Y: =Max(lblBancoValorPDF.Y + lblBancoValorPDF.Height, lblCuentaValorPDF.Y + lblCuentaValorPDF.Height, lblMonedaValorPDF.Y + lblMonedaValorPDF.Height) + 16
+                  Font: =Font.'Segoe UI'
+                  Wrap: =true
+            - lblFechaMovValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =36
+                  Size: =11
+                  Text: |-
+                    =If(IsBlank(varP9Comprobante.FECHA_MOVIMIENTO), "—", Text(varP9Comprobante.FECHA_MOVIMIENTO, "dd/mm/yyyy", "es-ES"))
+                    & " · " & Coalesce(varP9Comprobante.HORA_MOVIMIENTO, "—")
+                  Width: =Parent.Width / 3 - 45
+                  X: =50
+                  Y: =lblFechaMovTituloPDF.Y + 22
+                  Font: =Font.'Segoe UI'
+                  Wrap: =true
+                  AutoHeight: =true
+            - lblImporteTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: ="IMPORTE"
+                  Width: =Parent.Width / 3 - 45
+                  X: =Parent.Width / 3 + 25
+                  Y: =Max(lblBancoValorPDF.Y + lblBancoValorPDF.Height, lblCuentaValorPDF.Y + lblCuentaValorPDF.Height, lblMonedaValorPDF.Y + lblMonedaValorPDF.Height) + 16
+                  Font: =Font.'Segoe UI'
+                  Wrap: =true
+            - lblImporteValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(123, 22, 50, 1)
+                  FontWeight: =FontWeight.Bold
+                  Height: =36
+                  Size: =20
+                  Text: |-
+                    =If(
+                        IsBlank(varP9Comprobante.IMPORTE),
+                        "—",
+                        If(IsBlank(varP9Comprobante.MONEDA), "", varP9Comprobante.MONEDA & " ")
+                        & Text(varP9Comprobante.IMPORTE, "#,##0.00", "es-ES")
+                    )
+                  Width: =Parent.Width / 3 - 45
+                  X: =Parent.Width / 3 + 25
+                  Y: =lblImporteTituloPDF.Y + 22
+                  Font: =Font.'Segoe UI'
+                  Wrap: =true
+                  AutoHeight: =true
+            - lblEstadoTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: ="ESTADO"
+                  Width: =Parent.Width / 3 - 45
+                  X: =2 * Parent.Width / 3
+                  Y: =Max(lblBancoValorPDF.Y + lblBancoValorPDF.Height, lblCuentaValorPDF.Y + lblCuentaValorPDF.Height, lblMonedaValorPDF.Y + lblMonedaValorPDF.Height) + 16
+                  Font: =Font.'Segoe UI'
+                  Wrap: =true
+            - lblEstadoValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(39, 122, 72, 1)
+                  FontWeight: =FontWeight.Bold
+                  Height: =36
+                  Size: =11
+                  Text: =If(varP9Comprobante.ESTADO_ASIGNACION.Value = "ASIGNADO", "CONFIRMADO", "")
+                  Width: =Parent.Width / 3 - 55
+                  X: =2 * Parent.Width / 3
+                  Y: =lblEstadoTituloPDF.Y + 22
+                  Font: =Font.'Segoe UI'
+                  Wrap: =true
+                  AutoHeight: =true
+            - rectSeparadorPDF2:
+                Control: Rectangle@2.3.0
+                Properties:
+                  BorderStyle: =BorderStyle.None
+                  Fill: =RGBA(225, 225, 225, 1)
+                  Height: =1
+                  Width: =Parent.Width - 80
+                  X: =40
+                  Y: =lblDescripcionValorPDF.Y + lblDescripcionValorPDF.Height + 16
+            - lblEstudianteTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: ="ESTUDIANTE"
+                  Width: =Parent.Width / 3 - 45
+                  X: =50
+                  Y: =lblConfirmacionPDF.Y + 26
+                  Font: =Font.'Segoe UI'
+                  Wrap: =true
+            - lblEstudianteValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =34
+                  Size: =10
+                  Text: =Coalesce(varP9Comprobante.ESTUDIANTE, "—")
+                  Width: =Parent.Width / 3 - 45
+                  X: =50
+                  Y: =lblEstudianteTituloPDF.Y + 22
+                  Font: =Font.'Segoe UI'
+                  Wrap: =true
+                  AutoHeight: =true
+            - lblSolicitadoTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: ="SOLICITADO POR"
+                  Width: =Parent.Width / 3 - 45
+                  X: =Parent.Width / 3 + 25
+                  Y: =lblConfirmacionPDF.Y + 26
+                  Font: =Font.'Segoe UI'
+                  Wrap: =true
+            - lblSolicitadoValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =34
+                  Size: =10
+                  Text: =Coalesce(varP9Comprobante.SOLICITADO_POR, "—")
+                  Width: =Parent.Width / 3 - 45
+                  X: =Parent.Width / 3 + 25
+                  Y: =lblSolicitadoTituloPDF.Y + 22
+                  Font: =Font.'Segoe UI'
+                  Wrap: =true
+                  AutoHeight: =true
+            - lblSedeTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: ="SEDE SOLICITANTE"
+                  Width: =Parent.Width / 3 - 55
+                  X: =2 * Parent.Width / 3
+                  Y: =lblConfirmacionPDF.Y + 26
+                  Font: =Font.'Segoe UI'
+                  Wrap: =true
+            - lblSedeValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =34
+                  Size: =10
+                  Text: =Coalesce(varP9Comprobante.SEDE_ASIGNACION, "—")
+                  Width: =Parent.Width / 3 - 55
+                  X: =2 * Parent.Width / 3
+                  Y: =lblSedeTituloPDF.Y + 22
+                  Font: =Font.'Segoe UI'
+                  Wrap: =true
+                  AutoHeight: =true
+            - lblConfirmadoTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: ="CONFIRMADO POR"
+                  Width: =Parent.Width / 2 - 70
+                  X: =50
+                  Y: =Max(lblEstudianteValorPDF.Y + lblEstudianteValorPDF.Height, lblSolicitadoValorPDF.Y + lblSolicitadoValorPDF.Height, lblSedeValorPDF.Y + lblSedeValorPDF.Height) + 18
+                  Font: =Font.'Segoe UI'
+                  Wrap: =true
+            - lblConfirmadoValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(94, 16, 38, 1)
+                  FontWeight: =FontWeight.Bold
+                  Height: =36
+                  Text: =Coalesce(varP9Comprobante.USUARIO_ASIGNACION, "—")
+                  Width: =Parent.Width / 2 - 70
+                  X: =50
+                  Y: =lblConfirmadoTituloPDF.Y + 22
+                  Font: =Font.'Segoe UI'
+                  Wrap: =true
+                  AutoHeight: =true
+                  Size: =11
+            - lblFechaConfirmTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: ="FECHA Y HORA DE CONFIRMACIÓN"
+                  Width: =Parent.Width / 2 - 70
+                  X: =Parent.Width / 2 + 20
+                  Y: =Max(lblEstudianteValorPDF.Y + lblEstudianteValorPDF.Height, lblSolicitadoValorPDF.Y + lblSolicitadoValorPDF.Height, lblSedeValorPDF.Y + lblSedeValorPDF.Height) + 18
+                  Font: =Font.'Segoe UI'
+                  Wrap: =true
+            - lblFechaConfirmValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =36
+                  Size: =11
+                  Text: =If(IsBlank(varP9Comprobante.FECHA_HORA_ASIGNACION), "—", Text(varP9Comprobante.FECHA_HORA_ASIGNACION, "dd/mm/yyyy hh:mm:ss", "es-ES"))
+                  Width: =Parent.Width / 2 - 70
+                  X: =Parent.Width / 2 + 20
+                  Y: =lblFechaConfirmTituloPDF.Y + 22
+                  Font: =Font.'Segoe UI'
+                  Wrap: =true
+                  AutoHeight: =true
+            - lblObsTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: ="OBSERVACIÓN"
+                  Width: =Parent.Width - 100
+                  X: =50
+                  Y: =Max(lblConfirmadoValorPDF.Y + lblConfirmadoValorPDF.Height, lblFechaConfirmValorPDF.Y + lblFechaConfirmValorPDF.Height) + 18
+                  Font: =Font.'Segoe UI'
+                  Wrap: =true
+            - lblObsValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =44
+                  Size: =10
+                  Text: =If(IsBlank(TrimEnds(Coalesce(varP9Comprobante.OBSERVACION, ""))), "Sin observación", varP9Comprobante.OBSERVACION)
+                  Width: =Parent.Width - 100
+                  X: =50
+                  Y: =lblObsTituloPDF.Y + 22
+                  Wrap: =true
+                  AutoHeight: =true
+            - rectFirmaPDF:
+                Control: Rectangle@2.3.0
+                Properties:
+                  BorderStyle: =BorderStyle.None
+                  Fill: =RGBA(123, 22, 50, 1)
+                  Height: =2
+                  Width: =300
+                  X: =(Parent.Width - Self.Width) / 2
+                  Y: =lblObsValorPDF.Y + lblObsValorPDF.Height + 24
+            - lblFirmaPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Align: =Align.Center
+                  Color: =RGBA(98, 102, 106, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =32
+                  Size: =8
+                  Text: ="REGISTRO DE CONFIRMACIÓN · CONTROL DE INGRESOS"
+                  Width: =400
+                  X: =(Parent.Width - Self.Width) / 2
+                  Y: =rectFirmaPDF.Y + 8
+                  Wrap: =true
+            - lblMovimientoPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(94, 16, 38, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =20
+                  Size: =10
+                  Text: ="MOVIMIENTO"
+                  Width: =Parent.Width - 100
+                  X: =50
+                  Y: =rectSeparadorPDF1.Y + 14
+                  Wrap: =true
+            - lblMonedaTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: ="MONEDA"
+                  Width: =Parent.Width / 3 - 55
+                  X: =2 * Parent.Width / 3
+                  Y: =lblMovimientoPDF.Y + 26
+                  Wrap: =true
+            - lblMonedaValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(94, 16, 38, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =30
+                  Size: =12
+                  Text: =Coalesce(varP9Comprobante.MONEDA, "—")
+                  Width: =Parent.Width / 3 - 55
+                  X: =2 * Parent.Width / 3
+                  Y: =lblMonedaTituloPDF.Y + 22
+                  Wrap: =true
+                  AutoHeight: =true
+            - lblDescripcionTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: ="DESCRIPCIÓN"
+                  Width: =Parent.Width - 100
+                  X: =50
+                  Y: =Max(lblFechaMovValorPDF.Y + lblFechaMovValorPDF.Height, lblImporteValorPDF.Y + lblImporteValorPDF.Height, lblEstadoValorPDF.Y + lblEstadoValorPDF.Height) + 16
+                  Wrap: =true
+            - lblDescripcionValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Semibold
+                  Height: =32
+                  Size: =10
+                  Text: =Coalesce(varP9Comprobante.DESCRIPCION, "—")
+                  Width: =Parent.Width - 100
+                  X: =50
+                  Y: =lblDescripcionTituloPDF.Y + 22
+                  Wrap: =true
+                  AutoHeight: =true
+            - lblConfirmacionPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(94, 16, 38, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =20
+                  Size: =10
+                  Text: ="CONFIRMACIÓN"
+                  Width: =Parent.Width - 100
+                  X: =50
+                  Y: =rectSeparadorPDF2.Y + 12
+                  Wrap: =true
+      - btnVolverPDF:
+          Control: Classic/Button@2.2.0
+          Properties:
+            BorderColor: =RGBA(98, 102, 106, 1)
+            BorderThickness: =1
+            Color: =RGBA(52, 55, 58, 1)
+            Fill: =RGBA(255, 255, 255, 1)
+            Font: =Font.'Segoe UI'
+            Height: =38
+            OnSelect: =Back()
+            Size: =9
+            Text: ="VOLVER"
+            Visible: =Not('COMPROBANTE PDF'.Printing)
+            Width: =110
+            X: =40
+            Y: =20
+      - btnImprimirPDF:
+          Control: Classic/Button@2.2.0
+          Properties:
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            Fill: =RGBA(123, 22, 50, 1)
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Bold
+            Height: =38
+            OnSelect: =Print()
+            Size: =9
+            Text: ="IMPRIMIR / GUARDAR PDF"
+            Visible: =Not('COMPROBANTE PDF'.Printing) && !IsBlank(varP9ComprobanteID) && !IsBlank(varP9Comprobante.ID) && varP9Comprobante.ID = varP9ComprobanteID && varP9Comprobante.ESTADO_ASIGNACION.Value = "ASIGNADO"
+            Width: =190
+            X: =Parent.Width - 230
+            Y: =20
+            DisplayMode: =If(cntComprobantePDF.Visible && cntComprobantePDF.Y + cntComprobantePDF.Height <= Parent.Height - 24, DisplayMode.Edit, DisplayMode.Disabled)
+      - lblLimiteImpresionPDF:
+          Control: Label@2.5.1
+          Properties:
+            Color: =RGBA(123, 22, 50, 1)
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Bold
+            Height: =60
+            Size: =11
+            Text: ="El comprobante supera una página A4. La impresión está deshabilitada para evitar un documento incompleto."
+            Width: =Parent.Width - 80
+            X: =40
+            Y: =Parent.Height - 80
+            Wrap: =true
+            Fill: =RGBA(255, 255, 255, 1)
+            Visible: =Not('COMPROBANTE PDF'.Printing) && cntComprobantePDF.Visible && cntComprobantePDF.Y + cntComprobantePDF.Height > Parent.Height - 24

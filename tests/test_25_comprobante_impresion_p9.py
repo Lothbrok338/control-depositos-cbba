@@ -1,4 +1,9 @@
-"""Regresión estática del comprobante P9. No ejecuta Power Fx ni certifica Studio."""
+"""Regresión estática del comprobante P9. No ejecuta Power Fx ni certifica Studio.
+
+Desde la ampliación con CUENTA CONTABLE y TIPO DE CAMBIO (validada en el tenant) este archivo protege lo que no cambió:
+botón PDF, lectura al abrir, Print()/Back(), datos persistidos y que P9 y la confirmación sigan intactos. Lo nuevo
+(layout fijo, cuenta contable, tipo de cambio, protección de página) se prueba en `test_26_comprobante_cuenta_tc_p9.py`.
+"""
 import copy
 import hashlib
 import json
@@ -95,7 +100,8 @@ def test_acceso_directo_y_salida_limpian_el_comprobante():
     onvisible = PANTALLA["Properties"]["OnVisible"]
     for fragmento in ("IsBlank(varP9ComprobanteID)", "IsBlank(varP9Comprobante.ID)", "varP9Comprobante.ID <> varP9ComprobanteID", 'varP9Comprobante.ESTADO_ASIGNACION.Value <> "ASIGNADO"', "Set(varP9Comprobante, Blank())", "NotificationType.Warning", "Back()"):
         assert fragmento in onvisible
-    assert PANTALLA["Properties"]["OnHidden"] == "=Set(varP9Comprobante, Blank());\nSet(varP9ComprobanteID, Blank())"
+    assert PANTALLA["Properties"]["OnHidden"] == "=Reset(txtTipoCambioPDF);\nSet(varP9Comprobante, Blank());\nSet(varP9ComprobanteID, Blank())"
+    assert onvisible.startswith("=Reset(txtTipoCambioPDF);\nIf(")  # el tipo de cambio anterior nunca pasa al comprobante siguiente
     assert 'varP9Comprobante.ESTADO_ASIGNACION.Value = "ASIGNADO"' in propiedades("cntComprobantePDF")["Visible"]
     assert "varP9Comprobante.ID = varP9ComprobanteID" in propiedades("cntComprobantePDF")["Visible"]
 
@@ -147,15 +153,21 @@ def test_print_back_a4_y_controles_fuera_del_area_imprimible():
         assert "Not('COMPROBANTE PDF'.Printing)" in propiedades(name)["Visible"]
 
 
-def test_textos_crecen_y_no_se_permite_imprimir_contenido_fuera_de_pagina():
+def test_textos_con_alto_fijo_y_no_se_permite_imprimir_contenido_fuera_de_pagina():
+    """Validado en el tenant: coordenadas fijas (Studio no resolvía referencias entre controles al pegar) + protección de página."""
     for name in ("lblCodigoValorPDF", "lblBancoValorPDF", "lblCuentaValorPDF", "lblMonedaValorPDF", "lblDescripcionValorPDF", "lblObsValorPDF", "lblEstudianteValorPDF", "lblSolicitadoValorPDF", "lblSedeValorPDF", "lblConfirmadoValorPDF", "lblFechaConfirmValorPDF"):
-        assert propiedades(name)["AutoHeight"] == "=true"
+        assert "AutoHeight" not in propiedades(name)
         assert propiedades(name)["Wrap"] == "=true"
-    assert propiedades("cntComprobantePDF")["Height"] == "=lblFirmaPDF.Y + lblFirmaPDF.Height + 16"
+        assert re.fullmatch(r"=\d+", propiedades(name)["Height"])
+    assert propiedades("cntComprobantePDF")["Y"] == "=66" and propiedades("cntComprobantePDF")["Height"] == "=1022"
+    assert 66 + 1022 <= 1123 - 24
     mode = propiedades("btnImprimirPDF")["DisplayMode"]
-    assert "cntComprobantePDF.Y + cntComprobantePDF.Height <= Parent.Height - 24" in mode
-    assert "DisplayMode.Disabled" in mode
-    assert "cntComprobantePDF.Y + cntComprobantePDF.Height > Parent.Height - 24" in propiedades("lblLimiteImpresionPDF")["Visible"]
+    assert "DisplayMode.Disabled" in mode and "DisplayMode.Edit" in mode
+    assert "Len(Coalesce(varP9Comprobante.DESCRIPCION" not in mode  # la descripción se mide como líneas, no como caracteres
+    assert 'Len(descTexto) / ' in mode and 'Len(obsTexto) / ' in mode
+    limite = propiedades("lblLimiteImpresionPDF")["Visible"]
+    assert limite.startswith("=Not('COMPROBANTE PDF'.Printing)")
+    assert 'Len(Substitute(descTexto, Char(10), "")) <= ' in limite
 
 
 def test_nombres_y_estilo_de_referencia_conservados():
@@ -167,8 +179,8 @@ def test_nombres_y_estilo_de_referencia_conservados():
             if prop in original.get("Properties", {}):
                 assert propiedades(name)[prop] == original["Properties"][prop]
     for name in ("lblCuentaContableTituloPDF", "lblCuentaContableValorPDF"):
-        assert propiedades(name)["Visible"] == "=false"
-        assert propiedades(name)["Text"] == '=""'
+        assert "Visible" not in propiedades(name)  # visibles: la cuenta contable ya se calcula (ver test_26)
+    assert propiedades("lblCuentaContableTituloPDF")["Text"] == '="CUENTA CONTABLE"'
 
 
 def test_nombres_unicos_y_referencias_a_controles_existentes():

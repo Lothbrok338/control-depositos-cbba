@@ -19,9 +19,10 @@ Tenant piloto (solo piloto P9): sitio `https://univalleedu-my.sharepoint.com/per
 | `P9_ASIGNAR_DEPOSITO_POWERAPPS_V3_RESPUESTA.zip` | **Backend validado en tenant (ROLLBACK; base de la V4/V4.1/V4.2).** Flujo con trigger **Power Apps (V2)** y respuesta a Power Apps con 6 salidas tipadas: `DISPONIBLE → ASIGNADO` con control optimista If-Match/ETag. Su diff contra la versión previa está en `P9_ASIGNAR_DEPOSITO_POWERAPPS_V3_RESPUESTA_DIFF.md` (único cambio: marca `x-ms-dynamically-added` en las 6 salidas). |
 | `P9_ASIGNAR_DEPOSITO.zip`, `P9_ASIGNAR_DEPOSITO_POWERAPPS_V2.zip` | **Versiones previas, NO usar** (trigger manual / Power Apps V2 sin salidas tipadas: la app recibe la respuesta vacía). Se conservan como procedencia; diff en `P9_ASIGNAR_DEPOSITO_POWERAPPS_V2_DIFF.md`. |
 | `p9/powerapps/P9_CONTROL_INGRESOS_FINAL_2M_SIN_CODIGO_ESTUDIANTE.txt` | **Frontend VIGENTE, validado en tenant:** la base validada sin código de estudiante y con ventana de 2 meses (§9). Se pega igual que la base. |
+| `p9/powerapps/COMPROBANTE_PDF_CONTROLES_PEGAR_FINAL.yaml` | **Comprobante imprimible VIGENTE, validado a mano en el tenant:** solo los controles hijos de la pantalla `COMPROBANTE PDF`, para «Pegar» sobre la pantalla vacía (§10). `COMPROBANTE_PDF.pa.yaml` es su representación completa; `COMPROBANTE_PDF_VALIDACION.md` y `FORMULAS_EXACTAS.md` documentan el procedimiento y las fórmulas exactas. |
 | `p9/powerapps/_base_validada_tenant/P9_CONTROL_INGRESOS_FINAL_VALIDADO_TENANT.txt` | **Frontend base validado en tenant** (archivado para volver atrás; no es el vigente) (control YAML único `cntControlDepositosP9`, ManualLayout) para «Pegar código» en Power Apps Studio. SHA-256 `595a95b4434f4e0f9d1a2737a35dcfaf0f993db1e3193c9050a5187bb828fc64`. Sustituye a todos los frontends anteriores (que se retiraron del repositorio). |
 | `p9/` | Código que genera los paquetes (`python -m p9.asignar.construir`, `python -m p9.asignar.convertir_powerapps_v2`, `python -m p9.asignar.convertir_powerapps_v3`, `python -m p9.habilitar.construir`), simulador local y huellas del commit base. |
-| `tests/test_16_…`, `test_18_…`, `test_21_…`, `test_22_…`, `test_24_…` (V4.2) | Pruebas locales (ver §7). |
+| `tests/test_16_…`, `test_18_…`, `test_21_…`, `test_22_…`, `test_24_…` (V4.2), `test_25_…` y `test_26_…` (comprobante) | Pruebas locales (ver §7 y §10). |
 
 **No se tocó P6/P7/P8/P8.5.** Todo lo de P9 es archivo nuevo, salvo una línea de marcador en `tests/pytest.ini`. `p9/evidencias/huellas_base_p8_5.json` guarda el SHA-256 de los 72 archivos no-test del commit base y una prueba comprueba que ninguno cambió. El provisionador P8 no se modificó ni se reutilizó: P9 tiene el suyo.
 
@@ -202,6 +203,8 @@ Ejecutar desde la raíz del repo: `python -m pytest tests/test_16_asignacion_p9.
 | Backend V3 | Único cambio respecto de V2 = las 6 marcas de salidas; mismo comportamiento y concurrencia; 8 entradas idénticas (`test_18`, `test_21`) |
 | Frontend final | SHA-256 fijado; control raíz ManualLayout; sin `Patch`/`SubmitForm`/`Remove`/AutoLayout; 8 argumentos de `Run` en orden; solo lee `resultado`/`codigo`/`mensaje`; solo `Depositos_Activos`, solo `CRÉDITO`; observación opcional; trazabilidad de quién y cuándo (`test_21`, `test_22`). Revisión estática, **no** ejecución en Studio |
 
+Las pruebas del comprobante imprimible (`test_25`, `test_26`) se describen en §10 y en `p9/powerapps/COMPROBANTE_PDF_VALIDACION.md`.
+
 Estas pruebas **no** certifican Microsoft 365 (ver §6-1).
 
 ## 8. Migración a producción (sitio institucional)
@@ -236,3 +239,15 @@ Estas pruebas **no** certifican Microsoft 365 (ver §6-1).
 * **Solo es una restricción de la experiencia de Power Apps:** SharePoint conserva todo el histórico; no se borra ni archiva nada.
 * **Qué no se hizo:** no se bloquea el calendario del selector (`DatePicker` no tiene fecha mínima; agregar `OnChange` no está en las propiedades verificadas en los exports reales). Elegir una `FECHA DESDE` anterior no tiene efecto: rige el límite.
 * **Por confirmar en Studio:** que `galDepositosP9.Items` no muestre advertencias de delegación nuevas con `DateAdd(Today(), -2, TimeUnit.Months)` y `Today()`; el patrón es el habitual para columnas de fecha de SharePoint, pero no se pudo abrir Studio aquí.
+
+## 10. Comprobante imprimible (`Print()`) con CUENTA CONTABLE y TIPO DE CAMBIO
+
+**Estado: VALIDADO A MANO en Power Apps Studio / tenant** (confirmación del usuario, 2026-10-02) con `p9/powerapps/COMPROBANTE_PDF_CONTROLES_PEGAR_FINAL.yaml`: la pantalla `COMPROBANTE PDF` abre; la CUENTA CONTABLE es correcta para las 13 cuentas del P9; el TIPO DE CAMBIO para USD acepta coma y punto, el EQUIVALENTE EN Bs se calcula bien y IMPRIMIR se bloquea sin un tipo de cambio válido; al imprimir el campo editable no aparece y el tipo de cambio sale como texto; `Print()` funciona y cabe en una página; `Main_Screen`, la V4.2 y la confirmación siguen funcionando. Los casos no reportados están listados en `COMPROBANTE_PDF_VALIDACION.md` como *No reportado*.
+
+* **Qué es:** desde un ingreso CONFIRMADO, el botón **PDF** de la galería abre el comprobante; **IMPRIMIR / GUARDAR PDF** ejecuta `Print()` y el navegador guarda el PDF o imprime. Sin `PDF()`, flujos, `Patch`, `Download` ni almacenamiento en SharePoint. Los datos se releen de SharePoint (`Refresh` + `LookUp` por ID) al abrir.
+* **CUENTA CONTABLE:** se calcula de `CUENTA_BANCARIA` (sin guiones, espacios ni puntos) con la tabla de contabilidad; una cuenta sin mapear muestra «SIN MAPEO» y no bloquea la impresión. Banco Unión MN/ME (`10000003224552` → 110103052, `20000003224544` → 110104042) y BMSC (`1000872489` → 110103072) los confirmó el usuario.
+* **TIPO DE CAMBIO:** solo si `MONEDA = "USD"`; entrada numérica mayor que 0 con coma o punto; equivalente = `IMPORTE × TC` en es-ES (USD 500,00 × 6,96 = `Bs 3.480,00`). **No se guarda** en SharePoint y se reinicia al abrir y al salir.
+* **Diseño:** A4 (794 × 1123) con coordenadas numéricas fijas, para que Studio resuelva todo al pegar. La protección de una sola página deshabilita IMPRIMIR si un dato no cabe en su recuadro.
+* **No cambió:** el frontend P9 (SHA-256 `3de2d78f…`), la V4.2, `P9_ASIGNAR_DEPOSITO.Run()` con sus 8 argumentos, los filtros y SharePoint.
+* **Pruebas:** `tests/test_25_comprobante_impresion_p9.py` (lo que no cambió) y `tests/test_26_comprobante_cuenta_tc_p9.py` (YAML de pegado, orden de referencias entre controles, geometría A4, mapeo contable, tipo de cambio, coherencia de `FORMULAS_EXACTAS.md`). Son revisión estática: no ejecutan Power Fx ni Studio.
+* **Mantenimiento:** una cuenta bancaria nueva en `cmbCuentaP9` exige agregar su cuenta contable al `Switch` (procedimiento en `COMPROBANTE_PDF_VALIDACION.md`).
