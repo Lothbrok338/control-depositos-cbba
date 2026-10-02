@@ -1,5 +1,5 @@
 """P9_ASIGNAR_DEPOSITO_POWERAPPS_V3_RESPUESTA: único cambio respecto de V2 = los 6 outputs tipados de «Responder a PowerApps»;
-y contrato del frontend autoritativo (P9_CONTROL_INGRESOS_FINAL_VALIDADO_TENANT.txt, validado en el tenant) contra la firma real del flujo.
+y contrato del frontend autoritativo (_base_validada_tenant/P9_CONTROL_INGRESOS_FINAL_VALIDADO_TENANT.txt, base validada en el tenant) contra la firma real del flujo.
 Pruebas locales: no certifican que Power Apps/Power Automate reconozcan los outputs (solo el tenant lo comprueba)."""
 import copy
 import hashlib
@@ -26,7 +26,7 @@ pytestmark = pytest.mark.p9
 SHA_V2 = "4a73ee22f9246cf8170cb9e8934ed7006f7a087f1aca460f0abac77a0e913dc6"
 SALIDAS = ["resultado", "codigo", "mensaje", "estado_actual", "asignado_por", "fecha_hora_asignacion"]
 EJEMPLO = RAIZ / "ejemplos_p7/m365/DEPOSITOS_ACTIVOS__P7-3af418fcadd6.json"
-FRONTEND = RAIZ / "p9/powerapps/P9_CONTROL_INGRESOS_FINAL_VALIDADO_TENANT.txt"
+FRONTEND = RAIZ / "p9/powerapps/_base_validada_tenant/P9_CONTROL_INGRESOS_FINAL_VALIDADO_TENANT.txt"
 
 
 def leer(ruta):
@@ -181,7 +181,7 @@ FRONT_CTRL = dict(nodos(FRONT))
 
 
 def test_el_frontend_autoritativo_es_un_control_manual_layout_intacto():
-    # copia EXACTA del archivo que el usuario tiene pegado en el tenant (frontend final autoritativo; no se modifica)
+    # copia EXACTA del frontend validado en el tenant (base archivada; el frontend vigente es el de test_22)
     assert hashlib.sha256(FRONTEND.read_bytes()).hexdigest() == "595a95b4434f4e0f9d1a2737a35dcfaf0f993db1e3193c9050a5187bb828fc64"
     assert list(FRONT[0]) == ["cntControlDepositosP9"] and FRONT[0]["cntControlDepositosP9"]["Variant"] == "ManualLayout"
     for prohibido in ("Patch(", "SubmitForm(", "Remove(", "AutoLayout", "Screens:", "Form@"):

@@ -1,6 +1,8 @@
 # P9 — Asignación de depósitos (Power Apps + Power Automate)
 
-Estado: **validado en el tenant** (Power Apps sin errores, confirmación real ejecutada). Rama `candidate/p9-powerapps-asignacion`, base `candidate/p8-5-certificacion-e2e` `c43585f71aea35e81b4c215f692d498b8e1087be`.
+**Iteración vigente (VALIDADA EN EL TENANT con la V4.2):** (1) el código de estudiante sale de la experiencia operativa; (2) la app solo muestra y busca movimientos de los últimos 2 meses. Entregables: `P9_ASIGNAR_DEPOSITO_POWERAPPS_V4_2_FIRMA_8_POSICIONALES.zip` (+ `…_DIFF.md`) y `p9/powerapps/P9_CONTROL_INGRESOS_FINAL_2M_SIN_CODIGO_ESTUDIANTE.txt`. **Las V4 y V4.1 están descartadas/superadas** (rompían la firma de `.Run(...)`; ver §9.1). Detalle en §9. Lo de abajo describe la base anterior, que sigue siendo válida para todo lo no mencionado en §9 y queda como **rollback**: `P9_ASIGNAR_DEPOSITO_POWERAPPS_V3_RESPUESTA.zip` + `p9/powerapps/_base_validada_tenant/P9_CONTROL_INGRESOS_FINAL_VALIDADO_TENANT.txt` (frontend que exige el código de estudiante, sin ventana de 2 meses).
+
+Estado de la base: **validada en el tenant** (Power Apps sin errores, confirmación real ejecutada). Rama `candidate/p9-powerapps-asignacion`, base `candidate/p8-5-certificacion-e2e` `c43585f71aea35e81b4c215f692d498b8e1087be`.
 
 **Validado en el tenant (por el usuario):** la app Power Apps abre sin errores; se ejecutó una confirmación real; `Depositos_Activos` se actualiza en SharePoint y la app lo refleja; el estado visible es `DISPONIBLE` / `CONFIRMADO`; solo se muestran `CRÉDITO`; el filtro `BANCO` → `CUENTA BANCARIA` es dependiente; `DESCRIPCIÓN contiene` busca en dos etapas; se ven fecha, hora, descripción, código de asignación e importe; queda trazado quién confirmó y cuándo; `OBSERVACION` es opcional; el backend conserva ETag / If-Match / MERGE. Lo que sigue sin validarse en tenant se lista en §6.
 
@@ -11,11 +13,15 @@ Tenant piloto (solo piloto P9): sitio `https://univalleedu-my.sharepoint.com/per
 | Archivo | Para qué |
 |---|---|
 | `P9_HABILITAR_ESTADO_ASIGNADO.zip` | Paquete independiente: habilita `ASIGNADO` en la columna `ESTADO_ASIGNACION` (ahora solo `DISPONIBLE`) y verifica/crea los 7 índices que necesita la app. Manual e idempotente. |
-| `P9_ASIGNAR_DEPOSITO_POWERAPPS_V3_RESPUESTA.zip` | **Backend final.** Flujo con trigger **Power Apps (V2)** y respuesta a Power Apps con 6 salidas tipadas: `DISPONIBLE → ASIGNADO` con control optimista If-Match/ETag. Su diff contra la versión previa está en `P9_ASIGNAR_DEPOSITO_POWERAPPS_V3_RESPUESTA_DIFF.md` (único cambio: marca `x-ms-dynamically-added` en las 6 salidas). |
+| `P9_ASIGNAR_DEPOSITO_POWERAPPS_V4_2_FIRMA_8_POSICIONALES.zip` | **Backend VIGENTE, validado en tenant.** Los 8 inputs del trigger están en `required` (presencia técnica del parámetro, no contenido) → `.Run(...)` con 8 argumentos posicionales y sin registro opcional. `CODIGO_ESTUDIANTE` y `OBSERVACION` pueden valer `""`: `Validar_entrada` no los exige. Diff V4.1→V4.2 y V3→V4.2: `P9_ASIGNAR_DEPOSITO_POWERAPPS_V4_2_FIRMA_8_POSICIONALES_DIFF.md`. |
+| `P9_ASIGNAR_DEPOSITO_POWERAPPS_V4_1_FIRMA_8_ARGUMENTOS.zip` | **V4.1 — SUPERADA, NO IMPORTAR.** Dejó `text_5` fuera de `required`: Power Apps pidió 7 posicionales + un registro final («Text donde se espera Record»). Solo procedencia de la V4.2. |
+| `P9_ASIGNAR_DEPOSITO_POWERAPPS_V4_SIN_CODIGO_ESTUDIANTE.zip` | **V4 — DESCARTADA, NO IMPORTAR.** Quitó `text_2` de `required` y Power Apps dejó de aceptar los 8 argumentos (§9.1). Se conserva solo como base reproducible de la V4.1. |
+| `P9_ASIGNAR_DEPOSITO_POWERAPPS_V3_RESPUESTA.zip` | **Backend validado en tenant (ROLLBACK; base de la V4/V4.1/V4.2).** Flujo con trigger **Power Apps (V2)** y respuesta a Power Apps con 6 salidas tipadas: `DISPONIBLE → ASIGNADO` con control optimista If-Match/ETag. Su diff contra la versión previa está en `P9_ASIGNAR_DEPOSITO_POWERAPPS_V3_RESPUESTA_DIFF.md` (único cambio: marca `x-ms-dynamically-added` en las 6 salidas). |
 | `P9_ASIGNAR_DEPOSITO.zip`, `P9_ASIGNAR_DEPOSITO_POWERAPPS_V2.zip` | **Versiones previas, NO usar** (trigger manual / Power Apps V2 sin salidas tipadas: la app recibe la respuesta vacía). Se conservan como procedencia; diff en `P9_ASIGNAR_DEPOSITO_POWERAPPS_V2_DIFF.md`. |
-| `p9/powerapps/P9_CONTROL_INGRESOS_FINAL_VALIDADO_TENANT.txt` | **Frontend final** (control YAML único `cntControlDepositosP9`, ManualLayout) para «Pegar código» en Power Apps Studio. SHA-256 `595a95b4434f4e0f9d1a2737a35dcfaf0f993db1e3193c9050a5187bb828fc64`. Sustituye a todos los frontends anteriores (que se retiraron del repositorio). |
+| `p9/powerapps/P9_CONTROL_INGRESOS_FINAL_2M_SIN_CODIGO_ESTUDIANTE.txt` | **Frontend VIGENTE, validado en tenant:** la base validada sin código de estudiante y con ventana de 2 meses (§9). Se pega igual que la base. |
+| `p9/powerapps/_base_validada_tenant/P9_CONTROL_INGRESOS_FINAL_VALIDADO_TENANT.txt` | **Frontend base validado en tenant** (archivado para volver atrás; no es el vigente) (control YAML único `cntControlDepositosP9`, ManualLayout) para «Pegar código» en Power Apps Studio. SHA-256 `595a95b4434f4e0f9d1a2737a35dcfaf0f993db1e3193c9050a5187bb828fc64`. Sustituye a todos los frontends anteriores (que se retiraron del repositorio). |
 | `p9/` | Código que genera los paquetes (`python -m p9.asignar.construir`, `python -m p9.asignar.convertir_powerapps_v2`, `python -m p9.asignar.convertir_powerapps_v3`, `python -m p9.habilitar.construir`), simulador local y huellas del commit base. |
-| `tests/test_16_…`, `test_18_…`, `test_21_…`, `test_22_…` | Pruebas locales (ver §7). |
+| `tests/test_16_…`, `test_18_…`, `test_21_…`, `test_22_…`, `test_24_…` (V4.2) | Pruebas locales (ver §7). |
 
 **No se tocó P6/P7/P8/P8.5.** Todo lo de P9 es archivo nuevo, salvo una línea de marcador en `tests/pytest.ini`. `p9/evidencias/huellas_base_p8_5.json` guarda el SHA-256 de los 72 archivos no-test del commit base y una prueba comprueba que ninguno cambió. El provisionador P8 no se modificó ni se reutilizó: P9 tiene el suyo.
 
@@ -49,10 +55,10 @@ Entradas, **en este orden** (Power Apps las pasa por posición):
 | 1 | `number` | ID SharePoint | número | sí |
 | 2 | `text` | CLAVE_TRANSACCION | texto | sí (no se recorta; coincide exacta) |
 | 3 | `text_1` | ESTUDIANTE | texto | sí |
-| 4 | `text_2` | CODIGO_ESTUDIANTE | texto | sí |
+| 4 | `text_2` | CODIGO_ESTUDIANTE | texto | sí en la firma técnica (`required`); **sin exigir contenido** (V4.1/V4.2): la app envía `""` |
 | 5 | `text_3` | SOLICITADO_POR | texto | sí |
 | 6 | `text_4` | SEDE_ASIGNACION | texto | sí |
-| 7 | `text_5` | OBSERVACION | texto | no |
+| 7 | `text_5` | OBSERVACION | texto | sí en la firma técnica desde la V4.2 (`required`); **nunca se exige contenido**: puede ser `""` |
 | 8 | `text_6` | USUARIO_ASIGNACION | texto | sí |
 
 Los textos se recortan (`trim`) y se rechazan si exceden 255 caracteres (límite de la columna). La primera acción con lógica (`Entrada`) es el único lugar donde se asignan las claves del trigger a nombres lógicos.
@@ -86,7 +92,7 @@ Salidas (todas texto): `resultado`, `codigo`, `mensaje`, `estado_actual`, `asign
 
 ### 3.2 Importar `P9_ASIGNAR_DEPOSITO`
 
-1. Igual que 3.1 con `P9_ASIGNAR_DEPOSITO_POWERAPPS_V3_RESPUESTA.zip`. Quedará como flujo manual con trigger **Power Apps (V2)**.
+1. Igual que 3.1 con `P9_ASIGNAR_DEPOSITO_POWERAPPS_V4_2_FIRMA_8_POSICIONALES.zip` (la V3 sirve solo si aún se exige el código de estudiante; **no uses la V4 ni la V4.1**). Quedará como flujo manual con trigger **Power Apps (V2)**.
 2. **Conexión de SharePoint para los operadores** (decisión tuya, ver §6-5): flujo → **Detalles** → **Usuarios de solo ejecución** → **Editar** → SharePoint → **Usar esta conexión (tu usuario)**. Con eso los operadores solo necesitan permiso de *lectura* en la lista y el flujo escribe con tu conexión.
 3. **Activar** el flujo.
 
@@ -115,12 +121,12 @@ Flujo → **Probar** → **Manualmente** → **Probar** → completa los 8 campo
 ### 3.4 Pegar el frontend final en la app
 
 1. Power Apps Studio → abre la app → pantalla donde irá el control → en **Vista de árbol** selecciona la pantalla.
-2. Abre `p9/powerapps/P9_CONTROL_INGRESOS_FINAL_VALIDADO_TENANT.txt`, copia **todo** el contenido.
+2. Abre `p9/powerapps/P9_CONTROL_INGRESOS_FINAL_2M_SIN_CODIGO_ESTUDIANTE.txt`, copia **todo** el contenido.
 3. En el lienzo: clic derecho → **Pegar código** (o Ctrl+V sobre la pantalla). Debe aparecer el contenedor `cntControlDepositosP9`.
 4. Orígenes de datos: `Depositos_Activos` (SharePoint) y el flujo `P9_ASIGNAR_DEPOSITO` (versión V3 con respuesta). Si el flujo se reimporta, quítalo y vuelve a agregarlo a la app para que Studio lea las 6 salidas.
 5. Tras habilitar `ASIGNADO`, quita y vuelve a agregar el origen `Depositos_Activos` para que Power Apps vea la opción.
 
-Comportamiento del frontend final: lista solo `CRÉDITO` en estado `DISPONIBLE` o `ASIGNADO` (se muestra como `DISPONIBLE` / `CONFIRMADO`); filtros fecha desde/hasta, importe, banco → cuenta bancaria dependiente, código de asignación y `DESCRIPCIÓN contiene` (búsqueda en dos etapas: primero se filtra en origen y después se aplica el texto sobre ese resultado); muestra fecha, hora, banco, cuenta, importe, código, descripción, estado y datos de confirmación (usuario y fecha-hora). Botón `CONFIRMAR` solo sobre `DISPONIBLE` (sobre `CONFIRMADO` el botón dice `VER`). Al confirmar: valida 4 campos obligatorios (estudiante, código de estudiante, solicitado por, sede; `OBSERVACION` es opcional), refresca, relee el registro por ID (si ya no está `DISPONIBLE` avisa y cierra), llama a `P9_ASIGNAR_DEPOSITO.Run(...)` con los 8 argumentos en orden, vuelve a refrescar/leer y decide por `varRespuestaP9.resultado` (`ASIGNADO`, `NO_DISPONIBLE`, `CONFLICTO`; cualquier otro valor muestra `ERROR (codigo): mensaje`). La app **no escribe** en SharePoint (sin `Patch`/`SubmitForm`/`Remove`); toda escritura pasa por el flujo.
+Comportamiento del frontend (base validada; los cambios de la iteración actual están en §9): lista solo `CRÉDITO` en estado `DISPONIBLE` o `ASIGNADO` (se muestra como `DISPONIBLE` / `CONFIRMADO`); filtros fecha desde/hasta, importe, banco → cuenta bancaria dependiente, código de asignación y `DESCRIPCIÓN contiene` (búsqueda en dos etapas: primero se filtra en origen y después se aplica el texto sobre ese resultado); muestra fecha, hora, banco, cuenta, importe, código, descripción, estado y datos de confirmación (usuario y fecha-hora). Botón `CONFIRMAR` solo sobre `DISPONIBLE` (sobre `CONFIRMADO` el botón dice `VER`). Al confirmar: valida 3 campos obligatorios (estudiante, solicitado por, sede; `OBSERVACION` es opcional y el código de estudiante ya no existe en la interfaz, ver §9), refresca, relee el registro por ID (si ya no está `DISPONIBLE` avisa y cierra), llama a `P9_ASIGNAR_DEPOSITO.Run(...)` con los 8 argumentos en orden, vuelve a refrescar/leer y decide por `varRespuestaP9.resultado` (`ASIGNADO`, `NO_DISPONIBLE`, `CONFLICTO`; cualquier otro valor muestra `ERROR (codigo): mensaje`). La app **no escribe** en SharePoint (sin `Patch`/`SubmitForm`/`Remove`); toda escritura pasa por el flujo.
 
 ## 4. Respuestas directas
 
@@ -203,3 +209,30 @@ Estas pruebas **no** certifican Microsoft 365 (ver §6-1).
 1. Provisionar las listas en el sitio institucional con el provisionador P8 y ejecutar allí `P9_HABILITAR_ESTADO_ASIGNADO`.
 2. En `p9/contrato.py` cambiar `SITIO_SHAREPOINT` y `LISTA_DEPOSITOS_ACTIVOS_ID`, regenerar los ZIP (`python -m p9.asignar.construir`, `python -m p9.asignar.convertir_powerapps_v2`, `python -m p9.asignar.convertir_powerapps_v3`, `python -m p9.habilitar.construir`) — o editar a mano las dos acciones `PARAM_SITIO_SHAREPOINT` y `PARAM_LISTA_DEPOSITOS_ACTIVOS` al inicio de cada flujo (son las únicas que contienen el sitio y la lista).
 3. En la app, agregar el origen de datos del sitio institucional.
+
+## 9. Iteración: sin código de estudiante y ventana de 2 meses
+
+**Estado: VALIDADO EN EL TENANT con la V4.2 + el frontend vigente.** Comprobado por el usuario: Power Apps sin errores; el flujo acepta los 8 argumentos posicionales; confirmación real ejecutada; `CODIGO_ESTUDIANTE` vacío y `OBSERVACION` vacía funcionan; `Depositos_Activos` se actualiza en SharePoint; el estado visible pasa de `DISPONIBLE` a `CONFIRMADO`; usuario y fecha/hora de confirmación quedan registrados; la ventana de los últimos 2 meses funciona; el frontend completo carga. Pruebas locales en `tests/test_22` y `tests/test_24`. Sin cambios en arquitectura ni en la concurrencia (ETag / If-Match / MERGE).
+
+### 9.1 Código de estudiante fuera de la experiencia operativa
+
+* **Power Apps:** se quitaron la etiqueta y el campo `CÓDIGO ESTUDIANTE`, sus `Reset`, su validación y el texto del aviso (ahora «Completa Estudiante, Solicitado por y Sede.»). El modal no lo muestra en ninguna parte. Los campos `SOLICITADO POR` y `SEDE` se reubicaron para no dejar un hueco (solo cambian X/Y).
+* **Firma de `.Run(...)` (V4.2):** los 8 inputs del trigger están en `required`, así que Power Apps los recibe como **8 argumentos posicionales**, sin registro opcional: `P9_ASIGNAR_DEPOSITO.Run(ID, CLAVE_TRANSACCION, Trim(txtEstudianteP9.Text), "", Trim(txtSolicitadoP9.Text), Trim(txtSedeP9.Text), Trim(txtObservacionP9.Text), User().Email)`. El 4.º (`CODIGO_ESTUDIANTE`) va como `""`; `OBSERVACION` (7.º) puede ir vacía. `required` es solo presencia del parámetro técnico; el contenido lo valida `Validar_entrada` (exige clave, estudiante, solicitado por, sede y usuario; no exige código de estudiante ni observación).
+* **Power Automate (V4.2):** el trigger es el de la V3 con **`text_5` también en `required`** (los 8 inputs, mismo orden). Respecto de la V3, `Validar_entrada` ya no comprueba que `CODIGO_ESTUDIANTE` tenga contenido, así que acepta `""`. El flujo sigue escribiendo la columna `CODIGO_ESTUDIANTE` (vacía); el límite de 255 caracteres se conserva.
+* **SharePoint:** la columna `CODIGO_ESTUDIANTE` **no se elimina** ni se modifica (no es obligatoria en la lista). Los datos históricos con código se conservan; una asignación ya hecha no se reescribe.
+* **El «CÓDIGO» de la tabla y el filtro `CÓDIGO ASIGNACIÓN` son otra cosa** (código del movimiento bancario, `CODIGO_ASIGNACION`) y se mantienen.
+* **Al importar la V4.2:** importa con «Actualizar» (mismo ID de flujo) o desactiva/elimina la versión anterior si «Crear como nuevo»; en Studio quita y vuelve a agregar el flujo `P9_ASIGNAR_DEPOSITO` para que relea la firma, y comprueba que `.Run(...)` no marca errores (8 posicionales). El frontend nuevo y el flujo V4.1 deben ir juntos; con la V3 la app fallaría con `CAMPOS_OBLIGATORIOS` (el código llega vacío).
+
+**Por qué la V4 se descartó (hallazgo del tenant).** La V4 quitó `text_2` del array `required` del trigger. Power Automate seguía mostrando los 8 inputs, pero Power Apps, al volver a agregar el flujo, marcó `.Run(...)` con «recibe 8 argumentos, cuando espera entre 6 y 7»: el `required` del trigger forma parte de la firma que Power Apps construye. **Regla: no tocar `required` ni los inputs del trigger; la flexibilidad se resuelve en la validación de contenido.** No pude reproducir cómo Power Apps calcula esa aridad; la corrección se apoya en que el trigger de la V4.1 es idéntico, nodo a nodo, al de la V3 con la que sí se validó la llamada de 8 argumentos (`tests/test_23`). Queda por confirmar en el tenant que Power Automate acepta `""` en un input que está en `required` (para el esquema JSON basta con que la clave esté presente y sea texto).
+
+**Segundo hallazgo (V4.1 en el tenant).** Con `text_2` restaurado, Power Apps aceptó la cantidad de argumentos pero marcó «Text donde se espera Record»: en la V4.1 `text_5` (OBSERVACION) seguía fuera de `required`, y Power Apps tomó los 7 requeridos como posicionales y el opcional como un registro final (el nombre de su campo no se podía confirmar sin Studio). **V4.2** pone también `text_5` en `required` (cambio mínimo, solo ese nodo) y el frontend vuelve a la llamada simple de 8 posicionales, sin registro opcional. Queda por confirmar en el tenant que Power Automate acepta `""` en inputs que están en `required` (para el esquema JSON basta con que la clave esté presente y sea texto).
+
+### 9.2 Ventana temporal de 2 meses
+
+* Al abrir: `FECHA DESDE` = `DateAdd(Today(), -2, TimeUnit.Months)` y `FECHA HASTA` = `Today()` (`DefaultDate`; `LIMPIAR` vuelve a estos valores).
+* **Límite duro en la fórmula de la galería**, no solo en los selectores: en las dos etapas de `galDepositosP9.Items` se agregó, como argumentos propios de `Filter` (AND) y antes de los filtros del usuario, `FECHA_MOVIMIENTO >= DateAdd(Today(), -2, TimeUnit.Months)` y `FECHA_MOVIMIENTO <= Today()`. Aunque el usuario elija una fecha anterior, no aparecen registros de más de 2 meses.
+* Se mantiene el enfoque de dos etapas: (1) filtro base delegable en SharePoint (estado, `CRÉDITO`, ventana, importe, banco → cuenta, código de asignación); (2) filtro local `DESCRIPCIÓN contiene` sobre ese resultado. No se usa `StartsWith` en `DESCRIPCION`.
+* El aviso bajo «INGRESOS» indica «Últimos 2 meses (desde dd/mm/aaaa)».
+* **Solo es una restricción de la experiencia de Power Apps:** SharePoint conserva todo el histórico; no se borra ni archiva nada.
+* **Qué no se hizo:** no se bloquea el calendario del selector (`DatePicker` no tiene fecha mínima; agregar `OnChange` no está en las propiedades verificadas en los exports reales). Elegir una `FECHA DESDE` anterior no tiene efecto: rige el límite.
+* **Por confirmar en Studio:** que `galDepositosP9.Items` no muestre advertencias de delegación nuevas con `DateAdd(Today(), -2, TimeUnit.Months)` y `Today()`; el patrón es el habitual para columnas de fecha de SharePoint, pero no se pudo abrir Studio aquí.

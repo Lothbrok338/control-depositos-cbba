@@ -751,6 +751,6 @@ def test_documentacion_cita_las_cifras_reales():
     doc = (RAIZ / "DOCUMENTACION_P9_POWER_APPS.md").read_text(encoding="utf-8")
     a, h = contar_acciones(ASIGNAR.construir_definicion()["actions"]), contar_acciones(HABILITAR.construir_definicion()["actions"])
     assert f"{a} acciones" in doc and f"{h} acciones" in doc
-    for texto in ("P9_ASIGNAR_DEPOSITO_POWERAPPS_V3_RESPUESTA.zip", "P9_HABILITAR_ESTADO_ASIGNADO.zip",
-                  "P9_CONTROL_INGRESOS_FINAL_VALIDADO_TENANT.txt", "If-Match", "ETag", "premium"):
+    for texto in ("P9_ASIGNAR_DEPOSITO_POWERAPPS_V4_2_FIRMA_8_POSICIONALES.zip", "P9_HABILITAR_ESTADO_ASIGNADO.zip",
+                  "P9_CONTROL_INGRESOS_FINAL_2M_SIN_CODIGO_ESTUDIANTE.txt", "If-Match", "ETag", "premium"):
         assert texto in doc, texto

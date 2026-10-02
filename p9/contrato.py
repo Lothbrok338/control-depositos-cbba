@@ -34,6 +34,17 @@ ENTRADAS = (
     ("text_6", "usuario", "string", True, "USUARIO_ASIGNACION"),
 )
 OBLIGATORIOS_TEXTO = ("clave", "estudiante", "codigo_estudiante", "solicitado_por", "sede_asignacion", "usuario")
+# V4 (P9_ASIGNAR_DEPOSITO_POWERAPPS_V4_SIN_CODIGO_ESTUDIANTE.zip) — DESCARTADA: quitó `text_2` de `required` del trigger y Power Apps dejó de
+# aceptar los 8 argumentos de `.Run(...)` (esperaba 6–7). No volver a tocar `required` del trigger.
+ENTRADA_OPCIONAL_V4 = "text_2"
+# V4.1 (P9_ASIGNAR_DEPOSITO_POWERAPPS_V4_1_FIRMA_8_ARGUMENTOS.zip) — SUPERADA: con `text_5` fuera de `required`, Power Apps pidió 7 argumentos
+# posicionales + un registro final para los opcionales («Text donde se espera Record»). Se conserva solo como procedencia de la V4.2.
+OBLIGATORIOS_TEXTO_V4 = tuple(n for n in OBLIGATORIOS_TEXTO if n != "codigo_estudiante")  # validación de CONTENIDO (V4, V4.1, V4.2)
+REQUERIDOS_TRIGGER = tuple(c[0] for c in ENTRADAS if c[3])  # V3 y V4.1: 7 claves (incluye text_2, excluye text_5)
+# V4.2 (P9_ASIGNAR_DEPOSITO_POWERAPPS_V4_2_FIRMA_8_POSICIONALES.zip) — DEFINITIVA: los 8 inputs, en `required` (presencia técnica del parámetro, NO contenido), así que
+# Power Apps los recibe como 8 argumentos POSICIONALES, sin registro opcional. CODIGO_ESTUDIANTE y OBSERVACION pueden valer "": el contenido solo se valida en
+# `Validar_entrada` (obligatorios de contenido: clave, estudiante, solicitado_por, sede_asignacion, usuario). La columna de SharePoint no se toca.
+REQUERIDOS_TRIGGER_V4_2 = tuple(c[0] for c in ENTRADAS)
 MAX_TEXTO = 255  # columnas «Texto de una línea» de SharePoint
 
 # Columnas de Depositos_Activos que ESTE flujo escribe (todas operativas; ninguna de las 26 del motor).
