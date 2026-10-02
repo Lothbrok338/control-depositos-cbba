@@ -119,13 +119,13 @@ If(ThisItem.ESTADO_ASIGNACION.Value = "ASIGNADO"; 6; 22)
 ## 'COMPROBANTE PDF'.Width
 
 ```powerfx
-794
+816
 ```
 
 ## 'COMPROBANTE PDF'.Height
 
 ```powerfx
-1123
+1056
 ```
 
 ## 'COMPROBANTE PDF'.OnVisible

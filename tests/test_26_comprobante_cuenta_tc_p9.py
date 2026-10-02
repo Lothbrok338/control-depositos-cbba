@@ -2,7 +2,7 @@
 
 Valida el YAML de pegado versionado (`COMPROBANTE_PDF_CONTROLES_PEGAR_FINAL.yaml`), su coherencia con
 `COMPROBANTE_PDF.pa.yaml` y con `FORMULAS_EXACTAS.md`, el orden de pegado (ninguna referencia hacia un control
-definido después), la geometría fija de una página A4, el mapeo contable y las reglas del tipo de cambio.
+definido después), la geometría fija de una página Carta (816 × 1056), el mapeo contable y las reglas del tipo de cambio.
 No ejecuta Power Fx ni certifica Studio: la validación en el tenant la hizo el usuario a mano.
 """
 import hashlib
@@ -20,11 +20,14 @@ FRONT = APP / "P9_CONTROL_INGRESOS_FINAL_2M_SIN_CODIGO_ESTUDIANTE.txt"
 PEGAR = APP / "COMPROBANTE_PDF_CONTROLES_PEGAR_FINAL.yaml"
 RECIBO = APP / "COMPROBANTE_PDF.pa.yaml"
 ANTERIOR = APP / "_referencia_comprobante/COMPROBANTE_PDF_38a59cc_SIN_CUENTA_NI_TC.pa.yaml"
+LAYOUT_A4 = APP / "_referencia_comprobante/COMPROBANTE_PDF_CONTROLES_205ad0b_A4.yaml"
 FORMULAS = APP / "FORMULAS_EXACTAS.md"
 
-SHA_PEGAR = "a8eb740c1345d39a615099677b1dbba4faf26072c1f9bdb9a8f23a40effcafcc"  # validado a mano en el tenant
+SHA_PEGAR = "5135add00c48128824b183e4fd3d84af1d1b60cad14e1f2d0facfb8e8cfb9697"  # layout Carta aprobado visualmente en Studio
+SHA_LAYOUT_A4 = "a8eb740c1345d39a615099677b1dbba4faf26072c1f9bdb9a8f23a40effcafcc"  # layout A4 de 205ad0b (validado a mano en el tenant)
 SHA_ANTERIOR = "3d4809bf433483e3480f4f9014388ae85395edb65901857ee41b4a749ed3e36f"  # comprobante de 38a59ccb, sin cuenta contable ni TC
-PANTALLA_W, PANTALLA_H, MARGEN = 794, 1123, 24
+PANTALLA_W, PANTALLA_H, MARGEN = 816, 1056, 24  # papel Carta vertical a 96 ppp
+LIMITE_INFERIOR = 930  # el contenido imprimible no debe pasar de esta Y (margen para el área no imprimible)
 
 TEXTO = PEGAR.read_text(encoding="utf-8")
 RAIZ_YAML = yaml.safe_load(TEXTO)
@@ -76,12 +79,13 @@ def rect(n):
 def test_huellas_fijadas():
     assert hashlib.sha256(PEGAR.read_bytes()).hexdigest() == SHA_PEGAR
     assert hashlib.sha256(ANTERIOR.read_bytes()).hexdigest() == SHA_ANTERIOR
+    assert hashlib.sha256(LAYOUT_A4.read_bytes()).hexdigest() == SHA_LAYOUT_A4
 
 
 def test_recibo_completo_coincide_con_el_yaml_de_pegado():
     assert PANTALLA["Children"] == RAIZ_YAML
     assert list(PANTALLA["Properties"]) == ["Fill", "Height", "LoadingSpinnerColor", "Width", "OnVisible", "OnHidden"]
-    assert PANTALLA["Properties"]["Width"] == "=794" and PANTALLA["Properties"]["Height"] == "=1123"
+    assert PANTALLA["Properties"]["Width"] == "=816" and PANTALLA["Properties"]["Height"] == "=1056"
     assert PANTALLA["Properties"]["OnHidden"] == "=Reset(txtTipoCambioPDF);\nSet(varP9Comprobante, Blank());\nSet(varP9ComprobanteID, Blank())"
     onvisible = PANTALLA["Properties"]["OnVisible"]
     assert onvisible.startswith("=Reset(txtTipoCambioPDF);\nIf(")
@@ -147,19 +151,19 @@ def test_la_pantalla_solo_se_usa_para_printing():
                 assert m.group(1) == "Printing", (n, prop)
 
 
-# ------------------------------------------------------------------ geometría fija, una página A4
+# ------------------------------------------------------------------ geometría fija, una página Carta (816 × 1056)
 def test_geometria_numerica_sin_autoheight():
     for n in NOMBRES:
         p = C[n]["Properties"]
         assert "AutoHeight" not in p, n
         for k in ("X", "Y", "Width", "Height"):
             assert re.fullmatch(r"=\d+", p[k]), (n, k, p[k])
-    assert rect("cntComprobantePDF") == (40, 66, 714, 1022)
+    assert rect("cntComprobantePDF") == (20, 24, 715, 904)
 
 
-def test_todo_cabe_en_una_pagina_a4_y_sin_solapes():
+def test_todo_cabe_en_una_pagina_carta_y_sin_solapes():
     x, y, w, h = rect("cntComprobantePDF")
-    assert x + w <= PANTALLA_W and y + h <= PANTALLA_H - MARGEN
+    assert x >= 0 and x + w <= PANTALLA_W and y >= 0 and y + h <= PANTALLA_H - MARGEN
     hijos = [n for n in NOMBRES if PADRE[n] == "cntComprobantePDF"]
     for n in hijos:
         cx, cy, cw, ch = rect(n)
@@ -171,9 +175,25 @@ def test_todo_cabe_en_una_pagina_a4_y_sin_solapes():
             bx, by, bw, bh = rect(b)
             if ax < bx + bw and bx < ax + aw and ay < by + bh and by < ay + ah:
                 assert frozenset({a, b}) in permitido, (a, b)
-    for n in ("btnVolverPDF", "btnImprimirPDF", "lblLimiteImpresionPDF"):
-        cx, cy, cw, ch = rect(n)
-        assert 0 <= cx and cx + cw <= PANTALLA_W and cy + ch <= y, n  # arriba del contenedor
+
+
+def test_el_contenido_imprimible_termina_antes_de_y_930():
+    x, y, w, h = rect("cntComprobantePDF")
+    fondo = max(y + rect(n)[1] + rect(n)[3] for n in NOMBRES if PADRE[n] == "cntComprobantePDF")
+    assert fondo == 928 and fondo <= LIMITE_INFERIOR, fondo  # lblFirmaPDF; quedan 128 px hasta el borde de 1056
+    assert y + h <= LIMITE_INFERIOR
+
+
+# VOLVER, IMPRIMIR y el aviso van en la banda inferior y no se imprimen (Visible incluye Not(Printing)); posición aprobada en Studio.
+EXTERNOS = {"btnVolverPDF": (40, 912, 110, 38), "btnImprimirPDF": (544, 912, 190, 38), "lblLimiteImpresionPDF": (160, 894, 394, 56)}
+
+
+def test_botones_y_aviso_en_la_banda_inferior_y_ocultos_al_imprimir():
+    for n, esperado in EXTERNOS.items():
+        assert rect(n) == esperado, n
+        cx, cy, cw, ch = esperado
+        assert 0 <= cx and cx + cw <= PANTALLA_W and cy + ch <= PANTALLA_H, n
+        assert "Not('COMPROBANTE PDF'.Printing)" in C[n]["Properties"]["Visible"], n
 
 
 def test_el_contenedor_no_incluye_controles_interactivos_salvo_el_tipo_de_cambio():
@@ -225,6 +245,59 @@ def test_estilos_y_textos_del_comprobante_validado_sin_cambios():
         assert dif <= CAMBIOS_PERMITIDOS.get(n, set()), (n, dif)
     cnt_b = {k: v for k, v in BASE["cntComprobantePDF"]["Properties"].items() if k not in GEOMETRIA}
     assert {k: v for k, v in C["cntComprobantePDF"]["Properties"].items() if k not in GEOMETRIA} == cnt_b
+
+
+def test_el_layout_carta_solo_cambia_geometria_respecto_del_layout_a4_validado():
+    """Todo lo funcional (fórmulas, textos, estilos, nombres, orden) es el de 205ad0b; solo cambian X/Y/Width/Height."""
+    a4 = yaml.safe_load(LAYOUT_A4.read_text(encoding="utf-8"))
+    viejo = {n: c for n, c, _ in preorden(a4)}
+    assert [n for n, _, _ in preorden(a4)] == NOMBRES
+    assert [(n, p) for n, _, p in preorden(a4)] == [(n, PADRE[n]) for n in NOMBRES]
+    cambios = {"X": [], "Y": [], "Width": [], "Height": []}
+    for n in NOMBRES:
+        assert viejo[n]["Control"] == C[n]["Control"] and viejo[n].get("Variant") == C[n].get("Variant"), n
+        pv, pn = viejo[n]["Properties"], C[n]["Properties"]
+        assert list(pv) == list(pn), n
+        for k in pv:
+            if k in cambios:
+                if pv[k] != pn[k]:
+                    cambios[k].append(n)
+            else:
+                assert pv[k] == pn[k], (n, k)
+    # los tamaños no cambian: la protección de texto depende de ellos. Excepciones deliberadas: contenedor y franja superior
+    assert sorted(cambios["Width"]) == ["cntComprobantePDF", "rectLineaSuperiorPDF"]
+    assert sorted(cambios["Height"]) == ["cntComprobantePDF", "rectLineaSuperiorPDF"]
+    assert sorted(cambios["X"]) == ["btnImprimirPDF", "cntComprobantePDF", "rectLineaSuperiorPDF"]
+    assert len(cambios["Y"]) == 48
+
+
+def _cpl(ancho, size, em=0.62, ajuste=0.85):
+    return int((ancho - 10) / (size * 4 / 3 * em) * ajuste)
+
+
+def _lineas(alto, size):
+    return int((alto - 10) // (size * 4 / 3 * 1.2))
+
+
+def test_los_limites_de_la_proteccion_coinciden_con_el_tamano_de_cada_caja():
+    """Si alguien cambia el ancho o alto de una caja protegida, el límite de la fórmula deja de ser cierto y esta prueba falla."""
+    caps, (cpl_d, lin_d), (cpl_o, lin_o) = capacidades()
+    cajas = {  # campo: (control, tamaño de fuente, ancho medio de carácter, factor de corte de palabra)
+        "CODIGO_ASIGNACION": ("lblCodigoValorPDF", 26, 0.62, 0.9), "BANCO": ("lblBancoValorPDF", 12, 0.62, 0.8),
+        "CUENTA_BANCARIA": ("lblCuentaValorPDF", 12, 0.62, 0.8), "HORA_MOVIMIENTO": ("lblFechaMovValorPDF", 11, 0.62, 0.8),
+        "ESTUDIANTE": ("lblEstudianteValorPDF", 10, 0.62, 0.8), "SOLICITADO_POR": ("lblSolicitadoValorPDF", 10, 0.62, 0.8),
+        "SEDE_ASIGNACION": ("lblSedeValorPDF", 10, 0.62, 0.8), "USUARIO_ASIGNACION": ("lblConfirmadoValorPDF", 11, 0.62, 0.85),
+    }
+    for campo, (caja, size, em, aj) in cajas.items():
+        w, h = rect(caja)[2:]
+        cap = _cpl(w, size, em, aj) * _lineas(h, size) - (len("dd/mm/yyyy · ") if campo == "HORA_MOVIMIENTO" else 0)
+        assert cap == caps[campo], (campo, w, h, cap, caps[campo])
+    w, h = rect("lblDescripcionValorPDF")[2:]
+    assert (_cpl(w, 10, 0.62, 0.85), _lineas(h, 10)) == (cpl_d, lin_d) == (62, 5)
+    w, h = rect("lblObsValorPDF")[2:]
+    assert (_cpl(w, 10, 0.60, 0.85), _lineas(h, 10)) == (cpl_o, lin_o) == (64, 5)
+    w, h = rect("lblFechaConfirmValorPDF")[2:]
+    assert 19 <= _cpl(w, 11, 0.62, 0.85) and _lineas(h, 11) >= 1  # 'dd/mm/yyyy hh:mm:ss' (19 caracteres) cabe en una línea
 
 
 # ------------------------------------------------------------------ cuenta contable

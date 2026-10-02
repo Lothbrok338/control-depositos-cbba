@@ -9,20 +9,20 @@
       RadiusTopLeft: =8
       RadiusTopRight: =8
       Visible: =!IsBlank(varP9ComprobanteID) && !IsBlank(varP9Comprobante.ID) && varP9Comprobante.ID = varP9ComprobanteID && varP9Comprobante.ESTADO_ASIGNACION.Value = "ASIGNADO"
-      X: =20
-      Y: =24
-      Width: =715
-      Height: =904
+      X: =40
+      Y: =66
+      Width: =714
+      Height: =1022
     Children:
       - rectLineaSuperiorPDF:
           Control: Rectangle@2.3.0
           Properties:
             BorderStyle: =BorderStyle.None
             Fill: =RGBA(123, 22, 50, 1)
-            X: =1
+            X: =0
             Y: =0
-            Width: =685
-            Height: =12
+            Width: =714
+            Height: =8
       - lblInstitucionPDF:
           Control: Label@2.5.1
           Properties:
@@ -34,7 +34,7 @@
             Text: ="UNIVERSIDAD PRIVADA DEL VALLE"
             Wrap: =true
             X: =40
-            Y: =12
+            Y: =20
             Width: =634
             Height: =28
       - lblAreaPDF:
@@ -48,7 +48,7 @@
             Wrap: =true
             Align: =Align.Center
             X: =40
-            Y: =40
+            Y: =48
             Width: =634
             Height: =22
       - lblTituloPDF:
@@ -62,7 +62,7 @@
             Text: ="COMPROBANTE DE CONFIRMACIÓN"
             Wrap: =true
             X: =40
-            Y: =64
+            Y: =72
             Width: =634
             Height: =42
       - lblCodigoTituloPDF:
@@ -76,7 +76,7 @@
             Text: ="CÓDIGO DE ASIGNACIÓN"
             Wrap: =true
             X: =40
-            Y: =108
+            Y: =116
             Width: =634
             Height: =24
       - lblCodigoValorPDF:
@@ -90,7 +90,7 @@
             Text: =Coalesce(varP9Comprobante.CODIGO_ASIGNACION, "—")
             Wrap: =true
             X: =40
-            Y: =132
+            Y: =140
             Width: =634
             Height: =52
       - rectSeparadorPDF1:
@@ -99,7 +99,7 @@
             BorderStyle: =BorderStyle.None
             Fill: =RGBA(225, 225, 225, 1)
             X: =40
-            Y: =189
+            Y: =204
             Width: =634
             Height: =1
       - lblMovimientoPDF:
@@ -112,7 +112,7 @@
             Text: ="MOVIMIENTO"
             Wrap: =true
             X: =50
-            Y: =194
+            Y: =216
             Width: =614
             Height: =20
       - lblBancoTituloPDF:
@@ -125,7 +125,7 @@
             Font: =Font.'Segoe UI'
             Wrap: =true
             X: =50
-            Y: =218
+            Y: =242
             Width: =193
             Height: =20
       - lblBancoValorPDF:
@@ -138,7 +138,7 @@
             Font: =Font.'Segoe UI'
             Wrap: =true
             X: =50
-            Y: =238
+            Y: =264
             Width: =193
             Height: =50
             VerticalAlign: =VerticalAlign.Top
@@ -152,7 +152,7 @@
             Font: =Font.'Segoe UI'
             Wrap: =true
             X: =263
-            Y: =218
+            Y: =242
             Width: =193
             Height: =20
       - lblCuentaValorPDF:
@@ -165,7 +165,7 @@
             Font: =Font.'Segoe UI'
             Wrap: =true
             X: =263
-            Y: =238
+            Y: =264
             Width: =193
             Height: =50
             VerticalAlign: =VerticalAlign.Top
@@ -179,7 +179,7 @@
             Text: ="MONEDA"
             Wrap: =true
             X: =476
-            Y: =218
+            Y: =242
             Width: =183
             Height: =20
       - lblMonedaValorPDF:
@@ -192,7 +192,7 @@
             Text: =Coalesce(varP9Comprobante.MONEDA, "—")
             Wrap: =true
             X: =476
-            Y: =238
+            Y: =264
             Width: =183
             Height: =50
             VerticalAlign: =VerticalAlign.Top
@@ -206,7 +206,7 @@
             Font: =Font.'Segoe UI'
             Wrap: =true
             X: =50
-            Y: =293
+            Y: =326
             Width: =193
             Height: =20
       - lblFechaMovValorPDF:
@@ -221,7 +221,7 @@
             Font: =Font.'Segoe UI'
             Wrap: =true
             X: =50
-            Y: =313
+            Y: =348
             Width: =193
             Height: =76
             VerticalAlign: =VerticalAlign.Top
@@ -235,7 +235,7 @@
             Font: =Font.'Segoe UI'
             Wrap: =true
             X: =263
-            Y: =293
+            Y: =326
             Width: =193
             Height: =20
       - lblImporteValorPDF:
@@ -254,7 +254,7 @@
             Font: =Font.'Segoe UI'
             Wrap: =true
             X: =263
-            Y: =313
+            Y: =348
             Width: =193
             Height: =76
             VerticalAlign: =VerticalAlign.Top
@@ -268,7 +268,7 @@
             Font: =Font.'Segoe UI'
             Wrap: =true
             X: =476
-            Y: =293
+            Y: =326
             Width: =193
             Height: =20
       - lblEstadoValorPDF:
@@ -281,7 +281,7 @@
             Font: =Font.'Segoe UI'
             Wrap: =true
             X: =476
-            Y: =313
+            Y: =348
             Width: =183
             Height: =76
             VerticalAlign: =VerticalAlign.Top
@@ -295,7 +295,7 @@
             Font: =Font.'Segoe UI'
             Wrap: =true
             X: =50
-            Y: =394
+            Y: =436
             Width: =193
             Height: =20
       - lblCuentaContableValorPDF:
@@ -335,7 +335,7 @@
             Font: =Font.'Segoe UI'
             Wrap: =true
             X: =50
-            Y: =414
+            Y: =458
             Width: =193
             Height: =36
             VerticalAlign: =VerticalAlign.Top
@@ -350,7 +350,7 @@
             Wrap: =true
             Visible: =varP9Comprobante.MONEDA = "USD"
             X: =263
-            Y: =394
+            Y: =436
             Width: =193
             Height: =20
       - txtTipoCambioPDF:
@@ -363,7 +363,7 @@
             Size: =11
             Visible: =varP9Comprobante.MONEDA = "USD" && Not('COMPROBANTE PDF'.Printing)
             X: =263
-            Y: =414
+            Y: =458
             Width: =140
             Height: =36
       - lblTipoCambioValorPDF:
@@ -389,7 +389,7 @@
             Wrap: =true
             Visible: =varP9Comprobante.MONEDA = "USD" && 'COMPROBANTE PDF'.Printing
             X: =263
-            Y: =414
+            Y: =458
             Width: =193
             Height: =36
             VerticalAlign: =VerticalAlign.Top
@@ -404,7 +404,7 @@
             Wrap: =true
             Visible: =varP9Comprobante.MONEDA = "USD"
             X: =476
-            Y: =394
+            Y: =436
             Width: =183
             Height: =20
       - lblEquivalenteValorPDF:
@@ -438,7 +438,7 @@
             Wrap: =true
             Visible: =varP9Comprobante.MONEDA = "USD"
             X: =476
-            Y: =414
+            Y: =458
             Width: =183
             Height: =36
             VerticalAlign: =VerticalAlign.Top
@@ -452,7 +452,7 @@
             Text: ="DESCRIPCIÓN"
             Wrap: =true
             X: =50
-            Y: =455
+            Y: =506
             Width: =614
             Height: =20
       - lblDescripcionValorPDF:
@@ -465,7 +465,7 @@
             Text: =Coalesce(varP9Comprobante.DESCRIPCION, "—")
             Wrap: =true
             X: =50
-            Y: =475
+            Y: =528
             Width: =614
             Height: =90
             VerticalAlign: =VerticalAlign.Top
@@ -475,7 +475,7 @@
             BorderStyle: =BorderStyle.None
             Fill: =RGBA(225, 225, 225, 1)
             X: =40
-            Y: =569
+            Y: =632
             Width: =634
             Height: =1
       - lblConfirmacionPDF:
@@ -488,7 +488,7 @@
             Text: ="CONFIRMACIÓN"
             Wrap: =true
             X: =50
-            Y: =574
+            Y: =644
             Width: =614
             Height: =20
       - lblEstudianteTituloPDF:
@@ -501,7 +501,7 @@
             Font: =Font.'Segoe UI'
             Wrap: =true
             X: =50
-            Y: =598
+            Y: =670
             Width: =193
             Height: =20
       - lblEstudianteValorPDF:
@@ -514,7 +514,7 @@
             Font: =Font.'Segoe UI'
             Wrap: =true
             X: =50
-            Y: =618
+            Y: =692
             Width: =193
             Height: =58
             VerticalAlign: =VerticalAlign.Top
@@ -528,7 +528,7 @@
             Font: =Font.'Segoe UI'
             Wrap: =true
             X: =263
-            Y: =598
+            Y: =670
             Width: =193
             Height: =20
       - lblSolicitadoValorPDF:
@@ -541,7 +541,7 @@
             Font: =Font.'Segoe UI'
             Wrap: =true
             X: =263
-            Y: =618
+            Y: =692
             Width: =193
             Height: =58
             VerticalAlign: =VerticalAlign.Top
@@ -555,7 +555,7 @@
             Font: =Font.'Segoe UI'
             Wrap: =true
             X: =476
-            Y: =598
+            Y: =670
             Width: =183
             Height: =20
       - lblSedeValorPDF:
@@ -568,7 +568,7 @@
             Font: =Font.'Segoe UI'
             Wrap: =true
             X: =476
-            Y: =618
+            Y: =692
             Width: =183
             Height: =58
             VerticalAlign: =VerticalAlign.Top
@@ -582,7 +582,7 @@
             Font: =Font.'Segoe UI'
             Wrap: =true
             X: =50
-            Y: =681
+            Y: =762
             Width: =287
             Height: =20
       - lblConfirmadoValorPDF:
@@ -595,7 +595,7 @@
             Wrap: =true
             Size: =11
             X: =50
-            Y: =701
+            Y: =784
             Width: =287
             Height: =46
             VerticalAlign: =VerticalAlign.Top
@@ -609,7 +609,7 @@
             Font: =Font.'Segoe UI'
             Wrap: =true
             X: =377
-            Y: =681
+            Y: =762
             Width: =287
             Height: =20
       - lblFechaConfirmValorPDF:
@@ -622,7 +622,7 @@
             Font: =Font.'Segoe UI'
             Wrap: =true
             X: =377
-            Y: =701
+            Y: =784
             Width: =287
             Height: =46
             VerticalAlign: =VerticalAlign.Top
@@ -636,7 +636,7 @@
             Font: =Font.'Segoe UI'
             Wrap: =true
             X: =50
-            Y: =752
+            Y: =842
             Width: =614
             Height: =20
       - lblObsValorPDF:
@@ -648,7 +648,7 @@
             Text: =If(IsBlank(TrimEnds(Coalesce(varP9Comprobante.OBSERVACION, ""))), "Sin observación", varP9Comprobante.OBSERVACION)
             Wrap: =true
             X: =50
-            Y: =772
+            Y: =864
             Width: =614
             Height: =90
             VerticalAlign: =VerticalAlign.Top
@@ -658,7 +658,7 @@
             BorderStyle: =BorderStyle.None
             Fill: =RGBA(123, 22, 50, 1)
             X: =207
-            Y: =870
+            Y: =974
             Width: =300
             Height: =2
       - lblFirmaPDF:
@@ -671,7 +671,7 @@
             Text: ="REGISTRO DE CONFIRMACIÓN · CONTROL DE INGRESOS"
             Wrap: =true
             X: =157
-            Y: =876
+            Y: =982
             Width: =400
             Height: =28
 - btnVolverPDF:
@@ -687,7 +687,7 @@
       Text: ="VOLVER"
       Visible: =Not('COMPROBANTE PDF'.Printing)
       X: =40
-      Y: =912
+      Y: =20
       Width: =110
       Height: =38
 - btnImprimirPDF:
@@ -739,8 +739,8 @@
             DisplayMode.Edit,
             DisplayMode.Disabled
         )
-      X: =544
-      Y: =912
+      X: =564
+      Y: =20
       Width: =190
       Height: =38
 - lblLimiteImpresionPDF:
@@ -775,6 +775,6 @@
         )
       Align: =Align.Center
       X: =160
-      Y: =894
+      Y: =6
       Width: =394
       Height: =56

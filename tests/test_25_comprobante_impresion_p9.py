@@ -141,9 +141,9 @@ def test_formato_importe_cero_blank_fechas_y_observacion():
     assert "USUARIO_ASIGNACION" in propiedades("lblConfirmadoValorPDF")["Text"]
 
 
-def test_print_back_a4_y_controles_fuera_del_area_imprimible():
-    assert PANTALLA["Properties"]["Width"] == "=794"
-    assert PANTALLA["Properties"]["Height"] == "=1123"
+def test_print_back_carta_y_controles_fuera_del_area_imprimible():
+    assert PANTALLA["Properties"]["Width"] == "=816"  # papel Carta vertical a 96 ppp (aprobado visualmente en Studio)
+    assert PANTALLA["Properties"]["Height"] == "=1056"
     assert propiedades("btnImprimirPDF")["OnSelect"] == "=Print()"
     assert propiedades("btnVolverPDF")["OnSelect"] == "=Back()"
     inner = dict(nodos(R["cntComprobantePDF"]["Children"]))
@@ -159,8 +159,8 @@ def test_textos_con_alto_fijo_y_no_se_permite_imprimir_contenido_fuera_de_pagina
         assert "AutoHeight" not in propiedades(name)
         assert propiedades(name)["Wrap"] == "=true"
         assert re.fullmatch(r"=\d+", propiedades(name)["Height"])
-    assert propiedades("cntComprobantePDF")["Y"] == "=66" and propiedades("cntComprobantePDF")["Height"] == "=1022"
-    assert 66 + 1022 <= 1123 - 24
+    assert propiedades("cntComprobantePDF")["Y"] == "=24" and propiedades("cntComprobantePDF")["Height"] == "=904"
+    assert 24 + 904 <= 930
     mode = propiedades("btnImprimirPDF")["DisplayMode"]
     assert "DisplayMode.Disabled" in mode and "DisplayMode.Edit" in mode
     assert "Len(Coalesce(varP9Comprobante.DESCRIPCION" not in mode  # la descripción se mide como líneas, no como caracteres
