@@ -251,3 +251,8 @@ Estas pruebas **no** certifican Microsoft 365 (ver §6-1).
 * **No cambió:** el frontend P9 (SHA-256 `3de2d78f…`), la V4.2, `P9_ASIGNAR_DEPOSITO.Run()` con sus 8 argumentos, los filtros y SharePoint.
 * **Pruebas:** `tests/test_25_comprobante_impresion_p9.py` (lo que no cambió) y `tests/test_26_comprobante_cuenta_tc_p9.py` (YAML de pegado, orden de referencias entre controles, geometría Carta, solo-geometría frente al layout A4, límites de protección coherentes con las cajas, mapeo contable, tipo de cambio, coherencia de `FORMULAS_EXACTAS.md`). Son revisión estática: no ejecutan Power Fx ni Studio.
 * **Mantenimiento:** una cuenta bancaria nueva en `cmbCuentaP9` exige agregar su cuenta contable al `Switch` (procedimiento en `COMPROBANTE_PDF_VALIDACION.md`).
+
+
+## 11. Extensión de reversión — fase B local
+
+La extensión aprobada agrega SOLICITAR REVERSIÓN dentro de VER y un modal independiente en `p9/reversion/powerapps/P9_CONTROL_INGRESOS_CON_REVERSION.txt`. Conserva la base, V4.2, ocho argumentos, filtros y comprobante; la regresión del mapeo completo verifica 20 pares/variantes y 14 destinos contables. Arquitectura y límites: [DOCUMENTACION_P9_REVERSION.md](DOCUMENTACION_P9_REVERSION.md). Configuración, provisión, importación y recuperación manual: [DESPLIEGUE_P9_REVERSION.md](DESPLIEGUE_P9_REVERSION.md). Resultados locales y diferencias previas de Windows: [INFORME_PRUEBAS.md](p9/reversion/evidencias/INFORME_PRUEBAS.md). La extensión no está validada ni desplegada en el tenant.

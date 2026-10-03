@@ -1,0 +1,81 @@
+"""Run the committed P9 baseline in a disposable Git archive, never the checkout."""
+from pathlib import Path
+import hashlib
+import io
+import json
+import platform
+import subprocess
+import sys
+import time
+import zipfile
+import zlib
+
+WORK = Path(__file__).resolve().parent
+REPO = WORK / 'control-depositos-cbba'
+LF = '--lf' in sys.argv
+PREFIX = 'baseline-regression-lf' if LF else 'baseline-regression'
+COPY = WORK / PREFIX
+ARCHIVE = WORK / (PREFIX + '-head.zip')
+head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=REPO, text=True).strip()
+assert not COPY.exists(), 'Use a fresh directory; do not overwrite previous evidence.'
+git_args = ['git', '-c', 'core.autocrlf=false'] if LF else ['git']
+subprocess.run(git_args + ['archive', '--format=zip', '--output=' + str(ARCHIVE), 'HEAD'], cwd=REPO, check=True)
+COPY.mkdir()
+with zipfile.ZipFile(ARCHIVE) as archive:
+    for entry in archive.infolist():
+        target = (COPY / entry.filename).resolve()
+        assert target.is_relative_to(COPY.resolve()), entry.filename
+    archive.extractall(COPY)
+
+tests = [
+    'tests/test_16_asignacion_p9.py',
+    'tests/test_18_asignar_powerapps_v2.py',
+    'tests/test_21_respuesta_v3_p9.py',
+    'tests/test_22_frontend_final_p9.py',
+    'tests/test_24_flujo_v4_2_firma_8_posicionales_p9.py',
+    'tests/test_25_comprobante_impresion_p9.py',
+    'tests/test_26_comprobante_cuenta_tc_p9.py',
+]
+before = {str(p.relative_to(COPY)): p.read_bytes() for p in COPY.rglob('*.zip')}
+started = time.monotonic()
+result = subprocess.run([sys.executable, '-m', 'pytest', *tests, '-q', '--tb=short',
+                         '--junitxml=' + str(WORK / (PREFIX + '-junit.xml'))],
+                        cwd=COPY, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+duration = time.monotonic() - started
+(WORK / (PREFIX + '-p9.log')).write_bytes(result.stdout)
+changes = {}
+for name, original in before.items():
+    regenerated = (COPY / name).read_bytes()
+    if regenerated == original:
+        continue
+    change = {'before_sha256': hashlib.sha256(original).hexdigest(),
+              'after_sha256': hashlib.sha256(regenerated).hexdigest(), 'members': []}
+    with zipfile.ZipFile(io.BytesIO(original)) as a, zipfile.ZipFile(io.BytesIO(regenerated)) as b:
+        change['same_member_order'] = a.namelist() == b.namelist()
+        for filename in dict.fromkeys(a.namelist() + b.namelist()):
+            if filename not in a.namelist() or filename not in b.namelist():
+                change['members'].append({'name': filename, 'missing_in_one': True})
+                continue
+            x, y = a.getinfo(filename), b.getinfo(filename)
+            attrs = ('create_system', 'create_version', 'extract_version', 'flag_bits',
+                     'compress_type', 'compress_size', 'file_size', 'CRC',
+                     'date_time', 'internal_attr', 'external_attr', 'extra', 'comment')
+            fields = {k: [getattr(x, k), getattr(y, k)] for k in attrs if getattr(x, k) != getattr(y, k)}
+            item = {'name': filename, 'same_content': a.read(filename) == b.read(filename),
+                    'metadata_differences': fields}
+            if not item['same_content']:
+                av, bv = a.read(filename), b.read(filename)
+                item['same_after_LF_normalization'] = av.replace(b'\r\n', b'\n') == bv.replace(b'\r\n', b'\n')
+                if filename.endswith('.json'):
+                    item['same_parsed_json'] = json.loads(av) == json.loads(bv)
+            change['members'].append(item)
+    changes[name] = change
+summary = {'head': head, 'source': 'git -c core.autocrlf=false archive HEAD; canonical LF' if LF else 'git archive HEAD; inherited core.autocrlf=true; CRLF',
+           'copy': str(COPY), 'test_files': tests, 'returncode': result.returncode,
+           'seconds': round(duration, 3), 'python': sys.version, 'platform': platform.platform(),
+           'zlib_build': zlib.ZLIB_VERSION, 'zlib_runtime': zlib.ZLIB_RUNTIME_VERSION,
+           'changed_zips': changes}
+(WORK / (PREFIX + '-platform.json')).write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding='utf-8')
+print(json.dumps({k: v for k, v in summary.items() if k != 'changed_zips'}, indent=2))
+print(result.stdout.decode('utf-8', errors='replace')[-12000:])
+print('Changed ZIPs:', list(changes))

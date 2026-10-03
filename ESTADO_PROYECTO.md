@@ -162,3 +162,8 @@ Capa 4 (`EXTRACTO_HISTORICO`, ver `DISENO_TRES_CAPAS.md` §6): bloque `historico
 * `historico.py` y el bloque `historico` del registro (P3b): solo cambian con aprobación; su huella dorada se regenera con `tests/generar_golden_historico.py --force` y motivo explícito.
 * Las doradas (`tests/golden/`) y los fixtures reales: solo se regeneran con motivo explícito y contra el motor original.
 * Los archivos bancarios originales: siempre evidencia inalterada.
+
+
+## 7. P9 — reversión de confirmación (fase B local)
+
+Sobre `d08454f7636a49a5711006cd900d79b32bf9c13b`, la rama local `candidate/p9-reversion` incorpora el esquema V2, cinco flujos/paquetes, snapshot, exclusión única, ETag original, aprobación de 168 horas, expiración, recuperación manual auditada y la extensión de Power Apps. La decisión humana y el resultado técnico son independientes; éxito exige REVERTIDO. El backend y frontend P9 base y el comprobante se conservan. Véanse [DOCUMENTACION_P9_REVERSION.md](DOCUMENTACION_P9_REVERSION.md), [DESPLIEGUE_P9_REVERSION.md](DESPLIEGUE_P9_REVERSION.md) e [INFORME_PRUEBAS.md](p9/reversion/evidencias/INFORME_PRUEBAS.md) para alcance, límites y resultados reales. El despliegue y validación en tenant, así como commit/push final, siguen pendientes de la revisión del usuario.

@@ -1,0 +1,683 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "2.0.0.0",
+  "parameters": {
+    "$authentication": {
+      "defaultValue": {},
+      "type": "SecureObject"
+    },
+    "$connections": {
+      "defaultValue": {},
+      "type": "Object"
+    }
+  },
+  "triggers": {
+    "Cada_cinco_minutos": {
+      "type": "Recurrence",
+      "recurrence": {
+        "frequency": "Minute",
+        "interval": 5
+      },
+      "runtimeConfiguration": {
+        "concurrency": {
+          "runs": 1
+        }
+      }
+    }
+  },
+  "actions": {
+    "PARAM_SITIO_SHAREPOINT": {
+      "type": "Compose",
+      "inputs": "<CONFIGURAR_SITIO_SHAREPOINT>",
+      "runAfter": {}
+    },
+    "INIT_varSiguiente": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varSiguiente",
+            "type": "string",
+            "value": ""
+          }
+        ]
+      },
+      "runAfter": {
+        "PARAM_SITIO_SHAREPOINT": [
+          "Succeeded"
+        ]
+      }
+    },
+    "INIT_varErrorPagina": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varErrorPagina",
+            "type": "boolean",
+            "value": false
+          }
+        ]
+      },
+      "runAfter": {
+        "INIT_varSiguiente": [
+          "Succeeded"
+        ]
+      }
+    },
+    "INIT_ok_EXP_CERRAR": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "ok_EXP_CERRAR",
+            "type": "boolean",
+            "value": false
+          }
+        ]
+      },
+      "runAfter": {
+        "INIT_varErrorPagina": [
+          "Succeeded"
+        ]
+      }
+    },
+    "INIT_fin_EXP_CERRAR": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "fin_EXP_CERRAR",
+            "type": "boolean",
+            "value": false
+          }
+        ]
+      },
+      "runAfter": {
+        "INIT_ok_EXP_CERRAR": [
+          "Succeeded"
+        ]
+      }
+    },
+    "INIT_n_EXP_CERRAR": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "n_EXP_CERRAR",
+            "type": "integer",
+            "value": 0
+          }
+        ]
+      },
+      "runAfter": {
+        "INIT_fin_EXP_CERRAR": [
+          "Succeeded"
+        ]
+      }
+    },
+    "INIT_varRespuesta": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varRespuesta",
+            "type": "object",
+            "value": {
+              "resultado": "",
+              "codigo": "",
+              "mensaje": "",
+              "solicitud_id": "",
+              "solicitud_uid": "",
+              "snapshot_json": "",
+              "etag": "",
+              "estado_solicitud": "",
+              "fase_proceso": "",
+              "resultado_tecnico": "",
+              "fecha_limite": ""
+            }
+          }
+        ]
+      },
+      "runAfter": {
+        "INIT_n_EXP_CERRAR": [
+          "Succeeded"
+        ]
+      }
+    },
+    "INIT_varEtapa": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varEtapa",
+            "type": "string",
+            "value": "INICIO"
+          }
+        ]
+      },
+      "runAfter": {
+        "INIT_varRespuesta": [
+          "Succeeded"
+        ]
+      }
+    },
+    "TRY": {
+      "type": "Scope",
+      "actions": {
+        "Sitio_configurado": {
+          "type": "If",
+          "expression": "@or(empty(outputs('PARAM_SITIO_SHAREPOINT')),startsWith(outputs('PARAM_SITIO_SHAREPOINT'),'<'))",
+          "actions": {
+            "Falta_sitio": {
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Failed",
+                "runError": {
+                  "code": "CONFIGURACION_REQUERIDA",
+                  "message": "Configurar el sitio antes de ejecutar."
+                }
+              },
+              "runAfter": {}
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {}
+        },
+        "GET_LISTA_DEPOSITOS": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists/GetByTitle('Depositos_Activos')?$select=Id,Title",
+              "parameters/headers": {
+                "Accept": "application/json;odata=verbose"
+              }
+            },
+            "authentication": "@parameters('$authentication')",
+            "retryPolicy": {
+              "type": "exponential",
+              "count": 2,
+              "interval": "PT5S",
+              "minimumInterval": "PT5S",
+              "maximumInterval": "PT30S"
+            }
+          },
+          "runAfter": {
+            "Sitio_configurado": [
+              "Succeeded"
+            ]
+          }
+        },
+        "GUID_DEPOSITOS": {
+          "type": "Compose",
+          "inputs": "@toLower(body('GET_LISTA_DEPOSITOS')?['d']?['Id'])",
+          "runAfter": {
+            "GET_LISTA_DEPOSITOS": [
+              "Succeeded"
+            ]
+          }
+        },
+        "GET_LISTA_REVERSIONES": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists/GetByTitle('Depositos_Reversiones')?$select=Id,Title",
+              "parameters/headers": {
+                "Accept": "application/json;odata=verbose"
+              }
+            },
+            "authentication": "@parameters('$authentication')",
+            "retryPolicy": {
+              "type": "exponential",
+              "count": 2,
+              "interval": "PT5S",
+              "minimumInterval": "PT5S",
+              "maximumInterval": "PT30S"
+            }
+          },
+          "runAfter": {
+            "GUID_DEPOSITOS": [
+              "Succeeded"
+            ]
+          }
+        },
+        "GUID_REVERSIONES": {
+          "type": "Compose",
+          "inputs": "@toLower(body('GET_LISTA_REVERSIONES')?['d']?['Id'])",
+          "runAfter": {
+            "GET_LISTA_REVERSIONES": [
+              "Succeeded"
+            ]
+          }
+        },
+        "CORTE_EXPIRACION": {
+          "type": "Compose",
+          "inputs": "@utcNow()",
+          "runAfter": {
+            "GUID_REVERSIONES": [
+              "Succeeded"
+            ]
+          }
+        },
+        "EXP_PRIMERA_PAGINA": {
+          "type": "SetVariable",
+          "inputs": {
+            "name": "varSiguiente",
+            "value": "@concat('_api/web/lists(guid''',outputs('GUID_REVERSIONES'),''')/items?$filter=FECHA_LIMITE le datetime''',outputs('CORTE_EXPIRACION'),''' and ESTADO_SOLICITUD eq ''PENDIENTE'' and (FASE_PROCESO eq ''RECIBIDA'' or FASE_PROCESO eq ''ESPERANDO_APROBACION'' or FASE_PROCESO eq ''RECUPERACION_REQUERIDA'')&$orderby=ID asc&$top=100')"
+          },
+          "runAfter": {
+            "CORTE_EXPIRACION": [
+              "Succeeded"
+            ]
+          }
+        },
+        "EXP_PAGINAR": {
+          "type": "Until",
+          "expression": "@empty(variables('varSiguiente'))",
+          "limit": {
+            "count": 5000,
+            "timeout": "PT1H"
+          },
+          "actions": {
+            "EXP_LEER_PAGINA": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+                  "parameters/method": "GET",
+                  "parameters/uri": "@variables('varSiguiente')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=verbose"
+                  }
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "exponential",
+                  "count": 2,
+                  "interval": "PT5S",
+                  "minimumInterval": "PT5S",
+                  "maximumInterval": "PT30S"
+                }
+              },
+              "runAfter": {}
+            },
+            "EXP_PAGINA": {
+              "type": "Foreach",
+              "foreach": "@body('EXP_LEER_PAGINA')?['d']?['results']",
+              "runtimeConfiguration": {
+                "concurrency": {
+                  "repetitions": 1
+                }
+              },
+              "actions": {
+                "EXP_CERRAR_RESET_OK": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "ok_EXP_CERRAR",
+                    "value": false
+                  },
+                  "runAfter": {}
+                },
+                "EXP_CERRAR_RESET_FIN": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "fin_EXP_CERRAR",
+                    "value": false
+                  },
+                  "runAfter": {
+                    "EXP_CERRAR_RESET_OK": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "EXP_CERRAR_RESET_N": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "n_EXP_CERRAR",
+                    "value": 0
+                  },
+                  "runAfter": {
+                    "EXP_CERRAR_RESET_FIN": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "EXP_CERRAR_EVENTO": {
+                  "type": "Compose",
+                  "inputs": {
+                    "id": "@guid()",
+                    "fecha": "@utcNow()",
+                    "run": "@workflow()?['run']?['name']",
+                    "etapa": "EXP_CERRAR",
+                    "accion": "PLAZO_VENCIDO",
+                    "resultado": "REGISTRADO",
+                    "evidencia": {
+                      "tarjeta": "Puede quedar pendiente de cancelación manual; respuesta tardía no autoriza reversión."
+                    }
+                  },
+                  "runAfter": {
+                    "EXP_CERRAR_RESET_N": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "EXP_CERRAR_CAS": {
+                  "type": "Until",
+                  "expression": "@or(variables('fin_EXP_CERRAR'),greaterOrEquals(variables('n_EXP_CERRAR'),3))",
+                  "limit": {
+                    "count": 3,
+                    "timeout": "PT5M"
+                  },
+                  "actions": {
+                    "EXP_CERRAR_CONTAR": {
+                      "type": "IncrementVariable",
+                      "inputs": {
+                        "name": "n_EXP_CERRAR",
+                        "value": 1
+                      },
+                      "runAfter": {}
+                    },
+                    "EXP_CERRAR_GET": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "HttpRequest"
+                        },
+                        "parameters": {
+                          "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+                          "parameters/method": "GET",
+                          "parameters/uri": "@concat('_api/web/lists(guid''',outputs('GUID_REVERSIONES'),''')/items(',string(int(coalesce(items('EXP_PAGINA')?['ID'],items('EXP_PAGINA')?['Id']))),')')",
+                          "parameters/headers": {
+                            "Accept": "application/json;odata=verbose"
+                          }
+                        },
+                        "authentication": "@parameters('$authentication')",
+                        "retryPolicy": {
+                          "type": "exponential",
+                          "count": 2,
+                          "interval": "PT5S",
+                          "minimumInterval": "PT5S",
+                          "maximumInterval": "PT30S"
+                        }
+                      },
+                      "runAfter": {
+                        "EXP_CERRAR_CONTAR": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "EXP_CERRAR_YA_APLICADO": {
+                      "type": "If",
+                      "expression": "@contains(coalesce(body('EXP_CERRAR_GET')?['d']?['BITACORA_TECNICA_JSON'],''),outputs('EXP_CERRAR_EVENTO')?['id'])",
+                      "actions": {
+                        "EXP_CERRAR_YA_OK": {
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "ok_EXP_CERRAR",
+                            "value": true
+                          },
+                          "runAfter": {}
+                        },
+                        "EXP_CERRAR_YA_FIN": {
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "fin_EXP_CERRAR",
+                            "value": true
+                          },
+                          "runAfter": {
+                            "EXP_CERRAR_YA_OK": [
+                              "Succeeded"
+                            ]
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {}
+                      },
+                      "runAfter": {
+                        "EXP_CERRAR_GET": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "EXP_CERRAR_PRECONDICIONES": {
+                      "type": "If",
+                      "expression": "@and(not(variables('fin_EXP_CERRAR')),not(empty(coalesce(body('EXP_CERRAR_GET')?['d']?['__metadata']?['etag'],outputs('EXP_CERRAR_GET')?['headers']?['ETag'],''))),and(and(equals(body('EXP_CERRAR_GET')?['d']?['ESTADO_SOLICITUD'],'PENDIENTE'),contains(createArray('RECIBIDA','ESPERANDO_APROBACION','RECUPERACION_REQUERIDA'),body('EXP_CERRAR_GET')?['d']?['FASE_PROCESO']),empty(body('EXP_CERRAR_GET')?['d']?['FECHA_EJECUCION_REVERSION']),empty(body('EXP_CERRAR_GET')?['d']?['ETAG_EJECUCION'])),lessOrEquals(ticks(body('EXP_CERRAR_GET')?['d']?['FECHA_LIMITE']),ticks(utcNow()))),lessOrEquals(length(string(union(json(if(empty(body('EXP_CERRAR_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('EXP_CERRAR_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('EXP_CERRAR_EVENTO'))))),60000))",
+                      "actions": {
+                        "EXP_CERRAR_MERGE": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                              "connectionName": "shared_sharepointonline",
+                              "operationId": "HttpRequest"
+                            },
+                            "parameters": {
+                              "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+                              "parameters/method": "POST",
+                              "parameters/uri": "@concat('_api/web/lists(guid''',outputs('GUID_REVERSIONES'),''')/items(',string(int(coalesce(items('EXP_PAGINA')?['ID'],items('EXP_PAGINA')?['Id']))),')')",
+                              "parameters/headers": {
+                                "Accept": "application/json;odata=verbose",
+                                "Content-Type": "application/json;odata=nometadata",
+                                "X-HTTP-Method": "MERGE",
+                                "IF-MATCH": "@coalesce(body('EXP_CERRAR_GET')?['d']?['__metadata']?['etag'],outputs('EXP_CERRAR_GET')?['headers']?['ETag'],'')"
+                              },
+                              "parameters/body": {
+                                "ESTADO_SOLICITUD": "PENDIENTE",
+                                "FASE_PROCESO": "EXPIRADA",
+                                "RESULTADO_TECNICO": "NO_EJECUTADO",
+                                "CLAVE_BLOQUEO": "@concat('CERRADA|',body('EXP_CERRAR_GET')?['d']?['SOLICITUD_UID'])",
+                                "FECHA_CIERRE": "@utcNow()",
+                                "APROBADOR_ID": null,
+                                "APROBADOR_UPN": null,
+                                "FECHA_DECISION": null,
+                                "ERROR_TECNICO": null,
+                                "BITACORA_TECNICA_JSON": "@string(union(json(if(empty(body('EXP_CERRAR_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('EXP_CERRAR_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('EXP_CERRAR_EVENTO'))))"
+                              }
+                            },
+                            "authentication": "@parameters('$authentication')",
+                            "retryPolicy": {
+                              "type": "none"
+                            }
+                          },
+                          "runAfter": {}
+                        },
+                        "EXP_CERRAR_VERIFICAR": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                              "connectionName": "shared_sharepointonline",
+                              "operationId": "HttpRequest"
+                            },
+                            "parameters": {
+                              "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+                              "parameters/method": "GET",
+                              "parameters/uri": "@concat('_api/web/lists(guid''',outputs('GUID_REVERSIONES'),''')/items(',string(int(coalesce(items('EXP_PAGINA')?['ID'],items('EXP_PAGINA')?['Id']))),')')",
+                              "parameters/headers": {
+                                "Accept": "application/json;odata=verbose"
+                              }
+                            },
+                            "authentication": "@parameters('$authentication')",
+                            "retryPolicy": {
+                              "type": "exponential",
+                              "count": 2,
+                              "interval": "PT5S",
+                              "minimumInterval": "PT5S",
+                              "maximumInterval": "PT30S"
+                            }
+                          },
+                          "runAfter": {
+                            "EXP_CERRAR_MERGE": [
+                              "Succeeded",
+                              "Failed",
+                              "Skipped",
+                              "TimedOut"
+                            ]
+                          }
+                        },
+                        "EXP_CERRAR_APLICADO": {
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "ok_EXP_CERRAR",
+                            "value": "@contains(coalesce(body('EXP_CERRAR_VERIFICAR')?['d']?['BITACORA_TECNICA_JSON'],''),outputs('EXP_CERRAR_EVENTO')?['id'])"
+                          },
+                          "runAfter": {
+                            "EXP_CERRAR_VERIFICAR": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "EXP_CERRAR_FIN": {
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "fin_EXP_CERRAR",
+                            "value": "@or(variables('ok_EXP_CERRAR'),not(equals(outputs('EXP_CERRAR_MERGE')?['statusCode'],412)))"
+                          },
+                          "runAfter": {
+                            "EXP_CERRAR_APLICADO": [
+                              "Succeeded"
+                            ]
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {
+                          "EXP_CERRAR_NO_CONTINUAR": {
+                            "type": "SetVariable",
+                            "inputs": {
+                              "name": "fin_EXP_CERRAR",
+                              "value": true
+                            },
+                            "runAfter": {}
+                          }
+                        }
+                      },
+                      "runAfter": {
+                        "EXP_CERRAR_YA_APLICADO": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "EXP_CERRAR_EVENTO": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "runAfter": {
+                "EXP_LEER_PAGINA": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "EXP_NEXT_SEGURO": {
+              "type": "If",
+              "expression": "@or(empty(coalesce(body('EXP_LEER_PAGINA')?['d']?['__next'],'')),startsWith(coalesce(body('EXP_LEER_PAGINA')?['d']?['__next'],''),concat(outputs('PARAM_SITIO_SHAREPOINT'),'/_api/')),startsWith(coalesce(body('EXP_LEER_PAGINA')?['d']?['__next'],''),'_api/'))",
+              "actions": {
+                "EXP_ASIGNAR_NEXT": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "varSiguiente",
+                    "value": "@replace(coalesce(body('EXP_LEER_PAGINA')?['d']?['__next'],''),concat(outputs('PARAM_SITIO_SHAREPOINT'),'/'),'')"
+                  },
+                  "runAfter": {}
+                }
+              },
+              "else": {
+                "actions": {
+                  "EXP_ERROR_NEXT": {
+                    "type": "SetVariable",
+                    "inputs": {
+                      "name": "varErrorPagina",
+                      "value": true
+                    },
+                    "runAfter": {}
+                  },
+                  "EXP_PARAR_PAGINAS": {
+                    "type": "SetVariable",
+                    "inputs": {
+                      "name": "varSiguiente",
+                      "value": ""
+                    },
+                    "runAfter": {
+                      "EXP_ERROR_NEXT": [
+                        "Succeeded"
+                      ]
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "EXP_PAGINA": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "runAfter": {
+            "EXP_PRIMERA_PAGINA": [
+              "Succeeded"
+            ]
+          }
+        },
+        "EXP_PAGINACION_COMPLETA": {
+          "type": "If",
+          "expression": "@or(variables('varErrorPagina'),not(empty(variables('varSiguiente'))))",
+          "actions": {
+            "EXP_FALLO_PAGINACION": {
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Failed",
+                "runError": {
+                  "code": "PAGINACION_INCOMPLETA",
+                  "message": "Se requiere revisar la paginación; no se siguió una URL externa ni se omitieron páginas silenciosamente."
+                }
+              },
+              "runAfter": {}
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "EXP_PAGINAR": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runAfter": {
+        "INIT_varEtapa": [
+          "Succeeded"
+        ]
+      }
+    }
+  },
+  "outputs": {}
+}

@@ -417,8 +417,21 @@ def test_archivos_p6_p7_p8_p85_sin_cambios_respecto_al_commit_base():
     """P9 es aditivo: ningún archivo existente en el commit base cambió (huellas congeladas desde ese commit)."""
     huellas = json.loads((RAIZ / "p9/evidencias/huellas_base_p8_5.json").read_text(encoding="utf-8"))
     assert huellas["base_commit"] == "c43585f71aea35e81b4c215f692d498b8e1087be"
-    cambiados = [f for f, h in huellas["archivos"].items()
-                 if hashlib.sha256((RAIZ / f).read_bytes()).hexdigest() != h]
+    cambiados = []
+    for f, h in huellas["archivos"].items():
+        datos = (RAIZ / f).read_bytes()
+        if f == "ESTADO_PROYECTO.md":
+            # Fase B agrega únicamente la referencia documental prevista en I.6.
+            # Se sigue verificando el hash de TODO el documento histórico; solo
+            # se permite la adenda identificada, sin excluir el archivo del control.
+            texto = datos.replace(b"\r\n", b"\n")
+            separador = "\n\n## 7. P9 — reversión de confirmación (fase B local)\n".encode("utf-8")
+            if separador in texto:
+                assert texto.count(separador) == 1
+                datos, adenda = texto.split(separador)
+                assert b"DOCUMENTACION_P9_REVERSION.md" in adenda and b"DESPLIEGUE_P9_REVERSION.md" in adenda
+        if hashlib.sha256(datos).hexdigest() != h:
+            cambiados.append(f)
     assert cambiados == []
     assert not any(f.startswith("p9/") or f.startswith("P9_") or f.endswith("_P9.md") for f in huellas["archivos"])
 

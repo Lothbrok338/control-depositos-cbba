@@ -77,9 +77,14 @@ def rect(n):
 
 # ------------------------------------------------------------------ procedencia y coherencia entre archivos
 def test_huellas_fijadas():
-    assert hashlib.sha256(PEGAR.read_bytes()).hexdigest() == SHA_PEGAR
-    assert hashlib.sha256(ANTERIOR.read_bytes()).hexdigest() == SHA_ANTERIOR
-    assert hashlib.sha256(LAYOUT_A4.read_bytes()).hexdigest() == SHA_LAYOUT_A4
+    # Los hashes fijados corresponden al contenido LF de los blobs Git. En
+    # Windows el checkout aplica CRLF; normalizar solo para esta comparación
+    # conserva la misma prueba de contenido sin reescribir ningún artefacto.
+    # huellas_base.json verifica por separado los bytes reales del checkout.
+    sha_lf = lambda ruta: hashlib.sha256(ruta.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+    assert sha_lf(PEGAR) == SHA_PEGAR
+    assert sha_lf(ANTERIOR) == SHA_ANTERIOR
+    assert sha_lf(LAYOUT_A4) == SHA_LAYOUT_A4
 
 
 def test_recibo_completo_coincide_con_el_yaml_de_pegado():
@@ -336,7 +341,25 @@ def test_mapa_contable_es_el_del_usuario_mas_ceros_de_bisa_y_las_tres_confirmada
         assert "Visible" not in C[n]["Properties"]  # visibles siempre
 
 
-def test_las_13_cuentas_del_p9_tienen_su_cuenta_contable():
+def test_mapeo_vigente_completo_tiene_los_pares_aprobados():
+    """La regresión cubre todas las entradas del comprobante, incluidas sus variantes."""
+    esperado = {
+        "3000100152": "110103012", "3000100705": "110103022",
+        "696870039": "110103032", "0696870039": "110103032",
+        "3015005684397": "110103042", "13224552": "110103052",
+        "10000003224552": "110103052", "3041210569": "110103062",
+        "4010879042": "110103072", "1000872489": "110103072",
+        "3400041236": "110104012", "696872023": "110104022",
+        "0696872023": "110104022", "3015005425271": "110104032",
+        "23224544": "110104042", "20000003224544": "110104042",
+        "3051446946": "110103722", "0696876517": "110105112",
+        "696876517": "110105112", "3501936692": "110103712",
+    }
+    assert mapa_formula() == esperado
+    assert len(esperado) == 20 and len(set(esperado.values())) == 14
+
+
+def test_cuentas_ofrecidas_por_p9_tienen_su_cuenta_contable():
     esperado = {
         "3000100152": "110103012", "3400041236": "110104012", "3501936692": "110103712", "3000100705": "110103022",
         "301-5005684-3-97": "110103042", "301-5005425-2-71": "110104032",

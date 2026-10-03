@@ -1,0 +1,210 @@
+................................................s....................... [  6%]
+........................................................................ [ 13%]
+....ssssss..................xxxxxxxx.....xxxxxx......................... [ 20%]
+...............s.sss..s.sss............................................. [ 26%]
+................ssss.................................................... [ 33%]
+...FFFFFFF.............................................................. [ 40%]
+.............................................................ss...F..... [ 46%]
+........................................................................ [ 53%]
+......................ss................................................ [ 60%]
+.........F..........................F................................... [ 66%]
+........................................................................ [ 73%]
+.....................F.................................................. [ 80%]
+....................F.....................................FF............ [ 86%]
+................F.....................................F................. [ 93%]
+........................................................................ [100%]
+================================== FAILURES ===================================
+____________ test_el_registro_gobierna_la_normalizacion_productiva ____________
+C:\Users\PC\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1011: in mkdir
+    os.mkdir(self, mode)
+E   FileNotFoundError: [WinError 3] El sistema no puede encontrar la ruta especificada: 'C:\\Users\\PC\\AppData\\Local\\Temp\\pytest-of-Lothbrok\\pytest-1\\test_el_registro_gobierna_la_n0\\con\\in'
+
+During handling of the above exception, another exception occurred:
+tests\test_06_registro_generico.py:397: in test_el_registro_gobierna_la_normalizacion_productiva
+    con, _ = _correr(motor, tmp_path / "con", registro_env=ruta_reg)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_06_registro_generico.py:367: in _correr
+    ent.mkdir(parents=True)
+C:\Users\PC\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1015: in mkdir
+    self.parent.mkdir(parents=True, exist_ok=True)
+C:\Users\PC\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1011: in mkdir
+    os.mkdir(self, mode)
+E   NotADirectoryError: [WinError 267] El nombre del directorio no es válido: 'C:\\Users\\PC\\AppData\\Local\\Temp\\pytest-of-Lothbrok\\pytest-1\\test_el_registro_gobierna_la_n0\\con'
+---------------------------- Captured stdout setup ----------------------------
+============================================================\nCONTROL DE DEP\xd3SITOS CBBA\nPROCESAMIENTO AUTOM\xc1TICO\n============================================================\n\n\U0001f4c2 9 archivo(s) encontrado(s) en 'C:\\Users\\PC\\AppData\\Local\\Temp\\pytest-of-Lothbrok\\pytest-1\\base_pequena0\\in':\n \u2022 bcp_me_1.xls\n \u2022 bisa_me_2.xls\n \u2022 bisa_mn_2.xls\n \u2022 bnb_ahorro_2.xls\n \u2022 bnb_me_1_1.xls\n \u2022 clinica_1.xls\n \u2022 economico_ahorro.xlsx\n \u2022 mercantil_1.xls\n \u2022 union_mn_2.xls\n\n\U0001f50e DETECTANDO BANCOS Y CUENTAS...\n\n\u2705 bcp_me_1.xls \u2192 BCP_ME\n\u2705 bisa_me_2.xls \u2192 BISA_ME\n\u2705 bisa_mn_2.xls \u2192 BISA_MN\n\u2705 bnb_ahorro_2.xls \u2192 BNB_AHORRO\n\u2705 bnb_me_1_1.xls \u2192 BNB_ME\n\u2705 clinica_1.xls \u2192 BNB_CLINICA\n\u2705 economico_ahorro.xlsx \u2192 ECO_AHORRO\n\u2705 mercantil_1.xls \u2192 BMSC\n\u2705 union_mn_2.xls \u2192 UNION_MN\n\n\u2705 9 formatos reconocidos.\n\n\U0001f504 NORMALIZANDO MOVIMIENTOS...\n\n\u2705 BCP_ME: 8 movimientos\n\u2705 BISA_ME: 0 movimientos\n\u2705 BISA_MN: 1 movimientos\n\u2705 BNB_AHORRO: 95 movimientos\n\u2705 BNB_ME: 7 movimientos\n\u2705 BNB_CLINICA: 14 movimientos\n\u2705 ECO_AHORRO: 1 movimientos\n\u2705 BMSC: 3 movimientos\n\u2705 UNION_MN: 32 movimientos\n\n\u2705 Movimientos normalizados: 161\n\n\U0001f50d AUDITOR\xcdA ESTRUCTURAL...\n   Claves duplicadas: 0\n   C\xf3digos vac\xedos: 0\n   Sin importe: 0\n   Importe cero: 0\n   Sin tipo: 0\n   D\xe9bito + cr\xe9dito simult\xe1neo: 0\n   Fechas inv\xe1lidas: 0\n\n\u2705 AUDITOR\xcdA ESTRUCTURAL SUPERADA\n\n\U0001f4c5 A\xf1os detectados: [2026]\n\u2705 Todos los movimientos corresponden a 2026\n\n\U0001f4b0 VALIDANDO SALDOS BANCARIOS...\n\n\u2705 BCP_ME: OK\n\u2705 BISA_ME: OK\n\u2705 BISA_MN: OK\n\u2705 BNB_AHORRO: OK\n\u2705 BNB_ME: OK\n\u2705 BNB_CLINICA: OK\n\u2705 ECO_AHORRO: OK\n\u2705 BMSC: OK\n\u2705 UNION_MN: OK\n\n\u2705 INTEGRIDAD FINANCIERA SUPERADA\n\n============================================================\n\U0001f3af PROCESO COMPLETADO CORRECTAMENTE\n============================================================\nArchivos procesados: 9\nMovimientos: 161\nClaves duplicadas: 0\nC\xf3digos vac\xedos: 0\nErrores estructurales: 0\nIntegridad bancaria: \u2705\n\n\U0001f4c5 FORMATO PARA MICROSOFT LISTS:\nFECHA MOVIMIENTO   \u2192 MM/DD/YY\nFECHA CONFIRMACI\xd3N \u2192 MM/DD/YY HH:MM AM/PM\nFECHA DE CARGA     \u2192 MM/DD/YY HH:MM AM/PM\n\n\U0001f4c4 Archivo generado:\nC:\\Users\\PC\\AppData\\Local\\Temp\\pytest-of-Lothbrok\\pytest-1\\base_pequena0\\out\\NORMALIZADO.xlsx\n\n\U0001f4c4 Archivo adicional generado (LISTS.csv, UTF-8 con BOM):\nC:\\Users\\PC\\AppData\\Local\\Temp\\pytest-of-Lothbrok\\pytest-1\\base_pequena0\\out\\LISTS.csv\n\n\U0001f6ab MICROSOFT LISTS NO FUE MODIFICADO\n============================================================\n\nRESUMEN POR CUENTA:\n          BANCO  CUENTA BANCARIA MONEDA  MOVIMIENTOS TOTAL_DEBITOS TOTAL_CREDITOS PRIMERA_FECHA ULTIMA_FECHA\nBANCO ECON\xd3MICO       3051446946    BOB            1             0         6000.0    2026-08-18   2026-08-18\n    BANCO UNI\xd3N   10000003224552    BOB           32             0       143466.2    2026-08-01   2026-08-20\n            BCP 301-5005425-2-71    USD            8             0         5565.0    2026-07-07   2026-07-31\n           BISA       0696870039    BOB            1             0         1139.0    2026-08-17   2026-08-17\n           BMSC       1000872489    BOB            3             0         7238.0    2026-08-12   2026-08-17\n            BNB       3000100705    BOB           14             0        68976.9    2026-08-01   2026-08-20\n            BNB       3400041236    USD            7        5553.6        1477.25    2026-08-04   2026-08-20\n            BNB       3501936692    BOB           95             0        13070.0    2026-08-03   2026-08-20\n\nVALIDACI\xd3N:\n              ARCHIVO     FORMATO  MOVIMIENTOS  SALDO INICIAL  CR\xc9DITOS  D\xc9BITOS  SALDO CALCULADO  SALDO FINAL  DIFERENCIA ESTADO\n         bcp_me_1.xls      BCP_ME            8       22323.54   5565.00      0.0         27888.54     27888.54         0.0     OK\n        bisa_me_2.xls     BISA_ME            0       28542.78      0.00      0.0         28542.78     28542.78         0.0     OK\n        bisa_mn_2.xls     BISA_MN            1       62687.52   1139.00      0.0         63826.52     63826.52         0.0     OK\n     bnb_ahorro_2.xls  BNB_AHORRO           95      256397.49  13070.00      0.0        269467.49    269467.49         0.0     OK\n       bnb_me_1_1.xls      BNB_ME            7      143667.19   1477.25   5553.6        139590.84    139590.84         0.0     OK\n        clinica_1.xls BNB_CLINICA           14       49324.86  68976.90      0.0        118301.76    118301.76         0.0     OK\neconomico_ahorro.xlsx  ECO_AHORRO            1       61601.86   6000.00      0.0         67601.86     67601.86         0.0     OK\n      mercantil_1.xls        BMSC            3      194424.79   7238.00      0.0        201662.79    201662.79         0.0     OK\n       union_mn_2.xls    UNION_MN           32      236180.41 143466.20      0.0        379646.61    379646.61         0.0     OK\n\n\U0001f4c4 Archivo t\xe9cnico de origen (ORIGEN.xlsx): C:\\Users\\PC\\AppData\\Local\\Temp\\pytest-of-Lothbrok\\pytest-1\\base_pequena0\\out\\ORIGEN.xlsx
+_____________________ test_la_identidad_sale_del_registro _____________________
+C:\Users\PC\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1011: in mkdir
+    os.mkdir(self, mode)
+E   FileNotFoundError: [WinError 3] El sistema no puede encontrar la ruta especificada: 'C:\\Users\\PC\\AppData\\Local\\Temp\\pytest-of-Lothbrok\\pytest-1\\test_la_identidad_sale_del_reg0\\con\\in'
+
+During handling of the above exception, another exception occurred:
+tests\test_06_registro_generico.py:410: in test_la_identidad_sale_del_registro
+    con, _ = _correr(motor, tmp_path / "con", registro_env=ruta_reg)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_06_registro_generico.py:367: in _correr
+    ent.mkdir(parents=True)
+C:\Users\PC\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1015: in mkdir
+    self.parent.mkdir(parents=True, exist_ok=True)
+C:\Users\PC\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1011: in mkdir
+    os.mkdir(self, mode)
+E   NotADirectoryError: [WinError 267] El nombre del directorio no es válido: 'C:\\Users\\PC\\AppData\\Local\\Temp\\pytest-of-Lothbrok\\pytest-1\\test_la_identidad_sale_del_reg0\\con'
+_ test_p4_sin_registro_valido_la_produccion_se_detiene_con_error_claro[json_roto-no es JSON v\xe1lido] _
+C:\Users\PC\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1011: in mkdir
+    os.mkdir(self, mode)
+E   FileNotFoundError: [WinError 3] El sistema no puede encontrar la ruta especificada: 'C:\\Users\\PC\\AppData\\Local\\Temp\\pytest-of-Lothbrok\\pytest-1\\test_p4_sin_registro_valido_la0\\con\\in'
+
+During handling of the above exception, another exception occurred:
+tests\test_06_registro_generico.py:430: in test_p4_sin_registro_valido_la_produccion_se_detiene_con_error_claro
+    _correr(motor, tmp_path / "con", registro_env=ruta)
+tests\test_06_registro_generico.py:367: in _correr
+    ent.mkdir(parents=True)
+C:\Users\PC\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1015: in mkdir
+    self.parent.mkdir(parents=True, exist_ok=True)
+C:\Users\PC\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1011: in mkdir
+    os.mkdir(self, mode)
+E   NotADirectoryError: [WinError 267] El nombre del directorio no es válido: 'C:\\Users\\PC\\AppData\\Local\\Temp\\pytest-of-Lothbrok\\pytest-1\\test_p4_sin_registro_valido_la0\\con'
+_ test_p4_sin_registro_valido_la_produccion_se_detiene_con_error_claro[registro_invalido-CUENTAS vac\xedo] _
+C:\Users\PC\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1011: in mkdir
+    os.mkdir(self, mode)
+E   FileNotFoundError: [WinError 3] El sistema no puede encontrar la ruta especificada: 'C:\\Users\\PC\\AppData\\Local\\Temp\\pytest-of-Lothbrok\\pytest-1\\test_p4_sin_registro_valido_la1\\con\\in'
+
+During handling of the above exception, another exception occurred:
+tests\test_06_registro_generico.py:430: in test_p4_sin_registro_valido_la_produccion_se_detiene_con_error_claro
+    _correr(motor, tmp_path / "con", registro_env=ruta)
+tests\test_06_registro_generico.py:367: in _correr
+    ent.mkdir(parents=True)
+C:\Users\PC\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1015: in mkdir
+    self.parent.mkdir(parents=True, exist_ok=True)
+C:\Users\PC\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1011: in mkdir
+    os.mkdir(self, mode)
+E   NotADirectoryError: [WinError 267] El nombre del directorio no es válido: 'C:\\Users\\PC\\AppData\\Local\\Temp\\pytest-of-Lothbrok\\pytest-1\\test_p4_sin_registro_valido_la1\\con'
+_ test_p4_sin_registro_valido_la_produccion_se_detiene_con_error_claro[archivo_inexistente-no se pudo leer el registro] _
+C:\Users\PC\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1011: in mkdir
+    os.mkdir(self, mode)
+E   FileNotFoundError: [WinError 3] El sistema no puede encontrar la ruta especificada: 'C:\\Users\\PC\\AppData\\Local\\Temp\\pytest-of-Lothbrok\\pytest-1\\test_p4_sin_registro_valido_la2\\con\\in'
+
+During handling of the above exception, another exception occurred:
+tests\test_06_registro_generico.py:430: in test_p4_sin_registro_valido_la_produccion_se_detiene_con_error_claro
+    _correr(motor, tmp_path / "con", registro_env=ruta)
+tests\test_06_registro_generico.py:367: in _correr
+    ent.mkdir(parents=True)
+C:\Users\PC\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1015: in mkdir
+    self.parent.mkdir(parents=True, exist_ok=True)
+C:\Users\PC\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1011: in mkdir
+    os.mkdir(self, mode)
+E   NotADirectoryError: [WinError 267] El nombre del directorio no es válido: 'C:\\Users\\PC\\AppData\\Local\\Temp\\pytest-of-Lothbrok\\pytest-1\\test_p4_sin_registro_valido_la2\\con'
+_ test_p5_registro_valido_para_detectar_pero_no_para_normalizar_detiene_la_produccion _
+C:\Users\PC\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1011: in mkdir
+    os.mkdir(self, mode)
+E   FileNotFoundError: [WinError 3] El sistema no puede encontrar la ruta especificada: 'C:\\Users\\PC\\AppData\\Local\\Temp\\pytest-of-Lothbrok\\pytest-1\\test_p5_registro_valido_para_d0\\con\\in'
+
+During handling of the above exception, another exception occurred:
+tests\test_06_registro_generico.py:441: in test_p5_registro_valido_para_detectar_pero_no_para_normalizar_detiene_la_produccion
+    _correr(motor, tmp_path / "con", registro_env=ruta)
+tests\test_06_registro_generico.py:367: in _correr
+    ent.mkdir(parents=True)
+C:\Users\PC\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1015: in mkdir
+    self.parent.mkdir(parents=True, exist_ok=True)
+C:\Users\PC\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1011: in mkdir
+    os.mkdir(self, mode)
+E   NotADirectoryError: [WinError 267] El nombre del directorio no es válido: 'C:\\Users\\PC\\AppData\\Local\\Temp\\pytest-of-Lothbrok\\pytest-1\\test_p5_registro_valido_para_d0\\con'
+_____ test_p5_motor_sin_motor_generico_al_lado_se_detiene_con_error_claro _____
+C:\Users\PC\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1011: in mkdir
+    os.mkdir(self, mode)
+E   FileNotFoundError: [WinError 3] El sistema no puede encontrar la ruta especificada: 'C:\\Users\\PC\\AppData\\Local\\Temp\\pytest-of-Lothbrok\\pytest-1\\test_p5_motor_sin_motor_generi0\\con\\in'
+
+During handling of the above exception, another exception occurred:
+tests\test_06_registro_generico.py:456: in test_p5_motor_sin_motor_generico_al_lado_se_detiene_con_error_claro
+    _correr(aislado, tmp_path / "con")
+tests\test_06_registro_generico.py:367: in _correr
+    ent.mkdir(parents=True)
+C:\Users\PC\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1015: in mkdir
+    self.parent.mkdir(parents=True, exist_ok=True)
+C:\Users\PC\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py:1011: in mkdir
+    os.mkdir(self, mode)
+E   NotADirectoryError: [WinError 267] El nombre del directorio no es válido: 'C:\\Users\\PC\\AppData\\Local\\Temp\\pytest-of-Lothbrok\\pytest-1\\test_p5_motor_sin_motor_generi0\\con'
+__________________ test_cli_genera_desde_origen_y_lists_csv ___________________
+tests\test_07_historico_p3b.py:646: in test_cli_genera_desde_origen_y_lists_csv
+    assert "Estado: OK · 11 archivo(s)" in p.stdout and f"SIN MOVIMIENTOS {FIXTURES['BISA_ME']}" in p.stdout
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: argument of type 'NoneType' is not a container or iterable
+___________________ test_paquete_y_fuente_son_reproducibles ___________________
+tests\test_12_flujo_p8.py:39: in test_paquete_y_fuente_son_reproducibles
+    assert all(p.read_bytes() == valor for p, valor in originales.items())
+E   assert False
+E    +  where False = all(<generator object test_paquete_y_fuente_son_reproducibles.<locals>.<genexpr> at 0x000001F354EF6260>)
+______________ test_conjunto_ampliado_cubre_fixtures_sin_cambios ______________
+tests\test_12_flujo_p8.py:229: in test_conjunto_ampliado_cubre_fixtures_sin_cambios
+    assert movimiento == {tecnico: original[origen] for origen, tecnico, _, _ in columnas}
+E   AssertionError: assert {'CLAVE_TRANS...3224552', ...} == {'CLAVE_TRANS...3224552', ...}
+E     
+E     Omitting 23 identical items, use -vv to show
+E     Differing items:
+E     {'BANCO': 'BANCO UNIÃ“N'} != {'BANCO': 'BANCO UNIÓN'}
+E     {'TIPO_MOVIMIENTO': 'CRÃ‰DITO'} != {'TIPO_MOVIMIENTO': 'CRÉDITO'}
+E     {'CLAVE_TRANSACCION': 'BANCO UNIÃ“N|10000003224552|20260801||74583632|CRÃ‰DITO|700.00|236880.41'} != {'CLAVE_TRANSACCION': 'BANCO UNIÓN|10000003224552|20260801||74583632|CRÉDITO|700.00|236880.41'}
+E     Use -v to get more diff
+___________ test_paquetes_reproducibles_y_con_estructura_importable ___________
+tests\test_16_asignacion_p9.py:82: in test_paquetes_reproducibles_y_con_estructura_importable
+    assert {p: p.read_bytes() for p in antes} == antes
+E   assert {WindowsPath(... {}\r\n}\r\n'} == {WindowsPath(...ts": {}\n}\n'}
+E     
+E     Differing items:
+E     {WindowsPath('C:/Users/PC/Documents/Codex/2026-10-02/files-mentioned-by-the-user-reversiondeposito/work/baseline-compl..."type": "string"\r\n            }\r\n          }\r\n        }\r\n      }\r\n    }\r\n  },\r\n  "outputs": {}\r\n}\r\n'} != {WindowsPath('C:/Users/PC/Documents/Codex/2026-10-02/files-mentioned-by-the-user-reversiondeposito/work/baseline-compl...",\n              "type": "string"\n            }\n          }\n        }\n      }\n    }\n  },\n  "outputs": {}\n}\n'}
+E     {WindowsPath('C:/Users/PC/Documents/Codex/2026-10-02/files-mentioned-by-the-...
+E     
+E     ...Full output truncated (4 lines hidden), use '-vv' to show
+_______ test_archivos_p6_p7_p8_p85_sin_cambios_respecto_al_commit_base ________
+tests\test_16_asignacion_p9.py:422: in test_archivos_p6_p7_p8_p85_sin_cambios_respecto_al_commit_base
+    assert cambiados == []
+E   AssertionError: assert ['P8_CARGA_DE...on.json', ...] == []
+E     
+E     Left contains 7 more items, first extra item: 'P8_CARGA_DEPOSITOS_ACTIVOS_V7_CERTIFICACION_E2E_ORIGEN.zip'
+E     Use -v to get more diff
+__ test_la_base_es_exactamente_el_zip_validado_en_el_tenant_y_no_se_modifica __
+tests\test_18_asignar_powerapps_v2.py:56: in test_la_base_es_exactamente_el_zip_validado_en_el_tenant_y_no_se_modifica
+    assert hashlib.sha256(BASE_ZIP.read_bytes()).hexdigest() == SHA_BASE
+E   AssertionError: assert '491f6ccd480d...5585539c196df' == '90890c1f4bd5...b694d79b05a85'
+E     
+E     - 90890c1f4bd5ee741c1b61f862cde5085ed51b8e08f0f8f5949b694d79b05a85
+E     + 491f6ccd480d31f34601e911d266c3b6768b5c0be5f531be9cf5585539c196df
+__________ test_generacion_reproducible_y_sin_efectos_sobre_la_base ___________
+tests\test_18_asignar_powerapps_v2.py:62: in test_generacion_reproducible_y_sin_efectos_sobre_la_base
+    V2.generar()
+p9\asignar\convertir_powerapps_v2.py:52: in generar
+    assert hashlib.sha256(base_bytes).hexdigest() == BASE_SHA256, "el ZIP base no es el validado en el tenant"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: el ZIP base no es el validado en el tenant
+_____________ test_base_pinned_generacion_reproducible_y_acciones _____________
+tests\test_21_respuesta_v3_p9.py:103: in test_base_pinned_generacion_reproducible_y_acciones
+    assert (V3.NUEVO_ZIP.read_bytes(), V3.DEFINICION_V3.read_bytes(), V3.DIFF_MD.read_bytes(), V3.BASE_ZIP.read_bytes()) == antes
+E   AssertionError: assert (b'PK\x03\x04...\x00\x00\x00') == (b'PK\x03\x04...\x00\x00\x00')
+E     
+E     At index 0 diff: b'PK\x03\x04\x14\x00\x00\x00\x08\x00\x00\x00A]<\xa1fCN\x02\x00\x00\xe5\x04\x00\x00\r\x00\x00\x00manifest.json\x95\x92\xedj\xdb0\x14\x86o\xc5\x9c_\x1bX\x8d?b\xd7\xf6F!k\xb3-\xb0\xda\xa1I\xc7\xd8(A\x96\x8e\x1c1G2\x92\xd2,\x94\\\xd5.a76\x9cPF\xb3\xaed !8:\x9c\x8f\xe7}\x1f\xc0\xb2%\xae(\x14\x10\x9e\x05\xe0\x03GGek\xa1x\x00.m\xd7\xd2mIW\x08\x05L\xf3\xc5h6\xf9P\x8en\x16W\xe3i5\x9b\xcc\xab}\xbaeFvNj\x05\x05\x8c\xacl\x14\xf5\xd6\xca\xe3\xd8\xfd\xfai\xa5\xd3\xde\xd5d6\xad\xca\xc9\xbbOc\x8f\\x\x87\x12W\x95\xc7\xb4\xea\xaf3\xba\xf5t\xe7\xe4JZG\xbd\x89 \xd7\xd4\xb1...
+E     
+E     ...Full output truncated (2 lines hidden), use '-vv' to show
+_______________ test_bases_pinned_cadena_reproducible_y_zip_v42 _______________
+tests\test_24_flujo_v4_2_firma_8_posicionales_p9.py:105: in test_bases_pinned_cadena_reproducible_y_zip_v42
+    assert hashlib.sha256(V3.NUEVO_ZIP.read_bytes()).hexdigest() == SHA_V3
+E   AssertionError: assert 'd8429b766dc4...fd37fdd107b1e' == '023db6b4a95b...3d2eb3adb3a44'
+E     
+E     - 023db6b4a95b30320f27a1e4d0d38b09bcaac8889ec2e0d3e383d2eb3adb3a44
+E     + d8429b766dc4332efa28c4736a6126979f8001d45b2f4c1869ffd37fdd107b1e
+=========================== short test summary info ===========================
+FAILED tests\test_06_registro_generico.py::test_el_registro_gobierna_la_normalizacion_productiva
+FAILED tests\test_06_registro_generico.py::test_la_identidad_sale_del_registro
+FAILED tests\test_06_registro_generico.py::test_p4_sin_registro_valido_la_produccion_se_detiene_con_error_claro[json_roto-no es JSON v\xe1lido]
+FAILED tests\test_06_registro_generico.py::test_p4_sin_registro_valido_la_produccion_se_detiene_con_error_claro[registro_invalido-CUENTAS vac\xedo]
+FAILED tests\test_06_registro_generico.py::test_p4_sin_registro_valido_la_produccion_se_detiene_con_error_claro[archivo_inexistente-no se pudo leer el registro]
+FAILED tests\test_06_registro_generico.py::test_p5_registro_valido_para_detectar_pero_no_para_normalizar_detiene_la_produccion
+FAILED tests\test_06_registro_generico.py::test_p5_motor_sin_motor_generico_al_lado_se_detiene_con_error_claro
+FAILED tests\test_07_historico_p3b.py::test_cli_genera_desde_origen_y_lists_csv
+FAILED tests\test_12_flujo_p8.py::test_paquete_y_fuente_son_reproducibles - a...
+FAILED tests\test_12_flujo_p8.py::test_conjunto_ampliado_cubre_fixtures_sin_cambios
+FAILED tests\test_16_asignacion_p9.py::test_paquetes_reproducibles_y_con_estructura_importable
+FAILED tests\test_16_asignacion_p9.py::test_archivos_p6_p7_p8_p85_sin_cambios_respecto_al_commit_base
+FAILED tests\test_18_asignar_powerapps_v2.py::test_la_base_es_exactamente_el_zip_validado_en_el_tenant_y_no_se_modifica
+FAILED tests\test_18_asignar_powerapps_v2.py::test_generacion_reproducible_y_sin_efectos_sobre_la_base
+FAILED tests\test_21_respuesta_v3_p9.py::test_base_pinned_generacion_reproducible_y_acciones
+FAILED tests\test_24_flujo_v4_2_firma_8_posicionales_p9.py::test_bases_pinned_cadena_reproducible_y_zip_v42
+16 failed, 1027 passed, 23 skipped, 14 xfailed in 426.57s (0:07:06)

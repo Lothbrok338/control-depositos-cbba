@@ -1,0 +1,1261 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "2.0.0.0",
+  "parameters": {
+    "$authentication": {
+      "defaultValue": {},
+      "type": "SecureObject"
+    },
+    "$connections": {
+      "defaultValue": {},
+      "type": "Object"
+    }
+  },
+  "triggers": {
+    "manual": {
+      "type": "Request",
+      "kind": "PowerAppV2",
+      "inputs": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "title": "OPERACION",
+              "type": "string",
+              "x-ms-dynamically-added": true,
+              "x-ms-content-hint": "TEXT"
+            },
+            "number": {
+              "title": "ID depósito",
+              "type": "number",
+              "x-ms-dynamically-added": true,
+              "x-ms-content-hint": "NUMBER"
+            },
+            "text_1": {
+              "title": "CLAVE_TRANSACCION",
+              "type": "string",
+              "x-ms-dynamically-added": true,
+              "x-ms-content-hint": "TEXT"
+            },
+            "text_2": {
+              "title": "ETag esperado",
+              "type": "string",
+              "x-ms-dynamically-added": true,
+              "x-ms-content-hint": "TEXT"
+            },
+            "text_3": {
+              "title": "Motivo",
+              "type": "string",
+              "x-ms-dynamically-added": true,
+              "x-ms-content-hint": "TEXT"
+            },
+            "text_4": {
+              "title": "SOLICITUD_UID",
+              "type": "string",
+              "x-ms-dynamically-added": true,
+              "x-ms-content-hint": "TEXT"
+            }
+          },
+          "required": [
+            "text",
+            "number",
+            "text_1",
+            "text_2",
+            "text_3",
+            "text_4"
+          ]
+        }
+      }
+    }
+  },
+  "actions": {
+    "PARAM_SITIO_SHAREPOINT": {
+      "type": "Compose",
+      "inputs": "<CONFIGURAR_SITIO_SHAREPOINT>",
+      "runAfter": {}
+    },
+    "PARAM_RESPONSABLES_RECUPERACION": {
+      "type": "Compose",
+      "inputs": [],
+      "runAfter": {
+        "PARAM_SITIO_SHAREPOINT": [
+          "Succeeded"
+        ]
+      }
+    },
+    "INIT_varSeguir": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varSeguir",
+            "type": "boolean",
+            "value": true
+          }
+        ]
+      },
+      "runAfter": {
+        "PARAM_RESPONSABLES_RECUPERACION": [
+          "Succeeded"
+        ]
+      }
+    },
+    "INIT_varRespuesta": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varRespuesta",
+            "type": "object",
+            "value": {
+              "resultado": "",
+              "codigo": "",
+              "mensaje": "",
+              "solicitud_id": "",
+              "solicitud_uid": "",
+              "snapshot_json": "",
+              "etag": "",
+              "estado_solicitud": "",
+              "fase_proceso": "",
+              "resultado_tecnico": "",
+              "fecha_limite": ""
+            }
+          }
+        ]
+      },
+      "runAfter": {
+        "INIT_varSeguir": [
+          "Succeeded"
+        ]
+      }
+    },
+    "INIT_varEtapa": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varEtapa",
+            "type": "string",
+            "value": "INICIO"
+          }
+        ]
+      },
+      "runAfter": {
+        "INIT_varRespuesta": [
+          "Succeeded"
+        ]
+      }
+    },
+    "TRY": {
+      "type": "Scope",
+      "actions": {
+        "Sitio_configurado": {
+          "type": "If",
+          "expression": "@or(empty(outputs('PARAM_SITIO_SHAREPOINT')),startsWith(outputs('PARAM_SITIO_SHAREPOINT'),'<'))",
+          "actions": {
+            "Falta_sitio": {
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Failed",
+                "runError": {
+                  "code": "CONFIGURACION_REQUERIDA",
+                  "message": "Configurar el sitio antes de ejecutar."
+                }
+              },
+              "runAfter": {}
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {}
+        },
+        "GET_LISTA_DEPOSITOS": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists/GetByTitle('Depositos_Activos')?$select=Id,Title",
+              "parameters/headers": {
+                "Accept": "application/json;odata=verbose"
+              }
+            },
+            "authentication": "@parameters('$authentication')",
+            "retryPolicy": {
+              "type": "exponential",
+              "count": 2,
+              "interval": "PT5S",
+              "minimumInterval": "PT5S",
+              "maximumInterval": "PT30S"
+            }
+          },
+          "runAfter": {
+            "Sitio_configurado": [
+              "Succeeded"
+            ]
+          }
+        },
+        "GUID_DEPOSITOS": {
+          "type": "Compose",
+          "inputs": "@toLower(body('GET_LISTA_DEPOSITOS')?['d']?['Id'])",
+          "runAfter": {
+            "GET_LISTA_DEPOSITOS": [
+              "Succeeded"
+            ]
+          }
+        },
+        "GET_LISTA_REVERSIONES": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists/GetByTitle('Depositos_Reversiones')?$select=Id,Title",
+              "parameters/headers": {
+                "Accept": "application/json;odata=verbose"
+              }
+            },
+            "authentication": "@parameters('$authentication')",
+            "retryPolicy": {
+              "type": "exponential",
+              "count": 2,
+              "interval": "PT5S",
+              "minimumInterval": "PT5S",
+              "maximumInterval": "PT30S"
+            }
+          },
+          "runAfter": {
+            "GUID_DEPOSITOS": [
+              "Succeeded"
+            ]
+          }
+        },
+        "GUID_REVERSIONES": {
+          "type": "Compose",
+          "inputs": "@toLower(body('GET_LISTA_REVERSIONES')?['d']?['Id'])",
+          "runAfter": {
+            "GET_LISTA_REVERSIONES": [
+              "Succeeded"
+            ]
+          }
+        },
+        "IDENTIDAD": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365users",
+              "connectionName": "shared_office365users",
+              "operationId": "MyProfile_V2"
+            },
+            "parameters": {
+              "$select": "id,userPrincipalName,displayName"
+            },
+            "authentication": "@parameters('$authentication')",
+            "retryPolicy": {
+              "type": "none"
+            }
+          },
+          "runAfter": {
+            "GUID_REVERSIONES": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Identidad_completa": {
+          "type": "If",
+          "expression": "@or(empty(body('IDENTIDAD')?['id']),empty(body('IDENTIDAD')?['userPrincipalName']))",
+          "actions": {
+            "Sin_identidad": {
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Failed",
+                "runError": {
+                  "code": "IDENTIDAD_NO_VERIFICADA",
+                  "message": "La conexión del invocador no devolvió ID y UPN."
+                }
+              },
+              "runAfter": {}
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "IDENTIDAD": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Entrada": {
+          "type": "Compose",
+          "inputs": {
+            "operacion": "@toUpper(trim(coalesce(triggerBody()?['text'],'')))",
+            "id": "@coalesce(triggerBody()?['number'],0)",
+            "clave": "@coalesce(triggerBody()?['text_1'],'')",
+            "etag": "@coalesce(triggerBody()?['text_2'],'')",
+            "motivo": "@trim(coalesce(triggerBody()?['text_3'],''))",
+            "uid": "@toLower(trim(coalesce(triggerBody()?['text_4'],'')))"
+          },
+          "runAfter": {
+            "Identidad_completa": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Entrada_invalida": {
+          "type": "If",
+          "expression": "@or(not(contains(createArray('CONSULTAR','ENVIAR'),outputs('Entrada')?['operacion'])),less(outputs('Entrada')?['id'],1),not(equals(float(outputs('Entrada')?['id']),float(int(outputs('Entrada')?['id'])))),empty(outputs('Entrada')?['clave']),greater(length(outputs('Entrada')?['clave']),255),and(equals(outputs('Entrada')?['operacion'],'ENVIAR'),or(empty(outputs('Entrada')?['etag']),empty(outputs('Entrada')?['motivo']),greater(length(outputs('Entrada')?['motivo']),4000),not(and(equals(length(outputs('Entrada')?['uid']),36),equals(length(replace(outputs('Entrada')?['uid'],'-','')),32),empty(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(outputs('Entrada')?['uid'],'-',''),'0',''),'1',''),'2',''),'3',''),'4',''),'5',''),'6',''),'7',''),'8',''),'9',''),'a',''),'b',''),'c',''),'d',''),'e',''),'f','')),not(equals(replace(outputs('Entrada')?['uid'],'-',''),'00000000000000000000000000000000')),equals(substring(concat(outputs('Entrada')?['uid'],'____________________________________'),8,1),'-'),equals(substring(concat(outputs('Entrada')?['uid'],'____________________________________'),13,1),'-'),equals(substring(concat(outputs('Entrada')?['uid'],'____________________________________'),18,1),'-'),equals(substring(concat(outputs('Entrada')?['uid'],'____________________________________'),23,1),'-'))))))",
+          "actions": {
+            "Respuesta_invalida": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varRespuesta",
+                "value": {
+                  "resultado": "ERROR",
+                  "codigo": "ENTRADA_INVALIDA",
+                  "mensaje": "Revisa operación, ID, clave, versión, UID y motivo (máximo 4000 caracteres).",
+                  "solicitud_id": "",
+                  "solicitud_uid": "",
+                  "snapshot_json": "",
+                  "etag": "",
+                  "estado_solicitud": "",
+                  "fase_proceso": "",
+                  "resultado_tecnico": "",
+                  "fecha_limite": ""
+                }
+              },
+              "runAfter": {}
+            },
+            "Parar_entrada": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varSeguir",
+                "value": false
+              },
+              "runAfter": {
+                "Respuesta_invalida": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "Entrada": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Reintento_UID_antes_de_ETag": {
+          "type": "If",
+          "expression": "@and(variables('varSeguir'),equals(outputs('Entrada')?['operacion'],'ENVIAR'))",
+          "actions": {
+            "BUSCAR_UID": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+                  "parameters/method": "GET",
+                  "parameters/uri": "@concat('_api/web/lists(guid''',outputs('GUID_REVERSIONES'),''')/items?$filter=SOLICITUD_UID eq ''',encodeUriComponent(replace(string(outputs('Entrada')?['uid']),'''','''''')),'''&$top=2')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=verbose"
+                  }
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "exponential",
+                  "count": 2,
+                  "interval": "PT5S",
+                  "minimumInterval": "PT5S",
+                  "maximumInterval": "PT30S"
+                }
+              },
+              "runAfter": {}
+            },
+            "UID_existente": {
+              "type": "If",
+              "expression": "@greater(length(body('BUSCAR_UID')?['d']?['results']),0)",
+              "actions": {
+                "Validar_repeticion": {
+                  "type": "If",
+                  "expression": "@and(equals(first(body('BUSCAR_UID')?['d']?['results'])?['DEPOSITO_ID'],outputs('Entrada')?['id']),equals(base64(string(first(body('BUSCAR_UID')?['d']?['results'])?['CLAVE_TRANSACCION'])),base64(string(outputs('Entrada')?['clave']))),equals(base64(string(first(body('BUSCAR_UID')?['d']?['results'])?['ETAG_SOLICITUD'])),base64(string(outputs('Entrada')?['etag']))),equals(base64(string(first(body('BUSCAR_UID')?['d']?['results'])?['MOTIVO_REVERSION'])),base64(string(outputs('Entrada')?['motivo']))),equals(first(body('BUSCAR_UID')?['d']?['results'])?['SOLICITANTE_ID'],body('IDENTIDAD')?['id']),equals(first(body('BUSCAR_UID')?['d']?['results'])?['LISTA_DEPOSITO_ID'],outputs('GUID_DEPOSITOS')))",
+                  "actions": {
+                    "REPLAY_MISMA": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "varRespuesta",
+                        "value": {
+                          "resultado": "EXISTENTE",
+                          "codigo": "EXISTENTE",
+                          "mensaje": "Se recuperó la solicitud del mismo envío.",
+                          "solicitud_id": "@string(coalesce(first(body('BUSCAR_UID')?['d']?['results'])?['ID'],first(body('BUSCAR_UID')?['d']?['results'])?['Id'],''))",
+                          "solicitud_uid": "@string(coalesce(first(body('BUSCAR_UID')?['d']?['results'])?['SOLICITUD_UID'],''))",
+                          "snapshot_json": "@coalesce(first(body('BUSCAR_UID')?['d']?['results'])?['SNAPSHOT_JSON'],'')",
+                          "etag": "@coalesce(first(body('BUSCAR_UID')?['d']?['results'])?['ETAG_SOLICITUD'],'')",
+                          "estado_solicitud": "@string(coalesce(first(body('BUSCAR_UID')?['d']?['results'])?['ESTADO_SOLICITUD'],''))",
+                          "fase_proceso": "@string(coalesce(first(body('BUSCAR_UID')?['d']?['results'])?['FASE_PROCESO'],''))",
+                          "resultado_tecnico": "@string(coalesce(first(body('BUSCAR_UID')?['d']?['results'])?['RESULTADO_TECNICO'],''))",
+                          "fecha_limite": "@string(coalesce(first(body('BUSCAR_UID')?['d']?['results'])?['FECHA_LIMITE'],''))"
+                        }
+                      },
+                      "runAfter": {}
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "REPLAY_AJENA": {
+                        "type": "SetVariable",
+                        "inputs": {
+                          "name": "varRespuesta",
+                          "value": {
+                            "resultado": "ERROR",
+                            "codigo": "UID_REUTILIZADO",
+                            "mensaje": "El UID ya está asociado a otra identidad o contenido.",
+                            "solicitud_id": "",
+                            "solicitud_uid": "",
+                            "snapshot_json": "",
+                            "etag": "",
+                            "estado_solicitud": "",
+                            "fase_proceso": "",
+                            "resultado_tecnico": "",
+                            "fecha_limite": ""
+                          }
+                        },
+                        "runAfter": {}
+                      }
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "Parar_replay": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "varSeguir",
+                    "value": false
+                  },
+                  "runAfter": {
+                    "Validar_repeticion": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "BUSCAR_UID": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "Entrada_invalida": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Consultar_deposito": {
+          "type": "If",
+          "expression": "@variables('varSeguir')",
+          "actions": {
+            "LEER_DEPOSITO": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+                  "parameters/method": "GET",
+                  "parameters/uri": "@concat('_api/web/lists(guid''',outputs('GUID_DEPOSITOS'),''')/items(',string(outputs('Entrada')?['id']),')')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=verbose"
+                  }
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "exponential",
+                  "count": 2,
+                  "interval": "PT5S",
+                  "minimumInterval": "PT5S",
+                  "maximumInterval": "PT30S"
+                }
+              },
+              "runAfter": {}
+            },
+            "Snapshot": {
+              "type": "Compose",
+              "inputs": {
+                "CLAVE_TRANSACCION": "@body('LEER_DEPOSITO')?['d']?['CLAVE_TRANSACCION']",
+                "CODIGO_ASIGNACION": "@body('LEER_DEPOSITO')?['d']?['CODIGO_ASIGNACION']",
+                "BANCO": "@body('LEER_DEPOSITO')?['d']?['BANCO']",
+                "CUENTA_BANCARIA": "@body('LEER_DEPOSITO')?['d']?['CUENTA_BANCARIA']",
+                "MONEDA": "@body('LEER_DEPOSITO')?['d']?['MONEDA']",
+                "FECHA_MOVIMIENTO": "@body('LEER_DEPOSITO')?['d']?['FECHA_MOVIMIENTO']",
+                "HORA_MOVIMIENTO": "@body('LEER_DEPOSITO')?['d']?['HORA_MOVIMIENTO']",
+                "IMPORTE": "@body('LEER_DEPOSITO')?['d']?['IMPORTE']",
+                "DEBITO": "@body('LEER_DEPOSITO')?['d']?['DEBITO']",
+                "CREDITO": "@body('LEER_DEPOSITO')?['d']?['CREDITO']",
+                "TIPO_MOVIMIENTO": "@body('LEER_DEPOSITO')?['d']?['TIPO_MOVIMIENTO']",
+                "SALDO": "@body('LEER_DEPOSITO')?['d']?['SALDO']",
+                "DESCRIPCION": "@body('LEER_DEPOSITO')?['d']?['DESCRIPCION']",
+                "DEPOSITANTE_ORIGINANTE": "@body('LEER_DEPOSITO')?['d']?['DEPOSITANTE_ORIGINANTE']",
+                "INFORMACION_ADICIONAL": "@body('LEER_DEPOSITO')?['d']?['INFORMACION_ADICIONAL']",
+                "MOTOR_ESTADO": "@body('LEER_DEPOSITO')?['d']?['MOTOR_ESTADO']",
+                "MOTOR_ESTUDIANTE": "@body('LEER_DEPOSITO')?['d']?['MOTOR_ESTUDIANTE']",
+                "MOTOR_SOLICITADO_POR": "@body('LEER_DEPOSITO')?['d']?['MOTOR_SOLICITADO_POR']",
+                "MOTOR_SEDE_SOLICITANTE": "@body('LEER_DEPOSITO')?['d']?['MOTOR_SEDE_SOLICITANTE']",
+                "MOTOR_CONFIRMADO_POR": "@body('LEER_DEPOSITO')?['d']?['MOTOR_CONFIRMADO_POR']",
+                "MOTOR_FECHA_CONFIRMACION": "@body('LEER_DEPOSITO')?['d']?['MOTOR_FECHA_CONFIRMACION']",
+                "MOTOR_OBSERVACION": "@body('LEER_DEPOSITO')?['d']?['MOTOR_OBSERVACION']",
+                "TEXTO_BUSQUEDA": "@body('LEER_DEPOSITO')?['d']?['TEXTO_BUSQUEDA']",
+                "ARCHIVO_ORIGEN": "@body('LEER_DEPOSITO')?['d']?['ARCHIVO_ORIGEN']",
+                "LOTE_CARGA": "@body('LEER_DEPOSITO')?['d']?['LOTE_CARGA']",
+                "FECHA_CARGA": "@body('LEER_DEPOSITO')?['d']?['FECHA_CARGA']",
+                "ESTADO_ASIGNACION": "@body('LEER_DEPOSITO')?['d']?['ESTADO_ASIGNACION']",
+                "ESTUDIANTE": "@body('LEER_DEPOSITO')?['d']?['ESTUDIANTE']",
+                "CODIGO_ESTUDIANTE": "@body('LEER_DEPOSITO')?['d']?['CODIGO_ESTUDIANTE']",
+                "SOLICITADO_POR": "@body('LEER_DEPOSITO')?['d']?['SOLICITADO_POR']",
+                "SEDE_ASIGNACION": "@body('LEER_DEPOSITO')?['d']?['SEDE_ASIGNACION']",
+                "USUARIO_ASIGNACION": "@body('LEER_DEPOSITO')?['d']?['USUARIO_ASIGNACION']",
+                "FECHA_HORA_ASIGNACION": "@body('LEER_DEPOSITO')?['d']?['FECHA_HORA_ASIGNACION']",
+                "OBSERVACION": "@body('LEER_DEPOSITO')?['d']?['OBSERVACION']",
+                "ID": "@body('LEER_DEPOSITO')?['d']?['Id']",
+                "ULTIMA_REVERSION_ID": "@body('LEER_DEPOSITO')?['d']?['ULTIMA_REVERSION_ID']",
+                "VERSION_SNAPSHOT": 1,
+                "SITIO_SHAREPOINT": "@outputs('PARAM_SITIO_SHAREPOINT')",
+                "LISTA_DEPOSITO_ID": "@outputs('GUID_DEPOSITOS')",
+                "ETAG": "@coalesce(body('LEER_DEPOSITO')?['d']?['__metadata']?['etag'],outputs('LEER_DEPOSITO')?['headers']?['ETag'],'')"
+              },
+              "runAfter": {
+                "LEER_DEPOSITO": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Validacion_deposito": {
+              "type": "Compose",
+              "inputs": "@if(not(equals(body('LEER_DEPOSITO')?['d']?['Id'],outputs('Entrada')?['id'])),'ID_INCONSISTENTE',if(empty(coalesce(body('LEER_DEPOSITO')?['d']?['__metadata']?['etag'],outputs('LEER_DEPOSITO')?['headers']?['ETag'],'')),'SIN_ETAG',if(not(equals(base64(string(body('LEER_DEPOSITO')?['d']?['CLAVE_TRANSACCION'])),base64(string(outputs('Entrada')?['clave'])))),'CLAVE_NO_COINCIDE',if(not(equals(body('LEER_DEPOSITO')?['d']?['ESTADO_ASIGNACION'],'ASIGNADO')),'YA_NO_ASIGNADO',if(and(equals(outputs('Entrada')?['operacion'],'ENVIAR'),not(equals(base64(string(coalesce(body('LEER_DEPOSITO')?['d']?['__metadata']?['etag'],outputs('LEER_DEPOSITO')?['headers']?['ETag'],''))),base64(string(outputs('Entrada')?['etag']))))),'CONFLICTO','')))))",
+              "runAfter": {
+                "Snapshot": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Deposito_no_apto": {
+              "type": "If",
+              "expression": "@not(empty(outputs('Validacion_deposito')))",
+              "actions": {
+                "Respuesta_deposito": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "varRespuesta",
+                    "value": {
+                      "resultado": "@if(equals(outputs('Validacion_deposito'),'CONFLICTO'),'CONFLICTO','ERROR')",
+                      "codigo": "@outputs('Validacion_deposito')",
+                      "mensaje": "El depósito no cumple el estado o versión de la solicitud.",
+                      "solicitud_id": "",
+                      "solicitud_uid": "",
+                      "snapshot_json": "",
+                      "etag": "",
+                      "estado_solicitud": "",
+                      "fase_proceso": "",
+                      "resultado_tecnico": "",
+                      "fecha_limite": ""
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "Parar_deposito": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "varSeguir",
+                    "value": false
+                  },
+                  "runAfter": {
+                    "Respuesta_deposito": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "Validacion_deposito": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "Reintento_UID_antes_de_ETag": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Snapshot_cabe_integro": {
+          "type": "If",
+          "expression": "@and(variables('varSeguir'),greater(length(string(outputs('Snapshot'))),60000))",
+          "actions": {
+            "Snapshot_demasiado_largo": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varRespuesta",
+                "value": {
+                  "resultado": "ERROR",
+                  "codigo": "SNAPSHOT_EXCEDE_CAPACIDAD",
+                  "mensaje": "El snapshot íntegro supera la capacidad admitida. Requiere gestión operativa; no se recortó.",
+                  "solicitud_id": "",
+                  "solicitud_uid": "",
+                  "snapshot_json": "",
+                  "etag": "",
+                  "estado_solicitud": "",
+                  "fase_proceso": "",
+                  "resultado_tecnico": "",
+                  "fecha_limite": ""
+                }
+              },
+              "runAfter": {}
+            },
+            "Parar_snapshot": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varSeguir",
+                "value": false
+              },
+              "runAfter": {
+                "Snapshot_demasiado_largo": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "Consultar_deposito": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Comprobar_reserva": {
+          "type": "If",
+          "expression": "@variables('varSeguir')",
+          "actions": {
+            "CLAVE_ACTIVA": {
+              "type": "Compose",
+              "inputs": "@concat('ACTIVA|',outputs('GUID_DEPOSITOS'),'|',string(int(outputs('Entrada')?['id'])))",
+              "runAfter": {}
+            },
+            "BUSCAR_ACTIVA": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+                  "parameters/method": "GET",
+                  "parameters/uri": "@concat('_api/web/lists(guid''',outputs('GUID_REVERSIONES'),''')/items?$filter=CLAVE_BLOQUEO eq ''',encodeUriComponent(replace(string(outputs('CLAVE_ACTIVA')),'''','''''')),'''&$top=2')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=verbose"
+                  }
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "exponential",
+                  "count": 2,
+                  "interval": "PT5S",
+                  "minimumInterval": "PT5S",
+                  "maximumInterval": "PT30S"
+                }
+              },
+              "runAfter": {
+                "CLAVE_ACTIVA": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Ya_activa": {
+              "type": "If",
+              "expression": "@greater(length(body('BUSCAR_ACTIVA')?['d']?['results']),0)",
+              "actions": {
+                "Respuesta_activa": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "varRespuesta",
+                    "value": {
+                      "resultado": "PENDIENTE_EXISTENTE",
+                      "codigo": "PENDIENTE_EXISTENTE",
+                      "mensaje": "@if(and(and(equals(first(body('BUSCAR_ACTIVA')?['d']?['results'])?['ESTADO_SOLICITUD'],'PENDIENTE'),contains(createArray('RECIBIDA','ESPERANDO_APROBACION','RECUPERACION_REQUERIDA'),first(body('BUSCAR_ACTIVA')?['d']?['results'])?['FASE_PROCESO']),empty(first(body('BUSCAR_ACTIVA')?['d']?['results'])?['FECHA_EJECUCION_REVERSION']),empty(first(body('BUSCAR_ACTIVA')?['d']?['results'])?['ETAG_EJECUCION'])),lessOrEquals(ticks(first(body('BUSCAR_ACTIVA')?['d']?['results'])?['FECHA_LIMITE']),ticks(utcNow()))),'VENCIDA — CIERRE PENDIENTE','Ya existe una solicitud activa para el depósito.')",
+                      "solicitud_id": "@string(coalesce(first(body('BUSCAR_ACTIVA')?['d']?['results'])?['ID'],first(body('BUSCAR_ACTIVA')?['d']?['results'])?['Id'],''))",
+                      "solicitud_uid": "@string(coalesce(first(body('BUSCAR_ACTIVA')?['d']?['results'])?['SOLICITUD_UID'],''))",
+                      "snapshot_json": "@coalesce(first(body('BUSCAR_ACTIVA')?['d']?['results'])?['SNAPSHOT_JSON'],'')",
+                      "etag": "@coalesce(first(body('BUSCAR_ACTIVA')?['d']?['results'])?['ETAG_SOLICITUD'],'')",
+                      "estado_solicitud": "@string(coalesce(first(body('BUSCAR_ACTIVA')?['d']?['results'])?['ESTADO_SOLICITUD'],''))",
+                      "fase_proceso": "@string(coalesce(first(body('BUSCAR_ACTIVA')?['d']?['results'])?['FASE_PROCESO'],''))",
+                      "resultado_tecnico": "@string(coalesce(first(body('BUSCAR_ACTIVA')?['d']?['results'])?['RESULTADO_TECNICO'],''))",
+                      "fecha_limite": "@string(coalesce(first(body('BUSCAR_ACTIVA')?['d']?['results'])?['FECHA_LIMITE'],''))"
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "Parar_activa": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "varSeguir",
+                    "value": false
+                  },
+                  "runAfter": {
+                    "Respuesta_activa": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "BUSCAR_ACTIVA": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "Snapshot_cabe_integro": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Devolver_consulta": {
+          "type": "If",
+          "expression": "@and(variables('varSeguir'),equals(outputs('Entrada')?['operacion'],'CONSULTAR'))",
+          "actions": {
+            "Consulta_lista": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varRespuesta",
+                "value": {
+                  "resultado": "LISTO",
+                  "codigo": "LISTO",
+                  "mensaje": "Depósito confirmado consultado.",
+                  "solicitud_id": "",
+                  "solicitud_uid": "",
+                  "snapshot_json": "@string(outputs('Snapshot'))",
+                  "etag": "@coalesce(body('LEER_DEPOSITO')?['d']?['__metadata']?['etag'],outputs('LEER_DEPOSITO')?['headers']?['ETag'],'')",
+                  "estado_solicitud": "",
+                  "fase_proceso": "",
+                  "resultado_tecnico": "",
+                  "fecha_limite": ""
+                }
+              },
+              "runAfter": {}
+            },
+            "Parar_consulta": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varSeguir",
+                "value": false
+              },
+              "runAfter": {
+                "Consulta_lista": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "Comprobar_reserva": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Crear_solicitud_completa": {
+          "type": "If",
+          "expression": "@variables('varSeguir')",
+          "actions": {
+            "AHORA_SOLICITUD": {
+              "type": "Compose",
+              "inputs": "@utcNow()",
+              "runAfter": {}
+            },
+            "EVENTO_RECIBIDA": {
+              "type": "Compose",
+              "inputs": {
+                "id": "@guid()",
+                "fecha": "@outputs('AHORA_SOLICITUD')",
+                "run": "@workflow()?['run']?['name']",
+                "etapa": "RECIBIDA",
+                "accion": "CREAR_SOLICITUD",
+                "resultado": "PENDIENTE",
+                "evidencia": {
+                  "solicitante": "@body('IDENTIDAD')?['id']"
+                }
+              },
+              "runAfter": {
+                "AHORA_SOLICITUD": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "CREAR_SOLICITUD": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+                  "parameters/method": "POST",
+                  "parameters/uri": "@concat('_api/web/lists(guid''',outputs('GUID_REVERSIONES'),''')/items')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=verbose",
+                    "Content-Type": "application/json;odata=nometadata"
+                  },
+                  "parameters/body": {
+                    "BANCO": "@outputs('Snapshot')?['BANCO']",
+                    "CUENTA_BANCARIA": "@outputs('Snapshot')?['CUENTA_BANCARIA']",
+                    "FECHA_MOVIMIENTO": "@outputs('Snapshot')?['FECHA_MOVIMIENTO']",
+                    "IMPORTE": "@outputs('Snapshot')?['IMPORTE']",
+                    "MONEDA": "@outputs('Snapshot')?['MONEDA']",
+                    "CODIGO_ASIGNACION": "@outputs('Snapshot')?['CODIGO_ASIGNACION']",
+                    "ESTUDIANTE": "@outputs('Snapshot')?['ESTUDIANTE']",
+                    "CODIGO_ESTUDIANTE": "@outputs('Snapshot')?['CODIGO_ESTUDIANTE']",
+                    "SOLICITADO_POR": "@outputs('Snapshot')?['SOLICITADO_POR']",
+                    "SEDE_ASIGNACION": "@outputs('Snapshot')?['SEDE_ASIGNACION']",
+                    "USUARIO_ASIGNACION": "@outputs('Snapshot')?['USUARIO_ASIGNACION']",
+                    "FECHA_HORA_ASIGNACION": "@outputs('Snapshot')?['FECHA_HORA_ASIGNACION']",
+                    "OBSERVACION": "@outputs('Snapshot')?['OBSERVACION']",
+                    "SOLICITUD_UID": "@outputs('Entrada')?['uid']",
+                    "DEPOSITO_ID": "@outputs('Entrada')?['id']",
+                    "LISTA_DEPOSITO_ID": "@outputs('GUID_DEPOSITOS')",
+                    "CLAVE_TRANSACCION": "@outputs('Entrada')?['clave']",
+                    "CLAVE_BLOQUEO": "@outputs('CLAVE_ACTIVA')",
+                    "ETAG_SOLICITUD": "@coalesce(body('LEER_DEPOSITO')?['d']?['__metadata']?['etag'],outputs('LEER_DEPOSITO')?['headers']?['ETag'],'')",
+                    "SNAPSHOT_JSON": "@string(outputs('Snapshot'))",
+                    "MOTIVO_REVERSION": "@outputs('Entrada')?['motivo']",
+                    "SOLICITANTE_ID": "@body('IDENTIDAD')?['id']",
+                    "SOLICITANTE_UPN": "@toLower(body('IDENTIDAD')?['userPrincipalName'])",
+                    "FECHA_SOLICITUD": "@outputs('AHORA_SOLICITUD')",
+                    "FECHA_LIMITE": "@addHours(outputs('AHORA_SOLICITUD'),168)",
+                    "ESTADO_SOLICITUD": "PENDIENTE",
+                    "FASE_PROCESO": "RECIBIDA",
+                    "RESULTADO_TECNICO": "PENDIENTE",
+                    "BITACORA_TECNICA_JSON": "@string(createArray(outputs('EVENTO_RECIBIDA')))"
+                  }
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              },
+              "runAfter": {
+                "EVENTO_RECIBIDA": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "VERIFICAR_CREACION_UID": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+                  "parameters/method": "GET",
+                  "parameters/uri": "@concat('_api/web/lists(guid''',outputs('GUID_REVERSIONES'),''')/items?$filter=SOLICITUD_UID eq ''',encodeUriComponent(replace(string(outputs('Entrada')?['uid']),'''','''''')),'''&$top=2')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=verbose"
+                  }
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "exponential",
+                  "count": 2,
+                  "interval": "PT5S",
+                  "minimumInterval": "PT5S",
+                  "maximumInterval": "PT30S"
+                }
+              },
+              "runAfter": {
+                "CREAR_SOLICITUD": [
+                  "Succeeded",
+                  "Failed",
+                  "Skipped",
+                  "TimedOut"
+                ]
+              }
+            },
+            "Creacion_acreditada": {
+              "type": "If",
+              "expression": "@equals(length(body('VERIFICAR_CREACION_UID')?['d']?['results']),1)",
+              "actions": {
+                "Verificar_UID_creado": {
+                  "type": "If",
+                  "expression": "@and(equals(first(body('VERIFICAR_CREACION_UID')?['d']?['results'])?['DEPOSITO_ID'],outputs('Entrada')?['id']),equals(base64(string(first(body('VERIFICAR_CREACION_UID')?['d']?['results'])?['CLAVE_TRANSACCION'])),base64(string(outputs('Entrada')?['clave']))),equals(base64(string(first(body('VERIFICAR_CREACION_UID')?['d']?['results'])?['ETAG_SOLICITUD'])),base64(string(outputs('Entrada')?['etag']))),equals(base64(string(first(body('VERIFICAR_CREACION_UID')?['d']?['results'])?['MOTIVO_REVERSION'])),base64(string(outputs('Entrada')?['motivo']))),equals(first(body('VERIFICAR_CREACION_UID')?['d']?['results'])?['SOLICITANTE_ID'],body('IDENTIDAD')?['id']),equals(first(body('VERIFICAR_CREACION_UID')?['d']?['results'])?['LISTA_DEPOSITO_ID'],outputs('GUID_DEPOSITOS')))",
+                  "actions": {
+                    "CREADO_MISMA": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "varRespuesta",
+                        "value": {
+                          "resultado": "EXISTENTE",
+                          "codigo": "EXISTENTE",
+                          "mensaje": "Se recuperó la solicitud del mismo envío.",
+                          "solicitud_id": "@string(coalesce(first(body('VERIFICAR_CREACION_UID')?['d']?['results'])?['ID'],first(body('VERIFICAR_CREACION_UID')?['d']?['results'])?['Id'],''))",
+                          "solicitud_uid": "@string(coalesce(first(body('VERIFICAR_CREACION_UID')?['d']?['results'])?['SOLICITUD_UID'],''))",
+                          "snapshot_json": "@coalesce(first(body('VERIFICAR_CREACION_UID')?['d']?['results'])?['SNAPSHOT_JSON'],'')",
+                          "etag": "@coalesce(first(body('VERIFICAR_CREACION_UID')?['d']?['results'])?['ETAG_SOLICITUD'],'')",
+                          "estado_solicitud": "@string(coalesce(first(body('VERIFICAR_CREACION_UID')?['d']?['results'])?['ESTADO_SOLICITUD'],''))",
+                          "fase_proceso": "@string(coalesce(first(body('VERIFICAR_CREACION_UID')?['d']?['results'])?['FASE_PROCESO'],''))",
+                          "resultado_tecnico": "@string(coalesce(first(body('VERIFICAR_CREACION_UID')?['d']?['results'])?['RESULTADO_TECNICO'],''))",
+                          "fecha_limite": "@string(coalesce(first(body('VERIFICAR_CREACION_UID')?['d']?['results'])?['FECHA_LIMITE'],''))"
+                        }
+                      },
+                      "runAfter": {}
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "CREADO_AJENA": {
+                        "type": "SetVariable",
+                        "inputs": {
+                          "name": "varRespuesta",
+                          "value": {
+                            "resultado": "ERROR",
+                            "codigo": "UID_REUTILIZADO",
+                            "mensaje": "El UID ya está asociado a otra identidad o contenido.",
+                            "solicitud_id": "",
+                            "solicitud_uid": "",
+                            "snapshot_json": "",
+                            "etag": "",
+                            "estado_solicitud": "",
+                            "fase_proceso": "",
+                            "resultado_tecnico": "",
+                            "fecha_limite": ""
+                          }
+                        },
+                        "runAfter": {}
+                      }
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "Mensaje_creacion": {
+                  "type": "If",
+                  "expression": "@and(equals(variables('varRespuesta')?['resultado'],'EXISTENTE'),equals(actions('CREAR_SOLICITUD')?['status'],'Succeeded'))",
+                  "actions": {
+                    "Enviada": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "varRespuesta",
+                        "value": {
+                          "resultado": "ENVIADA",
+                          "codigo": "ENVIADA",
+                          "mensaje": "SOLICITUD DE REVERSIÓN ENVIADA",
+                          "solicitud_id": "@string(coalesce(first(body('VERIFICAR_CREACION_UID')?['d']?['results'])?['ID'],first(body('VERIFICAR_CREACION_UID')?['d']?['results'])?['Id'],''))",
+                          "solicitud_uid": "@string(coalesce(first(body('VERIFICAR_CREACION_UID')?['d']?['results'])?['SOLICITUD_UID'],''))",
+                          "snapshot_json": "@coalesce(first(body('VERIFICAR_CREACION_UID')?['d']?['results'])?['SNAPSHOT_JSON'],'')",
+                          "etag": "@coalesce(first(body('VERIFICAR_CREACION_UID')?['d']?['results'])?['ETAG_SOLICITUD'],'')",
+                          "estado_solicitud": "@string(coalesce(first(body('VERIFICAR_CREACION_UID')?['d']?['results'])?['ESTADO_SOLICITUD'],''))",
+                          "fase_proceso": "@string(coalesce(first(body('VERIFICAR_CREACION_UID')?['d']?['results'])?['FASE_PROCESO'],''))",
+                          "resultado_tecnico": "@string(coalesce(first(body('VERIFICAR_CREACION_UID')?['d']?['results'])?['RESULTADO_TECNICO'],''))",
+                          "fecha_limite": "@string(coalesce(first(body('VERIFICAR_CREACION_UID')?['d']?['results'])?['FECHA_LIMITE'],''))"
+                        }
+                      },
+                      "runAfter": {}
+                    }
+                  },
+                  "else": {
+                    "actions": {}
+                  },
+                  "runAfter": {
+                    "Verificar_UID_creado": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "VERIFICAR_CREACION_ACTIVA": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                        "connectionName": "shared_sharepointonline",
+                        "operationId": "HttpRequest"
+                      },
+                      "parameters": {
+                        "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+                        "parameters/method": "GET",
+                        "parameters/uri": "@concat('_api/web/lists(guid''',outputs('GUID_REVERSIONES'),''')/items?$filter=CLAVE_BLOQUEO eq ''',encodeUriComponent(replace(string(outputs('CLAVE_ACTIVA')),'''','''''')),'''&$top=2')",
+                        "parameters/headers": {
+                          "Accept": "application/json;odata=verbose"
+                        }
+                      },
+                      "authentication": "@parameters('$authentication')",
+                      "retryPolicy": {
+                        "type": "exponential",
+                        "count": 2,
+                        "interval": "PT5S",
+                        "minimumInterval": "PT5S",
+                        "maximumInterval": "PT30S"
+                      }
+                    },
+                    "runAfter": {}
+                  },
+                  "Duplicado_confirmado": {
+                    "type": "If",
+                    "expression": "@and(equals(length(body('VERIFICAR_CREACION_ACTIVA')?['d']?['results']),1),contains(string(outputs('CREAR_SOLICITUD')?['body']),'-2130575169'))",
+                    "actions": {
+                      "Otra_solicitud": {
+                        "type": "SetVariable",
+                        "inputs": {
+                          "name": "varRespuesta",
+                          "value": {
+                            "resultado": "PENDIENTE_EXISTENTE",
+                            "codigo": "PENDIENTE_EXISTENTE",
+                            "mensaje": "Otra solicitud obtuvo la reserva única.",
+                            "solicitud_id": "@string(coalesce(first(body('VERIFICAR_CREACION_ACTIVA')?['d']?['results'])?['ID'],first(body('VERIFICAR_CREACION_ACTIVA')?['d']?['results'])?['Id'],''))",
+                            "solicitud_uid": "@string(coalesce(first(body('VERIFICAR_CREACION_ACTIVA')?['d']?['results'])?['SOLICITUD_UID'],''))",
+                            "snapshot_json": "@coalesce(first(body('VERIFICAR_CREACION_ACTIVA')?['d']?['results'])?['SNAPSHOT_JSON'],'')",
+                            "etag": "@coalesce(first(body('VERIFICAR_CREACION_ACTIVA')?['d']?['results'])?['ETAG_SOLICITUD'],'')",
+                            "estado_solicitud": "@string(coalesce(first(body('VERIFICAR_CREACION_ACTIVA')?['d']?['results'])?['ESTADO_SOLICITUD'],''))",
+                            "fase_proceso": "@string(coalesce(first(body('VERIFICAR_CREACION_ACTIVA')?['d']?['results'])?['FASE_PROCESO'],''))",
+                            "resultado_tecnico": "@string(coalesce(first(body('VERIFICAR_CREACION_ACTIVA')?['d']?['results'])?['RESULTADO_TECNICO'],''))",
+                            "fecha_limite": "@string(coalesce(first(body('VERIFICAR_CREACION_ACTIVA')?['d']?['results'])?['FECHA_LIMITE'],''))"
+                          }
+                        },
+                        "runAfter": {}
+                      }
+                    },
+                    "else": {
+                      "actions": {
+                        "Creacion_incierta": {
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "varRespuesta",
+                            "value": {
+                              "resultado": "ERROR",
+                              "codigo": "CREACION_NO_CONFIRMADA",
+                              "mensaje": "No se confirmó la creación. Conserva el UID y reintenta el mismo envío.",
+                              "solicitud_id": "",
+                              "solicitud_uid": "",
+                              "snapshot_json": "",
+                              "etag": "",
+                              "estado_solicitud": "",
+                              "fase_proceso": "",
+                              "resultado_tecnico": "",
+                              "fecha_limite": ""
+                            }
+                          },
+                          "runAfter": {}
+                        }
+                      }
+                    },
+                    "runAfter": {
+                      "VERIFICAR_CREACION_ACTIVA": [
+                        "Succeeded"
+                      ]
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "VERIFICAR_CREACION_UID": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "Devolver_consulta": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runAfter": {
+        "INIT_varEtapa": [
+          "Succeeded"
+        ]
+      }
+    },
+    "CATCH": {
+      "type": "Scope",
+      "actions": {
+        "Error_lectura_o_proceso": {
+          "type": "SetVariable",
+          "inputs": {
+            "name": "varRespuesta",
+            "value": {
+              "resultado": "ERROR",
+              "codigo": "@if(equals(outputs('LEER_DEPOSITO')?['statusCode'],404),'DEPOSITO_NO_ENCONTRADO','ERROR_NO_CONTROLADO')",
+              "mensaje": "No se pudo confirmar la operación. Conserva el UID y los datos para reintentar.",
+              "solicitud_id": "",
+              "solicitud_uid": "",
+              "snapshot_json": "",
+              "etag": "",
+              "estado_solicitud": "",
+              "fase_proceso": "",
+              "resultado_tecnico": "",
+              "fecha_limite": ""
+            }
+          },
+          "runAfter": {}
+        }
+      },
+      "runAfter": {
+        "TRY": [
+          "Failed",
+          "TimedOut"
+        ]
+      }
+    },
+    "Responder_a_PowerApps": {
+      "type": "Response",
+      "kind": "PowerApp",
+      "runAfter": {
+        "TRY": [
+          "Succeeded",
+          "Failed",
+          "Skipped",
+          "TimedOut"
+        ],
+        "CATCH": [
+          "Succeeded",
+          "Failed",
+          "Skipped",
+          "TimedOut"
+        ]
+      },
+      "inputs": {
+        "statusCode": 200,
+        "body": {
+          "resultado": "@string(coalesce(variables('varRespuesta')?['resultado'],''))",
+          "codigo": "@string(coalesce(variables('varRespuesta')?['codigo'],''))",
+          "mensaje": "@string(coalesce(variables('varRespuesta')?['mensaje'],''))",
+          "solicitud_id": "@string(coalesce(variables('varRespuesta')?['solicitud_id'],''))",
+          "solicitud_uid": "@string(coalesce(variables('varRespuesta')?['solicitud_uid'],''))",
+          "snapshot_json": "@string(coalesce(variables('varRespuesta')?['snapshot_json'],''))",
+          "etag": "@string(coalesce(variables('varRespuesta')?['etag'],''))",
+          "estado_solicitud": "@string(coalesce(variables('varRespuesta')?['estado_solicitud'],''))",
+          "fase_proceso": "@string(coalesce(variables('varRespuesta')?['fase_proceso'],''))",
+          "resultado_tecnico": "@string(coalesce(variables('varRespuesta')?['resultado_tecnico'],''))",
+          "fecha_limite": "@string(coalesce(variables('varRespuesta')?['fecha_limite'],''))"
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "resultado": {
+              "title": "resultado",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "codigo": {
+              "title": "codigo",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "mensaje": {
+              "title": "mensaje",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "solicitud_id": {
+              "title": "solicitud_id",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "solicitud_uid": {
+              "title": "solicitud_uid",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "snapshot_json": {
+              "title": "snapshot_json",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "etag": {
+              "title": "etag",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "estado_solicitud": {
+              "title": "estado_solicitud",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "fase_proceso": {
+              "title": "fase_proceso",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "resultado_tecnico": {
+              "title": "resultado_tecnico",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "fecha_limite": {
+              "title": "fecha_limite",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "outputs": {}
+}

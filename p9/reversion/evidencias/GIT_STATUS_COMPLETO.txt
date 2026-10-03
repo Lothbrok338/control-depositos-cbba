@@ -1,0 +1,28 @@
+On branch candidate/p9-reversion
+Your branch is up to date with 'origin/candidate/p9-pdf-confirmacion'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   DOCUMENTACION_P9_POWER_APPS.md
+	modified:   ESTADO_PROYECTO.md
+	modified:   tests/test_16_asignacion_p9.py
+	modified:   tests/test_26_comprobante_cuenta_tc_p9.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	DESPLIEGUE_P9_REVERSION.md
+	DOCUMENTACION_P9_REVERSION.md
+	P9_EXPIRAR_REVERSIONES.zip
+	P9_PROVISIONAR_REVERSION.zip
+	P9_RECUPERAR_REVERSION.zip
+	P9_RESOLVER_REVERSION.zip
+	P9_SOLICITAR_REVERSION.zip
+	p9/reversion/
+	tests/reversion_helpers.py
+	tests/test_27_reversion_contrato_p9.py
+	tests/test_28_reversion_concurrencia_p9.py
+	tests/test_29_reversion_frontend_p9.py
+	tests/test_30_reversion_expiracion_recuperacion_p9.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
