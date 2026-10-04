@@ -1,6 +1,8 @@
 """Primitivas WDL propias de reversión; no modifican constructores P9."""
 from __future__ import annotations
 
+import json
+
 TODOS = ["Succeeded", "Failed", "Skipped", "TimedOut"]
 FALLOS = ["Failed", "TimedOut"]
 
@@ -58,13 +60,35 @@ def item_uri(lista, ident):
     return concat(quote("_api/web/lists(guid'"), lista, quote("')/items("), f"string({ident})", quote(")"))
 
 
+def serializar_cuerpo(body):
+    """Evalúa propiedades WDL antes de convertir el objeto al body string REST.
+
+    El conector HttpRequest declara body como string. Un dict con expresiones
+    puede ser convertido en texto por el conector sin evaluar sus propiedades.
+    setProperty conserva los tipos; string serializa/escapa una sola vez al final.
+    """
+    if not isinstance(body, dict):
+        raise TypeError("El cuerpo REST debe construirse desde un objeto")
+    constantes, dinamicos = {}, {}
+    for key, value in body.items():
+        if isinstance(value, str) and value.startswith("@"):
+            dinamicos[key] = value[1:]
+        else:
+            constantes[key] = value
+    base = json.dumps(constantes, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+    expresion = "json(" + quote(base) + ")"
+    for key, value in dinamicos.items():
+        expresion = f"setProperty({expresion},{quote(key)},{value})"
+    return "@string(" + expresion + ")"
+
+
 def http(method, url, body=None, etag=None):
     headers = {"Accept": "application/json;odata=verbose"}
     params = {"dataset": "@outputs('PARAM_SITIO_SHAREPOINT')", "parameters/method": method,
               "parameters/uri": url, "parameters/headers": headers}
     if body is not None:
         headers["Content-Type"] = "application/json;odata=nometadata"
-        params["parameters/body"] = body
+        params["parameters/body"] = serializar_cuerpo(body)
     if etag is not None:
         assert etag != "*"
         headers.update({"X-HTTP-Method": "MERGE", "IF-MATCH": etag})

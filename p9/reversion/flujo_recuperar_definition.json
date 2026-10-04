@@ -1865,11 +1865,7 @@
                         "X-HTTP-Method": "MERGE",
                         "IF-MATCH": "@coalesce(body('REC_RECLAMAR_GET')?['d']?['__metadata']?['etag'],outputs('REC_RECLAMAR_GET')?['headers']?['ETag'],'')"
                       },
-                      "parameters/body": {
-                        "RUN_ID": "@workflow()?['run']?['name']",
-                        "FASE_PROCESO": "RECUPERACION_REQUERIDA",
-                        "BITACORA_TECNICA_JSON": "@string(union(json(if(empty(body('REC_RECLAMAR_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_RECLAMAR_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_RECLAMAR_EVENTO'))))"
-                      }
+                      "parameters/body": "@string(setProperty(setProperty(json('{\"FASE_PROCESO\":\"RECUPERACION_REQUERIDA\"}'),'RUN_ID',workflow()?['run']?['name']),'BITACORA_TECNICA_JSON',string(union(json(if(empty(body('REC_RECLAMAR_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_RECLAMAR_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_RECLAMAR_EVENTO'))))))"
                     },
                     "authentication": "@parameters('$authentication')",
                     "retryPolicy": {
@@ -2105,18 +2101,7 @@
                         "X-HTTP-Method": "MERGE",
                         "IF-MATCH": "@coalesce(body('REC_EXPIRAR_GET')?['d']?['__metadata']?['etag'],outputs('REC_EXPIRAR_GET')?['headers']?['ETag'],'')"
                       },
-                      "parameters/body": {
-                        "ESTADO_SOLICITUD": "PENDIENTE",
-                        "FASE_PROCESO": "EXPIRADA",
-                        "RESULTADO_TECNICO": "NO_EJECUTADO",
-                        "CLAVE_BLOQUEO": "@concat('CERRADA|',body('REC_EXPIRAR_GET')?['d']?['SOLICITUD_UID'])",
-                        "FECHA_CIERRE": "@utcNow()",
-                        "APROBADOR_ID": null,
-                        "APROBADOR_UPN": null,
-                        "FECHA_DECISION": null,
-                        "ERROR_TECNICO": null,
-                        "BITACORA_TECNICA_JSON": "@string(union(json(if(empty(body('REC_EXPIRAR_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_EXPIRAR_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_EXPIRAR_EVENTO'))))"
-                      }
+                      "parameters/body": "@string(setProperty(setProperty(setProperty(json('{\"ESTADO_SOLICITUD\":\"PENDIENTE\",\"FASE_PROCESO\":\"EXPIRADA\",\"RESULTADO_TECNICO\":\"NO_EJECUTADO\",\"APROBADOR_ID\":null,\"APROBADOR_UPN\":null,\"FECHA_DECISION\":null,\"ERROR_TECNICO\":null}'),'CLAVE_BLOQUEO',concat('CERRADA|',body('REC_EXPIRAR_GET')?['d']?['SOLICITUD_UID'])),'FECHA_CIERRE',utcNow()),'BITACORA_TECNICA_JSON',string(union(json(if(empty(body('REC_EXPIRAR_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_EXPIRAR_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_EXPIRAR_EVENTO'))))))"
                     },
                     "authentication": "@parameters('$authentication')",
                     "retryPolicy": {
@@ -2433,14 +2418,7 @@
                             "X-HTTP-Method": "MERGE",
                             "IF-MATCH": "@coalesce(body('REC_ERROR_TERMINAL_GET')?['d']?['__metadata']?['etag'],outputs('REC_ERROR_TERMINAL_GET')?['headers']?['ETag'],'')"
                           },
-                          "parameters/body": {
-                            "FASE_PROCESO": "FINALIZADA",
-                            "RESULTADO_TECNICO": "ERROR",
-                            "FECHA_CIERRE": "@utcNow()",
-                            "CLAVE_BLOQUEO": "@concat('CERRADA|',body('REC_ERROR_TERMINAL_GET')?['d']?['SOLICITUD_UID'])",
-                            "ERROR_TECNICO": "ERROR",
-                            "BITACORA_TECNICA_JSON": "@string(union(json(if(empty(body('REC_ERROR_TERMINAL_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_ERROR_TERMINAL_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_ERROR_TERMINAL_EVENTO'))))"
-                          }
+                          "parameters/body": "@string(setProperty(setProperty(setProperty(json('{\"FASE_PROCESO\":\"FINALIZADA\",\"RESULTADO_TECNICO\":\"ERROR\",\"ERROR_TECNICO\":\"ERROR\"}'),'FECHA_CIERRE',utcNow()),'CLAVE_BLOQUEO',concat('CERRADA|',body('REC_ERROR_TERMINAL_GET')?['d']?['SOLICITUD_UID'])),'BITACORA_TECNICA_JSON',string(union(json(if(empty(body('REC_ERROR_TERMINAL_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_ERROR_TERMINAL_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_ERROR_TERMINAL_EVENTO'))))))"
                         },
                         "authentication": "@parameters('$authentication')",
                         "retryPolicy": {
@@ -2676,10 +2654,7 @@
                             "X-HTTP-Method": "MERGE",
                             "IF-MATCH": "@coalesce(body('REC_AUTORIZAR_GET')?['d']?['__metadata']?['etag'],outputs('REC_AUTORIZAR_GET')?['headers']?['ETag'],'')"
                           },
-                          "parameters/body": {
-                            "FASE_PROCESO": "EJECUTANDO_REVERSION",
-                            "BITACORA_TECNICA_JSON": "@string(union(json(if(empty(body('REC_AUTORIZAR_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_AUTORIZAR_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_AUTORIZAR_EVENTO'))))"
-                          }
+                          "parameters/body": "@string(setProperty(json('{\"FASE_PROCESO\":\"EJECUTANDO_REVERSION\"}'),'BITACORA_TECNICA_JSON',string(union(json(if(empty(body('REC_AUTORIZAR_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_AUTORIZAR_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_AUTORIZAR_EVENTO'))))))"
                         },
                         "authentication": "@parameters('$authentication')",
                         "retryPolicy": {
@@ -3014,12 +2989,7 @@
                             "X-HTTP-Method": "MERGE",
                             "IF-MATCH": "@coalesce(body('REC_PREPARAR_GET')?['d']?['__metadata']?['etag'],outputs('REC_PREPARAR_GET')?['headers']?['ETag'],'')"
                           },
-                          "parameters/body": {
-                            "FASE_PROCESO": "ESPERANDO_APROBACION",
-                            "CONFIG_APROBACION_JSON": "@if(empty(body('REC_PREPARAR_GET')?['d']?['CONFIG_APROBACION_JSON']),string(outputs('REC_CONFIG_INICIAL')),body('REC_PREPARAR_GET')?['d']?['CONFIG_APROBACION_JSON'])",
-                            "APROBACION_ID": "@if(equals(outputs('REC_OPERACION'),'ESPERAR_APROBACION'),outputs('EVIDENCIA')?['aprobacion_id'],body('REC_PREPARAR_GET')?['d']?['APROBACION_ID'])",
-                            "BITACORA_TECNICA_JSON": "@string(union(json(if(empty(body('REC_PREPARAR_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_PREPARAR_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_PREPARAR_EVENTO'))))"
-                          }
+                          "parameters/body": "@string(setProperty(setProperty(setProperty(json('{\"FASE_PROCESO\":\"ESPERANDO_APROBACION\"}'),'CONFIG_APROBACION_JSON',if(empty(body('REC_PREPARAR_GET')?['d']?['CONFIG_APROBACION_JSON']),string(outputs('REC_CONFIG_INICIAL')),body('REC_PREPARAR_GET')?['d']?['CONFIG_APROBACION_JSON'])),'APROBACION_ID',if(equals(outputs('REC_OPERACION'),'ESPERAR_APROBACION'),outputs('EVIDENCIA')?['aprobacion_id'],body('REC_PREPARAR_GET')?['d']?['APROBACION_ID'])),'BITACORA_TECNICA_JSON',string(union(json(if(empty(body('REC_PREPARAR_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_PREPARAR_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_PREPARAR_EVENTO'))))))"
                         },
                         "authentication": "@parameters('$authentication')",
                         "retryPolicy": {
@@ -3296,18 +3266,7 @@
                             "X-HTTP-Method": "MERGE",
                             "IF-MATCH": "@coalesce(body('REC_A_EXPIRAR_PREVIA_GET')?['d']?['__metadata']?['etag'],outputs('REC_A_EXPIRAR_PREVIA_GET')?['headers']?['ETag'],'')"
                           },
-                          "parameters/body": {
-                            "ESTADO_SOLICITUD": "PENDIENTE",
-                            "FASE_PROCESO": "EXPIRADA",
-                            "RESULTADO_TECNICO": "NO_EJECUTADO",
-                            "CLAVE_BLOQUEO": "@concat('CERRADA|',body('REC_A_EXPIRAR_PREVIA_GET')?['d']?['SOLICITUD_UID'])",
-                            "FECHA_CIERRE": "@utcNow()",
-                            "APROBADOR_ID": null,
-                            "APROBADOR_UPN": null,
-                            "FECHA_DECISION": null,
-                            "ERROR_TECNICO": null,
-                            "BITACORA_TECNICA_JSON": "@string(union(json(if(empty(body('REC_A_EXPIRAR_PREVIA_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_EXPIRAR_PREVIA_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_EXPIRAR_PREVIA_EVENTO'))))"
-                          }
+                          "parameters/body": "@string(setProperty(setProperty(setProperty(json('{\"ESTADO_SOLICITUD\":\"PENDIENTE\",\"FASE_PROCESO\":\"EXPIRADA\",\"RESULTADO_TECNICO\":\"NO_EJECUTADO\",\"APROBADOR_ID\":null,\"APROBADOR_UPN\":null,\"FECHA_DECISION\":null,\"ERROR_TECNICO\":null}'),'CLAVE_BLOQUEO',concat('CERRADA|',body('REC_A_EXPIRAR_PREVIA_GET')?['d']?['SOLICITUD_UID'])),'FECHA_CIERRE',utcNow()),'BITACORA_TECNICA_JSON',string(union(json(if(empty(body('REC_A_EXPIRAR_PREVIA_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_EXPIRAR_PREVIA_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_EXPIRAR_PREVIA_EVENTO'))))))"
                         },
                         "authentication": "@parameters('$authentication')",
                         "retryPolicy": {
@@ -3648,9 +3607,7 @@
                                     "X-HTTP-Method": "MERGE",
                                     "IF-MATCH": "@coalesce(body('REC_A_R_DESCARTADA_GET')?['d']?['__metadata']?['etag'],outputs('REC_A_R_DESCARTADA_GET')?['headers']?['ETag'],'')"
                                   },
-                                  "parameters/body": {
-                                    "BITACORA_TECNICA_JSON": "@string(union(json(if(empty(body('REC_A_R_DESCARTADA_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_R_DESCARTADA_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_R_DESCARTADA_EVENTO'))))"
-                                  }
+                                  "parameters/body": "@string(setProperty(json('{}'),'BITACORA_TECNICA_JSON',string(union(json(if(empty(body('REC_A_R_DESCARTADA_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_R_DESCARTADA_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_R_DESCARTADA_EVENTO'))))))"
                                 },
                                 "authentication": "@parameters('$authentication')",
                                 "retryPolicy": {
@@ -3865,18 +3822,7 @@
                                     "X-HTTP-Method": "MERGE",
                                     "IF-MATCH": "@coalesce(body('REC_A_R_EXPIRAR_TARDIA_GET')?['d']?['__metadata']?['etag'],outputs('REC_A_R_EXPIRAR_TARDIA_GET')?['headers']?['ETag'],'')"
                                   },
-                                  "parameters/body": {
-                                    "ESTADO_SOLICITUD": "PENDIENTE",
-                                    "FASE_PROCESO": "EXPIRADA",
-                                    "RESULTADO_TECNICO": "NO_EJECUTADO",
-                                    "CLAVE_BLOQUEO": "@concat('CERRADA|',body('REC_A_R_EXPIRAR_TARDIA_GET')?['d']?['SOLICITUD_UID'])",
-                                    "FECHA_CIERRE": "@utcNow()",
-                                    "APROBADOR_ID": null,
-                                    "APROBADOR_UPN": null,
-                                    "FECHA_DECISION": null,
-                                    "ERROR_TECNICO": null,
-                                    "BITACORA_TECNICA_JSON": "@string(union(json(if(empty(body('REC_A_R_EXPIRAR_TARDIA_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_R_EXPIRAR_TARDIA_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_R_EXPIRAR_TARDIA_EVENTO'))))"
-                                  }
+                                  "parameters/body": "@string(setProperty(setProperty(setProperty(json('{\"ESTADO_SOLICITUD\":\"PENDIENTE\",\"FASE_PROCESO\":\"EXPIRADA\",\"RESULTADO_TECNICO\":\"NO_EJECUTADO\",\"APROBADOR_ID\":null,\"APROBADOR_UPN\":null,\"FECHA_DECISION\":null,\"ERROR_TECNICO\":null}'),'CLAVE_BLOQUEO',concat('CERRADA|',body('REC_A_R_EXPIRAR_TARDIA_GET')?['d']?['SOLICITUD_UID'])),'FECHA_CIERRE',utcNow()),'BITACORA_TECNICA_JSON',string(union(json(if(empty(body('REC_A_R_EXPIRAR_TARDIA_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_R_EXPIRAR_TARDIA_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_R_EXPIRAR_TARDIA_EVENTO'))))))"
                                 },
                                 "authentication": "@parameters('$authentication')",
                                 "retryPolicy": {
@@ -4112,17 +4058,7 @@
                                     "X-HTTP-Method": "MERGE",
                                     "IF-MATCH": "@coalesce(body('REC_A_R_ACEPTAR_APPROVE_GET')?['d']?['__metadata']?['etag'],outputs('REC_A_R_ACEPTAR_APPROVE_GET')?['headers']?['ETag'],'')"
                                   },
-                                  "parameters/body": {
-                                    "APROBACION_ID": "@coalesce(outputs('REC_A_SALIDA_APPROVAL')?['name'],outputs('REC_A_SALIDA_APPROVAL')?['approvalId'],'')",
-                                    "APROBADOR_ID": "@first(outputs('REC_A_SALIDA_APPROVAL')?['responses'])?['responder']?['id']",
-                                    "APROBADOR_UPN": "@toLower(coalesce(first(outputs('REC_A_SALIDA_APPROVAL')?['responses'])?['responder']?['userPrincipalName'],first(outputs('REC_A_SALIDA_APPROVAL')?['responses'])?['responder']?['email'],''))",
-                                    "FECHA_DECISION": "@first(outputs('REC_A_SALIDA_APPROVAL')?['responses'])?['responseDate']",
-                                    "COMENTARIO_APROBADOR": "@coalesce(first(outputs('REC_A_SALIDA_APPROVAL')?['responses'])?['comments'],'')",
-                                    "RESPUESTA_APROBACION_JSON": "@string(outputs('REC_A_SALIDA_APPROVAL'))",
-                                    "ESTADO_SOLICITUD": "APROBADO",
-                                    "FASE_PROCESO": "EJECUTANDO_REVERSION",
-                                    "BITACORA_TECNICA_JSON": "@string(union(json(if(empty(body('REC_A_R_ACEPTAR_APPROVE_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_R_ACEPTAR_APPROVE_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_R_ACEPTAR_APPROVE_EVENTO'))))"
-                                  }
+                                  "parameters/body": "@string(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(json('{\"ESTADO_SOLICITUD\":\"APROBADO\",\"FASE_PROCESO\":\"EJECUTANDO_REVERSION\"}'),'APROBACION_ID',coalesce(outputs('REC_A_SALIDA_APPROVAL')?['name'],outputs('REC_A_SALIDA_APPROVAL')?['approvalId'],'')),'APROBADOR_ID',first(outputs('REC_A_SALIDA_APPROVAL')?['responses'])?['responder']?['id']),'APROBADOR_UPN',toLower(coalesce(first(outputs('REC_A_SALIDA_APPROVAL')?['responses'])?['responder']?['userPrincipalName'],first(outputs('REC_A_SALIDA_APPROVAL')?['responses'])?['responder']?['email'],''))),'FECHA_DECISION',first(outputs('REC_A_SALIDA_APPROVAL')?['responses'])?['responseDate']),'COMENTARIO_APROBADOR',coalesce(first(outputs('REC_A_SALIDA_APPROVAL')?['responses'])?['comments'],'')),'RESPUESTA_APROBACION_JSON',string(outputs('REC_A_SALIDA_APPROVAL'))),'BITACORA_TECNICA_JSON',string(union(json(if(empty(body('REC_A_R_ACEPTAR_APPROVE_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_R_ACEPTAR_APPROVE_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_R_ACEPTAR_APPROVE_EVENTO'))))))"
                                 },
                                 "authentication": "@parameters('$authentication')",
                                 "retryPolicy": {
@@ -4357,20 +4293,7 @@
                                       "X-HTTP-Method": "MERGE",
                                       "IF-MATCH": "@coalesce(body('REC_A_R_ACEPTAR_REJECT_GET')?['d']?['__metadata']?['etag'],outputs('REC_A_R_ACEPTAR_REJECT_GET')?['headers']?['ETag'],'')"
                                     },
-                                    "parameters/body": {
-                                      "APROBACION_ID": "@coalesce(outputs('REC_A_SALIDA_APPROVAL')?['name'],outputs('REC_A_SALIDA_APPROVAL')?['approvalId'],'')",
-                                      "APROBADOR_ID": "@first(outputs('REC_A_SALIDA_APPROVAL')?['responses'])?['responder']?['id']",
-                                      "APROBADOR_UPN": "@toLower(coalesce(first(outputs('REC_A_SALIDA_APPROVAL')?['responses'])?['responder']?['userPrincipalName'],first(outputs('REC_A_SALIDA_APPROVAL')?['responses'])?['responder']?['email'],''))",
-                                      "FECHA_DECISION": "@first(outputs('REC_A_SALIDA_APPROVAL')?['responses'])?['responseDate']",
-                                      "COMENTARIO_APROBADOR": "@coalesce(first(outputs('REC_A_SALIDA_APPROVAL')?['responses'])?['comments'],'')",
-                                      "RESPUESTA_APROBACION_JSON": "@string(outputs('REC_A_SALIDA_APPROVAL'))",
-                                      "ESTADO_SOLICITUD": "RECHAZADO",
-                                      "FASE_PROCESO": "FINALIZADA",
-                                      "RESULTADO_TECNICO": "NO_EJECUTADO",
-                                      "FECHA_CIERRE": "@utcNow()",
-                                      "CLAVE_BLOQUEO": "@concat('CERRADA|',body('REC_A_R_ACEPTAR_REJECT_GET')?['d']?['SOLICITUD_UID'])",
-                                      "BITACORA_TECNICA_JSON": "@string(union(json(if(empty(body('REC_A_R_ACEPTAR_REJECT_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_R_ACEPTAR_REJECT_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_R_ACEPTAR_REJECT_EVENTO'))))"
-                                    }
+                                    "parameters/body": "@string(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(json('{\"ESTADO_SOLICITUD\":\"RECHAZADO\",\"FASE_PROCESO\":\"FINALIZADA\",\"RESULTADO_TECNICO\":\"NO_EJECUTADO\"}'),'APROBACION_ID',coalesce(outputs('REC_A_SALIDA_APPROVAL')?['name'],outputs('REC_A_SALIDA_APPROVAL')?['approvalId'],'')),'APROBADOR_ID',first(outputs('REC_A_SALIDA_APPROVAL')?['responses'])?['responder']?['id']),'APROBADOR_UPN',toLower(coalesce(first(outputs('REC_A_SALIDA_APPROVAL')?['responses'])?['responder']?['userPrincipalName'],first(outputs('REC_A_SALIDA_APPROVAL')?['responses'])?['responder']?['email'],''))),'FECHA_DECISION',first(outputs('REC_A_SALIDA_APPROVAL')?['responses'])?['responseDate']),'COMENTARIO_APROBADOR',coalesce(first(outputs('REC_A_SALIDA_APPROVAL')?['responses'])?['comments'],'')),'RESPUESTA_APROBACION_JSON',string(outputs('REC_A_SALIDA_APPROVAL'))),'FECHA_CIERRE',utcNow()),'CLAVE_BLOQUEO',concat('CERRADA|',body('REC_A_R_ACEPTAR_REJECT_GET')?['d']?['SOLICITUD_UID'])),'BITACORA_TECNICA_JSON',string(union(json(if(empty(body('REC_A_R_ACEPTAR_REJECT_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_R_ACEPTAR_REJECT_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_R_ACEPTAR_REJECT_EVENTO'))))))"
                                   },
                                   "authentication": "@parameters('$authentication')",
                                   "retryPolicy": {
@@ -4698,14 +4621,7 @@
                                     "X-HTTP-Method": "MERGE",
                                     "IF-MATCH": "@coalesce(body('REC_A_E_RECONCILIAR_GET')?['d']?['__metadata']?['etag'],outputs('REC_A_E_RECONCILIAR_GET')?['headers']?['ETag'],'')"
                                   },
-                                  "parameters/body": {
-                                    "FASE_PROCESO": "FINALIZADA",
-                                    "RESULTADO_TECNICO": "REVERTIDO",
-                                    "FECHA_CIERRE": "@utcNow()",
-                                    "CLAVE_BLOQUEO": "@concat('CERRADA|',body('REC_A_E_RECONCILIAR_GET')?['d']?['SOLICITUD_UID'])",
-                                    "ERROR_TECNICO": "",
-                                    "BITACORA_TECNICA_JSON": "@string(union(json(if(empty(body('REC_A_E_RECONCILIAR_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_E_RECONCILIAR_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_E_RECONCILIAR_EVENTO'))))"
-                                  }
+                                  "parameters/body": "@string(setProperty(setProperty(setProperty(json('{\"FASE_PROCESO\":\"FINALIZADA\",\"RESULTADO_TECNICO\":\"REVERTIDO\",\"ERROR_TECNICO\":\"\"}'),'FECHA_CIERRE',utcNow()),'CLAVE_BLOQUEO',concat('CERRADA|',body('REC_A_E_RECONCILIAR_GET')?['d']?['SOLICITUD_UID'])),'BITACORA_TECNICA_JSON',string(union(json(if(empty(body('REC_A_E_RECONCILIAR_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_E_RECONCILIAR_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_E_RECONCILIAR_EVENTO'))))))"
                                 },
                                 "authentication": "@parameters('$authentication')",
                                 "retryPolicy": {
@@ -4937,14 +4853,7 @@
                                     "X-HTTP-Method": "MERGE",
                                     "IF-MATCH": "@coalesce(body('REC_A_E_CIERRE_ERROR_GET')?['d']?['__metadata']?['etag'],outputs('REC_A_E_CIERRE_ERROR_GET')?['headers']?['ETag'],'')"
                                   },
-                                  "parameters/body": {
-                                    "FASE_PROCESO": "FINALIZADA",
-                                    "RESULTADO_TECNICO": "ERROR",
-                                    "FECHA_CIERRE": "@utcNow()",
-                                    "CLAVE_BLOQUEO": "@concat('CERRADA|',body('REC_A_E_CIERRE_ERROR_GET')?['d']?['SOLICITUD_UID'])",
-                                    "ERROR_TECNICO": "ERROR",
-                                    "BITACORA_TECNICA_JSON": "@string(union(json(if(empty(body('REC_A_E_CIERRE_ERROR_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_E_CIERRE_ERROR_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_E_CIERRE_ERROR_EVENTO'))))"
-                                  }
+                                  "parameters/body": "@string(setProperty(setProperty(setProperty(json('{\"FASE_PROCESO\":\"FINALIZADA\",\"RESULTADO_TECNICO\":\"ERROR\",\"ERROR_TECNICO\":\"ERROR\"}'),'FECHA_CIERRE',utcNow()),'CLAVE_BLOQUEO',concat('CERRADA|',body('REC_A_E_CIERRE_ERROR_GET')?['d']?['SOLICITUD_UID'])),'BITACORA_TECNICA_JSON',string(union(json(if(empty(body('REC_A_E_CIERRE_ERROR_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_E_CIERRE_ERROR_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_E_CIERRE_ERROR_EVENTO'))))))"
                                 },
                                 "authentication": "@parameters('$authentication')",
                                 "retryPolicy": {
@@ -5180,12 +5089,7 @@
                                     "X-HTTP-Method": "MERGE",
                                     "IF-MATCH": "@coalesce(body('REC_A_E_SIN_PRUEBA_GET')?['d']?['__metadata']?['etag'],outputs('REC_A_E_SIN_PRUEBA_GET')?['headers']?['ETag'],'')"
                                   },
-                                  "parameters/body": {
-                                    "FASE_PROCESO": "RECUPERACION_REQUERIDA",
-                                    "RESULTADO_TECNICO": "ERROR",
-                                    "ERROR_TECNICO": "@if(and(not(empty(body('REC_A_E_DEPOSITO')?['d']?['ULTIMA_REVERSION_ID'])),not(equals(body('REC_A_E_DEPOSITO')?['d']?['ULTIMA_REVERSION_ID'],body('REC_A_E_SOLICITUD')?['d']?['SOLICITUD_UID'])),not(equals(body('REC_A_E_DEPOSITO')?['d']?['ULTIMA_REVERSION_ID'],json(body('REC_A_E_SOLICITUD')?['d']?['SNAPSHOT_JSON'])?['ULTIMA_REVERSION_ID']))),'MARCADOR_INCOMPATIBLE_CON_HISTORIAL_ACTIVO','INTENTO_ANTERIOR_NO_RECONCILIADO')",
-                                    "BITACORA_TECNICA_JSON": "@string(union(json(if(empty(body('REC_A_E_SIN_PRUEBA_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_E_SIN_PRUEBA_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_E_SIN_PRUEBA_EVENTO'))))"
-                                  }
+                                  "parameters/body": "@string(setProperty(setProperty(json('{\"FASE_PROCESO\":\"RECUPERACION_REQUERIDA\",\"RESULTADO_TECNICO\":\"ERROR\"}'),'ERROR_TECNICO',if(and(not(empty(body('REC_A_E_DEPOSITO')?['d']?['ULTIMA_REVERSION_ID'])),not(equals(body('REC_A_E_DEPOSITO')?['d']?['ULTIMA_REVERSION_ID'],body('REC_A_E_SOLICITUD')?['d']?['SOLICITUD_UID'])),not(equals(body('REC_A_E_DEPOSITO')?['d']?['ULTIMA_REVERSION_ID'],json(body('REC_A_E_SOLICITUD')?['d']?['SNAPSHOT_JSON'])?['ULTIMA_REVERSION_ID']))),'MARCADOR_INCOMPATIBLE_CON_HISTORIAL_ACTIVO','INTENTO_ANTERIOR_NO_RECONCILIADO')),'BITACORA_TECNICA_JSON',string(union(json(if(empty(body('REC_A_E_SIN_PRUEBA_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_E_SIN_PRUEBA_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_E_SIN_PRUEBA_EVENTO'))))))"
                                 },
                                 "authentication": "@parameters('$authentication')",
                                 "retryPolicy": {
@@ -5432,14 +5336,7 @@
                                     "X-HTTP-Method": "MERGE",
                                     "IF-MATCH": "@coalesce(body('REC_A_E_CERRAR_NO_APTO_GET')?['d']?['__metadata']?['etag'],outputs('REC_A_E_CERRAR_NO_APTO_GET')?['headers']?['ETag'],'')"
                                   },
-                                  "parameters/body": {
-                                    "FASE_PROCESO": "FINALIZADA",
-                                    "RESULTADO_TECNICO": "@outputs('REC_A_E_VALIDACION')",
-                                    "FECHA_CIERRE": "@utcNow()",
-                                    "CLAVE_BLOQUEO": "@concat('CERRADA|',body('REC_A_E_CERRAR_NO_APTO_GET')?['d']?['SOLICITUD_UID'])",
-                                    "ERROR_TECNICO": "@if(equals(outputs('REC_A_E_VALIDACION'),'REVERTIDO'),'',outputs('REC_A_E_VALIDACION'))",
-                                    "BITACORA_TECNICA_JSON": "@string(union(json(if(empty(body('REC_A_E_CERRAR_NO_APTO_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_E_CERRAR_NO_APTO_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_E_CERRAR_NO_APTO_EVENTO'))))"
-                                  }
+                                  "parameters/body": "@string(setProperty(setProperty(setProperty(setProperty(setProperty(json('{\"FASE_PROCESO\":\"FINALIZADA\"}'),'RESULTADO_TECNICO',outputs('REC_A_E_VALIDACION')),'FECHA_CIERRE',utcNow()),'CLAVE_BLOQUEO',concat('CERRADA|',body('REC_A_E_CERRAR_NO_APTO_GET')?['d']?['SOLICITUD_UID'])),'ERROR_TECNICO',if(equals(outputs('REC_A_E_VALIDACION'),'REVERTIDO'),'',outputs('REC_A_E_VALIDACION'))),'BITACORA_TECNICA_JSON',string(union(json(if(empty(body('REC_A_E_CERRAR_NO_APTO_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_E_CERRAR_NO_APTO_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_E_CERRAR_NO_APTO_EVENTO'))))))"
                                 },
                                 "authentication": "@parameters('$authentication')",
                                 "retryPolicy": {
@@ -5676,11 +5573,7 @@
                                 "X-HTTP-Method": "MERGE",
                                 "IF-MATCH": "@coalesce(body('REC_A_E_INTENTO_GET')?['d']?['__metadata']?['etag'],outputs('REC_A_E_INTENTO_GET')?['headers']?['ETag'],'')"
                               },
-                              "parameters/body": {
-                                "ETAG_EJECUCION": "@body('REC_A_E_SOLICITUD')?['d']?['ETAG_SOLICITUD']",
-                                "FECHA_EJECUCION_REVERSION": "@if(empty(body('REC_A_E_INTENTO_GET')?['d']?['FECHA_EJECUCION_REVERSION']),utcNow(),body('REC_A_E_INTENTO_GET')?['d']?['FECHA_EJECUCION_REVERSION'])",
-                                "BITACORA_TECNICA_JSON": "@string(union(json(if(empty(body('REC_A_E_INTENTO_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_E_INTENTO_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_E_INTENTO_EVENTO'))))"
-                              }
+                              "parameters/body": "@string(setProperty(setProperty(setProperty(json('{}'),'ETAG_EJECUCION',body('REC_A_E_SOLICITUD')?['d']?['ETAG_SOLICITUD']),'FECHA_EJECUCION_REVERSION',if(empty(body('REC_A_E_INTENTO_GET')?['d']?['FECHA_EJECUCION_REVERSION']),utcNow(),body('REC_A_E_INTENTO_GET')?['d']?['FECHA_EJECUCION_REVERSION'])),'BITACORA_TECNICA_JSON',string(union(json(if(empty(body('REC_A_E_INTENTO_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_E_INTENTO_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_E_INTENTO_EVENTO'))))))"
                             },
                             "authentication": "@parameters('$authentication')",
                             "retryPolicy": {
@@ -5864,17 +5757,7 @@
                         "X-HTTP-Method": "MERGE",
                         "IF-MATCH": "@body('REC_A_E_SOLICITUD')?['d']?['ETAG_SOLICITUD']"
                       },
-                      "parameters/body": {
-                        "ESTADO_ASIGNACION": "DISPONIBLE",
-                        "ESTUDIANTE": null,
-                        "CODIGO_ESTUDIANTE": null,
-                        "SOLICITADO_POR": null,
-                        "SEDE_ASIGNACION": null,
-                        "USUARIO_ASIGNACION": null,
-                        "FECHA_HORA_ASIGNACION": null,
-                        "OBSERVACION": null,
-                        "ULTIMA_REVERSION_ID": "@body('REC_A_E_SOLICITUD')?['d']?['SOLICITUD_UID']"
-                      }
+                      "parameters/body": "@string(setProperty(json('{\"ESTADO_ASIGNACION\":\"DISPONIBLE\",\"ESTUDIANTE\":null,\"CODIGO_ESTUDIANTE\":null,\"SOLICITADO_POR\":null,\"SEDE_ASIGNACION\":null,\"USUARIO_ASIGNACION\":null,\"FECHA_HORA_ASIGNACION\":null,\"OBSERVACION\":null}'),'ULTIMA_REVERSION_ID',body('REC_A_E_SOLICITUD')?['d']?['SOLICITUD_UID']))"
                     },
                     "authentication": "@parameters('$authentication')",
                     "retryPolicy": {
@@ -6010,14 +5893,7 @@
                                     "X-HTTP-Method": "MERGE",
                                     "IF-MATCH": "@coalesce(body('REC_A_E_EXITO_GET')?['d']?['__metadata']?['etag'],outputs('REC_A_E_EXITO_GET')?['headers']?['ETag'],'')"
                                   },
-                                  "parameters/body": {
-                                    "FASE_PROCESO": "FINALIZADA",
-                                    "RESULTADO_TECNICO": "REVERTIDO",
-                                    "FECHA_CIERRE": "@utcNow()",
-                                    "CLAVE_BLOQUEO": "@concat('CERRADA|',body('REC_A_E_EXITO_GET')?['d']?['SOLICITUD_UID'])",
-                                    "ERROR_TECNICO": "",
-                                    "BITACORA_TECNICA_JSON": "@string(union(json(if(empty(body('REC_A_E_EXITO_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_E_EXITO_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_E_EXITO_EVENTO'))))"
-                                  }
+                                  "parameters/body": "@string(setProperty(setProperty(setProperty(json('{\"FASE_PROCESO\":\"FINALIZADA\",\"RESULTADO_TECNICO\":\"REVERTIDO\",\"ERROR_TECNICO\":\"\"}'),'FECHA_CIERRE',utcNow()),'CLAVE_BLOQUEO',concat('CERRADA|',body('REC_A_E_EXITO_GET')?['d']?['SOLICITUD_UID'])),'BITACORA_TECNICA_JSON',string(union(json(if(empty(body('REC_A_E_EXITO_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_E_EXITO_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_E_EXITO_EVENTO'))))))"
                                 },
                                 "authentication": "@parameters('$authentication')",
                                 "retryPolicy": {
@@ -6234,12 +6110,7 @@
                                         "X-HTTP-Method": "MERGE",
                                         "IF-MATCH": "@coalesce(body('REC_A_E_ERROR_CIERRE_GET')?['d']?['__metadata']?['etag'],outputs('REC_A_E_ERROR_CIERRE_GET')?['headers']?['ETag'],'')"
                                       },
-                                      "parameters/body": {
-                                        "FASE_PROCESO": "RECUPERACION_REQUERIDA",
-                                        "RESULTADO_TECNICO": "ERROR",
-                                        "ERROR_TECNICO": "MERGE_ACREDITADO_CIERRE_PENDIENTE",
-                                        "BITACORA_TECNICA_JSON": "@string(union(json(if(empty(body('REC_A_E_ERROR_CIERRE_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_E_ERROR_CIERRE_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_E_ERROR_CIERRE_EVENTO'))))"
-                                      }
+                                      "parameters/body": "@string(setProperty(json('{\"FASE_PROCESO\":\"RECUPERACION_REQUERIDA\",\"RESULTADO_TECNICO\":\"ERROR\",\"ERROR_TECNICO\":\"MERGE_ACREDITADO_CIERRE_PENDIENTE\"}'),'BITACORA_TECNICA_JSON',string(union(json(if(empty(body('REC_A_E_ERROR_CIERRE_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_E_ERROR_CIERRE_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_E_ERROR_CIERRE_EVENTO'))))))"
                                     },
                                     "authentication": "@parameters('$authentication')",
                                     "retryPolicy": {
@@ -6513,14 +6384,7 @@
                                           "X-HTTP-Method": "MERGE",
                                           "IF-MATCH": "@coalesce(body('REC_A_E_CONFLICTO_412_GET')?['d']?['__metadata']?['etag'],outputs('REC_A_E_CONFLICTO_412_GET')?['headers']?['ETag'],'')"
                                         },
-                                        "parameters/body": {
-                                          "FASE_PROCESO": "@if(and(not(empty(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'])),not(equals(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'],body('REC_A_E_SOLICITUD')?['d']?['SOLICITUD_UID'])),not(equals(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'],json(body('REC_A_E_SOLICITUD')?['d']?['SNAPSHOT_JSON'])?['ULTIMA_REVERSION_ID']))),'RECUPERACION_REQUERIDA','FINALIZADA')",
-                                          "RESULTADO_TECNICO": "@if(and(not(empty(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'])),not(equals(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'],body('REC_A_E_SOLICITUD')?['d']?['SOLICITUD_UID'])),not(equals(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'],json(body('REC_A_E_SOLICITUD')?['d']?['SNAPSHOT_JSON'])?['ULTIMA_REVERSION_ID']))),'ERROR',if(equals(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'],body('REC_A_E_SOLICITUD')?['d']?['SOLICITUD_UID']),'REVERTIDO','CONFLICTO'))",
-                                          "FECHA_CIERRE": "@if(and(not(empty(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'])),not(equals(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'],body('REC_A_E_SOLICITUD')?['d']?['SOLICITUD_UID'])),not(equals(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'],json(body('REC_A_E_SOLICITUD')?['d']?['SNAPSHOT_JSON'])?['ULTIMA_REVERSION_ID']))),null,utcNow())",
-                                          "CLAVE_BLOQUEO": "@if(and(not(empty(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'])),not(equals(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'],body('REC_A_E_SOLICITUD')?['d']?['SOLICITUD_UID'])),not(equals(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'],json(body('REC_A_E_SOLICITUD')?['d']?['SNAPSHOT_JSON'])?['ULTIMA_REVERSION_ID']))),body('REC_A_E_CONFLICTO_412_GET')?['d']?['CLAVE_BLOQUEO'],concat('CERRADA|',body('REC_A_E_CONFLICTO_412_GET')?['d']?['SOLICITUD_UID']))",
-                                          "ERROR_TECNICO": "@if(and(not(empty(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'])),not(equals(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'],body('REC_A_E_SOLICITUD')?['d']?['SOLICITUD_UID'])),not(equals(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'],json(body('REC_A_E_SOLICITUD')?['d']?['SNAPSHOT_JSON'])?['ULTIMA_REVERSION_ID']))),'MARCADOR_INCOMPATIBLE_CON_HISTORIAL_ACTIVO',if(equals(if(equals(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'],body('REC_A_E_SOLICITUD')?['d']?['SOLICITUD_UID']),'REVERTIDO','CONFLICTO'),'REVERTIDO'),'','CONFLICTO'))",
-                                          "BITACORA_TECNICA_JSON": "@string(union(json(if(empty(body('REC_A_E_CONFLICTO_412_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_E_CONFLICTO_412_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_E_CONFLICTO_412_EVENTO'))))"
-                                        }
+                                        "parameters/body": "@string(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(json('{}'),'FASE_PROCESO',if(and(not(empty(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'])),not(equals(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'],body('REC_A_E_SOLICITUD')?['d']?['SOLICITUD_UID'])),not(equals(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'],json(body('REC_A_E_SOLICITUD')?['d']?['SNAPSHOT_JSON'])?['ULTIMA_REVERSION_ID']))),'RECUPERACION_REQUERIDA','FINALIZADA')),'RESULTADO_TECNICO',if(and(not(empty(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'])),not(equals(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'],body('REC_A_E_SOLICITUD')?['d']?['SOLICITUD_UID'])),not(equals(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'],json(body('REC_A_E_SOLICITUD')?['d']?['SNAPSHOT_JSON'])?['ULTIMA_REVERSION_ID']))),'ERROR',if(equals(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'],body('REC_A_E_SOLICITUD')?['d']?['SOLICITUD_UID']),'REVERTIDO','CONFLICTO'))),'FECHA_CIERRE',if(and(not(empty(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'])),not(equals(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'],body('REC_A_E_SOLICITUD')?['d']?['SOLICITUD_UID'])),not(equals(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'],json(body('REC_A_E_SOLICITUD')?['d']?['SNAPSHOT_JSON'])?['ULTIMA_REVERSION_ID']))),null,utcNow())),'CLAVE_BLOQUEO',if(and(not(empty(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'])),not(equals(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'],body('REC_A_E_SOLICITUD')?['d']?['SOLICITUD_UID'])),not(equals(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'],json(body('REC_A_E_SOLICITUD')?['d']?['SNAPSHOT_JSON'])?['ULTIMA_REVERSION_ID']))),body('REC_A_E_CONFLICTO_412_GET')?['d']?['CLAVE_BLOQUEO'],concat('CERRADA|',body('REC_A_E_CONFLICTO_412_GET')?['d']?['SOLICITUD_UID']))),'ERROR_TECNICO',if(and(not(empty(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'])),not(equals(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'],body('REC_A_E_SOLICITUD')?['d']?['SOLICITUD_UID'])),not(equals(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'],json(body('REC_A_E_SOLICITUD')?['d']?['SNAPSHOT_JSON'])?['ULTIMA_REVERSION_ID']))),'MARCADOR_INCOMPATIBLE_CON_HISTORIAL_ACTIVO',if(equals(if(equals(body('REC_A_E_RELEER_TRAS_412')?['d']?['ULTIMA_REVERSION_ID'],body('REC_A_E_SOLICITUD')?['d']?['SOLICITUD_UID']),'REVERTIDO','CONFLICTO'),'REVERTIDO'),'','CONFLICTO'))),'BITACORA_TECNICA_JSON',string(union(json(if(empty(body('REC_A_E_CONFLICTO_412_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_E_CONFLICTO_412_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_E_CONFLICTO_412_EVENTO'))))))"
                                       },
                                       "authentication": "@parameters('$authentication')",
                                       "retryPolicy": {
@@ -6747,12 +6611,7 @@
                                             "X-HTTP-Method": "MERGE",
                                             "IF-MATCH": "@coalesce(body('REC_A_E_INCIERTO_GET')?['d']?['__metadata']?['etag'],outputs('REC_A_E_INCIERTO_GET')?['headers']?['ETag'],'')"
                                           },
-                                          "parameters/body": {
-                                            "FASE_PROCESO": "RECUPERACION_REQUERIDA",
-                                            "RESULTADO_TECNICO": "ERROR",
-                                            "ERROR_TECNICO": "MERGE_RESPUESTA_INCIERTA",
-                                            "BITACORA_TECNICA_JSON": "@string(union(json(if(empty(body('REC_A_E_INCIERTO_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_E_INCIERTO_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_E_INCIERTO_EVENTO'))))"
-                                          }
+                                          "parameters/body": "@string(setProperty(json('{\"FASE_PROCESO\":\"RECUPERACION_REQUERIDA\",\"RESULTADO_TECNICO\":\"ERROR\",\"ERROR_TECNICO\":\"MERGE_RESPUESTA_INCIERTA\"}'),'BITACORA_TECNICA_JSON',string(union(json(if(empty(body('REC_A_E_INCIERTO_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_E_INCIERTO_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_E_INCIERTO_EVENTO'))))))"
                                         },
                                         "authentication": "@parameters('$authentication')",
                                         "retryPolicy": {
@@ -6996,14 +6855,7 @@
                                       "X-HTTP-Method": "MERGE",
                                       "IF-MATCH": "@coalesce(body('REC_A_E_NO_ENCONTRADO_GET')?['d']?['__metadata']?['etag'],outputs('REC_A_E_NO_ENCONTRADO_GET')?['headers']?['ETag'],'')"
                                     },
-                                    "parameters/body": {
-                                      "FASE_PROCESO": "FINALIZADA",
-                                      "RESULTADO_TECNICO": "DEPOSITO_NO_ENCONTRADO",
-                                      "FECHA_CIERRE": "@utcNow()",
-                                      "CLAVE_BLOQUEO": "@concat('CERRADA|',body('REC_A_E_NO_ENCONTRADO_GET')?['d']?['SOLICITUD_UID'])",
-                                      "ERROR_TECNICO": "DEPOSITO_NO_ENCONTRADO",
-                                      "BITACORA_TECNICA_JSON": "@string(union(json(if(empty(body('REC_A_E_NO_ENCONTRADO_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_E_NO_ENCONTRADO_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_E_NO_ENCONTRADO_EVENTO'))))"
-                                    }
+                                    "parameters/body": "@string(setProperty(setProperty(setProperty(json('{\"FASE_PROCESO\":\"FINALIZADA\",\"RESULTADO_TECNICO\":\"DEPOSITO_NO_ENCONTRADO\",\"ERROR_TECNICO\":\"DEPOSITO_NO_ENCONTRADO\"}'),'FECHA_CIERRE',utcNow()),'CLAVE_BLOQUEO',concat('CERRADA|',body('REC_A_E_NO_ENCONTRADO_GET')?['d']?['SOLICITUD_UID'])),'BITACORA_TECNICA_JSON',string(union(json(if(empty(body('REC_A_E_NO_ENCONTRADO_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_E_NO_ENCONTRADO_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_E_NO_ENCONTRADO_EVENTO'))))))"
                                   },
                                   "authentication": "@parameters('$authentication')",
                                   "retryPolicy": {
@@ -7217,12 +7069,7 @@
                                         "X-HTTP-Method": "MERGE",
                                         "IF-MATCH": "@coalesce(body('REC_A_E_ERROR_LECTURA_GET')?['d']?['__metadata']?['etag'],outputs('REC_A_E_ERROR_LECTURA_GET')?['headers']?['ETag'],'')"
                                       },
-                                      "parameters/body": {
-                                        "FASE_PROCESO": "RECUPERACION_REQUERIDA",
-                                        "RESULTADO_TECNICO": "ERROR",
-                                        "ERROR_TECNICO": "ERROR_LECTURA_DEPOSITO",
-                                        "BITACORA_TECNICA_JSON": "@string(union(json(if(empty(body('REC_A_E_ERROR_LECTURA_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_E_ERROR_LECTURA_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_E_ERROR_LECTURA_EVENTO'))))"
-                                      }
+                                      "parameters/body": "@string(setProperty(json('{\"FASE_PROCESO\":\"RECUPERACION_REQUERIDA\",\"RESULTADO_TECNICO\":\"ERROR\",\"ERROR_TECNICO\":\"ERROR_LECTURA_DEPOSITO\"}'),'BITACORA_TECNICA_JSON',string(union(json(if(empty(body('REC_A_E_ERROR_LECTURA_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_E_ERROR_LECTURA_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_E_ERROR_LECTURA_EVENTO'))))))"
                                     },
                                     "authentication": "@parameters('$authentication')",
                                     "retryPolicy": {
@@ -7469,18 +7316,7 @@
                             "X-HTTP-Method": "MERGE",
                             "IF-MATCH": "@coalesce(body('REC_A_EXPIRAR_ERROR_GET')?['d']?['__metadata']?['etag'],outputs('REC_A_EXPIRAR_ERROR_GET')?['headers']?['ETag'],'')"
                           },
-                          "parameters/body": {
-                            "ESTADO_SOLICITUD": "PENDIENTE",
-                            "FASE_PROCESO": "EXPIRADA",
-                            "RESULTADO_TECNICO": "NO_EJECUTADO",
-                            "CLAVE_BLOQUEO": "@concat('CERRADA|',body('REC_A_EXPIRAR_ERROR_GET')?['d']?['SOLICITUD_UID'])",
-                            "FECHA_CIERRE": "@utcNow()",
-                            "APROBADOR_ID": null,
-                            "APROBADOR_UPN": null,
-                            "FECHA_DECISION": null,
-                            "ERROR_TECNICO": null,
-                            "BITACORA_TECNICA_JSON": "@string(union(json(if(empty(body('REC_A_EXPIRAR_ERROR_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_EXPIRAR_ERROR_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_EXPIRAR_ERROR_EVENTO'))))"
-                          }
+                          "parameters/body": "@string(setProperty(setProperty(setProperty(json('{\"ESTADO_SOLICITUD\":\"PENDIENTE\",\"FASE_PROCESO\":\"EXPIRADA\",\"RESULTADO_TECNICO\":\"NO_EJECUTADO\",\"APROBADOR_ID\":null,\"APROBADOR_UPN\":null,\"FECHA_DECISION\":null,\"ERROR_TECNICO\":null}'),'CLAVE_BLOQUEO',concat('CERRADA|',body('REC_A_EXPIRAR_ERROR_GET')?['d']?['SOLICITUD_UID'])),'FECHA_CIERRE',utcNow()),'BITACORA_TECNICA_JSON',string(union(json(if(empty(body('REC_A_EXPIRAR_ERROR_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_EXPIRAR_ERROR_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_EXPIRAR_ERROR_EVENTO'))))))"
                         },
                         "authentication": "@parameters('$authentication')",
                         "retryPolicy": {
@@ -7711,12 +7547,7 @@
                             "X-HTTP-Method": "MERGE",
                             "IF-MATCH": "@coalesce(body('REC_A_REGISTRAR_FALLO_GET')?['d']?['__metadata']?['etag'],outputs('REC_A_REGISTRAR_FALLO_GET')?['headers']?['ETag'],'')"
                           },
-                          "parameters/body": {
-                            "FASE_PROCESO": "RECUPERACION_REQUERIDA",
-                            "RESULTADO_TECNICO": "ERROR",
-                            "ERROR_TECNICO": "ERROR_APPROVAL_O_PROCESO",
-                            "BITACORA_TECNICA_JSON": "@string(union(json(if(empty(body('REC_A_REGISTRAR_FALLO_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_REGISTRAR_FALLO_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_REGISTRAR_FALLO_EVENTO'))))"
-                          }
+                          "parameters/body": "@string(setProperty(json('{\"FASE_PROCESO\":\"RECUPERACION_REQUERIDA\",\"RESULTADO_TECNICO\":\"ERROR\",\"ERROR_TECNICO\":\"ERROR_APPROVAL_O_PROCESO\"}'),'BITACORA_TECNICA_JSON',string(union(json(if(empty(body('REC_A_REGISTRAR_FALLO_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_REGISTRAR_FALLO_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_REGISTRAR_FALLO_EVENTO'))))))"
                         },
                         "authentication": "@parameters('$authentication')",
                         "retryPolicy": {
@@ -7963,18 +7794,7 @@
                         "X-HTTP-Method": "MERGE",
                         "IF-MATCH": "@coalesce(body('REC_A_RELOJ_EXPIRAR_GET')?['d']?['__metadata']?['etag'],outputs('REC_A_RELOJ_EXPIRAR_GET')?['headers']?['ETag'],'')"
                       },
-                      "parameters/body": {
-                        "ESTADO_SOLICITUD": "PENDIENTE",
-                        "FASE_PROCESO": "EXPIRADA",
-                        "RESULTADO_TECNICO": "NO_EJECUTADO",
-                        "CLAVE_BLOQUEO": "@concat('CERRADA|',body('REC_A_RELOJ_EXPIRAR_GET')?['d']?['SOLICITUD_UID'])",
-                        "FECHA_CIERRE": "@utcNow()",
-                        "APROBADOR_ID": null,
-                        "APROBADOR_UPN": null,
-                        "FECHA_DECISION": null,
-                        "ERROR_TECNICO": null,
-                        "BITACORA_TECNICA_JSON": "@string(union(json(if(empty(body('REC_A_RELOJ_EXPIRAR_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_RELOJ_EXPIRAR_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_RELOJ_EXPIRAR_EVENTO'))))"
-                      }
+                      "parameters/body": "@string(setProperty(setProperty(setProperty(json('{\"ESTADO_SOLICITUD\":\"PENDIENTE\",\"FASE_PROCESO\":\"EXPIRADA\",\"RESULTADO_TECNICO\":\"NO_EJECUTADO\",\"APROBADOR_ID\":null,\"APROBADOR_UPN\":null,\"FECHA_DECISION\":null,\"ERROR_TECNICO\":null}'),'CLAVE_BLOQUEO',concat('CERRADA|',body('REC_A_RELOJ_EXPIRAR_GET')?['d']?['SOLICITUD_UID'])),'FECHA_CIERRE',utcNow()),'BITACORA_TECNICA_JSON',string(union(json(if(empty(body('REC_A_RELOJ_EXPIRAR_GET')?['d']?['BITACORA_TECNICA_JSON']),'[]',body('REC_A_RELOJ_EXPIRAR_GET')?['d']?['BITACORA_TECNICA_JSON'])),createArray(outputs('REC_A_RELOJ_EXPIRAR_EVENTO'))))))"
                     },
                     "authentication": "@parameters('$authentication')",
                     "retryPolicy": {

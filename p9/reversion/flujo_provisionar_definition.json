@@ -2114,7 +2114,7 @@
                   "__metadata": {
                     "type": "SP.XmlSchemaFieldCreationInformation"
                   },
-                  "SchemaXml": "<Field Name=\"RESULTADO_TECNICO\" StaticName=\"RESULTADO_TECNICO\" DisplayName=\"RESULTADO_TECNICO\" Type=\"Choice\" Required=\"TRUE\" Hidden=\"FALSE\" FillInChoice=\"FALSE\" Format=\"Dropdown\"><CHOICES><CHOICE>PENDIENTE</CHOICE><CHOICE>REVERTIDO</CHOICE><CHOICE>CONFLICTO</CHOICE><CHOICE>YA_NO_ASIGNADO</CHOICE><CHOICE>DEPOSITO_NO_ENCONTRADO</CHOICE><CHOICE>CLAVE_NO_COINCIDE</CHOICE><CHOICE>ERROR</CHOICE><CHOICE>NO_EJECUTADO</CHOICE></CHOICES><Default>PENDIENTE</Default></Field>",
+                  "SchemaXml": "<Field Name=\"RESULTADO_TECNICO\" StaticName=\"RESULTADO_TECNICO\" DisplayName=\"RESULTADO_TECNICO\" Type=\"Choice\" Required=\"FALSE\" Hidden=\"FALSE\" FillInChoice=\"FALSE\" Format=\"Dropdown\"><CHOICES><CHOICE>PENDIENTE</CHOICE><CHOICE>REVERTIDO</CHOICE><CHOICE>CONFLICTO</CHOICE><CHOICE>YA_NO_ASIGNADO</CHOICE><CHOICE>DEPOSITO_NO_ENCONTRADO</CHOICE><CHOICE>CLAVE_NO_COINCIDE</CHOICE><CHOICE>ERROR</CHOICE><CHOICE>NO_EJECUTADO</CHOICE></CHOICES></Field>",
                   "Options": 9
                 }
               },
@@ -2123,9 +2123,9 @@
                   "type": "SP.FieldChoice"
                 },
                 "Title": "Resultado sobre el depósito",
-                "Required": true,
+                "Required": false,
                 "Indexed": false,
-                "DefaultValue": "PENDIENTE"
+                "DefaultValue": ""
               },
               "Unicidad": {
                 "__metadata": {
@@ -2149,7 +2149,7 @@
                 },
                 {
                   "propiedad": "Required",
-                  "esperado": true
+                  "esperado": false
                 },
                 {
                   "propiedad": "Indexed",
@@ -2169,7 +2169,7 @@
                 },
                 {
                   "propiedad": "DefaultValue",
-                  "esperado": "PENDIENTE"
+                  "esperado": ""
                 },
                 {
                   "propiedad": "Choices",
@@ -4060,7 +4060,7 @@
         "sitio": "@outputs('PARAM_SITIO_SHAREPOINT')",
         "listas": "@variables('ListasVerificadas')",
         "diferencias": "@variables('Diferencias')",
-        "sha256_esquema": "51d902e21f3118f1a31b091054d855627f67a6bdeef7b4b178b6cb5be0ba466e",
+        "sha256_esquema": "e2e3886abe82822ff040077c16fc7b94d2c9e496b5c3cb9ec384217592d5a835",
         "ejecucion": "@workflow()?['run']?['name']"
       },
       "runAfter": {

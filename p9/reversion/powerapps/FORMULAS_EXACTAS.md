@@ -1,5 +1,7 @@
 # Fórmulas exactas — solicitud de reversión P9
 
+Referencia histórica de la extensión inicial de fase B. La pantalla vigente es `Main_Screen.yaml`; no reconstruirla desde estos fragmentos. El último YAML conserva sus nombres/sufijos, columnas y modal en la raíz. Consultar `FUENTES_DE_VERDAD.md` antes de pegar controles.
+
 Artefacto local de fase B. Las pruebas estáticas no certifican Power Apps Studio ni conexiones del tenant.
 
 ### Instalación en una copia de la app
@@ -1455,4 +1457,3 @@ Parent.Width - 195
 ```powerfx
 470
 ```
-

@@ -360,6 +360,7 @@ def test_integracion_firma_posicional_powerapps_v2_y_respuesta_wdl():
 
 def test_integracion_snapshot_json_tipos_ui_y_identidad_servidor():
     from p9.reversion.flujos import construir_solicitar
+    from p9.reversion.validar import decodificar_cuerpo
     acciones = acciones_wdl(construir_solicitar())
     campos_ui = set(re.findall(r"\b(\w+): (?:Text|Value)\(s\.\1\)", ABRIR))
     snapshot = acciones["Snapshot"]["inputs"]
@@ -373,7 +374,7 @@ def test_integracion_snapshot_json_tipos_ui_y_identidad_servidor():
     assert "__metadata" in consultar["etag"]
     identidad = acciones["IDENTIDAD"]["inputs"]
     assert identidad["host"]["operationId"] == "MyProfile_V2"
-    creacion = acciones["CREAR_SOLICITUD"]["inputs"]["parameters"]["parameters/body"]
+    creacion = decodificar_cuerpo(acciones["CREAR_SOLICITUD"]["inputs"]["parameters"]["parameters/body"])
     assert "body('IDENTIDAD')?['id']" in creacion["SOLICITANTE_ID"]
     assert "body('IDENTIDAD')?['userPrincipalName']" in creacion["SOLICITANTE_UPN"]
     assert not any("solicitante" in k.lower() or "correo" in k.lower() for k in acciones["Entrada"]["inputs"])

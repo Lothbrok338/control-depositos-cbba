@@ -3,6 +3,7 @@ import copy
 import json
 import threading
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta
 
 import pytest
 
@@ -27,7 +28,11 @@ def test_creacion_snapshot_completo_identidad_y_plazo_fijo():
     sp, run, data = solicitar()
     row = fila(sp)
     assert run.respuesta["resultado"] == "ENVIADA"
-    assert row["FECHA_SOLICITUD"] == T0 and row["FECHA_LIMITE"] == LIMITE
+    solicitud = datetime.fromisoformat(row["FECHA_SOLICITUD"].replace("Z", "+00:00"))
+    limite = datetime.fromisoformat(row["FECHA_LIMITE"].replace("Z", "+00:00"))
+    assert solicitud == datetime.fromisoformat(T0.replace("Z", "+00:00"))
+    assert limite == datetime.fromisoformat(LIMITE.replace("Z", "+00:00"))
+    assert limite - solicitud == timedelta(hours=168)
     assert row["SOLICITANTE_ID"] == "operador-1"
     assert row["SOLICITANTE_UPN"] == "operador@univalle.edu"
     assert row["ETAG_SOLICITUD"] == data["text_2"]
@@ -143,7 +148,9 @@ def test_aprobacion_inmediata_reversion_atomica_nueve_campos():
     assert_cerrada(fila(sp), "REVERTIDO")
     merges = escrituras_deposito(sp)
     assert len(merges) == 1, diagnostico(run)
-    payload = merges[0][1]["parameters/body"]
+    body = merges[0][1]["parameters/body"]
+    assert isinstance(body, str)
+    payload = json.loads(body)
     assert payload == C.payload_reversion(UID)
     assert merges[0][1]["parameters/headers"]["IF-MATCH"] == '"1"'
     after = sp.fila(D,17)
@@ -152,7 +159,8 @@ def test_aprobacion_inmediata_reversion_atomica_nueve_campos():
     assert fila(sp)["SNAPSHOT_JSON"] == snapshot
     assert len(run.approvals_creadas) == 1
     assert fila(sp)["APROBADOR_UPN"] == "gtorricot@univalle.edu"
-    assert json.loads(fila(sp)["CONFIG_APROBACION_JSON"])["fecha_limite"] == LIMITE
+    limite = json.loads(fila(sp)["CONFIG_APROBACION_JSON"])["fecha_limite"]
+    assert datetime.fromisoformat(limite.replace("Z", "+00:00")) == datetime.fromisoformat(LIMITE.replace("Z", "+00:00"))
 
 
 def test_rechazo_cierra_sin_version_nueva_del_deposito():

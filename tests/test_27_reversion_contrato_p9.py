@@ -83,6 +83,8 @@ def test_esquema_completo_v2_y_marker_opcional():
     assert campos["FECHA_MOVIMIENTO"]["format"] == "DateOnly"
     assert all(campos[n]["format"] == "DateTime" for n in ("FECHA_SOLICITUD", "FECHA_LIMITE", "FECHA_CIERRE"))
     assert len(C.FASES) == 6 and len(C.RESULTADOS_TECNICOS) == 8
+    assert campos["RESULTADO_TECNICO"]["obligatoria"] is False
+    assert "predeterminado" not in campos["RESULTADO_TECNICO"]
     assert set(C.ESTADOS_SOLICITUD) == {"PENDIENTE", "APROBADO", "RECHAZADO"}
     assert C.PLAZO_HORAS == 168 and len(C.CAMPOS_SNAPSHOT) == 34
     assert len(set(C.CAMPOS_SNAPSHOT)) == 34
@@ -101,7 +103,7 @@ def test_payload_exacto_no_toca_datos_del_motor_y_claves_canonicas():
     assert C.clave_cerrada(UID.upper()) == "CERRADA|" + UID
 
 
-@pytest.mark.parametrize("cambio", ["quitar", "tipo", "requerido", "max_length", "opciones"])
+@pytest.mark.parametrize("cambio", ["quitar", "tipo", "requerido", "max_length", "opciones", "resultado_requerido", "resultado_predeterminado"])
 def test_validador_rechaza_contrato_debilitado(cambio):
     esquema = C.cargar_esquema()
     campos = esquema[C.LISTA_REVERSIONES]["columnas"]
@@ -113,8 +115,12 @@ def test_validador_rechaza_contrato_debilitado(cambio):
         next(c for c in campos if c["nombre_tecnico"] == "ETAG_SOLICITUD")["obligatoria"] = False
     elif cambio == "max_length":
         next(c for c in campos if c["nombre_tecnico"] == "CUENTA_BANCARIA")["max_length"] = 30
-    else:
+    elif cambio == "opciones":
         next(c for c in campos if c["nombre_tecnico"] == "RESULTADO_TECNICO")["valores"].append("OTRO")
+    elif cambio == "resultado_requerido":
+        next(c for c in campos if c["nombre_tecnico"] == "RESULTADO_TECNICO")["obligatoria"] = True
+    else:
+        next(c for c in campos if c["nombre_tecnico"] == "RESULTADO_TECNICO")["predeterminado"] = "PENDIENTE"
     with pytest.raises(ValueError):
         C.validar_esquema(esquema)
 
@@ -141,6 +147,18 @@ def test_compilacion_crea_nombre_ascii_y_titulo_despues_por_guid():
             assert xml.get("Name") == xml.get("StaticName") == xml.get("DisplayName") == campo["Nombre"]
             assert xml.get("ID") is None
             assert campo["Configurar"]["Title"] == campo["NombreVisible"]
+
+
+def test_provision_resultado_tecnico_opcional_sin_default_para_null_inicial():
+    historial = next(lista for lista in compilar() if lista["Nombre"] == C.LISTA_REVERSIONES)
+    resultado = next(campo for campo in historial["Campos"] if campo["Nombre"] == "RESULTADO_TECNICO")
+    xml = ET.fromstring(resultado["Crear"]["parameters"]["SchemaXml"])
+    assert xml.get("Required") == "FALSE" and xml.find("Default") is None
+    assert resultado["Configurar"]["Required"] is False
+    assert resultado["Configurar"]["DefaultValue"] == ""
+    propiedades = {fila["propiedad"]: fila["esperado"] for fila in resultado["Propiedades"]}
+    assert propiedades["Required"] is False and propiedades["DefaultValue"] == ""
+    assert propiedades["Choices"] == list(C.RESULTADOS_TECNICOS)
 
 
 def test_provision_y_reproceso_sin_modificar_items_o_campos_previos():
@@ -349,15 +367,19 @@ def test_estatico_rechaza_limites_y_bucles(problema):
 @pytest.mark.parametrize("problema", ["wildcard", "wildcard_expression", "retry", "sin_etag", "nuevo_etag", "campo_motor", "limpieza", "marcador", "marcador_previo", "sin_merge", "conexion", "lista_antigua", "top_codigo"])
 def test_estatico_rechaza_mutaciones_de_escritura_y_conector(problema):
     from p9.reversion.flujos import construir_resolver, construir_solicitar
-    from p9.reversion.validar import validar_definicion
-    from p9.reversion.wdl import walk
+    from p9.reversion.validar import decodificar_cuerpo, validar_definicion
+    from p9.reversion.wdl import serializar_cuerpo, walk
     doc = construir_solicitar() if problema == "marcador_previo" else construir_resolver()
     acciones = dict(walk(doc["actions"]))
     if problema == "marcador_previo":
-        acciones["CREAR_SOLICITUD"]["inputs"]["parameters"]["parameters/body"]["ULTIMA_REVERSION_ID"] = "valor_indebido"
+        params = acciones["CREAR_SOLICITUD"]["inputs"]["parameters"]
+        cuerpo = decodificar_cuerpo(params["parameters/body"])
+        cuerpo["ULTIMA_REVERSION_ID"] = "valor_indebido"
+        params["parameters/body"] = serializar_cuerpo(cuerpo)
     else:
         merge = next(a for n, a in acciones.items() if n.endswith("_MERGE_DEPOSITO"))
         params = merge["inputs"]["parameters"]
+        cuerpo = decodificar_cuerpo(params["parameters/body"])
         if problema == "wildcard":
             params["parameters/headers"]["IF-MATCH"] = "*"
         elif problema == "wildcard_expression":
@@ -369,11 +391,11 @@ def test_estatico_rechaza_mutaciones_de_escritura_y_conector(problema):
         elif problema == "nuevo_etag":
             params["parameters/headers"]["IF-MATCH"] = "@body('GET_LISTA_DEPOSITOS')?['ETag']"
         elif problema == "campo_motor":
-            params["parameters/body"]["CODIGO_ASIGNACION"] = None
+            cuerpo["CODIGO_ASIGNACION"] = None
         elif problema == "limpieza":
-            params["parameters/body"]["ESTUDIANTE"] = "sin_limpiar"
+            cuerpo["ESTUDIANTE"] = "sin_limpiar"
         elif problema == "marcador":
-            params["parameters/body"]["ULTIMA_REVERSION_ID"] = "no_uid"
+            cuerpo["ULTIMA_REVERSION_ID"] = "no_uid"
         elif problema == "sin_merge":
             del params["parameters/headers"]["X-HTTP-Method"]
         elif problema == "conexion":
@@ -383,6 +405,7 @@ def test_estatico_rechaza_mutaciones_de_escritura_y_conector(problema):
         elif problema == "top_codigo":
             nodo = acciones["GET_LISTA_DEPOSITOS"]
             nodo["inputs"]["parameters"]["parameters/uri"] = "_api/web/lists/GetByTitle('Depositos_Activos')/items?$filter=CODIGO_ASIGNACION eq 'X'&$top=1"
+        params["parameters/body"] = serializar_cuerpo(cuerpo)
     with pytest.raises(ValueError):
         validar_definicion(doc)
 

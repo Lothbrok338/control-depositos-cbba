@@ -1,6 +1,16 @@
 # P9 — reversión de confirmación
 
-Implementación local de la fase B aprobada, basada en el diseño V2 y en el commit `d08454f7636a49a5711006cd900d79b32bf9c13b`. La validación en Power Automate, SharePoint y Power Apps Studio queda pendiente. Los pasos para esa sesión están en [DESPLIEGUE_P9_REVERSION.md](DESPLIEGUE_P9_REVERSION.md).
+Cierre de la prueba positiva de aprobación, validada en tenant el **2026-10-04** y confirmada por el usuario, quien autorizó commit/push únicamente de `candidate/p9-reversion`. HEAD anterior al cierre: `1feeeb9157c1c677e523ce39c5c1ac5ebeb39871`; base anterior a reversión: `d08454f7636a49a5711006cd900d79b32bf9c13b`. Rechazo, expiración y recuperación reales siguen pendientes; no se aportaron UID/IDs exactos. Ver [ESTADO_P9_REVERSION_VALIDADO_TENANT.md](ESTADO_P9_REVERSION_VALIDADO_TENANT.md) y [HANDOFF_P9_CLAUDE_CODE.md](HANDOFF_P9_CLAUDE_CODE.md).
+
+La pantalla vigente es [Main_Screen.yaml](p9/reversion/powerapps/Main_Screen.yaml), copia del último YAML completo entregado y pegado por el usuario. Conserva los sufijos de sus controles, redondeos, columnas y orden visual del modal. Los fragmentos anteriores no deben reconstruir esta pantalla; [FUENTES_DE_VERDAD.md](p9/reversion/powerapps/FUENTES_DE_VERDAD.md) identifica cada artefacto.
+
+## Corrección del body REST encontrada en tenant
+
+La primera creación de solicitud devolvió HTTP 400 `Cannot convert a primitive value to the expected type 'Edm.DateTime'`. El parámetro `body` de `HttpRequest` es string y el objeto generado se convirtió a JSON antes de evaluar sus propiedades WDL. Llegaban textos como `@outputs(...)` y `@addHours(...)`.
+
+`wdl.serializar_cuerpo` construye ahora una expresión completa `@string(setProperty(...json('constantes'),...))`: evalúa las propiedades primero y serializa una vez al final. Corrige 48 cuerpos de SOLICITAR/RESOLVER/EXPIRAR/RECUPERAR, sin añadir acciones ni cambiar la propiedad, aprobación o reserva. El POST de creación usa fechas ISO 8601 con formato `o`, `float` para importe, `int` para depósito y `null` real para opcionales ausentes. El snapshot original queda intacto. Tests 31 impiden cuerpos con expresiones literales, comprueban tipos y reproducen la conversión previa del conector.
+
+`RESULTADO_TECNICO` queda `null` al crear; decisión `PENDIENTE` y fase `RECIBIDA` se conservan. La columna es opcional y sin predeterminado. El tenant provisionado con el esquema anterior debe ajustarla manualmente; el provisionador verifica columnas existentes y no las repara. La opción histórica `PENDIENTE` se conserva por compatibilidad, pero no se asigna como resultado inicial.
 
 ## Componentes y recorrido
 

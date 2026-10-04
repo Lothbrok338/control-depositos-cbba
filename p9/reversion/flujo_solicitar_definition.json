@@ -855,37 +855,7 @@
                     "Accept": "application/json;odata=verbose",
                     "Content-Type": "application/json;odata=nometadata"
                   },
-                  "parameters/body": {
-                    "BANCO": "@outputs('Snapshot')?['BANCO']",
-                    "CUENTA_BANCARIA": "@outputs('Snapshot')?['CUENTA_BANCARIA']",
-                    "FECHA_MOVIMIENTO": "@outputs('Snapshot')?['FECHA_MOVIMIENTO']",
-                    "IMPORTE": "@outputs('Snapshot')?['IMPORTE']",
-                    "MONEDA": "@outputs('Snapshot')?['MONEDA']",
-                    "CODIGO_ASIGNACION": "@outputs('Snapshot')?['CODIGO_ASIGNACION']",
-                    "ESTUDIANTE": "@outputs('Snapshot')?['ESTUDIANTE']",
-                    "CODIGO_ESTUDIANTE": "@outputs('Snapshot')?['CODIGO_ESTUDIANTE']",
-                    "SOLICITADO_POR": "@outputs('Snapshot')?['SOLICITADO_POR']",
-                    "SEDE_ASIGNACION": "@outputs('Snapshot')?['SEDE_ASIGNACION']",
-                    "USUARIO_ASIGNACION": "@outputs('Snapshot')?['USUARIO_ASIGNACION']",
-                    "FECHA_HORA_ASIGNACION": "@outputs('Snapshot')?['FECHA_HORA_ASIGNACION']",
-                    "OBSERVACION": "@outputs('Snapshot')?['OBSERVACION']",
-                    "SOLICITUD_UID": "@outputs('Entrada')?['uid']",
-                    "DEPOSITO_ID": "@outputs('Entrada')?['id']",
-                    "LISTA_DEPOSITO_ID": "@outputs('GUID_DEPOSITOS')",
-                    "CLAVE_TRANSACCION": "@outputs('Entrada')?['clave']",
-                    "CLAVE_BLOQUEO": "@outputs('CLAVE_ACTIVA')",
-                    "ETAG_SOLICITUD": "@coalesce(body('LEER_DEPOSITO')?['d']?['__metadata']?['etag'],outputs('LEER_DEPOSITO')?['headers']?['ETag'],'')",
-                    "SNAPSHOT_JSON": "@string(outputs('Snapshot'))",
-                    "MOTIVO_REVERSION": "@outputs('Entrada')?['motivo']",
-                    "SOLICITANTE_ID": "@body('IDENTIDAD')?['id']",
-                    "SOLICITANTE_UPN": "@toLower(body('IDENTIDAD')?['userPrincipalName'])",
-                    "FECHA_SOLICITUD": "@outputs('AHORA_SOLICITUD')",
-                    "FECHA_LIMITE": "@addHours(outputs('AHORA_SOLICITUD'),168)",
-                    "ESTADO_SOLICITUD": "PENDIENTE",
-                    "FASE_PROCESO": "RECIBIDA",
-                    "RESULTADO_TECNICO": "PENDIENTE",
-                    "BITACORA_TECNICA_JSON": "@string(createArray(outputs('EVENTO_RECIBIDA')))"
-                  }
+                  "parameters/body": "@string(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(setProperty(json('{\"ESTADO_SOLICITUD\":\"PENDIENTE\",\"FASE_PROCESO\":\"RECIBIDA\",\"RESULTADO_TECNICO\":null}'),'BANCO',outputs('Snapshot')?['BANCO']),'CUENTA_BANCARIA',outputs('Snapshot')?['CUENTA_BANCARIA']),'FECHA_MOVIMIENTO',formatDateTime(outputs('Snapshot')?['FECHA_MOVIMIENTO'],'o')),'IMPORTE',float(outputs('Snapshot')?['IMPORTE'])),'MONEDA',outputs('Snapshot')?['MONEDA']),'CODIGO_ASIGNACION',if(equals(outputs('Snapshot')?['CODIGO_ASIGNACION'],''),null,outputs('Snapshot')?['CODIGO_ASIGNACION'])),'ESTUDIANTE',if(equals(outputs('Snapshot')?['ESTUDIANTE'],''),null,outputs('Snapshot')?['ESTUDIANTE'])),'CODIGO_ESTUDIANTE',if(equals(outputs('Snapshot')?['CODIGO_ESTUDIANTE'],''),null,outputs('Snapshot')?['CODIGO_ESTUDIANTE'])),'SOLICITADO_POR',if(equals(outputs('Snapshot')?['SOLICITADO_POR'],''),null,outputs('Snapshot')?['SOLICITADO_POR'])),'SEDE_ASIGNACION',if(equals(outputs('Snapshot')?['SEDE_ASIGNACION'],''),null,outputs('Snapshot')?['SEDE_ASIGNACION'])),'USUARIO_ASIGNACION',if(equals(outputs('Snapshot')?['USUARIO_ASIGNACION'],''),null,outputs('Snapshot')?['USUARIO_ASIGNACION'])),'FECHA_HORA_ASIGNACION',if(empty(outputs('Snapshot')?['FECHA_HORA_ASIGNACION']),null,formatDateTime(outputs('Snapshot')?['FECHA_HORA_ASIGNACION'],'o'))),'OBSERVACION',if(equals(outputs('Snapshot')?['OBSERVACION'],''),null,outputs('Snapshot')?['OBSERVACION'])),'SOLICITUD_UID',outputs('Entrada')?['uid']),'DEPOSITO_ID',int(outputs('Entrada')?['id'])),'LISTA_DEPOSITO_ID',outputs('GUID_DEPOSITOS')),'CLAVE_TRANSACCION',outputs('Entrada')?['clave']),'CLAVE_BLOQUEO',outputs('CLAVE_ACTIVA')),'ETAG_SOLICITUD',coalesce(body('LEER_DEPOSITO')?['d']?['__metadata']?['etag'],outputs('LEER_DEPOSITO')?['headers']?['ETag'],'')),'SNAPSHOT_JSON',string(outputs('Snapshot'))),'MOTIVO_REVERSION',outputs('Entrada')?['motivo']),'SOLICITANTE_ID',body('IDENTIDAD')?['id']),'SOLICITANTE_UPN',toLower(body('IDENTIDAD')?['userPrincipalName'])),'FECHA_SOLICITUD',formatDateTime(outputs('AHORA_SOLICITUD'),'o')),'FECHA_LIMITE',formatDateTime(addHours(outputs('AHORA_SOLICITUD'),168),'o')),'BITACORA_TECNICA_JSON',string(createArray(outputs('EVENTO_RECIBIDA')))))"
                 },
                 "authentication": "@parameters('$authentication')",
                 "retryPolicy": {

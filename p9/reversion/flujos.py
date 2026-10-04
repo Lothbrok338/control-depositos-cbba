@@ -254,12 +254,20 @@ def construir_solicitar():
         Consulta_lista=response("LISTO", "LISTO", "Depósito confirmado consultado.", snapshot_json="@string(outputs('Snapshot'))", etag="@" + etag(get)),
         Parar_consulta=setvar("varSeguir", False)))
     create = {key: f"@outputs('Snapshot')?['{key}']" for key in SNAPSHOT_VISIBLE}
-    create.update(SOLICITUD_UID="@" + Q('uid'), DEPOSITO_ID="@" + Q('id'), LISTA_DEPOSITO_ID="@" + LISTA_D,
+    # Normalizar solo el POST del historial; el snapshot original sigue íntegro.
+    for key in SNAPSHOT_VISIBLE:
+        value = f"outputs('Snapshot')?['{key}']"
+        if key not in C.REQUERIDOS_HISTORIAL:
+            create[key] = f"@if(equals({value},''),null,{value})"
+    create["FECHA_MOVIMIENTO"] = "@formatDateTime(outputs('Snapshot')?['FECHA_MOVIMIENTO'],'o')"
+    create["FECHA_HORA_ASIGNACION"] = "@if(empty(outputs('Snapshot')?['FECHA_HORA_ASIGNACION']),null,formatDateTime(outputs('Snapshot')?['FECHA_HORA_ASIGNACION'],'o'))"
+    create["IMPORTE"] = "@float(outputs('Snapshot')?['IMPORTE'])"
+    create.update(SOLICITUD_UID="@" + Q('uid'), DEPOSITO_ID="@int(" + Q('id') + ")", LISTA_DEPOSITO_ID="@" + LISTA_D,
         CLAVE_TRANSACCION="@" + Q('clave'), CLAVE_BLOQUEO="@outputs('CLAVE_ACTIVA')", ETAG_SOLICITUD="@" + etag(get),
         SNAPSHOT_JSON="@string(outputs('Snapshot'))", MOTIVO_REVERSION="@" + Q('motivo'),
         SOLICITANTE_ID="@body('IDENTIDAD')?['id']", SOLICITANTE_UPN="@toLower(body('IDENTIDAD')?['userPrincipalName'])",
-        FECHA_SOLICITUD="@outputs('AHORA_SOLICITUD')", FECHA_LIMITE="@addHours(outputs('AHORA_SOLICITUD'),168)",
-        ESTADO_SOLICITUD="PENDIENTE", FASE_PROCESO="RECIBIDA", RESULTADO_TECNICO="PENDIENTE",
+        FECHA_SOLICITUD="@formatDateTime(outputs('AHORA_SOLICITUD'),'o')", FECHA_LIMITE="@formatDateTime(addHours(outputs('AHORA_SOLICITUD'),168),'o')",
+        ESTADO_SOLICITUD="PENDIENTE", FASE_PROCESO="RECIBIDA", RESULTADO_TECNICO=None,
         BITACORA_TECNICA_JSON="@string(createArray(outputs('EVENTO_RECIBIDA')))" )
     after_create = read(matching(LISTA_R, "SOLICITUD_UID", Q('uid')))
     after_create["runAfter"] = {"CREAR_SOLICITUD": TODOS}

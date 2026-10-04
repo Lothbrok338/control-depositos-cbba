@@ -112,6 +112,115 @@ def funciones(ast):
         yield from funciones(ast[2])
 
 
+class _ExpresionCuerpo(Expresion):
+    """Conserva el texto de cada nodo sin cambiar el AST del validador."""
+    def __init__(self, texto):
+        super().__init__(texto)
+        self.texto, self.fuentes = texto, {}
+        self.posiciones = [(m.start("t"), m.end("t")) for m in TOKEN.finditer(texto)]
+
+    def nodo(self):
+        inicio = self.i
+        ast = super().nodo()
+        self.fuentes[id(ast)] = self.texto[self.posiciones[inicio][0]:self.posiciones[self.i - 1][1]]
+        return ast
+
+
+def _cuerpo_estatico(valor):
+    """Un JSON literal no debe esconder expresiones que el conector no evalúa."""
+    for texto in cadenas(valor):
+        if re.search(r'(?<!@)@(?!@)(?:[A-Za-z_]\w*\s*\(|\{)', texto):
+            raise ValueError("parameters/body contiene una expresión literal sin evaluar")
+    return valor
+
+
+def decodificar_cuerpo(cuerpo):
+    """Recupera la plantilla del JSON transportado, sin ejecutar expresiones.
+
+    Acepta JSON estático o @string(setProperty(...json('constantes'),...)).
+    Cada valor dinámico vuelve a ser su expresión original con prefijo @.
+    El patrón @string(items(...)?['campo']) del provisionador devuelve None:
+    su objeto ya se evaluó en el Compose y depende del elemento del bucle.
+    Cualquier otro transporte dinámico no inspeccionable se rechaza.
+    """
+    if isinstance(cuerpo, (dict, list)):
+        return _cuerpo_estatico(cuerpo)
+    if not isinstance(cuerpo, str):
+        raise ValueError("parameters/body debe transportar un objeto JSON")
+    if not cuerpo.startswith("@"):
+        try:
+            valor = json.loads(cuerpo)
+        except (ValueError, TypeError) as error:
+            raise ValueError("parameters/body no contiene JSON válido") from error
+        if not isinstance(valor, (dict, list)):
+            raise ValueError("parameters/body debe contener un objeto o array JSON")
+        return _cuerpo_estatico(valor)
+    if len(cuerpo) - 1 > 8192:
+        raise ValueError("parameters/body supera 8192 caracteres de expresión")
+    parser = _ExpresionCuerpo(cuerpo[1:])
+    ast = parser.analizar()
+
+    def fuente(nodo):
+        return parser.fuentes[id(nodo)]
+
+    def texto_literal(nodo):
+        return nodo[0] == "literal" and fuente(nodo).startswith("'")
+
+    def json_estatico(nodo):
+        if (nodo[0] == "funcion" and nodo[1] == "json" and len(nodo[2]) == 1
+                and texto_literal(nodo[2][0])):
+            try:
+                return _cuerpo_estatico(json.loads(nodo[2][0][1]))
+            except (TypeError, ValueError) as error:
+                raise ValueError("JSON base inseguro o inválido en parameters/body") from error
+        raise ValueError("parameters/body requiere una base json de constantes")
+
+    def valor(nodo):
+        if nodo[0] == "literal":
+            return _cuerpo_estatico(nodo[1]) if texto_literal(nodo) else json.loads(fuente(nodo))
+        if nodo[0] == "funcion" and nodo[1] == "json" and len(nodo[2]) == 1 and texto_literal(nodo[2][0]):
+            return json_estatico(nodo)
+        # No basta con un @string exterior si json() o una cadena interior
+        # conserva, por ejemplo, "@outputs(...)" como dato literal.
+        for subnodo in recorrer(nodo):
+            if texto_literal(subnodo):
+                _cuerpo_estatico(subnodo[1])
+        return "@" + fuente(nodo)
+
+    def recorrer(nodo):
+        yield nodo
+        if nodo[0] == "funcion":
+            for argumento in nodo[2]:
+                yield from recorrer(argumento)
+        elif nodo[0] == "acceso":
+            yield from recorrer(nodo[1])
+            yield from recorrer(nodo[2])
+
+    def objeto(nodo):
+        if nodo[0] == "funcion" and nodo[1] == "setproperty" and len(nodo[2]) == 3:
+            base, propiedad, dato = nodo[2]
+            salida = objeto(base)
+            if not isinstance(salida, dict) or not texto_literal(propiedad):
+                raise ValueError("setProperty requiere objeto y nombre literal en parameters/body")
+            salida[propiedad[1]] = valor(dato)
+            return salida
+        salida = json_estatico(nodo)
+        if not isinstance(salida, (dict, list)):
+            raise ValueError("JSON base de parameters/body no es objeto o array")
+        return salida
+
+    if ast[0] != "funcion" or ast[1] != "string" or len(ast[2]) != 1:
+        raise ValueError("parameters/body dinámico debe ser una expresión @string completa")
+    contenido = ast[2][0]
+    referencia = contenido
+    while referencia[0] == "acceso" and texto_literal(referencia[2]):
+        referencia = referencia[1]
+    if (referencia[0] == "funcion" and referencia[1] == "items" and len(referencia[2]) == 1
+            and texto_literal(referencia[2][0])):
+        return None
+    return objeto(contenido)
+
+
 def _fallar(errores):
     if errores:
         raise ValueError("Artefacto de reversión inválido:\n- " + "\n- ".join(errores))
@@ -256,7 +365,12 @@ def validar_definicion(definicion, nombre=None):
                         errores.append(f"MERGE sin ETag concreto dinámico en {accion}")
                 if method != "GET" and nodo.get("inputs", {}).get("retryPolicy") != {"type": "none"}:
                     errores.append(f"Escritura con reintento automático en {accion}")
-                body = params.get("parameters/body")
+                body = None
+                if "parameters/body" in params:
+                    try:
+                        body = decodificar_cuerpo(params["parameters/body"])
+                    except ValueError as error:
+                        errores.append(f"Cuerpo SharePoint inseguro en {accion}: {error}")
                 deposito = merge and ("GUID_DEPOSITOS" in url or accion.endswith("MERGE_DEPOSITO"))
                 if method != "GET" and "GUID_DEPOSITOS" in url and not merge:
                     errores.append(f"Escritura de depósito sin MERGE protegido en {accion}")

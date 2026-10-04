@@ -29,6 +29,19 @@ def iso(value):
     return value.astimezone(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
+def formato_fecha(value, formato):
+    if formato != "o":
+        raise NotImplementedError(formato)
+    fecha = instante(value)
+    if fecha.tzinfo is None:
+        raise ValueError("Fecha sin zona horaria")
+    # ISO round-trip: siete decimales y offset, como el formato 'o' de WDL.
+    fraccion = re.search(r"[T ]\d{2}:\d{2}:\d{2}(?:\.(\d+))?", value)
+    decimales = ((fraccion.group(1) if fraccion else None) or "").ljust(7, "0")[:7]
+    texto = fecha.isoformat(timespec="seconds")
+    return texto[:-6] + "." + decimales + texto[-6:].replace("+00:00", "Z")
+
+
 def union_wdl(*values):
     if all(isinstance(value, list) for value in values):
         result = []
@@ -63,7 +76,8 @@ def filtro_odata(expression, row):
             return result
         name, op, literal = tokens[pos:pos + 3]
         pos += 3
-        if literal.startswith("datetime'"):
+        es_fecha = literal.startswith("datetime'")
+        if es_fecha:
             literal = literal[8:]
         if literal.startswith("'"):
             wanted = literal[1:-1].replace("''", "'")
@@ -74,6 +88,8 @@ def filtro_odata(expression, row):
         else:
             wanted = int(literal)
         actual = row.get(name)
+        if es_fecha:
+            actual, wanted = instante(actual), instante(wanted)
         if isinstance(actual, str) and isinstance(wanted, str) and op in ("eq", "ne"):
             actual, wanted = actual.casefold(), wanted.casefold()
         return {"eq": lambda: actual == wanted, "ne": lambda: actual != wanted,
@@ -281,6 +297,7 @@ class EnsayoReversion(EnsayoP9):
                 "addHours": lambda v, h: iso(instante(v) + dt.timedelta(hours=h)),
                 "addDays": lambda v, d: iso(instante(v) + dt.timedelta(days=d)),
                 "addSeconds": lambda v, s: iso(instante(v) + dt.timedelta(seconds=s)),
+                "formatDateTime": formato_fecha,
                 "int": int, "div": lambda a, b: a // b, "mul": lambda a, b: a * b,
                 "guid": lambda: str(uuid.uuid4()), "createArray": lambda *xs: list(xs),
                 "array": lambda v: v if isinstance(v, list) else [v],
@@ -300,7 +317,14 @@ class EnsayoReversion(EnsayoP9):
     def _accion(self, nombre, accion):
         tipo = accion["type"]
         if tipo in ("OpenApiConnection", "OpenApiConnectionWebhook"):
-            inputs = self.evaluar(accion["inputs"])
+            raw_inputs = copy.deepcopy(accion["inputs"])
+            # Reproduce el parámetro string del conector: un objeto crudo se
+            # serializa antes de evaluar, dejando sus expresiones como literales.
+            if raw_inputs["host"]["operationId"] == "HttpRequest":
+                params = raw_inputs["parameters"]
+                if isinstance(params.get("parameters/body"), (dict, list)):
+                    params["parameters/body"] = json.dumps(params["parameters/body"], ensure_ascii=False)
+            inputs = self.evaluar(raw_inputs)
             op = inputs["host"]["operationId"]
             if op == "HttpRequest":
                 try:

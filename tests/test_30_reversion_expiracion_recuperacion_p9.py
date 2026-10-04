@@ -3,6 +3,7 @@ import copy
 import json
 import threading
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 
 import pytest
 
@@ -276,7 +277,7 @@ def test_retomar_solicitud_sin_worker_no_extiende_limite():
            "fecha_verificacion_config":T0}
     run=recuperar(sp,modo="INICIAR_APROBACION",proof=proof)
     assert_cerrada(fila(sp),"REVERTIDO")
-    assert fila(sp)["FECHA_LIMITE"]==LIMITE,diagnostico(run)
+    assert datetime.fromisoformat(fila(sp)["FECHA_LIMITE"].replace("Z", "+00:00")) == datetime.fromisoformat(LIMITE.replace("Z", "+00:00")), diagnostico(run)
     assert len(run.approvals_creadas)==1
 
 
@@ -338,7 +339,7 @@ def test_recuperacion_espera_misma_aprobacion_sin_crear_otra():
     run=recuperar(sp,modo="ESPERAR_APROBACION",proof=proof,ahora="2026-10-05T12:00:00Z")
     assert_cerrada(fila(sp),"REVERTIDO")
     assert not run.approvals_creadas,diagnostico(run)
-    assert fila(sp)["FECHA_LIMITE"]==LIMITE
+    assert datetime.fromisoformat(fila(sp)["FECHA_LIMITE"].replace("Z", "+00:00")) == datetime.fromisoformat(LIMITE.replace("Z", "+00:00"))
 
 
 def test_solicitud_ya_cerrada_sigue_cerrada_aunque_consulta_final_falle():

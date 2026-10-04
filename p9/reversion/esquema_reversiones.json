@@ -329,11 +329,11 @@
         "nombre_tecnico": "RESULTADO_TECNICO",
         "nombre_visible": "Resultado sobre el depósito",
         "tipo": "Choice",
-        "obligatoria": true,
-        "obligacion_etapa": "S",
+        "obligatoria": false,
+        "obligacion_etapa": "C",
         "indexada": false,
         "valores_unicos": false,
-        "regla": "Valores en B; inicial PENDIENTE",
+        "regla": "Vacío al crear; se completa con el resultado de la ejecución",
         "valores": [
           "PENDIENTE",
           "REVERTIDO",
@@ -344,8 +344,7 @@
           "ERROR",
           "NO_EJECUTADO"
         ],
-        "permitir_relleno": false,
-        "predeterminado": "PENDIENTE"
+        "permitir_relleno": false
       },
       {
         "nombre_tecnico": "CONFIG_APROBACION_JSON",

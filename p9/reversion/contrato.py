@@ -48,7 +48,7 @@ REQUERIDOS_HISTORIAL = frozenset((
     "SOLICITUD_UID", "DEPOSITO_ID", "LISTA_DEPOSITO_ID", "CLAVE_TRANSACCION", "CLAVE_BLOQUEO", "BANCO",
     "CUENTA_BANCARIA", "FECHA_MOVIMIENTO", "IMPORTE", "MONEDA", "ETAG_SOLICITUD", "SNAPSHOT_JSON",
     "MOTIVO_REVERSION", "SOLICITANTE_ID", "SOLICITANTE_UPN", "FECHA_SOLICITUD", "FECHA_LIMITE",
-    "ESTADO_SOLICITUD", "FASE_PROCESO", "RESULTADO_TECNICO"))
+    "ESTADO_SOLICITUD", "FASE_PROCESO"))
 TRANSICIONES = {
     "RECIBIDA": ("ESPERANDO_APROBACION", "RECUPERACION_REQUERIDA", "EXPIRADA"),
     "ESPERANDO_APROBACION": ("EJECUTANDO_REVERSION", "FINALIZADA", "RECUPERACION_REQUERIDA", "EXPIRADA"),
@@ -128,6 +128,9 @@ def validar_esquema(esquema: dict) -> None:
         campo = columnas[nombre]
         if tuple(campo["valores"]) != valores or campo["permitir_relleno"]:
             raise ValueError(f"Opciones fuera del contrato: {nombre}")
+    resultado = columnas["RESULTADO_TECNICO"]
+    if resultado["obligatoria"] or resultado.get("predeterminado") is not None:
+        raise ValueError("El resultado técnico debe admitir null sin valor predeterminado")
     if set(c for c, v in columnas.items() if v["indexada"]) != set(INDICES):
         raise ValueError("Índices distintos del contrato")
     if not historial["versionado"] or historial["title_obligatorio"]:

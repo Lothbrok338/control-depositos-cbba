@@ -1,6 +1,10 @@
 # Despliegue y recuperación — reversión P9
 
-Esta guía prepara la sesión manual posterior con el usuario. La fase B crea archivos locales; estos pasos no se han ejecutado en el tenant. El resultado de las pruebas locales está en [INFORME_PRUEBAS.md](p9/reversion/evidencias/INFORME_PRUEBAS.md), y el comportamiento implementado en [DOCUMENTACION_P9_REVERSION.md](DOCUMENTACION_P9_REVERSION.md).
+Estado actualizado 2026-10-04: el usuario confirmó provisión, importación manual de ZIP corregidos y prueba end-to-end de **aprobación** satisfactoria: DISPONIBLE, siete campos operativos limpios, clave/código conservados, marcador comprobado, historial/trazabilidad y sin duplicados observados. Rechazo no probado en tenant. Expiración/recuperación reales siguen pendientes. Ver [ESTADO_P9_REVERSION_VALIDADO_TENANT.md](ESTADO_P9_REVERSION_VALIDADO_TENANT.md). `INFORME_CIERRE_FINAL.md` registra las pruebas locales actuales; el informe original de fase B es histórico.
+
+Antes de ENVIAR, comprobar en `Depositos_Reversiones` que `RESULTADO_TECNICO` sea opcional y no tenga valor predeterminado. El esquema anterior usaba obligatorio/PENDIENTE; la corrección exige `null` al crear. La importación del provisionador no modifica columnas existentes.
+
+Si se reimportan los paquetes corregidos, actualizar los cuatro flujos existentes según el mapeo de importación y verificar conexiones y ejecuciones activas. Registrar los SHA-256 del archivo realmente importado. Evitar crear un segundo resolver sobre el mismo historial. Las copias configuradas permanecen fuera del repositorio; los ZIP de la raíz son genéricos y corresponden a los builders actuales.
 
 ## 1. Preparar el entorno de prueba
 
@@ -88,8 +92,8 @@ No sustituir una conexión antigua del ZIP histórico ni seleccionar listas por 
 ## 5. Agregar la interfaz en la copia de Power Apps
 
 1. Agregar el nuevo flujo SOLICITAR a la app y comprobar que Studio reconoce los seis argumentos. Si se actualiza el flujo, refrescar su conexión en la copia y volver a comprobar la firma.
-2. Elegir una de las dos rutas de [FORMULAS_EXACTAS.md](p9/reversion/powerapps/FORMULAS_EXACTAS.md): pegar los controles nuevos en sus dos padres, o usar el frontend completo extendido. No pegar las dos alternativas juntas.
-3. Para controles sueltos, pegar overlay/modal al final de `cntControlDepositosP9.Children`; pegar el botón dentro de `cntConfirmarDepositoP9.Children`. El botón solo es visible para ASIGNADO.
+2. Usar [Main_Screen.yaml](p9/reversion/powerapps/Main_Screen.yaml), que es el último YAML completo entregado y pegado por el usuario. Las fórmulas y fragmentos de fase B se conservan como antecedentes, no como fuente de la pantalla actual.
+3. Preservar su orden raíz: `cntControlDepositosP9`, `overlayReversionP9`, `cntSolicitarReversionP9`. Overlay y modal son hermanos de la pantalla y quedan delante del contenedor opaco. El botón está dentro de `cntConfirmarDepositoP9_1`; conservar nombres y sufijos existentes.
 4. Comprobar fórmulas canónicas al pegar YAML y las variantes regionales en la barra de fórmulas. Verificar `IfError`, conversiones `ParseJSON`, nombres existentes y ausencia de advertencias nuevas.
 5. Comprobar modal, motivo largo, cancelación, doble clic y reintento del mismo UID tras perder la respuesta. El modal de escritorio necesita un contenedor de al menos 690 píxeles de alto.
 6. Usar ACTUALIZAR tras resolver la solicitud para mostrar el estado reciente. La confirmación y la pantalla COMPROBANTE PDF conservan sus controles y fórmulas originales.
