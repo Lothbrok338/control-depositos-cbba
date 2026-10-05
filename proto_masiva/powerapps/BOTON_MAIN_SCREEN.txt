@@ -1,0 +1,45 @@
+BOTÓN «IMPORTACIÓN MASIVA» EN Main_Screen — CAMBIO MÍNIMO (1 control nuevo, 0 controles modificados)
+
+QUÉ SE AÑADE
+  Un único control: btnImportacionMasivaP9 (Classic/Button@2.2.0).
+
+DÓNDE
+  Pantalla:    Main_Screen
+  Contenedor:  cntControlDepositosP9 (hijo directo de la pantalla)
+  Posición:    justo después de btnActualizarP9_1 y antes de lblCantidadResultadosP9_1
+               (en el original: entre las líneas 68 y 69 de p9/reversion/powerapps/Main_Screen.yaml)
+  Geometría:   X = 700, Y = 27, Width = 190, Height = 32
+               (hueco libre de la cabecera: el subtítulo termina en X = 670 y ACTUALIZAR empieza en X = 1010)
+
+AL PULSARLO
+  Navigate(P9_Confirmacion_Masiva, ScreenTransition.Fade)
+  -> la pantalla P9_Confirmacion_Masiva debe EXISTIR antes (si no, Main_Screen marca error en esta fórmula).
+
+OPCIÓN A · PEGAR (recomendada)
+  1. Copia TODO el contenido de BOTON_MAIN_SCREEN_PEGAR.yaml (mismo directorio).
+  2. En Studio, árbol de controles: selecciona cntControlDepositosP9 -> clic derecho -> Pegar.
+  3. Comprueba que btnImportacionMasivaP9 quedó DENTRO de cntControlDepositosP9 y con X=700, Y=27.
+
+OPCIÓN B · A MANO
+  Insertar -> Botón dentro de cntControlDepositosP9, y propiedades:
+    Nombre        btnImportacionMasivaP9
+    Text          ="IMPORTACIÓN MASIVA"
+    OnSelect      =Navigate(P9_Confirmacion_Masiva, ScreenTransition.Fade)
+    X =700   Y =27   Width =190   Height =32
+    Fill          =RGBA(255, 255, 255, 1)
+    Color         =RGBA(123, 22, 50, 1)
+    BorderColor   =RGBA(123, 22, 50, 1)      BorderThickness =1
+    Font          =Font.'Segoe UI'           FontWeight =FontWeight.Bold      Size =9
+
+OPCIÓN C · COPIA COMPLETA
+  Main_Screen_CON_BOTON_IMPORTACION_MASIVA.yaml es el Main_Screen.yaml original + este único bloque
+  (lo genera aplicar_boton.py y un test comprueba que, quitando el bloque, queda byte a byte idéntico).
+  Úsala solo si pegas la pantalla completa como lo hiciste con Main_Screen_CORREGIDO_DROPDOWN.yaml.
+
+NO CAMBIA
+  Confirmación individual, REVERSIÓN PENDIENTE, selector de BANCO, filtros, comprobante PDF, V4.2.
+
+AVISO PARA EL REPOSITORIO (no para Studio)
+  tests/test_32_reversion_main_screen_actual_p9.py fija el SHA-256 de Main_Screen.yaml y exige 79 controles.
+  Este prototipo NO modifica Main_Screen.yaml del repositorio (por eso esa prueba sigue pasando). Si el prototipo se
+  adopta, la integración debe actualizar ese SHA y el recuento (80) en el mismo cambio.

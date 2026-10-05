@@ -1,3 +1,8 @@
+> **SUPERADO por el prototipo funcional (ver `RESULTADO_PROTOTIPO.md`).** Este documento es el kit de MEDICIÓN de la Fase 0.5 (Response temprano vs. trigger, tiempos).
+> El prototipo funcional usa UNA sola arquitectura (estado `PENDIENTE` + disparador + sondeo), sin Response temprano, y **reutiliza el nombre**
+> `P9_MASIVA_PROTO_PREVALIDAR` y `P9_MASIVA_PROTO_LOTES` con otro diseño y otras columnas. **No mezcles ambos kits en el mismo tenant**: usa
+> `flows/`, `powerapps/` y `sharepoint/`. Las pruebas de tiempos de este runbook siguen siendo opcionales, no hechas.
+
 # P9 MASIVA — Fase 0.5: prototipo de infraestructura (RUNBOOK)
 
 **Estado: NO EJECUTADO.** Este kit lo prepara Claude Code sin acceso al tenant (el conector Microsoft 365 de la sesión está desconectado y solo ofrece búsqueda/lectura). Todo resultado va en `REGISTRO_RESULTADOS.md` y debe medirlo el usuario. Nada de lo marcado «HIPÓTESIS» es un hecho.

@@ -1,3 +1,8 @@
+> **SUPERADO por el prototipo funcional (ver `RESULTADO_PROTOTIPO.md`).** Este documento es el kit de MEDICIÓN de la Fase 0.5 (Response temprano vs. trigger, tiempos).
+> El prototipo funcional usa UNA sola arquitectura (estado `PENDIENTE` + disparador + sondeo), sin Response temprano, y **reutiliza el nombre**
+> `P9_MASIVA_PROTO_PREVALIDAR` y `P9_MASIVA_PROTO_LOTES` con otro diseño y otras columnas. **No mezcles ambos kits en el mismo tenant**: usa
+> `flows/`, `powerapps/` y `sharepoint/`. Las pruebas de tiempos de este runbook siguen siendo opcionales, no hechas.
+
 # Registro de resultados — P9 MASIVA Fase 0.5
 
 **Todo está sin ejecutar.** Rellena solo con lo que midas en el tenant. Estado inicial de cada fila: `NO EJECUTADO`. No sustituyas una celda vacía por una suposición.

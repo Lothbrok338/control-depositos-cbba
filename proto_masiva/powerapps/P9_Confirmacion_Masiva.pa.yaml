@@ -1,0 +1,440 @@
+Screens:
+  P9_Confirmacion_Masiva:
+    Properties:
+      Fill: =RGBA(255, 255, 255, 1)
+      LoadingSpinnerColor: =RGBA(123, 22, 50, 1)
+      OnVisible: |-
+        =Set(varLoteP9, Blank());
+        Set(varLoteVivoP9, Blank());
+        Set(varSondeoP9, false);
+        Set(varTicksP9, 0);
+        Set(varSubiendoP9, false);
+        Set(varUrlPlantillaP9, "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu/Documents/P9_MASIVA_PROTO/Plantilla_Confirmacion_Masiva_P9.xlsx?download=1");
+        ResetForm(frmLoteP9)
+      OnHidden: =Set(varSondeoP9, false)
+    Children:
+      - cntImportacionMasivaP9:
+          Control: GroupContainer@1.5.0
+          Variant: ManualLayout
+          Properties:
+            DropShadow: =DropShadow.None
+            Fill: =RGBA(248, 249, 250, 1)
+            Height: =Parent.Height - 20
+            RadiusBottomLeft: =10
+            RadiusBottomRight: =10
+            RadiusTopLeft: =10
+            RadiusTopRight: =10
+            Width: =Parent.Width - 20
+            X: =10
+            Y: =10
+          Children:
+            - rectLineaMasivaP9:
+                Control: Rectangle@2.3.0
+                Properties:
+                  BorderStyle: =BorderStyle.None
+                  Fill: =RGBA(123, 22, 50, 1)
+                  Height: =7
+                  Width: =Parent.Width
+            - lblTituloMasivaP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(94, 16, 38, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =35
+                  Size: =19
+                  Text: ="IMPORTACIÓN MASIVA"
+                  Width: =500
+                  X: =20
+                  Y: =15
+            - lblSubtituloMasivaP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =22
+                  Size: =10
+                  Text: ="Prototipo · prevalida un archivo Excel. No confirma ningún depósito."
+                  Width: =700
+                  X: =20
+                  Y: =47
+            - btnVolverMasivaP9:
+                Control: Classic/Button@2.2.0
+                Properties:
+                  BorderColor: =RGBA(98, 102, 106, 1)
+                  BorderThickness: =1
+                  Color: =RGBA(52, 55, 58, 1)
+                  Fill: =RGBA(255, 255, 255, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =32
+                  OnSelect: |-
+                    =Set(varSondeoP9, false);
+                    Navigate(Main_Screen, ScreenTransition.Fade)
+                  Size: =9
+                  Text: ="VOLVER"
+                  Width: =150
+                  X: =Parent.Width - 170
+                  Y: =27
+            - lblPaso1MasivaP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(94, 16, 38, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =24
+                  Size: =11
+                  Text: ="1 · DESCARGAR PLANTILLA"
+                  Width: =400
+                  X: =20
+                  Y: =95
+            - btnDescargarPlantillaP9:
+                Control: Classic/Button@2.2.0
+                Properties:
+                  BorderStyle: =BorderStyle.None
+                  Color: =RGBA(255, 255, 255, 1)
+                  Fill: =RGBA(123, 22, 50, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =36
+                  OnSelect: =Launch(varUrlPlantillaP9)
+                  Size: =9
+                  Text: ="DESCARGAR PLANTILLA"
+                  Width: =220
+                  X: =20
+                  Y: =122
+            - lblPaso2MasivaP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(94, 16, 38, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =24
+                  Size: =11
+                  Text: ="2 · ADJUNTAR EL EXCEL (.xlsx)"
+                  Width: =400
+                  X: =20
+                  Y: =180
+            - lblArchivoSeleccionadoP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Semibold
+                  Height: =26
+                  Size: =10
+                  Text: |-
+                    ="Archivo seleccionado: " & If(IsEmpty(attXlsxP9.Attachments), "(ninguno)", First(attXlsxP9.Attachments).Name)
+                  Width: =560
+                  X: =20
+                  Y: =365
+            - lblAvisoNoXlsxP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(183, 28, 28, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =24
+                  Size: =9
+                  Text: ="El archivo debe ser .xlsx (Excel). Use la plantilla oficial."
+                  Visible: =!IsEmpty(attXlsxP9.Attachments) && !EndsWith(Lower(First(attXlsxP9.Attachments).Name), ".xlsx")
+                  Width: =560
+                  X: =20
+                  Y: =392
+            - lblPaso3MasivaP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(94, 16, 38, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =24
+                  Size: =11
+                  Text: ="3 · PREVALIDAR"
+                  Width: =400
+                  X: =20
+                  Y: =425
+            - btnPrevalidarP9:
+                Control: Classic/Button@2.2.0
+                Properties:
+                  BorderStyle: =BorderStyle.None
+                  Color: =RGBA(255, 255, 255, 1)
+                  DisplayMode: |-
+                    =If(
+                        Coalesce(varSubiendoP9, false) ||
+                        Coalesce(varSondeoP9, false) ||
+                        IsEmpty(attXlsxP9.Attachments) ||
+                        !EndsWith(Lower(First(attXlsxP9.Attachments).Name), ".xlsx"),
+                        DisplayMode.Disabled,
+                        DisplayMode.Edit
+                    )
+                  Fill: =RGBA(123, 22, 50, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =42
+                  OnSelect: |-
+                    =Set(varSubiendoP9, true);
+                    Set(varUidP9, Text(GUID()));
+                    Set(varNombreP9, First(attXlsxP9.Attachments).Name);
+                    Set(varLoteVivoP9, Blank());
+                    Set(varSondeoP9, false);
+                    SubmitForm(frmLoteP9)
+                  Size: =10
+                  Text: ="PREVALIDAR ARCHIVO"
+                  Width: =220
+                  X: =20
+                  Y: =452
+            - rectPanelResultadoP9:
+                Control: Rectangle@2.3.0
+                Properties:
+                  BorderColor: =RGBA(217, 218, 221, 1)
+                  BorderThickness: =1
+                  Fill: =RGBA(255, 255, 255, 1)
+                  Height: =440
+                  Width: =Parent.Width - 640
+                  X: =620
+                  Y: =95
+            - lblEstadoTituloP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =9
+                  Text: ="ESTADO"
+                  Width: =200
+                  X: =640
+                  Y: =108
+            - lblEstadoP9:
+                Control: Label@2.5.1
+                Properties:
+                  Align: =Align.Center
+                  Color: =RGBA(255, 255, 255, 1)
+                  Fill: |-
+                    =Switch(
+                        Coalesce(varLoteVivoP9.ESTADO, ""),
+                        "COMPLETADO", RGBA(46, 125, 50, 1),
+                        "ERROR", RGBA(183, 28, 28, 1),
+                        "PROCESANDO", RGBA(230, 126, 34, 1),
+                        "PENDIENTE", RGBA(230, 126, 34, 1),
+                        "CARGADO", RGBA(0, 120, 212, 1),
+                        RGBA(98, 102, 106, 1)
+                    )
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =34
+                  Size: =11
+                  Text: =Coalesce(varLoteVivoP9.ESTADO, "SIN LOTE")
+                  Width: =200
+                  X: =640
+                  Y: =132
+            - lblSondeoP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =34
+                  Size: =9
+                  Text: |-
+                    =If(
+                        Coalesce(varSondeoP9, false),
+                        "Consultando el estado cada 5 s (" & Coalesce(varTicksP9, 0) & ")...",
+                        If(
+                            !IsBlank(varLoteVivoP9) && Coalesce(varTicksP9, 0) >= 72 && Coalesce(varLoteVivoP9.ESTADO, "") <> "COMPLETADO" && Coalesce(varLoteVivoP9.ESTADO, "") <> "ERROR",
+                            "El proceso tarda más de lo esperado. Pulse ACTUALIZAR ESTADO.",
+                            ""
+                        )
+                    )
+                  VerticalAlign: =VerticalAlign.Middle
+                  Width: =Parent.Width - 900
+                  X: =860
+                  Y: =132
+            - lblTitularResultadoP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(94, 16, 38, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =50
+                  Size: =12
+                  Text: |-
+                    =Switch(
+                        Coalesce(varLoteVivoP9.ESTADO, ""),
+                        "COMPLETADO",
+                            "ARCHIVO RECIBIDO · TABLA ENCONTRADA · " & Text(varLoteVivoP9.FILAS_LEIDAS) & If(varLoteVivoP9.FILAS_LEIDAS = 1, " FILA LEÍDA", " FILAS LEÍDAS"),
+                        "ERROR",
+                            "RESULTADO: " & Coalesce(varLoteVivoP9.CODIGO_RESULTADO, "ERROR"),
+                        "PROCESANDO",
+                            "Procesando el archivo...",
+                        "PENDIENTE",
+                            "En cola: el proceso comenzará en unos instantes...",
+                        "CARGADO",
+                            "Archivo cargado.",
+                        "Adjunte un Excel y pulse PREVALIDAR ARCHIVO."
+                    )
+                  Width: =Parent.Width - 680
+                  X: =640
+                  Y: =182
+            - lblResumenTituloP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =9
+                  Text: ="RESUMEN"
+                  Width: =200
+                  X: =640
+                  Y: =245
+            - lblResArchivoTituloP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =24
+                  Size: =9
+                  Text: ="Archivo"
+                  Width: =150
+                  X: =640
+                  Y: =272
+            - lblResArchivoP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Semibold
+                  Height: =24
+                  Size: =10
+                  Text: =Coalesce(varLoteVivoP9.ARCHIVO_NOMBRE, "—")
+                  Width: =Parent.Width - 840
+                  X: =800
+                  Y: =272
+            - lblResTablaTituloP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =24
+                  Size: =9
+                  Text: ="Tabla encontrada"
+                  Width: =150
+                  X: =640
+                  Y: =302
+            - lblResTablaP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Semibold
+                  Height: =24
+                  Size: =10
+                  Text: |-
+                    =Switch(
+                        Coalesce(varLoteVivoP9.TABLA_ENCONTRADA, ""),
+                        "SI", "Sí · tblConfirmacionMasiva",
+                        "NO", "No",
+                        "—"
+                    )
+                  Width: =Parent.Width - 840
+                  X: =800
+                  Y: =302
+            - lblResFilasTituloP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =24
+                  Size: =9
+                  Text: ="Filas leídas"
+                  Width: =150
+                  X: =640
+                  Y: =332
+            - lblResFilasP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Semibold
+                  Height: =24
+                  Size: =10
+                  Text: =If(Coalesce(varLoteVivoP9.ESTADO, "") = "COMPLETADO", Text(varLoteVivoP9.FILAS_LEIDAS), "—")
+                  Width: =Parent.Width - 840
+                  X: =800
+                  Y: =332
+            - lblResMensajeTituloP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =24
+                  Size: =9
+                  Text: ="Mensaje"
+                  Width: =150
+                  X: =640
+                  Y: =362
+            - lblResMensajeP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =80
+                  Size: =10
+                  Text: =Coalesce(varLoteVivoP9.MENSAJE, "—")
+                  Width: =Parent.Width - 840
+                  X: =800
+                  Y: =362
+            - lblResLoteTituloP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =24
+                  Size: =9
+                  Text: ="Lote"
+                  Width: =150
+                  X: =640
+                  Y: =452
+            - lblResLoteP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =24
+                  Size: =8
+                  Text: =Coalesce(varLoteVivoP9.LOTE_UID, "—") & If(IsBlank(varLoteVivoP9.FECHA_ESTADO), "", "  ·  " & Text(varLoteVivoP9.FECHA_ESTADO, "dd/mm/yyyy hh:mm:ss"))
+                  Width: =Parent.Width - 840
+                  X: =800
+                  Y: =452
+            - btnActualizarEstadoP9:
+                Control: Classic/Button@2.2.0
+                Properties:
+                  BorderColor: =RGBA(123, 22, 50, 1)
+                  BorderThickness: =1
+                  Color: =RGBA(123, 22, 50, 1)
+                  DisplayMode: =If(IsBlank(varLoteP9), DisplayMode.Disabled, DisplayMode.Edit)
+                  Fill: =RGBA(255, 255, 255, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =32
+                  OnSelect: |-
+                    =IfError(
+                        Refresh(P9_MASIVA_PROTO_LOTES);
+                        Set(varLoteVivoP9, LookUp(P9_MASIVA_PROTO_LOTES, ID = varLoteP9.ID)),
+                        Notify("No se pudo consultar el estado del lote.", NotificationType.Warning)
+                    )
+                  Size: =9
+                  Text: ="ACTUALIZAR ESTADO"
+                  Width: =180
+                  X: =640
+                  Y: =490
+            - lblAvisoPrototipoP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =22
+                  Size: =8
+                  Text: ="PROTOTIPO · lista temporal P9_MASIVA_PROTO_LOTES · no se consulta ni se modifica Depositos_Activos."
+                  Width: =Parent.Width - 40
+                  X: =20
+                  Y: =Parent.Height - 36
