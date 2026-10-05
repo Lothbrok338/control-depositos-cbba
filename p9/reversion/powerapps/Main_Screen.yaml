@@ -166,27 +166,21 @@ Screens:
                   X: =475
                   Y: =78
             - cmbBancoP9_1:
-                Control: Classic/ComboBox@2.4.0
+                Control: Classic/DropDown@2.3.1
                 Properties:
                   BorderColor: =RGBA(217, 218, 221, 1)
                   ChevronBackground: =RGBA(241, 242, 243, 1)
                   ChevronFill: =RGBA(94, 16, 38, 1)
-                  DisplayFields: =["Value"]
+                  Color: =RGBA(52, 55, 58, 1)
+                  Default: ="(Todos)"
+                  Fill: =RGBA(255, 255, 255, 1)
                   Font: =Font.'Segoe UI'
                   Height: =35
-                  Items: |-
-                    =Table(
-                        {Value: "(Todos)"},
-                        {Value: "BNB"},
-                        {Value: "BCP"},
-                        {Value: "BISA"},
-                        {Value: "BANCO UNIÓN"},
-                        {Value: "BANCO ECONÓMICO"},
-                        {Value: "BMSC"}
-                    )
+                  Items: =["(Todos)", "BNB", "BCP", "BISA", "BANCO UNIÓN", "BANCO ECONÓMICO", "BMSC"]
+                  Items.Value: =Value
                   OnChange: =Reset(cmbCuentaP9_1)
-                  SearchFields: =["Value"]
-                  SelectMultiple: =false
+                  SelectionColor: =RGBA(255, 255, 255, 1)
+                  SelectionFill: =RGBA(123, 22, 50, 1)
                   Size: =10
                   Width: =150
                   X: =475
@@ -717,7 +711,47 @@ Screens:
                               Reset(txtSolicitadoP9_1);
                               Reset(txtSedeP9_1);
                               Reset(txtObservacionP9_1);
-                              UpdateContext({mostrarConfirmacion: true})
+                              Set(varP9RevVerif, Blank());
+                              Set(varP9RevActiva, Blank());
+                              UpdateContext({mostrarConfirmacion: true});
+                              If(
+                                  varDepositoSeleccionado.ESTADO_ASIGNACION.Value = "ASIGNADO",
+                                  Set(varP9RevVerif, {DepositoID: varDepositoSeleccionado.ID, Estado: "VERIFICANDO"});
+                                  IfError(
+                                      Set(
+                                          varP9RevPrecheck,
+                                          P9_SOLICITAR_REVERSION.Run(
+                                              "CONSULTAR",
+                                              varDepositoSeleccionado.ID,
+                                              varDepositoSeleccionado.CLAVE_TRANSACCION,
+                                              "",
+                                              "",
+                                              ""
+                                          )
+                                      );
+                                      If(
+                                          varP9RevPrecheck.resultado = "PENDIENTE_EXISTENTE",
+                                          Set(
+                                              varP9RevActiva,
+                                              {
+                                                  DepositoID: varDepositoSeleccionado.ID,
+                                                  SolicitudID: Text(varP9RevPrecheck.solicitud_id),
+                                                  Decision: Text(varP9RevPrecheck.estado_solicitud),
+                                                  Fase: Text(varP9RevPrecheck.fase_proceso),
+                                                  ResultadoTecnico: Text(varP9RevPrecheck.resultado_tecnico),
+                                                  FechaLimite: Text(varP9RevPrecheck.fecha_limite)
+                                              }
+                                          );
+                                          Set(varP9RevVerif, {DepositoID: varDepositoSeleccionado.ID, Estado: "ACTIVA"}),
+                                          varP9RevPrecheck.resultado = "LISTO",
+                                          Set(varP9RevVerif, {DepositoID: varDepositoSeleccionado.ID, Estado: "LISTO"}),
+                                          Set(varP9RevVerif, {DepositoID: varDepositoSeleccionado.ID, Estado: "ERROR"})
+                                      );
+                                      true,
+                                      Set(varP9RevVerif, {DepositoID: varDepositoSeleccionado.ID, Estado: "ERROR"});
+                                      false
+                                  )
+                              )
                           )
                         Size: =7
                         Text: =If(ThisItem.ESTADO_ASIGNACION.Value = "ASIGNADO", "VER", "CONFIRMAR")
@@ -1059,7 +1093,16 @@ Screens:
                       Properties:
                         BorderStyle: =BorderStyle.None
                         Color: =RGBA(255, 255, 255, 1)
-                        DisplayMode: =If(Coalesce(varP9RevCargando, false), DisplayMode.Disabled, DisplayMode.Edit)
+                        DisplayMode: |-
+                          =If(
+                              Coalesce(varP9RevCargando, false) ||
+                              With(
+                                  {e: If(!IsBlank(varP9RevVerif.DepositoID) && varP9RevVerif.DepositoID = varDepositoSeleccionado.ID, varP9RevVerif.Estado, "SIN_VERIFICAR")},
+                                  e = "VERIFICANDO" || e = "ACTIVA" || e = "ERROR"
+                              ),
+                              DisplayMode.Disabled,
+                              DisplayMode.Edit
+                          )
                         Fill: =RGBA(123, 22, 50, 1)
                         Font: =Font.'Segoe UI'
                         FontWeight: =FontWeight.Bold
@@ -1127,6 +1170,18 @@ Screens:
                                               Set(varP9RevFase, varP9RevRespuesta.fase_proceso);
                                               Set(varP9RevResultadoTecnico, varP9RevRespuesta.resultado_tecnico);
                                               Set(varP9RevAceptada, true);
+                                              Set(
+                                                  varP9RevActiva,
+                                                  {
+                                                      DepositoID: varDepositoSeleccionado.ID,
+                                                      SolicitudID: Text(varP9RevSolicitudID),
+                                                      Decision: Text(varP9RevDecision),
+                                                      Fase: Text(varP9RevFase),
+                                                      ResultadoTecnico: Text(varP9RevResultadoTecnico),
+                                                      FechaLimite: Text(varP9RevFechaLimite)
+                                                  }
+                                              );
+                                              Set(varP9RevVerif, {DepositoID: varDepositoSeleccionado.ID, Estado: "ACTIVA"});
                                               Set(varP9RevMensaje, "Solicitud activa · ID " & varP9RevSolicitudID & ". " & varP9RevRespuesta.mensaje);
                                               Set(varP9RevVisible, true)
                                           ),
@@ -1157,8 +1212,36 @@ Screens:
                               Set(varP9RevCargando, false)
                           )
                         Size: =8
-                        Text: ="SOLICITAR REVERSIÓN"
-                        Tooltip: ="Solicitar la reversión de esta confirmación mediante aprobación"
+                        Text: |-
+                          =With(
+                              {e: If(!IsBlank(varP9RevVerif.DepositoID) && varP9RevVerif.DepositoID = varDepositoSeleccionado.ID, varP9RevVerif.Estado, "SIN_VERIFICAR")},
+                              If(
+                                  e = "VERIFICANDO",
+                                  "VERIFICANDO…",
+                                  e = "ACTIVA",
+                                  "REVERSIÓN PENDIENTE",
+                                  e = "ERROR",
+                                  "NO SE PUDO VERIFICAR",
+                                  "SOLICITAR REVERSIÓN"
+                              )
+                          )
+                        Tooltip: |-
+                          =With(
+                              {e: If(!IsBlank(varP9RevVerif.DepositoID) && varP9RevVerif.DepositoID = varDepositoSeleccionado.ID, varP9RevVerif.Estado, "SIN_VERIFICAR")},
+                              If(
+                                  e = "VERIFICANDO",
+                                  "Verificando si existe una reversión activa…",
+                                  e = "ACTIVA",
+                                  "Solicitud de reversión activa"
+                                      & If(!IsBlank(varP9RevActiva.SolicitudID), " · ID " & varP9RevActiva.SolicitudID, "")
+                                      & If(!IsBlank(varP9RevActiva.Decision), " · Estado: " & varP9RevActiva.Decision, "")
+                                      & If(!IsBlank(varP9RevActiva.Fase), " · Fase: " & varP9RevActiva.Fase, "")
+                                      & If(!IsBlank(varP9RevActiva.FechaLimite), " · Fecha límite (UTC): " & varP9RevActiva.FechaLimite, ""),
+                                  e = "ERROR",
+                                  "No fue posible verificar si existe una reversión activa. Cierra y vuelve a intentar.",
+                                  "Solicitar la reversión de esta confirmación mediante aprobación"
+                              )
+                          )
                         Visible: =!IsBlank(varDepositoSeleccionado.ID) && varDepositoSeleccionado.ESTADO_ASIGNACION.Value = "ASIGNADO"
                         Width: =175
                         X: =Parent.Width - Self.Width - 15
@@ -1382,6 +1465,18 @@ Screens:
                                     Set(varP9RevResultadoTecnico, varP9RevRespuesta.resultado_tecnico);
                                     Set(varP9RevAceptada, true);
                                     Set(varP9RevEnvioIncierto, false);
+                                    Set(
+                                        varP9RevActiva,
+                                        {
+                                            DepositoID: varDepositoSeleccionado.ID,
+                                            SolicitudID: Text(varP9RevSolicitudID),
+                                            Decision: Text(varP9RevDecision),
+                                            Fase: Text(varP9RevFase),
+                                            ResultadoTecnico: Text(varP9RevResultadoTecnico),
+                                            FechaLimite: Text(varP9RevFechaLimite)
+                                        }
+                                    );
+                                    Set(varP9RevVerif, {DepositoID: varDepositoSeleccionado.ID, Estado: "ACTIVA"});
                                     Set(varP9RevMensaje, "SOLICITUD DE REVERSIÓN ENVIADA · ID " & varP9RevSolicitudID & ". La decisión y el resultado se muestran por separado.");
                                     Notify("SOLICITUD DE REVERSIÓN ENVIADA · ID " & varP9RevSolicitudID, NotificationType.Success),
                                 "EXISTENTE",
@@ -1392,6 +1487,18 @@ Screens:
                                     Set(varP9RevResultadoTecnico, varP9RevRespuesta.resultado_tecnico);
                                     Set(varP9RevAceptada, true);
                                     Set(varP9RevEnvioIncierto, false);
+                                    Set(
+                                        varP9RevActiva,
+                                        {
+                                            DepositoID: varDepositoSeleccionado.ID,
+                                            SolicitudID: Text(varP9RevSolicitudID),
+                                            Decision: Text(varP9RevDecision),
+                                            Fase: Text(varP9RevFase),
+                                            ResultadoTecnico: Text(varP9RevResultadoTecnico),
+                                            FechaLimite: Text(varP9RevFechaLimite)
+                                        }
+                                    );
+                                    Set(varP9RevVerif, {DepositoID: varDepositoSeleccionado.ID, Estado: "ACTIVA"});
                                     Set(varP9RevMensaje, "Se recuperó la solicitud existente · ID " & varP9RevSolicitudID & ". " & varP9RevRespuesta.mensaje),
                                 "PENDIENTE_EXISTENTE",
                                     Set(varP9RevSolicitudID, varP9RevRespuesta.solicitud_id);
@@ -1401,6 +1508,18 @@ Screens:
                                     Set(varP9RevResultadoTecnico, varP9RevRespuesta.resultado_tecnico);
                                     Set(varP9RevAceptada, true);
                                     Set(varP9RevEnvioIncierto, false);
+                                    Set(
+                                        varP9RevActiva,
+                                        {
+                                            DepositoID: varDepositoSeleccionado.ID,
+                                            SolicitudID: Text(varP9RevSolicitudID),
+                                            Decision: Text(varP9RevDecision),
+                                            Fase: Text(varP9RevFase),
+                                            ResultadoTecnico: Text(varP9RevResultadoTecnico),
+                                            FechaLimite: Text(varP9RevFechaLimite)
+                                        }
+                                    );
+                                    Set(varP9RevVerif, {DepositoID: varDepositoSeleccionado.ID, Estado: "ACTIVA"});
                                     Set(varP9RevMensaje, "Ya existe una solicitud activa · ID " & varP9RevSolicitudID & ". " & varP9RevRespuesta.mensaje),
                                 "CONFLICTO",
                                     Set(varP9RevValida, false);

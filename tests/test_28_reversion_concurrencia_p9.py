@@ -275,3 +275,71 @@ def test_auditoria_intento_no_persistida_impide_merge_deposito():
     assert fila(sp)["ESTADO_SOLICITUD"]=="APROBADO",diagnostico(run)
     assert not escrituras_deposito(sp)
     assert fila(sp)["CLAVE_BLOQUEO"].startswith("ACTIVA|")
+
+
+# --- CONSULTAR con solicitud activa: contrato que consume la UX "REVERSIÓN PENDIENTE" ---
+
+def consultar(sp, ahora=T0):
+    return ejecutar("solicitar", sp, entradas(sp, operacion="CONSULTAR", motivo="", uid=""), ahora=ahora)
+
+
+def sin_escrituras_tras(sp, desde):
+    return [p["parameters/uri"] for _, p in sp.llamadas[desde:] if p["parameters/method"] != "GET"]
+
+
+@pytest.mark.parametrize("fase,decision,tecnico", [
+    ("RECIBIDA", "PENDIENTE", ""),
+    ("ESPERANDO_APROBACION", "PENDIENTE", ""),
+    ("EJECUTANDO_REVERSION", "APROBADO", ""),
+    ("RECUPERACION_REQUERIDA", "APROBADO", "ERROR")])
+def test_consultar_con_solicitud_activa_devuelve_estado_real_sin_escribir(fase, decision, tecnico):
+    sp, _, data = solicitar()
+    ident = fila(sp)["ID"]
+    cambios = {"FASE_PROCESO": fase, "ESTADO_SOLICITUD": decision}
+    if tecnico:
+        cambios["RESULTADO_TECNICO"] = tecnico
+    sp.editar(R, ident, **cambios)
+    solicitudes, depositos, desde = copy.deepcopy(sp.listas[R]["items"]), copy.deepcopy(sp.listas[D]["items"]), len(sp.llamadas)
+    run = consultar(sp)
+    r = run.respuesta
+    assert (r["resultado"], r["codigo"]) == ("PENDIENTE_EXISTENTE", "PENDIENTE_EXISTENTE"), diagnostico(run)
+    assert r["solicitud_id"] == str(ident) and r["solicitud_uid"] == UID
+    assert (r["estado_solicitud"], r["fase_proceso"], r["resultado_tecnico"]) == (decision, fase, tecnico)
+    assert datetime.fromisoformat(r["fecha_limite"].replace("Z", "+00:00")) == datetime.fromisoformat(LIMITE.replace("Z", "+00:00"))
+    assert json.loads(r["snapshot_json"])["ID"] == 17
+    assert r["etag"] == data["text_2"]
+    assert r["mensaje"] == "Ya existe una solicitud activa para el depósito."
+    assert sin_escrituras_tras(sp, desde) == []
+    assert sp.listas[R]["items"] == solicitudes and sp.listas[D]["items"] == depositos
+
+
+def test_consultar_activa_no_depende_del_etag_actual_del_deposito():
+    sp, _, data = solicitar()
+    sp.editar(D, 17, OBSERVACION="editada mientras la solicitud espera")
+    assert sp.etag(D, 17) != data["text_2"]
+    run = consultar(sp)
+    assert run.respuesta["resultado"] == "PENDIENTE_EXISTENTE", diagnostico(run)
+    assert run.respuesta["etag"] == data["text_2"]
+
+
+@pytest.mark.parametrize("ahora,mensaje", [
+    ("2026-10-10T11:59:59Z", "Ya existe una solicitud activa para el depósito."),
+    (LIMITE, "VENCIDA — CIERRE PENDIENTE")])
+def test_consultar_activa_vencida_sin_cerrar_conserva_bloqueo_y_lo_informa(ahora, mensaje):
+    sp, _, _ = solicitar()
+    run = consultar(sp, ahora)
+    assert run.respuesta["resultado"] == "PENDIENTE_EXISTENTE", diagnostico(run)
+    assert run.respuesta["mensaje"] == mensaje
+    assert fila(sp)["CLAVE_BLOQUEO"].startswith("ACTIVA|")
+
+
+def test_consultar_tras_cierre_vuelve_a_listo_sin_campos_de_solicitud():
+    sp, _, _ = solicitar()
+    row = fila(sp)
+    sp.editar(R, row["ID"], FASE_PROCESO="FINALIZADA", RESULTADO_TECNICO="REVERTIDO",
+              CLAVE_BLOQUEO="CERRADA|" + row["SOLICITUD_UID"])
+    r = consultar(sp).respuesta
+    assert (r["resultado"], r["codigo"]) == ("LISTO", "LISTO")
+    for campo in ("solicitud_id", "solicitud_uid", "estado_solicitud", "fase_proceso", "resultado_tecnico", "fecha_limite"):
+        assert r[campo] == "", campo
+    assert json.loads(r["snapshot_json"])["ID"] == 17 and r["etag"] == sp.etag(D, 17)
