@@ -2,7 +2,7 @@
 
 > ## ESTADO DE VALIDACIÓN (leer primero)
 >
-> - **82/82 pruebas son sintéticas/locales**: usan un tenant simulado dentro de este repositorio, no Power Automate, SharePoint ni Excel Online reales.
+> - **117/117 pruebas son sintéticas/locales**: usan un tenant simulado dentro de este repositorio, no Power Automate, SharePoint ni Excel Online reales.
 > - **NO hay validación real en tenant.** Nada de lo descrito aquí se ha ejecutado todavía en Microsoft 365.
 > - **Nombres internos de algunas operaciones de Power Automate siguen por validar** (`GetOnUpdatedItems`, `GetAttachments`, `GetAttachmentContent`, `CreateFile`, Excel `GetItems`): se escribieron de memoria, sin poder consultar la documentación de Microsoft.
 > - **La latencia del disparador de SharePoint sigue por medir.**
@@ -28,18 +28,19 @@ Main_Screen ──[IMPORTACIÓN MASIVA]──► P9_Confirmacion_Masiva
 
 Una sola arquitectura: estado en la lista + disparador + sondeo. **No usa «Respuesta temprana»** (nunca se probó que el flujo siga después de responder). **No consulta ni modifica `Depositos_Activos`**, ni usa ETag, ni confirma nada.
 
-Existen de verdad (en este repo): la plantilla Excel, la pantalla, el botón, el flujo (JSON + ZIP importable), el esquema de la lista, las instrucciones y 82 pruebas.
+Existen de verdad (en este repo): las plantillas Excel definitivas (`Plantilla_…` vacía y `Ejemplo_…`, ver `PLANTILLA_PRODUCCION.md`), la pantalla, el botón, el flujo (JSON + ZIP importable), el esquema de la lista, las instrucciones y 117 pruebas.
 
 ## QUÉ SE PROBÓ
 
-82 pruebas, todas pasan (`python -m pytest proto_masiva/tests -q -p no:cacheprovider`):
+117 pruebas, todas pasan (`python -m pytest proto_masiva/tests -q -p no:cacheprovider`):
 
 | Archivo de pruebas | Cubre | Pruebas |
 |---|---|---|
-| `test_01_plantillas.py` | 9 columnas exactas, una tabla `tblConfirmacionMasiva`, sin TIPO_CAMBIO, Texto/2 decimales/BOB-USD, 3 filas y vacía, **cero cuentas reales**, bytes deterministas | 21 |
+| `test_01_plantillas.py` | los 6 fixtures de los escenarios A–E: 9 columnas, sin TIPO_CAMBIO, cuentas inventadas | 13 |
 | `test_02_flujo_definicion.py` | estructura del flujo y del ZIP, cadena de acciones sin pasos en paralelo, referencias válidas, solo escribe en el lote, `IF-MATCH: *` únicamente en la lista de estado, nunca reescribe `PENDIENTE` | 12 |
 | `test_03_escenarios_sinteticos.py` | escenarios A–E y los casos anómalos (abajo) con un tenant simulado | 32 |
 | `test_04_powerapps.py` | YAML válido, 30 controles únicos, referencias resolubles, fórmulas balanceadas, botón = original + 1 bloque | 17 |
+| `test_05_plantillas_produccion.py` | Plantilla vacía y Ejemplo: tabla, 9 columnas, formatos, listas, 6 bancos / 13 cuentas, sin macros ni TIPO_CAMBIO, determinismo, rechazo de 14 plantillas defectuosas, fórmulas evaluadas en LibreOffice | 43 |
 
 Además, durante el trabajo las pruebas detectaron **un defecto real de mi primer borrador** (`Etapa_excel` corría en paralelo con la copia) y quedó corregido y protegido con una prueba estructural. Reintroduje a propósito 4 defectos (reescribir `PENDIENTE`, escribir en otra lista, no validar encabezados, contar filas en blanco): las pruebas los detectan.
 
@@ -49,9 +50,9 @@ El simulador usa el intérprete WDL del repo (P8, solo lectura) más conectores 
 
 | # | Archivo (en `xlsx/`) | Resultado esperado y obtenido en simulación | Estado |
 |---|---|---|---|
-| A | `Plantilla_Confirmacion_Masiva_P9.xlsx` (3 filas) | `COMPLETADO · OK · FILAS_LEIDAS = 3 · Tabla = SI` · «Archivo leído correctamente» | [VALIDADO LOCALMENTE] · [REQUIERE VALIDACIÓN TENANT] |
+| A | `Ejemplo_Confirmacion_Masiva_P9.xlsx` (3 filas) | `COMPLETADO · OK · FILAS_LEIDAS = 3 · Tabla = SI` · «Archivo leído correctamente» | [VALIDADO LOCALMENTE] · [REQUIERE VALIDACIÓN TENANT] |
 | A′ | `01_OK_3filas.xlsx` | idéntico a A | ídem |
-| B | `Plantilla_…_VACIA.xlsx`, `02a_…`, `02b_…` | `ERROR · ARCHIVO_VACIO · Tabla = SI · 0 filas`. **Decisión:** una importación sin filas no se marca COMPLETADO (no hay nada que confirmar). Resultado controlado: el flujo no falla | ídem |
+| B | `Plantilla_Confirmacion_Masiva_P9.xlsx` (la vacía de producción), `02a_…`, `02b_…` | `ERROR · ARCHIVO_VACIO · Tabla = SI · 0 filas`. **Decisión:** una importación sin filas no se marca COMPLETADO (no hay nada que confirmar). Resultado controlado: el flujo no falla | ídem |
 | C | `03_SIN_TABLA.xlsx` | `ERROR · TABLA_NO_ENCONTRADA · Tabla = NO` | ídem. **Supuesto:** el conector Excel responde 404 |
 | D | `05_ENCABEZADO_CAMBIADO.xlsx` | `ERROR · ESTRUCTURA_INVALIDA` · «Faltan o cambiaron encabezados: CUENTA_BANCARIA…» | ídem |
 | E | `04_TABLA_NOMBRE_DISTINTO.xlsx` | `ERROR · TABLA_NO_ENCONTRADA` | ídem. Mismo supuesto 404 |
@@ -97,4 +98,4 @@ Estado `ESTADO` como texto (no Opción); tabla vacía = `ERROR/ARCHIVO_VACIO`; f
 
 ## MAPA DE ARCHIVOS (todo bajo `proto_masiva/`)
 
-`xlsx/Plantilla_Confirmacion_Masiva_P9(.VACIA).xlsx` (+6 fixtures de A–E) · `generar_plantillas.py` · `powerapps/{P9_Confirmacion_Masiva.pa.yaml, …_CONTROLES_PEGAR.yaml, BOTON_MAIN_SCREEN.txt, BOTON_MAIN_SCREEN_PEGAR.yaml, Main_Screen_CON_BOTON_IMPORTACION_MASIVA.yaml, INSTRUCCIONES_PEGADO.md, aplicar_boton.py, derivar_pegar.py}` · `flows/{construir.py, P9_MASIVA_PROTO_PREVALIDAR_definition.json, P9_MASIVA_PROTO_PREVALIDAR.zip, INSTRUCCIONES_FLUJO.md}` · `sharepoint/{esquema_P9_MASIVA_PROTO_LOTES.json, INSTRUCCIONES_LISTA.md}` · `tests/` · `RUNBOOK.md` y `REGISTRO_RESULTADOS.md` (kit anterior de medición, marcado como superado).
+`xlsx/{Plantilla,Ejemplo}_Confirmacion_Masiva_P9.xlsx` (+6 fixtures de A–E) · `generar_plantillas_produccion.py`, `catalogo_p9.py`, `catalogo_bancos_p9.json`, `contrato_plantilla.py`, `PLANTILLA_PRODUCCION.md` · `powerapps/{P9_Confirmacion_Masiva.pa.yaml, …_CONTROLES_PEGAR.yaml, BOTON_MAIN_SCREEN.txt, BOTON_MAIN_SCREEN_PEGAR.yaml, Main_Screen_CON_BOTON_IMPORTACION_MASIVA.yaml, INSTRUCCIONES_PEGADO.md, aplicar_boton.py, derivar_pegar.py}` · `flows/{construir.py, P9_MASIVA_PROTO_PREVALIDAR_definition.json, P9_MASIVA_PROTO_PREVALIDAR.zip, INSTRUCCIONES_FLUJO.md}` · `sharepoint/{esquema_P9_MASIVA_PROTO_LOTES.json, INSTRUCCIONES_LISTA.md}` · `tests/` · `RUNBOOK.md` y `REGISTRO_RESULTADOS.md` (kit anterior de medición, marcado como superado).

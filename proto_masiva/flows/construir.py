@@ -20,7 +20,7 @@ import zipfile
 from pathlib import Path
 
 from p9.wdl import FALLOS, TODOS, ambito, asignar, compose, contar_acciones, definicion, secuencia, si, variable
-from proto_masiva.generar_plantillas import ENCABEZADOS, TABLA
+from proto_masiva.contrato_plantilla import ENCABEZADOS, NOMBRE_TABLA as TABLA
 
 CARPETA_SALIDA = Path(__file__).resolve().parent
 NOMBRE_FLUJO = "P9_MASIVA_PROTO_PREVALIDAR"

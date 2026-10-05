@@ -1,0 +1,101 @@
+{
+  "fuente": {
+    "archivo": "p9/reversion/powerapps/Main_Screen.yaml",
+    "checkpoint_commit": "3b407e202ca53e8827151d9e03a41c300bb8d84a",
+    "sha256_lf": "99486d668690e425568ca18c5d6d3ff6d953fe4529e0ca0b48b0d99fd98e755a",
+    "verificado_contra": "archivo + objeto git del checkpoint",
+    "controles": [
+      "cmbBancoP9_1",
+      "cmbCuentaP9_1"
+    ],
+    "moneda_desde": "registro_bancos.json"
+  },
+  "bancos": [
+    "BNB",
+    "BCP",
+    "BISA",
+    "BANCO UNIÓN",
+    "BANCO ECONÓMICO",
+    "BMSC"
+  ],
+  "cuentas": [
+    {
+      "banco": "BNB",
+      "etiqueta": "MN · 3000100152",
+      "cuenta": "3000100152",
+      "moneda": "BOB"
+    },
+    {
+      "banco": "BNB",
+      "etiqueta": "ME · 3400041236",
+      "cuenta": "3400041236",
+      "moneda": "USD"
+    },
+    {
+      "banco": "BNB",
+      "etiqueta": "AHORRO · 3501936692",
+      "cuenta": "3501936692",
+      "moneda": "BOB"
+    },
+    {
+      "banco": "BNB",
+      "etiqueta": "CLÍNICA · 3000100705",
+      "cuenta": "3000100705",
+      "moneda": "BOB"
+    },
+    {
+      "banco": "BCP",
+      "etiqueta": "MN · 301-5005684-3-97",
+      "cuenta": "301-5005684-3-97",
+      "moneda": "BOB"
+    },
+    {
+      "banco": "BCP",
+      "etiqueta": "ME · 301-5005425-2-71",
+      "cuenta": "301-5005425-2-71",
+      "moneda": "USD"
+    },
+    {
+      "banco": "BISA",
+      "etiqueta": "MN · 0696870039",
+      "cuenta": "0696870039",
+      "moneda": "BOB"
+    },
+    {
+      "banco": "BISA",
+      "etiqueta": "ME · 0696872023",
+      "cuenta": "0696872023",
+      "moneda": "USD"
+    },
+    {
+      "banco": "BANCO UNIÓN",
+      "etiqueta": "MN · 10000003224552",
+      "cuenta": "10000003224552",
+      "moneda": "BOB"
+    },
+    {
+      "banco": "BANCO UNIÓN",
+      "etiqueta": "ME · 20000003224544",
+      "cuenta": "20000003224544",
+      "moneda": "USD"
+    },
+    {
+      "banco": "BANCO ECONÓMICO",
+      "etiqueta": "CTA. CTE. · 3041210569",
+      "cuenta": "3041210569",
+      "moneda": "BOB"
+    },
+    {
+      "banco": "BANCO ECONÓMICO",
+      "etiqueta": "AHORRO · 3051446946",
+      "cuenta": "3051446946",
+      "moneda": "BOB"
+    },
+    {
+      "banco": "BMSC",
+      "etiqueta": "CTA. CTE. · 1000872489",
+      "cuenta": "1000872489",
+      "moneda": "BOB"
+    }
+  ]
+}

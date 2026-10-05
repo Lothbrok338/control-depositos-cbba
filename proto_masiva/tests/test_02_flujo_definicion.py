@@ -6,7 +6,7 @@ from io import BytesIO
 from pathlib import Path
 
 from p9.wdl import contar_acciones, recorrer
-from proto_masiva import generar_plantillas as G
+from proto_masiva import contrato_plantilla as G
 from proto_masiva.flows import construir as F
 
 CARPETA = Path(F.__file__).resolve().parent

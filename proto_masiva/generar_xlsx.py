@@ -9,9 +9,12 @@ from pathlib import Path
 from openpyxl import Workbook
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from proto_masiva.contrato_plantilla import ENCABEZADOS as _CONTRATO, NOMBRE_TABLA  # noqa: E402
+
 SALIDA = Path(__file__).resolve().parent / "xlsx"
-ENCABEZADOS = ["BANCO", "CUENTA_BANCARIA", "CODIGO_ASIGNACION", "IMPORTE", "MONEDA",
-               "ESTUDIANTE", "SOLICITADO_POR", "SEDE", "OBSERVACION"]
+ENCABEZADOS = list(_CONTRATO)  # las 9 columnas viven solo en contrato_plantilla.py
 FILAS = [
     ["BCP", "999-9999990-9-99", "900001", 1000.00, "BOB", "ESTUDIANTE FICTICIO 1", "SOLICITANTE FICTICIO", "COCHABAMBA", ""],
     ["BISA", "0999999991", "900002", 250.50, "BOB", "ESTUDIANTE FICTICIO 2", "SOLICITANTE FICTICIO", "COCHABAMBA", "prueba"],
@@ -19,7 +22,7 @@ FILAS = [
 ]
 
 
-def libro(nombre, encabezados=ENCABEZADOS, filas=FILAS, tabla="tblConfirmacionMasiva", ref_filas=None):
+def libro(nombre, encabezados=ENCABEZADOS, filas=FILAS, tabla=NOMBRE_TABLA, ref_filas=None):
     """ref_filas: nº de filas de datos que abarca la tabla (None = len(filas)); 0 = tabla solo con encabezado."""
     wb = Workbook()
     ws = wb.active

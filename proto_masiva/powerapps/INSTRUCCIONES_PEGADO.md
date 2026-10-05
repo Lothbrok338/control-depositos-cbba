@@ -60,7 +60,7 @@ Antes: crea la lista (`sharepoint/INSTRUCCIONES_LISTA.md`) e importa el flujo (`
 8. **Comprobador de aplicaciones.** Revisa que no haya errores nuevos en `P9_Confirmacion_Masiva` ni en `Main_Screen`. Verifica en el árbol que `frmLoteP9`, `tmrSondeoP9` y `cntImportacionMasivaP9` sean hijos directos de la pantalla.
 9. **Probar** (F5 desde `Main_Screen`; el botón navega con `Navigate(P9_Confirmacion_Masiva, ScreenTransition.Fade)`).
 10. **Prueba de humo, cinco archivos** (están en `xlsx/` y en `RESULTADO_PROTOTIPO.md` con el resultado esperado):
-    `Plantilla_Confirmacion_Masiva_P9.xlsx` → COMPLETADO, 3 filas · `…_VACIA.xlsx` → ERROR/ARCHIVO_VACIO · `03_SIN_TABLA.xlsx` → ERROR/TABLA_NO_ENCONTRADA · `05_ENCABEZADO_CAMBIADO.xlsx` → ERROR/ESTRUCTURA_INVALIDA · `04_TABLA_NOMBRE_DISTINTO.xlsx` → ERROR/TABLA_NO_ENCONTRADA.
+    `Ejemplo_Confirmacion_Masiva_P9.xlsx` → COMPLETADO, 3 filas · `Plantilla_Confirmacion_Masiva_P9.xlsx` (vacía) → ERROR/ARCHIVO_VACIO · `03_SIN_TABLA.xlsx` → ERROR/TABLA_NO_ENCONTRADA · `05_ENCABEZADO_CAMBIADO.xlsx` → ERROR/ESTRUCTURA_INVALIDA · `04_TABLA_NOMBRE_DISTINTO.xlsx` → ERROR/TABLA_NO_ENCONTRADA.
 
 ## Qué NO se toca
 

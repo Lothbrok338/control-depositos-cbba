@@ -28,14 +28,14 @@ def final(t, lote):
 
 
 # ------------------------------------------------------------------ A-E (los cinco pedidos)
-def test_A_archivo_correcto_3_filas():
-    t, lote = tenant("Plantilla_Confirmacion_Masiva_P9.xlsx")
+def test_A_archivo_correcto_3_filas():  # Ejemplo_Confirmacion_Masiva_P9.xlsx (3 filas ficticias)
+    t, lote = tenant("Ejemplo_Confirmacion_Masiva_P9.xlsx")
     r = procesar(t, lote)
     f = final(t, lote)
     assert r.estado_final == "Succeeded"
     assert (f["ESTADO"], f["CODIGO_RESULTADO"], f["TABLA_ENCONTRADA"], f["FILAS_LEIDAS"]) == ("COMPLETADO", "OK", "SI", 3)
     assert f["MENSAJE"] == "Archivo leído correctamente"
-    assert f["ARCHIVO_NOMBRE"] == "Plantilla_Confirmacion_Masiva_P9.xlsx"
+    assert f["ARCHIVO_NOMBRE"] == "Ejemplo_Confirmacion_Masiva_P9.xlsx"
 
 
 def test_A2_otro_archivo_de_3_filas():
@@ -44,9 +44,9 @@ def test_A2_otro_archivo_de_3_filas():
     assert (final(t, lote)["ESTADO"], final(t, lote)["FILAS_LEIDAS"]) == ("COMPLETADO", 3)
 
 
-@pytest.mark.parametrize("archivo", ["Plantilla_Confirmacion_Masiva_P9_VACIA.xlsx", "02a_TABLA_VACIA_1fila_en_blanco.xlsx",
+@pytest.mark.parametrize("archivo", ["Plantilla_Confirmacion_Masiva_P9.xlsx", "02a_TABLA_VACIA_1fila_en_blanco.xlsx",
                                       "02b_TABLA_SOLO_ENCABEZADO.xlsx"])
-def test_B_tabla_vacia_es_ERROR_ARCHIVO_VACIO_controlado(archivo):
+def test_B_tabla_vacia_es_ERROR_ARCHIVO_VACIO_controlado(archivo):  # incluye la Plantilla de producción, vacía
     """Diseño: una importación sin filas NO es COMPLETADO (no hay nada que confirmar). Resultado controlado, sin fallo del flujo."""
     t, lote = tenant(archivo)
     r = procesar(t, lote)
@@ -81,7 +81,7 @@ def test_E_tabla_con_nombre_distinto():
 
 # ------------------------------------------------------------------ máquina de estados y seguridad del disparo
 def test_el_flujo_marca_PROCESANDO_primero_y_termina_en_estado_terminal_una_sola_vez():
-    t, lote = tenant("Plantilla_Confirmacion_Masiva_P9.xlsx")
+    t, lote = tenant("Ejemplo_Confirmacion_Masiva_P9.xlsx")
     procesar(t, lote)
     estados = [c["ESTADO"] for _, i, c in t.escrituras if i == lote and "ESTADO" in c]
     assert estados == ["PROCESANDO", "COMPLETADO"]
@@ -100,7 +100,7 @@ def test_nunca_escribe_PENDIENTE_ni_se_redispara_con_sus_propias_escrituras():
 
 @pytest.mark.parametrize("estado", ["CARGADO", "PROCESANDO", "COMPLETADO", "ERROR", ""])
 def test_solo_se_dispara_con_PENDIENTE(estado):
-    t, lote = tenant("Plantilla_Confirmacion_Masiva_P9.xlsx", ESTADO=estado)
+    t, lote = tenant("Ejemplo_Confirmacion_Masiva_P9.xlsx", ESTADO=estado)
     r = procesar(t, lote)
     assert r.estado_final == "NoDisparado" and not t.escrituras and not t.llamadas
 
@@ -109,7 +109,7 @@ def test_reintento_tras_ERROR_vuelve_a_funcionar_sin_chocar_con_el_archivo_anter
     t, lote = tenant("03_SIN_TABLA.xlsx")
     procesar(t, lote)
     assert final(t, lote)["ESTADO"] == "ERROR"
-    t.adjuntos[lote] = [("corregido.xlsx", (XLSX / "Plantilla_Confirmacion_Masiva_P9.xlsx").read_bytes())]
+    t.adjuntos[lote] = [("corregido.xlsx", (XLSX / "Ejemplo_Confirmacion_Masiva_P9.xlsx").read_bytes())]
     t.lotes[lote]["ESTADO"] = "PENDIENTE"  # lo que hace el botón de la app
     import simulador
     simulador.AHORA  # el nombre de la copia incluye la fecha; fuerza otra copia con otro instante
@@ -153,7 +153,7 @@ def test_xlsx_corrupto_no_se_confunde_con_tabla_ausente():
                                                ("excel", 423, "ARCHIVO_BLOQUEADO"), ("excel", 500, "ERROR_LECTURA_EXCEL"),
                                                ("excel", 404, "TABLA_NO_ENCONTRADA")])
 def test_fallos_de_conector_se_clasifican(clave, http, codigo):
-    t, lote = tenant("Plantilla_Confirmacion_Masiva_P9.xlsx")
+    t, lote = tenant("Ejemplo_Confirmacion_Masiva_P9.xlsx")
     t.fallos[clave] = ("Failed", http)
     procesar(t, lote)
     f = final(t, lote)
@@ -162,7 +162,7 @@ def test_fallos_de_conector_se_clasifican(clave, http, codigo):
 
 
 def test_archivo_abierto_bloqueado_423_y_luego_liberado():
-    t, lote = tenant("Plantilla_Confirmacion_Masiva_P9.xlsx")
+    t, lote = tenant("Ejemplo_Confirmacion_Masiva_P9.xlsx")
     t.bloqueados.add(f"{t.lotes[lote]['LOTE_UID']}_20261005120000.xlsx")
     procesar(t, lote)
     assert final(t, lote)["CODIGO_RESULTADO"] == "ARCHIVO_BLOQUEADO"
@@ -170,7 +170,7 @@ def test_archivo_abierto_bloqueado_423_y_luego_liberado():
 
 def test_excel_sin_configurar_no_se_presenta_como_tabla_inexistente_salvo_404():
     """Con el marcador <CONFIGURAR_...> sin sustituir, el conector real fallaría; un 500 se reporta como lectura, no como tabla."""
-    t, lote = tenant("Plantilla_Confirmacion_Masiva_P9.xlsx")
+    t, lote = tenant("Ejemplo_Confirmacion_Masiva_P9.xlsx")
     t.fallos["excel"] = ("Failed", 500)
     procesar(t, lote, F.construir_definicion())
     assert final(t, lote)["CODIGO_RESULTADO"] == "ERROR_LECTURA_EXCEL"
@@ -178,7 +178,7 @@ def test_excel_sin_configurar_no_se_presenta_como_tabla_inexistente_salvo_404():
 
 def test_si_falla_la_escritura_final_el_flujo_falla_visiblemente_y_el_lote_queda_PROCESANDO():
     """Riesgo conocido, documentado: el flujo no tiene a dónde reportar si SharePoint rechaza el último MERGE."""
-    t, lote = tenant("Plantilla_Confirmacion_Masiva_P9.xlsx")
+    t, lote = tenant("Ejemplo_Confirmacion_Masiva_P9.xlsx")
     t.fallos["merge_final"] = ("Failed", 500)
     r = procesar(t, lote)
     assert r.estado_final == "Failed" and final(t, lote)["ESTADO"] == "PROCESANDO"
@@ -186,7 +186,7 @@ def test_si_falla_la_escritura_final_el_flujo_falla_visiblemente_y_el_lote_queda
 
 # ------------------------------------------------------------------ aislamiento
 def test_solo_toca_la_lista_de_lotes_y_la_carpeta_temporal():
-    t, lote = tenant("Plantilla_Confirmacion_Masiva_P9.xlsx")
+    t, lote = tenant("Ejemplo_Confirmacion_Masiva_P9.xlsx")
     procesar(t, lote)
     assert {op for op, _ in t.llamadas} == {"HttpRequest", "GetAttachments", "GetAttachmentContent", "CreateFile", "GetItems"}
     assert all(c == F.CARPETA_TEMP for c, _, _ in t.biblioteca.values())
@@ -198,7 +198,7 @@ def test_solo_toca_la_lista_de_lotes_y_la_carpeta_temporal():
 def test_el_flujo_solo_escribe_columnas_declaradas_en_el_esquema():
     declaradas = {c["nombre_tecnico"] for c in ESQUEMA["columnas"]}
     assert set(F.CAMPOS_ESCRITOS) <= declaradas
-    t, lote = tenant("Plantilla_Confirmacion_Masiva_P9.xlsx")
+    t, lote = tenant("Ejemplo_Confirmacion_Masiva_P9.xlsx")
     procesar(t, lote)
     escritas = {k for _, _, c in t.escrituras for k in c}
     assert escritas == set(F.CAMPOS_ESCRITOS) - {"ARCHIVO_NOMBRE"} | ({"ARCHIVO_NOMBRE"} & escritas)
