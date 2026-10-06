@@ -25,7 +25,7 @@ PANTALLA = yaml.safe_load((PA / "P9_Confirmacion_Masiva.pa.yaml").read_text(enco
 MANUALES = {"frmArchivoP9", "attXlsxP9"}  # los únicos controles que se crean a mano en Studio
 TIPOS_USADOS_EN_P9 = {"GroupContainer@1.5.0", "Rectangle@2.3.0", "Label@2.5.1", "Classic/Button@2.2.0"}
 CODIGOS_APP = set(F.CODIGOS) | {"FLUJO_SIN_RESPUESTA"}  # este último lo fabrica la app si el flujo no responde
-ESTADOS_UI = {"SIN ARCHIVO", "CARGADO", "PROCESANDO", "COMPLETADO", "ERROR"}
+ESTADOS_UI = {"SIN ARCHIVO", "CARGADO", "PROCESANDO", "OK", "OBSERVADO", "ERROR"}
 # VALIDADO EN TENANT (URL pegada en el navegador → se descarga el XLSX): descarga por UniqueId del archivo real. Si el archivo se borra y se
 # vuelve a crear, el UniqueId cambia: actualizar la plantilla con «reemplazar»/nueva versión, no borrando.
 URL_DESCARGA = ("https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu/_layouts/15/download.aspx"
@@ -102,7 +102,9 @@ def test_prevalidar_llama_al_flujo_con_el_archivo_y_maneja_el_error_de_llamada()
     assert "IfError(" in f and "FLUJO_SIN_RESPUESTA" in f and "FirstError.Message" in f
     assert f.count("Set(varProcesandoP9, true)") == 1 and f.rstrip().endswith("Set(varProcesandoP9, false)")  # nunca queda «procesando» colgado
     assert f.count("DateDiff(inicioP9, Now(), TimeUnit.Milliseconds)") == 2  # tiempo medido en éxito y en fallo
-    assert "SubmitForm" not in f and "Patch(" not in f and "Collect(" not in f  # no escribe en ninguna parte
+    assert "SubmitForm" not in f and "Patch(" not in f  # no escribe en ninguna lista
+    assert f.count("ClearCollect(") == 1 and re.search(r"ClearCollect\(\s*colPrevalidacionP9,", f)  # única colección: local, en memoria de la app
+    assert "Collect(" not in f.replace("ClearCollect(", "")
 
 
 def test_la_app_es_directa_no_hay_temporizador_sondeo_lotes_ni_estados_persistentes():
@@ -121,16 +123,16 @@ def test_las_salidas_del_flujo_que_usa_la_app_existen_en_la_respuesta_del_flujo(
     usados = set()
     for donde, f in formulas():
         usados |= set(re.findall(r"varResultadoP9\.([a-z_]+)", sin_cadenas(f)))
-    assert usados <= set(F.SALIDAS) and {"resultado", "codigo", "mensaje", "archivo", "tabla_encontrada", "filas_leidas",
-                                         "copia_temporal_eliminada", "tiempos_ms"} == usados
+    assert usados <= set(F.SALIDAS_RESPUESTA) and set(F.SALIDAS) <= usados and "detalle_json" in usados  # las 8 de siempre + las nuevas
     registro = re.search(r"Set\(\s*varResultadoP9,\s*\{(.*?)\}\s*\)", CONTROLES["btnPrevalidarP9"]["Properties"]["OnSelect"], re.S)
-    assert set(re.findall(r"([a-z_]+):", registro[1])) == set(F.SALIDAS)  # el resultado de error fabricado por la app tiene la misma forma
+    assert set(re.findall(r"([a-z_]+):", registro[1])) == set(F.SALIDAS_RESPUESTA)  # el resultado de error fabricado por la app tiene la misma forma
+    assert re.search(r'detalle_json: "\[\]"', registro[1])  # y un detalle vacío válido, para que ParseJSON no falle
 
 
 def test_estados_y_codigos_de_la_app_son_los_del_flujo():
     estados, codigos = set(), set()
     for _, f in formulas():
-        estados |= set(re.findall(r'"(SIN ARCHIVO|CARGADO|PROCESANDO|COMPLETADO|ERROR)"', f))
+        estados |= set(re.findall(r'"(SIN ARCHIVO|CARGADO|PROCESANDO|OK|OBSERVADO|ERROR)"', f))
         codigos |= set(re.findall(r'codigo: "([A-Z_]+)"', f))
     assert estados <= ESTADOS_UI and estados == ESTADOS_UI
     assert codigos <= CODIGOS_APP
@@ -261,3 +263,34 @@ def test_la_lista_vehiculo_esta_documentada_solo_como_vehiculo_tecnico_y_no_part
     # el único uso de la lista es el DataSource del formulario manual, descrito en las instrucciones
     assert "`DataSource` = `P9_MASIVA_PROTO_ADJUNTO`" in (PA / "INSTRUCCIONES_PEGADO.md").read_text(encoding="utf-8")
 
+
+
+# --------------------------------------------------------------------------- prevalidación real: colección colPrevalidacionP9
+ESQUEMA = json.loads((Path(F.__file__).parent / "esquema_detalle_json.json").read_text(encoding="utf-8"))["items"]["properties"]
+
+
+def test_la_coleccion_se_construye_con_ParseJSON_y_conversion_explicita_de_cada_columna_del_esquema():
+    f = CONTROLES["btnPrevalidarP9"]["Properties"]["OnSelect"]
+    assert "ParseJSON(varResultadoP9.detalle_json)" in f and "ClearCollect(" in f
+    columnas = re.findall(r"^\s+(\w+): (Value|Text)\(ThisRecord\.Value\.(\w+)\)", f, re.M)
+    assert [c for c, _, _ in columnas] == [c for _, _, c in columnas] == list(ESQUEMA) == list(F.PV.DETALLE_CAMPOS)
+    for campo, conversor, _ in columnas:
+        tipos = ESQUEMA[campo]["type"]
+        tipos = tipos if isinstance(tipos, list) else [tipos]
+        esperado = "Value" if set(tipos) & {"integer", "number"} else "Text"
+        assert conversor == esperado, campo  # nada se asume tipado: cada columna se convierte con Text() o Value()
+
+
+def test_si_el_detalle_no_se_puede_leer_se_avisa_sin_fingir_que_el_flujo_no_respondio():
+    f = CONTROLES["btnPrevalidarP9"]["Properties"]["OnSelect"]
+    assert f.index("ClearCollect(") < f.index("Notify(") < f.index("FLUJO_SIN_RESPUESTA")
+    interno = f[f.index("ClearCollect("):f.index("FLUJO_SIN_RESPUESTA")]
+    assert "Notify(" in interno and "NotificationType.Warning" in interno and "FLUJO_SIN_RESPUESTA" not in interno
+
+
+def test_la_pantalla_ya_no_dice_que_no_consulta_Depositos_Activos_ni_usa_estados_antiguos():
+    texto = (PA / "P9_Confirmacion_Masiva.pa.yaml").read_text(encoding="utf-8")
+    assert "COMPLETADO" not in texto and "no se consulta" not in texto and "se borra al terminar" not in texto
+    aviso = CONTROLES["lblAvisoPrototipoP9"]["Properties"]["Text"]
+    assert "SOLO LECTURA" in aviso and "no lo modifica" in aviso and "no confirma" in aviso
+    assert "OK" in CONTROLES["lblEstadoP9"]["Properties"]["Fill"] and "OBSERVADO" in CONTROLES["lblEstadoP9"]["Properties"]["Fill"]

@@ -73,7 +73,13 @@ El protocolo de medición por tamaño (10…2000 filas) **sigue sin ejecutarse**
 
 Bancos: BNB, BCP, BISA, BANCO UNIÓN, BANCO ECONÓMICO, BMSC (13 cuentas, ver `catalogo_bancos_p9.json`). «(Todos)» solo existe como comodidad visual en Power Apps; no es un banco.
 
-## 6 · Diseño futuro — NO IMPLEMENTADO, NO VALIDADO
+## 5b · Fase siguiente: prevalidación real (IMPLEMENTADA LOCALMENTE, NO VALIDADA EN TENANT)
+
+La sección 6 describía la prevalidación contra `Depositos_Activos` como diseño futuro. **Ya está implementada** (solo lectura) y probada con un tenant simulado:
+`PREVALIDACION_REAL.md`. **Nada de ella está en la lista «TENANT VALIDATED» de este documento**: no se ha importado ni ejecutado en Power Automate ni en Power Apps.
+La **confirmación real** (releer por ID, ETag, `If-Match`, MERGE, `412` = `CONFLICTO`) sigue **sin implementar**.
+
+## 6 · Diseño futuro — NO IMPLEMENTADO, NO VALIDADO (la parte de confirmación; la prevalidación ya existe, ver 5b)
 
 Solo como referencia para las siguientes etapas; **nada de esto existe en el código de este checkpoint**.
 

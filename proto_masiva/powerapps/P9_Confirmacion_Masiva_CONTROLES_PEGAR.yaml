@@ -156,11 +156,43 @@
               =Set(varProcesandoP9, true);
               Set(varResultadoP9, Blank());
               Set(varMsAppP9, Blank());
+              Clear(colPrevalidacionP9);
               With(
                   {inicioP9: Now(), archivoP9: First(attXlsxP9.Attachments)},
                   IfError(
                       Set(varResultadoP9, P9_MASIVA_PROTO_PREVALIDAR.Run({name: archivoP9.Name, contentBytes: archivoP9.Value}));
-                      Set(varMsAppP9, DateDiff(inicioP9, Now(), TimeUnit.Milliseconds)),
+                      Set(varMsAppP9, DateDiff(inicioP9, Now(), TimeUnit.Milliseconds));
+                      IfError(
+                          ClearCollect(
+                              colPrevalidacionP9,
+                              ForAll(
+                                  Table(ParseJSON(varResultadoP9.detalle_json)),
+                                  {
+                                      fila_excel: Value(ThisRecord.Value.fila_excel),
+                                      fila_tabla: Value(ThisRecord.Value.fila_tabla),
+                                      resultado: Text(ThisRecord.Value.resultado),
+                                      mensaje: Text(ThisRecord.Value.mensaje),
+                                      deposito_id: Value(ThisRecord.Value.deposito_id),
+                                      clave_transaccion: Text(ThisRecord.Value.clave_transaccion),
+                                      estado_actual: Text(ThisRecord.Value.estado_actual),
+                                      fecha_movimiento: Text(ThisRecord.Value.fecha_movimiento),
+                                      moneda_deposito: Text(ThisRecord.Value.moneda_deposito),
+                                      coincidencias: Value(ThisRecord.Value.coincidencias),
+                                      banco: Text(ThisRecord.Value.banco),
+                                      cuenta_bancaria: Text(ThisRecord.Value.cuenta_bancaria),
+                                      codigo_asignacion: Text(ThisRecord.Value.codigo_asignacion),
+                                      importe: Value(ThisRecord.Value.importe),
+                                      importe_original: Text(ThisRecord.Value.importe_original),
+                                      moneda: Text(ThisRecord.Value.moneda),
+                                      estudiante: Text(ThisRecord.Value.estudiante),
+                                      solicitado_por: Text(ThisRecord.Value.solicitado_por),
+                                      sede: Text(ThisRecord.Value.sede),
+                                      observacion: Text(ThisRecord.Value.observacion)
+                                  }
+                              )
+                          ),
+                          Notify("No se pudo leer el detalle de la prevalidación: " & FirstError.Message, NotificationType.Warning)
+                      ),
                       Set(
                           varResultadoP9,
                           {
@@ -171,7 +203,12 @@
                               tabla_encontrada: "",
                               filas_leidas: "0",
                               copia_temporal_eliminada: "",
-                              tiempos_ms: ""
+                              tiempos_ms: "",
+                              filas_totales: "0",
+                              filas_validas: "0",
+                              filas_con_error: "0",
+                              depositos_consultados: "0",
+                              detalle_json: "[]"
                           }
                       );
                       Set(varMsAppP9, DateDiff(inicioP9, Now(), TimeUnit.Milliseconds))
@@ -215,7 +252,8 @@
                   {estadoP9: If(Coalesce(varProcesandoP9, false), "PROCESANDO", If(!IsBlank(varResultadoP9), varResultadoP9.resultado, If(IsEmpty(attXlsxP9.Attachments), "SIN ARCHIVO", "CARGADO")))},
                   Switch(
                       estadoP9,
-                      "COMPLETADO", RGBA(46, 125, 50, 1),
+                      "OK", RGBA(46, 125, 50, 1),
+                      "OBSERVADO", RGBA(198, 125, 0, 1),
                       "ERROR", RGBA(183, 28, 28, 1),
                       "PROCESANDO", RGBA(230, 126, 34, 1),
                       "CARGADO", RGBA(0, 120, 212, 1),
@@ -246,8 +284,8 @@
                       IsBlank(varResultadoP9),
                       If(IsEmpty(attXlsxP9.Attachments), "Adjunte un Excel (.xlsx) para empezar.", "Archivo seleccionado. Pulse PREVALIDAR ARCHIVO."),
                       If(
-                          varResultadoP9.resultado = "COMPLETADO",
-                          "ARCHIVO RECIBIDO · TABLA ENCONTRADA · " & varResultadoP9.filas_leidas & If(Value(varResultadoP9.filas_leidas) = 1, " FILA LEÍDA", " FILAS LEÍDAS"),
+                          varResultadoP9.resultado = "OK" || varResultadoP9.resultado = "OBSERVADO",
+                          "PREVALIDACIÓN · " & varResultadoP9.filas_validas & " DE " & varResultadoP9.filas_totales & If(Value(varResultadoP9.filas_totales) = 1, " FILA VÁLIDA", " FILAS VÁLIDAS"),
                           "RESULTADO: " & varResultadoP9.codigo
                       )
                   )
@@ -338,7 +376,7 @@
             FontWeight: =FontWeight.Semibold
             Height: =24
             Size: =10
-            Text: =If(Coalesce(varResultadoP9.resultado, "") = "COMPLETADO", varResultadoP9.filas_leidas, "—")
+            Text: =If(Coalesce(varResultadoP9.tabla_encontrada, "") = "SI", varResultadoP9.filas_leidas, "—")
             Width: =Parent.Width - 840
             X: =800
             Y: =332
@@ -425,7 +463,7 @@
             Font: =Font.'Segoe UI'
             Height: =22
             Size: =8
-            Text: ="PROTOTIPO · sin lotes ni historial · la copia temporal se borra al terminar · no se consulta ni modifica Depositos_Activos."
+            Text: ="PROTOTIPO · prevalidación de SOLO LECTURA (lee Depositos_Activos, no lo modifica y no confirma ningún depósito) · sin lotes ni historial."
             Width: =Parent.Width - 40
             X: =20
             Y: =Parent.Height - 36

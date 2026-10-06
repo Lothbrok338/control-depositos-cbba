@@ -2,14 +2,17 @@
 
     python -m proto_masiva.flows.construir
 
-Camino directo y síncrono, SIN listas, SIN lotes, SIN estados persistentes, SIN sondeo:
+Camino directo y síncrono, SIN lotes, SIN estados persistentes, SIN sondeo:
 
   Power Apps ──(XLSX)──► flujo: valida el archivo → crea una COPIA TEMPORAL en una carpeta → lee tblConfirmacionMasiva con
-  Excel Online → valida estructura → BORRA la copia → responde a Power Apps (resultado, mensaje, filas_leidas, tiempos).
+  Excel Online → valida estructura → PREVALIDA CADA FILA contra Depositos_Activos (SOLO LECTURA, un único GET) → BORRA la copia →
+  responde a Power Apps (resumen + detalle_json por fila + tiempos).
 
-No toca Depositos_Activos. Solo usa una carpeta de biblioteca (copia temporal) y Excel Online. La respuesta lleva los tiempos por
-etapa para MEDIR en el tenant; el flujo NO fija ningún límite de filas (PARAM_MAX_FILAS = 0), salvo detectar que la lectura alcanzó el
-umbral de paginación configurado para no devolver un recuento truncado.
+PREVALIDACIÓN REAL (flows/prevalidacion.py, ../PREVALIDACION_REAL.md): lee Depositos_Activos con UN GET (CRÉDITO + ventana de la galería
+individual) y resuelve las filas en memoria. NO escribe en Depositos_Activos (ni MERGE, ni POST, ni ETag): la confirmación futura releerá
+cada depósito por ID y obtendrá su ETag fresco. La respuesta lleva los tiempos por etapa para MEDIR en el tenant; el flujo NO fija ningún
+límite de filas (PARAM_MAX_FILAS = 0), salvo detectar que la lectura alcanzó el umbral de paginación configurado para no devolver un
+recuento truncado.
 
 Validado en el tenant (ver ESTADO_CHECKPOINT_TENANT.md): disparador Power Apps V2 con UNA entrada de tipo File (`file`), CreateFile,
 Excel Online GetItems sobre tblConfirmacionMasiva y Response PowerApp: el Ejemplo de 3 filas devolvió COMPLETADO / 3 filas leídas.
@@ -31,6 +34,7 @@ from pathlib import Path
 
 from p9.wdl import FALLOS, TODOS, ambito, asignar, compose, contar_acciones, definicion, secuencia, si, variable
 from proto_masiva.contrato_plantilla import ENCABEZADOS, NOMBRE_TABLA as TABLA
+from proto_masiva.flows import prevalidacion as PV
 
 CARPETA_SALIDA = Path(__file__).resolve().parent
 NOMBRE_FLUJO = "P9_MASIVA_PROTO_PREVALIDAR"
@@ -44,8 +48,14 @@ PAGINACION = 2000   # umbral de paginación de la lectura de Excel (config.); si
 MAX_FILAS = 0       # 0 = sin tope. Se fijará SOLO después de medir en el tenant (MEDICION_TENANT.md)
 
 SALIDAS = ("resultado", "codigo", "mensaje", "archivo", "tabla_encontrada", "filas_leidas", "copia_temporal_eliminada", "tiempos_ms")
-CODIGOS = ("OK", "ARCHIVO_VACIO", "ESTRUCTURA_INVALIDA", "TABLA_NO_ENCONTRADA", "ARCHIVO_BLOQUEADO", "ERROR_LECTURA_EXCEL",
-           "SIN_ARCHIVO", "NO_ES_XLSX", "ERROR_COPIA_ARCHIVO", "DEMASIADAS_FILAS", "ERROR_NO_CONTROLADO")
+# Salidas añadidas por la prevalidación real (todas TEXTO: «Responder a Power Apps» solo devuelve valores simples; detalle_json es un
+# arreglo JSON serializado que la app convierte con ParseJSON). Las 8 anteriores se conservan para no romper la pantalla actual.
+SALIDAS_NUEVAS = PV.SALIDAS_NUEVAS
+SALIDAS_RESPUESTA = SALIDAS + SALIDAS_NUEVAS
+CODIGOS = (PV.CODIGO_OK, PV.CODIGO_OBSERVADO, "ARCHIVO_VACIO", "ESTRUCTURA_INVALIDA", "TABLA_NO_ENCONTRADA", "ARCHIVO_BLOQUEADO",
+           "ERROR_LECTURA_EXCEL", "SIN_ARCHIVO", "NO_ES_XLSX", "ERROR_COPIA_ARCHIVO", "DEMASIADAS_FILAS", PV.CODIGO_SHAREPOINT,
+           PV.CODIGO_UNIVERSO, "ERROR_NO_CONTROLADO")
+RESULTADOS_GLOBALES = ("OK", "OBSERVADO", "ERROR")
 
 
 # ---------------------------------------------------------------------------------------------- helpers
@@ -97,7 +107,10 @@ def leer_y_clasificar():
                     fijar("Resultado_DEMASIADAS_FILAS_MAX", "ERROR", "DEMASIADAS_FILAS",
                           "@concat('El archivo tiene ',string(outputs('Cantidad_con_datos')),' filas y el máximo permitido es ',"
                           "string(outputs('PARAM_MAX_FILAS')),'. Divida el archivo.')", "SI", "@outputs('Cantidad_con_datos')"),
-                    fijar("Resultado_OK", "COMPLETADO", "OK", "Archivo leído correctamente", "SI", "@outputs('Cantidad_con_datos')")))
+                    PV.prevalidar_filas(fijar(
+                        "Resultado_DEPOSITOS_DEMASIADOS", "ERROR", PV.CODIGO_UNIVERSO,
+                        "@concat('Depositos_Activos devolvió más de ',string(outputs('PARAM_TOPE_DEPOSITOS')),' CRÉDITOS de los últimos 2 meses: "
+                        "el resultado podría estar incompleto. Avise al administrador.')", "SI", "@outputs('Cantidad_con_datos')"))))
     estructura_ok = secuencia(
         Filas_con_datos={"type": "Query", "inputs": {"from": "@outputs('Filas_brutas')", "where": f"@not({sin_datos})"}},
         Cantidad_con_datos=compose("@length(body('Filas_con_datos'))"),
@@ -172,8 +185,13 @@ def captura_fallos():
         secuencia(Fallo_no_excel=si(
             "@equals(variables('varEtapa'),'COPIA')",
             fijar("Fallo_ERROR_COPIA", "ERROR", "ERROR_COPIA_ARCHIVO", "No se pudo crear la copia temporal del archivo."),
-            fijar("Fallo_ERROR_NO_CONTROLADO", "ERROR", "ERROR_NO_CONTROLADO",
-                  "Error inesperado al procesar el archivo. Vuelva a intentar o avise al administrador.")))))
+            secuencia(Fallo_no_copia=si(
+                "@equals(variables('varEtapa'),'DEPOSITOS')",
+                fijar("Fallo_ERROR_SHAREPOINT", "ERROR", PV.CODIGO_SHAREPOINT,
+                      "@concat('No se pudo leer Depositos_Activos (HTTP ',string(outputs('Leer_depositos')?['statusCode']),"
+                      "'). Vuelva a intentar o avise al administrador.')", "SI"),
+                fijar("Fallo_ERROR_NO_CONTROLADO", "ERROR", "ERROR_NO_CONTROLADO",
+                      "Error inesperado al procesar el archivo. Vuelva a intentar o avise al administrador.")))))))
 
 
 def construir_definicion(max_filas=MAX_FILAS):
@@ -183,6 +201,8 @@ def construir_definicion(max_filas=MAX_FILAS):
         PARAM_ENCABEZADOS=compose(list(ENCABEZADOS)),
         PARAM_PAGINACION=compose(PAGINACION),
         PARAM_MAX_FILAS=compose(max_filas),
+        PARAM_LISTA_DEPOSITOS_ACTIVOS=compose(PV.LISTA_DEPOSITOS_ID),
+        PARAM_TOPE_DEPOSITOS=compose(PV.TOPE_DEPOSITOS),
         Entrada=compose({"nombre": "@trim(coalesce(triggerBody()?['file']?['name'],''))",
                          "base64": "@coalesce(triggerBody()?['file']?['contentBytes'],'')"}),
         Inicializar_varT0=variable("varT0", "integer", "@ticks(utcNow())"),
@@ -190,9 +210,16 @@ def construir_definicion(max_filas=MAX_FILAS):
         Inicializar_varT2=variable("varT2", "integer", 0),
         Inicializar_varT3=variable("varT3", "integer", 0),
         Inicializar_varT4=variable("varT4", "integer", 0),
+        Inicializar_varT5=variable("varT5", "integer", 0),
+        Inicializar_varT6=variable("varT6", "integer", 0),
         Inicializar_varEtapa=variable("varEtapa", "string", "ENTRADA"),
         Inicializar_varArchivoId=variable("varArchivoId", "string", ""),
         Inicializar_varBorrada=variable("varBorrada", "string", "NO_APLICA"),
+        Inicializar_varTotales=variable("varTotales", "string", "0"),
+        Inicializar_varValidas=variable("varValidas", "string", "0"),
+        Inicializar_varConError=variable("varConError", "string", "0"),
+        Inicializar_varUniverso=variable("varUniverso", "string", "0"),
+        Inicializar_varDetalle=variable("varDetalle", "string", "[]"),
         Inicializar_varResultado=variable("varResultado", "object", resultado(
             "ERROR", "ERROR_NO_CONTROLADO", "El archivo no se procesó. Vuelva a intentar.")),
         Validar_entrada=compose(
@@ -215,7 +242,8 @@ def construir_definicion(max_filas=MAX_FILAS):
     t = lambda n: f"variables('varT{n}')"  # noqa: E731
     acciones["Tiempos"] = compose(
         "@concat('crear=',string(if(greater(" + t(1) + ",0)," + _ms(t(1), t(0)) + ",0)),"
-        "';excel=',string(if(greater(" + t(2) + ",0)," + _ms(t(2), t(1)) + ",0)),"
+        "';excel=',string(if(greater(" + t(5) + ",0)," + _ms(t(5), t(1)) + ",if(greater(" + t(2) + ",0)," + _ms(t(2), t(1)) + ",0))),"
+        "';depositos=',string(if(greater(" + t(6) + ",0)," + _ms(t(6), t(5)) + ",0)),"
         "';borrar=',string(if(greater(" + t(3) + ",0)," + _ms(t(3), f"max({t(2)},{t(1)},{t(0)})") + ",0)),"
         "';total=',string(" + _ms(t(4), t(0)) + "))")
     acciones["Tiempos"]["runAfter"] = {"Marca_T4": ["Succeeded"]}
@@ -223,8 +251,13 @@ def construir_definicion(max_filas=MAX_FILAS):
               "mensaje": "@variables('varResultado')?['mensaje']", "archivo": "@outputs('Entrada')?['nombre']",
               "tabla_encontrada": "@variables('varResultado')?['tabla']",
               "filas_leidas": "@string(variables('varResultado')?['filas'])",
-              "copia_temporal_eliminada": "@variables('varBorrada')", "tiempos_ms": "@outputs('Tiempos')"}
-    esquema = {"type": "object", "properties": {k: {"title": k, "type": "string", "x-ms-dynamically-added": True} for k in SALIDAS}}
+              "copia_temporal_eliminada": "@variables('varBorrada')", "tiempos_ms": "@outputs('Tiempos')",
+              "filas_totales": "@variables('varTotales')", "filas_validas": "@variables('varValidas')",
+              "filas_con_error": "@variables('varConError')", "depositos_consultados": "@variables('varUniverso')",
+              "detalle_json": "@variables('varDetalle')"}
+    assert tuple(cuerpo) == SALIDAS_RESPUESTA
+    esquema = {"type": "object", "properties": {k: {"title": k, "type": "string", "x-ms-dynamically-added": True}
+                                                for k in SALIDAS_RESPUESTA}}
     acciones["Responder_a_PowerApps"] = {"type": "Response", "kind": "PowerApp", "runAfter": {"Tiempos": TODOS},
                                          "inputs": {"statusCode": 200, "body": cuerpo, "schema": esquema}}
     return definicion(disparador(), acciones)
@@ -266,7 +299,7 @@ def archivos_paquete(definition):
     base = f"Microsoft.Flow/flows/{flujo}"
     return {
         "manifest.json": {"schema": "1.0", "details": {
-            "displayName": NOMBRE_FLUJO, "description": "PROTOTIPO directo: recibe un XLSX, lee tblConfirmacionMasiva y responde. Sin listas ni lotes. No toca Depositos_Activos.",
+            "displayName": NOMBRE_FLUJO, "description": "PROTOTIPO directo: recibe un XLSX, lee tblConfirmacionMasiva y prevalida cada fila contra Depositos_Activos (SOLO LECTURA, un GET). Sin lotes. No confirma ni modifica ningún depósito.",
             "createdTime": "2026-10-05T00:00:00Z", "packageTelemetryId": _uuid("telemetry"), "creator": "N/A",
             "sourceEnvironment": ""}, "resources": recursos},
         "Microsoft.Flow/flows/manifest.json": {"packageSchemaVersion": "1.0", "flowAssets": {"assetPaths": [flujo]}},

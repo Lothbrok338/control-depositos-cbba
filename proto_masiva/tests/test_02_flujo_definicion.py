@@ -27,7 +27,7 @@ def bloques(acciones, ruta="raiz"):
 def test_los_archivos_versionados_son_la_salida_actual_del_generador():
     assert json.loads((CARPETA / f"{F.NOMBRE_FLUJO}_definition.json").read_text(encoding="utf-8")) == DEF
     assert (CARPETA / f"{F.NOMBRE_FLUJO}.zip").read_bytes() == F.zip_bytes(DEF)
-    assert contar_acciones(DEF["actions"]) == 64
+    assert contar_acciones(DEF["actions"]) == 107  # 64 de la prevalidación estructural + 43 de la prevalidación real
 
 
 def test_disparador_power_apps_v2_con_una_sola_entrada_de_tipo_archivo():
@@ -54,7 +54,8 @@ def test_toda_referencia_a_acciones_y_variables_existe():
     for ref in re.findall(r"(?:outputs|body)\('([A-Za-z_0-9]+)'\)", TEXTO):
         assert ref in nombres, ref
     variables = {v["name"] for _, a in recorrer(DEF["actions"]) if a["type"] == "InitializeVariable" for v in a["inputs"]["variables"]}
-    assert variables == {"varT0", "varT1", "varT2", "varT3", "varT4", "varEtapa", "varArchivoId", "varBorrada", "varResultado"}
+    assert variables == {"varT0", "varT1", "varT2", "varT3", "varT4", "varT5", "varT6", "varEtapa", "varArchivoId", "varBorrada",
+                         "varResultado", "varTotales", "varValidas", "varConError", "varUniverso", "varDetalle"}
     for ref in re.findall(r"variables\('([A-Za-z_0-9]+)'\)", TEXTO):
         assert ref in variables, ref
 
@@ -69,19 +70,26 @@ def test_try_catch_limpieza_y_respuesta_siempre_se_ejecutan():
     assert a["Responder_a_PowerApps"]["runAfter"] == {"Tiempos": todos}
 
 
-def test_respuesta_a_power_apps_con_las_8_salidas_en_texto():
+def test_respuesta_a_power_apps_con_las_8_salidas_originales_mas_5_de_prevalidacion_todas_en_texto():
     r = DEF["actions"]["Responder_a_PowerApps"]
     assert (r["type"], r["kind"]) == ("Response", "PowerApp") and r["inputs"]["statusCode"] == 200
-    assert list(r["inputs"]["body"]) == list(F.SALIDAS) == list(r["inputs"]["schema"]["properties"])
+    assert list(r["inputs"]["body"]) == list(F.SALIDAS_RESPUESTA) == list(r["inputs"]["schema"]["properties"])
+    assert F.SALIDAS_RESPUESTA[:8] == F.SALIDAS and len(F.SALIDAS_RESPUESTA) == 13  # las 8 de siempre se conservan en su orden
     assert all(p["type"] == "string" for p in r["inputs"]["schema"]["properties"].values())  # como la V4.2 validada en tenant
 
 
-def test_solo_hay_tres_operaciones_y_ninguna_toca_listas():
+def test_solo_hay_cuatro_operaciones_y_la_unica_contra_listas_es_un_GET_de_solo_lectura():
     ops = {a["inputs"]["host"]["operationId"] for _, a in recorrer(DEF["actions"]) if a["type"] == "OpenApiConnection"}
-    assert ops == {"CreateFile", "GetItems", "DeleteFile"}
-    for prohibido in ("HttpRequest", "GetByTitle", "MERGE", "IF-MATCH", "ETag", "LOTE", "PENDIENTE", "PROCESANDO", "Depositos_Activos",
-                      "Depositos_Reversiones", "TIPO_CAMBIO", "GetOnUpdatedItems", "GetAttachments"):
+    assert ops == {"CreateFile", "GetItems", "DeleteFile", "HttpRequest"}
+    http = [(n, a) for n, a in recorrer(DEF["actions"]) if a["type"] == "OpenApiConnection" and a["inputs"]["host"]["operationId"] == "HttpRequest"]
+    assert [n for n, _ in http] == ["Leer_depositos"]  # UNA sola llamada a SharePoint para todo el archivo: sin N+1
+    assert http[0][1]["inputs"]["parameters"]["parameters/method"] == "GET" and http[0][1]["inputs"]["retryPolicy"] == {"type": "none"}
+    # NINGUNA escritura sobre Depositos_Activos: ni MERGE/POST/PATCH/PUT/DELETE, ni ETag/If-Match, ni acciones de crear/actualizar elemento
+    for prohibido in ("MERGE", "IF-MATCH", "If-Match", "ETag", "X-HTTP-Method", "'POST'", "'PATCH'", "'PUT'", "'DELETE'", "PostItem", "PatchItem",
+                      "UpdateItem", "CreateItem", "DeleteItem", "GetByTitle", "LOTE", "PENDIENTE", "PROCESANDO", "Depositos_Reversiones",
+                      "TIPO_CAMBIO", "GetOnUpdatedItems", "GetAttachments"):
         assert prohibido not in TEXTO, prohibido
+    assert not [n for n, a in recorrer(DEF["actions"]) if a["type"] in ("Foreach", "Until")]  # sin Apply to each: nada se repite por fila
 
 
 def test_politicas_de_reintento_crear_y_leer_sin_reintento_borrar_con_dos():

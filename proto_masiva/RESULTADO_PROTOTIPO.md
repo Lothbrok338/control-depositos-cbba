@@ -1,5 +1,10 @@
 # P9 CONFIRMACIÓN MASIVA — Prototipo DIRECTO (sin lotes), datos ficticios
 
+> **Fase actual: PREVALIDACIÓN REAL contra `Depositos_Activos` (solo lectura) — implementada y probada localmente, NO validada en tenant.**
+> Reglas, internal names reales, contrato de respuesta, `detalle_json` y límites: **`PREVALIDACION_REAL.md`**. Pasos para el tenant: **`flows/ACTUALIZAR_FLUJO_PREVALIDACION.md`**.
+> Lo descrito abajo como «TENANT VALIDATED» se refiere al **checkpoint estructural anterior** (Ejemplo de 3 filas → COMPLETADO); con la nueva versión el resultado de ese mismo archivo
+> pasa a ser `OK`/`OBSERVADO` según haya o no depósitos coincidentes, y eso aún no se ha ejecutado en el tenant.
+
 > ## ESTADO DE VALIDACIÓN (leer primero) — checkpoint 2026-10-06
 >
 > El detalle completo, con evidencia, está en **`ESTADO_CHECKPOINT_TENANT.md`**. Tres estados, que no se deben confundir:
@@ -8,7 +13,7 @@
 > - **OBSERVADO PERO NO RESUELTO:** `DeleteFile` → HTTP **423 Locked** (quedan `TMP_*.xlsx` en la carpeta temporal; los labels «Copia temporal» están ocultos); `Documents/Documents` anidados; dos carpetas `P9_MASIVA_TEMP`.
 > - **PENDIENTE:** botón de `Main_Screen` (no agregado en el tenant); resto de smoke tests (vacía, sin tabla, encabezado cambiado, otra tabla); mediciones por tamaño; prevalidación real contra `Depositos_Activos`; confirmación masiva real; prueba multiusuario; limpieza de carpetas antes de producción.
 >
-> Las pruebas automáticas de este repositorio **son sintéticas/locales** (tenant simulado): no sustituyen al tenant. **No se ha tocado `Depositos_Activos`** ni ningún artefacto de producción: el prototipo no lo consulta ni lo modifica, y todos los cambios están bajo `proto_masiva/`. **No hay confirmación real de depósitos todavía.**
+> Las pruebas automáticas de este repositorio **son sintéticas/locales** (tenant simulado): no sustituyen al tenant. **Nunca se ha escrito en `Depositos_Activos`** ni se tocó ningún artefacto de producción; todos los cambios están bajo `proto_masiva/`. A partir de la fase «prevalidación real» el flujo **lo LEE** (un GET de solo lectura; ver `PREVALIDACION_REAL.md`), cosa que **todavía no está validada en el tenant**. **No hay confirmación real de depósitos todavía.**
 
 Rama `experiment/p9-masiva-prototipo` (checkpoint de producción `3b407e2` intacto).
 
@@ -98,4 +103,4 @@ La pregunta «¿el flujo directo termina en tiempos razonables, y hasta cuántas
 
 ## MAPA DE ARCHIVOS (todo bajo `proto_masiva/`)
 
-`ESTADO_CHECKPOINT_TENANT.md` · `xlsx/{Plantilla,Ejemplo}_Confirmacion_Masiva_P9.xlsx` · `xlsx/medicion/Filas_NNNN.xlsx` · `xlsx/` (6 fixtures de A–E) · `contrato_plantilla.py` · `catalogo_p9.py` + `catalogo_bancos_p9.json` · `generar_plantillas_produccion.py` · `generar_medicion.py` · `generar_xlsx.py` (fixtures) · `PLANTILLA_PRODUCCION.md` · `MEDICION_TENANT.md` · `powerapps/{P9_Confirmacion_Masiva.pa.yaml, …_CONTROLES_PEGAR.yaml, BOTON_MAIN_SCREEN.txt, BOTON_MAIN_SCREEN_PEGAR.yaml, Main_Screen_CON_BOTON_IMPORTACION_MASIVA.yaml, INSTRUCCIONES_PEGADO.md, aplicar_boton.py, derivar_pegar.py}` · `flows/{construir.py, P9_MASIVA_PROTO_PREVALIDAR_definition.json, P9_MASIVA_PROTO_PREVALIDAR.zip, INSTRUCCIONES_FLUJO.md}` · `sharepoint/INSTRUCCIONES_VEHICULO.md` · `tests/`.
+`PREVALIDACION_REAL.md` · `ESTADO_CHECKPOINT_TENANT.md` · `flows/{prevalidacion.py, esquema_detalle_json.json, ejemplos_respuesta/, GUIA_ACCIONES_PREVALIDACION.md, ACTUALIZAR_FLUJO_PREVALIDACION.md, guia_manual.py}` · `powerapps/{PREVALIDACION_POWERFX.md, generar_powerfx.py}` · `xlsx/{Plantilla,Ejemplo}_Confirmacion_Masiva_P9.xlsx` · `xlsx/medicion/Filas_NNNN.xlsx` · `xlsx/` (6 fixtures de A–E) · `contrato_plantilla.py` · `catalogo_p9.py` + `catalogo_bancos_p9.json` · `generar_plantillas_produccion.py` · `generar_medicion.py` · `generar_xlsx.py` (fixtures) · `PLANTILLA_PRODUCCION.md` · `MEDICION_TENANT.md` · `powerapps/{P9_Confirmacion_Masiva.pa.yaml, …_CONTROLES_PEGAR.yaml, BOTON_MAIN_SCREEN.txt, BOTON_MAIN_SCREEN_PEGAR.yaml, Main_Screen_CON_BOTON_IMPORTACION_MASIVA.yaml, INSTRUCCIONES_PEGADO.md, aplicar_boton.py, derivar_pegar.py}` · `flows/{construir.py, P9_MASIVA_PROTO_PREVALIDAR_definition.json, P9_MASIVA_PROTO_PREVALIDAR.zip, INSTRUCCIONES_FLUJO.md}` · `sharepoint/INSTRUCCIONES_VEHICULO.md` · `tests/`.

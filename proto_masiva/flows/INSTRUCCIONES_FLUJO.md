@@ -8,9 +8,14 @@ Power Apps ──XLSX──► [valida nombre/extensión] → [crea copia TMP_<g
                      → [BORRA la copia, pase lo que pase] → responde a Power Apps
 ```
 
-Respuesta (todo texto): `resultado` (`COMPLETADO`/`ERROR`), `codigo`, `mensaje`, `archivo`, `tabla_encontrada`, `filas_leidas`, `copia_temporal_eliminada` (`SI`/`NO`/`NO_APLICA`) y `tiempos_ms` (`crear=…;excel=…;borrar=…;total=…`, para medir). Si falla el borrado de la copia, el resultado de negocio **no cambia**: solo se informa.
+Respuesta (todo texto; **desde la prevalidación real `resultado` es `OK`/`OBSERVADO`/`ERROR`**; ver `../PREVALIDACION_REAL.md` §6): `resultado`, `codigo`, `mensaje`, `archivo`, `tabla_encontrada`, `filas_leidas`, `copia_temporal_eliminada` (`SI`/`NO`/`NO_APLICA`) y `tiempos_ms` (`crear=…;excel=…;depositos=…;borrar=…;total=…`, para medir) y las 5 salidas nuevas (`filas_totales`, `filas_validas`, `filas_con_error`, `depositos_consultados`, `detalle_json`). Si falla el borrado de la copia, el resultado de negocio **no cambia**: solo se informa.
 
-No hay listas, lotes, estados, sondeo ni respuesta anticipada: la app espera la respuesta del flujo. El flujo no toca `Depositos_Activos`.
+No hay lotes, estados persistentes, sondeo ni respuesta anticipada: la app espera la respuesta del flujo.
+
+> **Fase «prevalidación real» (implementada localmente, NO validada en el tenant):** después de leer la tabla, el flujo hace **un único GET de solo lectura** a `Depositos_Activos`
+> (CRÉDITO + los últimos 2 meses de la galería individual) y resuelve cada fila en memoria; la respuesta añade `filas_totales`, `filas_validas`, `filas_con_error`,
+> `depositos_consultados` y `detalle_json`. **No escribe** en `Depositos_Activos` (sin MERGE ni ETag). Reglas y contrato: `../PREVALIDACION_REAL.md`.
+> **Para llevarla a tu tenant sigue `ACTUALIZAR_FLUJO_PREVALIDACION.md`** (este documento describe la importación original y sus 4 puntos de revisión, que siguen vigentes).
 
 > **Estado (2026-10-06):** el flujo se importó y se guardó en el tenant y **ya devolvió `COMPLETADO` con 3 filas** para el Ejemplo (ver `../ESTADO_CHECKPOINT_TENANT.md`). Quedó **observado y sin resolver** que `DeleteFile` responde **HTTP 423 (Locked)**: la copia temporal no se elimina y se aceptan `TMP_*.xlsx` residuales. Las demás respuestas de error (`ARCHIVO_VACIO`, `TABLA_NO_ENCONTRADA`, `ESTRUCTURA_INVALIDA`…) **no se han probado en el tenant**.
 

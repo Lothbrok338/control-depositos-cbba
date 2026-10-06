@@ -1,0 +1,121 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "detalle_json de P9_MASIVA_PROTO_PREVALIDAR",
+  "description": "Texto JSON: arreglo con UN objeto por fila con datos de tblConfirmacionMasiva, en el orden del archivo. Las filas totalmente en blanco no aparecen (pero cuentan para la posición). Se devuelve como TEXTO porque «Responder a Power Apps» solo admite valores simples; la app lo convierte con ParseJSON. Prevalidación de SOLO LECTURA: ningún valor reserva ni bloquea un depósito.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "fila_excel",
+      "fila_tabla",
+      "resultado",
+      "mensaje",
+      "deposito_id",
+      "clave_transaccion",
+      "estado_actual",
+      "fecha_movimiento",
+      "moneda_deposito",
+      "coincidencias",
+      "banco",
+      "cuenta_bancaria",
+      "codigo_asignacion",
+      "importe",
+      "importe_original",
+      "moneda",
+      "estudiante",
+      "solicitado_por",
+      "sede",
+      "observacion"
+    ],
+    "properties": {
+      "fila_excel": {
+        "type": "integer",
+        "description": "fila de la hoja = fila_tabla + 5 (la plantilla oficial tiene el encabezado en la fila 5)"
+      },
+      "fila_tabla": {
+        "type": "integer",
+        "description": "posición dentro de la tabla (1 = primera fila de datos)"
+      },
+      "resultado": {
+        "type": "string",
+        "enum": [
+          "VALIDO",
+          "FILA_INCOMPLETA",
+          "IMPORTE_INVALIDO",
+          "MONEDA_INVALIDA",
+          "DUPLICADO_ARCHIVO",
+          "NO_ENCONTRADO",
+          "ASIGNACION_AMBIGUA",
+          "MONEDA_NO_COINCIDE",
+          "NO_DISPONIBLE"
+        ]
+      },
+      "mensaje": {
+        "type": "string",
+        "description": "explicación en español para el usuario"
+      },
+      "deposito_id": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "description": "ID SharePoint del depósito; solo si hay UN depósito (VALIDO, MONEDA_NO_COINCIDE, NO_DISPONIBLE)"
+      },
+      "clave_transaccion": {
+        "type": "string",
+        "description": "CLAVE_TRANSACCION del depósito; vacío si no hay un único depósito"
+      },
+      "estado_actual": {
+        "type": "string",
+        "description": "ESTADO_ASIGNACION real del depósito en el momento de prevalidar (no reserva nada)"
+      },
+      "fecha_movimiento": {
+        "type": "string",
+        "description": "FECHA_MOVIMIENTO del depósito (aaaa-mm-dd)"
+      },
+      "moneda_deposito": {
+        "type": "string"
+      },
+      "coincidencias": {
+        "type": "integer",
+        "description": "cuántos depósitos del universo tienen la misma clave base (0, 1 o más)"
+      },
+      "banco": {
+        "type": "string"
+      },
+      "cuenta_bancaria": {
+        "type": "string"
+      },
+      "codigo_asignacion": {
+        "type": "string"
+      },
+      "importe": {
+        "type": [
+          "number",
+          "null"
+        ],
+        "description": "importe validado; null si IMPORTE_INVALIDO o incompleto"
+      },
+      "importe_original": {
+        "type": "string",
+        "description": "texto tal como vino del Excel"
+      },
+      "moneda": {
+        "type": "string"
+      },
+      "estudiante": {
+        "type": "string"
+      },
+      "solicitado_por": {
+        "type": "string"
+      },
+      "sede": {
+        "type": "string"
+      },
+      "observacion": {
+        "type": "string"
+      }
+    }
+  }
+}

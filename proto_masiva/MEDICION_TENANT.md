@@ -34,7 +34,7 @@ En ambas el borrado de la copia terminó en HTTP 423 (Locked); ver `ESTADO_CHECK
 Para cada archivo, **3 ejecuciones** (la primera tras un rato sin usar el flujo suele ser la más lenta: anótalo como «fría»). En la pantalla *IMPORTACIÓN MASIVA*: adjuntar → PREVALIDAR ARCHIVO. En cada ejecución copia de la pantalla (fila *Tiempo*):
 
 - **App (ms):** de pulsar a recibir la respuesta (incluye red + arranque del flujo + espera).
-- **Flujo `crear/excel/borrar/total` (ms):** lo mide el propio flujo por etapa.
+- **Flujo `crear/excel/depositos/borrar/total` (ms):** lo mide el propio flujo por etapa (`depositos` = la lectura de `Depositos_Activos`, desde la prevalidación real; las mediciones anteriores no lo traían).
 - **Resultado / código / filas leídas / copia eliminada** (`SI` / `NO`).
 - Si la app muestra `FLUJO_SIN_RESPUESTA`: copia el **mensaje exacto** y mira en Power Automate → *Historial de ejecuciones* si el flujo **terminó igualmente** (Succeeded/Failed) y cuánto duró. Eso distingue «la app dejó de esperar» de «el flujo falló».
 

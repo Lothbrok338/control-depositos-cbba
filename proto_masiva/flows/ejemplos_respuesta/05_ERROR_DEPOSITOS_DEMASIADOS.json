@@ -1,0 +1,19 @@
+{
+  "escenario": "SharePoint indica que hay más depósitos que el tope de lectura: se avisa en vez de marcar NO_ENCONTRADO por error",
+  "respuesta": {
+    "resultado": "ERROR",
+    "codigo": "DEPOSITOS_DEMASIADOS",
+    "mensaje": "Depositos_Activos devolvió más de 5000 CRÉDITOS de los últimos 2 meses: el resultado podría estar incompleto. Avise al administrador.",
+    "archivo": "prevalidar.xlsx",
+    "tabla_encontrada": "SI",
+    "filas_leidas": "3",
+    "copia_temporal_eliminada": "SI",
+    "tiempos_ms": "crear=7;excel=7;depositos=14;borrar=7;total=48",
+    "filas_totales": "0",
+    "filas_validas": "0",
+    "filas_con_error": "0",
+    "depositos_consultados": "0",
+    "detalle_json": "[]"
+  },
+  "detalle_json_expandido": []
+}

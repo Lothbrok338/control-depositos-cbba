@@ -2,6 +2,8 @@
 
 > **Estado (2026-10-06):** esta pantalla ya se armó y se probó en el tenant, en la copia **`P9_PRUEBA_MASIVA`**, con el `Ejemplo_Confirmacion_Masiva_P9.xlsx` (COMPLETADO, 3 filas). Detalle de lo validado, lo observado sin resolver y lo pendiente: `../ESTADO_CHECKPOINT_TENANT.md`. **El botón de `Main_Screen` NO se ha agregado en el tenant** (paso 6: pendiente).
 
+> **Prevalidación real (NO validada en tenant):** cuando actualices el flujo (`flows/ACTUALIZAR_FLUJO_PREVALIDACION.md`) hay que cambiar **5 fórmulas** de esta pantalla (registro de error, colores de estado, titular, filas leídas, aviso del pie y la colección `colPrevalidacionP9`). Están listas, en tu sintaxis regional, en `PREVALIDACION_POWERFX.md`. Los pasos de abajo describen la pantalla ya validada en el tenant (flujo estructural).
+
 **Trabaja siempre en una COPIA de la app P9** (Guardar como → `P9_PRUEBA_MASIVA`). No publiques sobre la app productiva. Procedimiento de pegado = el que ya usaste con `COMPROBANTE PDF`: controles hijos pegados con clic derecho → Pegar, y las fórmulas de pantalla escritas a mano después.
 
 Antes: crea el vehículo de adjuntos y la carpeta temporal (`sharepoint/INSTRUCCIONES_VEHICULO.md`) e importa el flujo (`flows/INSTRUCCIONES_FLUJO.md`).

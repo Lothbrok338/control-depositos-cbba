@@ -3,6 +3,9 @@
 NO es Power Automate, SharePoint ni Excel Online: es un intérprete WDL local (el de P8, solo lectura) más conectores falsos.
 Prueba la LÓGICA del flujo y el CONTRATO de sus llamadas; no certifica nombres de operaciones, tiempos ni códigos HTTP reales
 del conector Excel (supuestos marcados [SUPUESTO]). El reloj simulado avanza en cada lectura, solo para ejercitar el cálculo de tiempos.
+
+Depositos_Activos SIMULADO: una lista de filas (`depositos`) que SOLO se puede leer con un GET de REST. Cualquier otro método, o una
+llamada que no sea la prevista, aborta la prueba: así se comprueba que la prevalidación no escribe ni consulta de más.
 """
 from __future__ import annotations
 
@@ -10,12 +13,15 @@ import base64
 import io
 import re
 import uuid
+import copy
+import calendar
 from datetime import datetime, timedelta
 
 from openpyxl import load_workbook
 
 from p8.ensayo_wdl import EnsayoWDL, FalloConector
 from proto_masiva.flows import construir as F
+from proto_masiva.flows import prevalidacion as PV
 
 INICIO = datetime(2026, 10, 5, 12, 0, 0)
 ISO = "%Y-%m-%dT%H:%M:%S.%fZ"
@@ -24,8 +30,12 @@ ISO = "%Y-%m-%dT%H:%M:%S.%fZ"
 class TenantSimulado:
     """Una biblioteca de documentos (copia temporal) y Excel Online. Nada más: el flujo no tiene listas."""
 
-    def __init__(self):
+    def __init__(self, depositos=None, tope=None):
         self.nombre = "TENANT_SIMULADO"
+        self.depositos = copy.deepcopy(depositos or [])           # filas de Depositos_Activos (SOLO se leen)
+        self.depositos_iniciales = copy.deepcopy(self.depositos)
+        self.tope_simulado = tope                                  # fuerza `__next` aunque $top sea mayor (universo truncado)
+        self.consultas = []                                        # (guid, desde, hasta, top) de cada GET a Depositos_Activos
         self.biblioteca = {}      # id -> (carpeta, nombre, bytes)
         self.creados, self.borrados = [], []
         self.llamadas = []        # (operationId, acción)
@@ -34,7 +44,8 @@ class TenantSimulado:
 
     def operacion(self, operacion, parametros, nombre_accion, accion):
         self.llamadas.append((operacion, nombre_accion))
-        clave = {"Crear_archivo": "crear", "Leer_tabla_Excel": "excel", "Borrar_copia_temporal": "borrar"}.get(nombre_accion)
+        clave = {"Crear_archivo": "crear", "Leer_tabla_Excel": "excel", "Borrar_copia_temporal": "borrar",
+                 "Leer_depositos": "depositos"}.get(nombre_accion)
         if clave in self.fallos:
             raise FalloConector(*self.fallos[clave])
         if operacion == "CreateFile":
@@ -46,6 +57,8 @@ class TenantSimulado:
             return {"statusCode": 201, "body": {"Id": ident, "Name": parametros["name"]}}
         if operacion == "GetItems":
             return self._excel(parametros, accion)
+        if operacion == "HttpRequest":
+            return self._depositos(parametros)
         if operacion == "DeleteFile":
             if parametros["id"] not in self.biblioteca:
                 raise FalloConector("Failed", 404)
@@ -53,6 +66,26 @@ class TenantSimulado:
             self.borrados.append(parametros["id"])
             return {"statusCode": 200, "body": {}}
         raise AssertionError(f"operación no prevista en el prototipo: {operacion}")
+
+    def _depositos(self, p):
+        """Imita el GET de REST a la lista. Solo acepta la consulta EXACTA prevista (CRÉDITO + ventana de fechas + $top)."""
+        assert p["dataset"] == F.SITIO and p["parameters/method"] == "GET", p
+        assert p["parameters/headers"] == {"Accept": "application/json;odata=verbose"}
+        m = re.fullmatch(r"_api/web/lists\(guid'([0-9a-f-]{36})'\)/items\?\$select=([A-Za-z_,]+)"
+                         r"&\$filter=TIPO_MOVIMIENTO eq 'CRÉDITO' and FECHA_MOVIMIENTO ge datetime'(\d{4}-\d\d-\d\d)T00:00:00Z' "
+                         r"and FECHA_MOVIMIENTO le datetime'(\d{4}-\d\d-\d\d)T00:00:00Z'&\$top=(\d+)", p["parameters/uri"])
+        assert m, p["parameters/uri"]
+        guid, columnas, desde, hasta, top = m.groups()
+        assert guid == PV.LISTA_DEPOSITOS_ID and tuple(columnas.split(",")) == PV.COLUMNAS_DEPOSITO
+        self.consultas.append((guid, desde, hasta, int(top)))
+        elegibles = [d for d in self.depositos if d["TIPO_MOVIMIENTO"] == "CRÉDITO" and desde <= d["FECHA_MOVIMIENTO"][:10] <= hasta]
+        limite = min(int(top), self.tope_simulado or int(top))
+        resultados = [{c: (d[c] + "T00:00:00Z" if c == "FECHA_MOVIMIENTO" and len(d[c]) == 10 else d[c]) for c in PV.COLUMNAS_DEPOSITO}
+                      for d in elegibles[:limite]]
+        cuerpo = {"results": resultados}
+        if len(elegibles) > limite:
+            cuerpo["__next"] = "https://tenant/_api/siguiente-pagina"
+        return {"statusCode": 200, "body": {"d": cuerpo}}
 
     def _excel(self, p, accion):
         """Imita «Enumerar filas presentes en una tabla».
@@ -92,7 +125,8 @@ class EnsayoDirecto(EnsayoWDL):
 
     def _nodo(self, n):
         if n[0] == "funcion" and n[1] in ("toLower", "trim", "first", "createArray", "take", "utcNow", "ticks", "div",
-                                          "greaterOrEquals", "base64ToBinary", "guid"):
+                                          "greaterOrEquals", "base64ToBinary", "guid", "toUpper", "split", "last", "indexOf", "int",
+                                          "formatNumber", "mul", "convertTimeZone", "addToTime", "formatDateTime"):
             args = [self._nodo(a) for a in n[2]]
             f = n[1]
             if f == "toLower":
@@ -109,8 +143,36 @@ class EnsayoDirecto(EnsayoWDL):
                 return self._ahora()
             if f == "ticks":
                 return int((datetime.strptime(args[0], ISO) - datetime(1, 1, 1)).total_seconds() * 10_000_000)
-            if f == "div":
-                return args[0] // args[1]
+            if f == "div":  # entero÷entero = entero; si alguno es decimal, división decimal (como Power Automate)
+                return args[0] / args[1] if isinstance(args[0], float) or isinstance(args[1], float) else args[0] // args[1]
+            if f == "toUpper":
+                return args[0].upper()
+            if f == "split":
+                return args[0].split(args[1])
+            if f == "last":
+                return args[0][-1] if args[0] else None
+            if f == "indexOf":
+                return args[0].lower().find(args[1].lower())  # indexOf no distingue mayúsculas (igual que Power Automate)
+            if f == "int":
+                return int(args[0])  # falla (ValueError) con texto no numérico: se detecta cualquier evaluación sin proteger
+            if f == "mul":
+                return args[0] * args[1]
+            if f == "formatNumber":
+                assert args[1] == "0"
+                return format(args[0], ".0f")
+            if f == "convertTimeZone":
+                assert args[1] == "UTC" and args[2] == PV.ZONA_HORARIA and args[3] == "yyyy-MM-dd"
+                return (datetime.strptime(args[0], ISO) - timedelta(hours=4)).strftime("%Y-%m-%d")  # Bolivia = UTC-4, sin DST
+            if f == "addToTime":
+                assert args[2] == "Month"
+                base = datetime.strptime(args[0], "%Y-%m-%dT%H:%M:%SZ")
+                mes0 = base.year * 12 + base.month - 1 + args[1]
+                año, mes = divmod(mes0, 12)
+                dia = min(base.day, calendar.monthrange(año, mes + 1)[1])  # recorta al último día del mes, como DateAdd / AddMonths
+                return base.replace(year=año, month=mes + 1, day=dia).strftime("%Y-%m-%dT%H:%M:%SZ")
+            if f == "formatDateTime":
+                assert args[1] == "yyyy-MM-dd"
+                return datetime.strptime(args[0], "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d")
             if f == "greaterOrEquals":
                 return args[0] >= args[1]
             if f == "base64ToBinary":
@@ -123,7 +185,7 @@ class EnsayoDirecto(EnsayoWDL):
         if accion["type"] == "Response":
             entradas = self.evaluar(accion["inputs"])
             assert entradas["statusCode"] == 200 and accion["kind"] == "PowerApp"
-            assert set(entradas["body"]) == set(F.SALIDAS) and all(isinstance(v, str) for v in entradas["body"].values())
+            assert set(entradas["body"]) == set(F.SALIDAS_RESPUESTA) and all(isinstance(v, str) for v in entradas["body"].values())
             self.respuesta = entradas["body"]
             self.salidas[nombre] = {"statusCode": 200}
             return "Succeeded"
@@ -136,6 +198,46 @@ class EnsayoDirecto(EnsayoWDL):
     def ejecutar(self):
         self.estado_final = self._bloque(self.definicion["actions"])
         return self
+
+
+def deposito(id_, banco, cuenta, codigo, importe, moneda="BOB", estado="DISPONIBLE", fecha="2026-10-01", tipo="CRÉDITO", clave=None):
+    """Una fila de Depositos_Activos con los nombres internos REALES de las columnas que lee la prevalidación."""
+    return {"Id": id_, "CLAVE_TRANSACCION": clave or f"CLAVE-{id_}", "BANCO": banco, "CUENTA_BANCARIA": cuenta, "CODIGO_ASIGNACION": codigo,
+            "IMPORTE": importe, "MONEDA": moneda, "ESTADO_ASIGNACION": estado, "FECHA_MOVIMIENTO": fecha, "TIPO_MOVIMIENTO": tipo}
+
+
+def xlsx_con_filas(filas, encabezados=None):
+    """XLSX con la tabla `tblConfirmacionMasiva` y las filas dadas (tuplas de 9 valores; None = fila en blanco; valores crudos, también
+    inválidos). Parte de la plantilla oficial vacía y solo escribe celdas: así se pueden fabricar archivos con datos erróneos."""
+    from openpyxl import load_workbook as cargar
+    from proto_masiva import catalogo_p9, contrato_plantilla as P, generar_plantillas_produccion as G
+    libro = cargar(io.BytesIO(G.construir(False, catalogo_p9.extraer())))
+    hoja = libro[P.HOJA_CARGA]
+    for c, nombre in enumerate(encabezados or P.ENCABEZADOS, 1):
+        hoja.cell(G.FILA_ENC, c, nombre)
+    for r, fila in enumerate(filas, G.PRIMERA):
+        for c, valor in enumerate(fila or (), 1):
+            hoja.cell(r, c, valor)
+    ref = f"A{G.FILA_ENC}:{chr(64 + len(P.ENCABEZADOS))}{G.FILA_ENC + max(len(filas), 1)}"
+    hoja.tables[P.NOMBRE_TABLA].ref = hoja.tables[P.NOMBRE_TABLA].autoFilter.ref = ref
+    salida = io.BytesIO()
+    libro.save(salida)
+    return salida.getvalue()
+
+
+def depositos_que_coinciden(contenido, primer_id=100):
+    """Un depósito DISPONIBLE por cada fila con datos de la tabla del XLSX (para los escenarios en que todo debe salir VALIDO)."""
+    libro = load_workbook(io.BytesIO(contenido))
+    for hoja in libro.worksheets:
+        for tabla in hoja.tables.values():
+            if tabla.displayName == F.TABLA:
+                celdas = list(hoja[tabla.ref])
+                cab = [c.value for c in celdas[0]]
+                filas = [dict(zip(cab, [c.value for c in fila])) for fila in celdas[1:]]
+                filas = [f for f in filas if any(v not in (None, "") for v in f.values())]
+                return [deposito(primer_id + i, f.get("BANCO"), str(f.get("CUENTA_BANCARIA")), str(f.get("CODIGO_ASIGNACION")),
+                                 f.get("IMPORTE"), f.get("MONEDA")) for i, f in enumerate(filas)]
+    return []
 
 
 def configurar(definicion, biblioteca="b!BIBLIOTECA-FICTICIA"):

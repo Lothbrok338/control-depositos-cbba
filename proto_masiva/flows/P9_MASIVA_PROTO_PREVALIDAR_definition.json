@@ -95,6 +95,24 @@
         ]
       }
     },
+    "PARAM_LISTA_DEPOSITOS_ACTIVOS": {
+      "type": "Compose",
+      "inputs": "296c450a-25d6-415b-ad10-c909c74817cb",
+      "runAfter": {
+        "PARAM_MAX_FILAS": [
+          "Succeeded"
+        ]
+      }
+    },
+    "PARAM_TOPE_DEPOSITOS": {
+      "type": "Compose",
+      "inputs": 5000,
+      "runAfter": {
+        "PARAM_LISTA_DEPOSITOS_ACTIVOS": [
+          "Succeeded"
+        ]
+      }
+    },
     "Entrada": {
       "type": "Compose",
       "inputs": {
@@ -102,7 +120,7 @@
         "base64": "@coalesce(triggerBody()?['file']?['contentBytes'],'')"
       },
       "runAfter": {
-        "PARAM_MAX_FILAS": [
+        "PARAM_TOPE_DEPOSITOS": [
           "Succeeded"
         ]
       }
@@ -192,6 +210,40 @@
         ]
       }
     },
+    "Inicializar_varT5": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varT5",
+            "type": "integer",
+            "value": 0
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varT4": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varT6": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varT6",
+            "type": "integer",
+            "value": 0
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varT5": [
+          "Succeeded"
+        ]
+      }
+    },
     "Inicializar_varEtapa": {
       "type": "InitializeVariable",
       "inputs": {
@@ -204,7 +256,7 @@
         ]
       },
       "runAfter": {
-        "Inicializar_varT4": [
+        "Inicializar_varT6": [
           "Succeeded"
         ]
       }
@@ -243,6 +295,91 @@
         ]
       }
     },
+    "Inicializar_varTotales": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varTotales",
+            "type": "string",
+            "value": "0"
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varBorrada": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varValidas": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varValidas",
+            "type": "string",
+            "value": "0"
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varTotales": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varConError": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varConError",
+            "type": "string",
+            "value": "0"
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varValidas": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varUniverso": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varUniverso",
+            "type": "string",
+            "value": "0"
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varConError": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varDetalle": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varDetalle",
+            "type": "string",
+            "value": "[]"
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varUniverso": [
+          "Succeeded"
+        ]
+      }
+    },
     "Inicializar_varResultado": {
       "type": "InitializeVariable",
       "inputs": {
@@ -261,7 +398,7 @@
         ]
       },
       "runAfter": {
-        "Inicializar_varBorrada": [
+        "Inicializar_varDetalle": [
           "Succeeded"
         ]
       }
@@ -495,19 +632,538 @@
                                   },
                                   "else": {
                                     "actions": {
-                                      "Resultado_OK": {
+                                      "Marca_T5": {
                                         "type": "SetVariable",
                                         "inputs": {
-                                          "name": "varResultado",
-                                          "value": {
-                                            "estado": "COMPLETADO",
-                                            "codigo": "OK",
-                                            "mensaje": "Archivo leído correctamente",
-                                            "tabla": "SI",
-                                            "filas": "@outputs('Cantidad_con_datos')"
-                                          }
+                                          "name": "varT5",
+                                          "value": "@ticks(utcNow())"
                                         },
                                         "runAfter": {}
+                                      },
+                                      "Etapa_filas": {
+                                        "type": "SetVariable",
+                                        "inputs": {
+                                          "name": "varEtapa",
+                                          "value": "VALIDACION"
+                                        },
+                                        "runAfter": {
+                                          "Marca_T5": [
+                                            "Succeeded"
+                                          ]
+                                        }
+                                      },
+                                      "Filas_con_posicion": {
+                                        "type": "Select",
+                                        "inputs": {
+                                          "from": "@range(0,length(outputs('Filas_brutas')))",
+                                          "select": {
+                                            "n": "@add(item(),1)",
+                                            "f": "@outputs('Filas_brutas')?[item()]"
+                                          }
+                                        },
+                                        "runAfter": {
+                                          "Etapa_filas": [
+                                            "Succeeded"
+                                          ]
+                                        }
+                                      },
+                                      "Filas_texto": {
+                                        "type": "Select",
+                                        "inputs": {
+                                          "from": "@body('Filas_con_posicion')",
+                                          "select": {
+                                            "fila_tabla": "@item()?['n']",
+                                            "banco": "@trim(string(coalesce(item()?['f']?['BANCO'],'')))",
+                                            "cuenta": "@trim(string(coalesce(item()?['f']?['CUENTA_BANCARIA'],'')))",
+                                            "codigo": "@trim(string(coalesce(item()?['f']?['CODIGO_ASIGNACION'],'')))",
+                                            "importe_txt": "@trim(string(coalesce(item()?['f']?['IMPORTE'],'')))",
+                                            "moneda": "@toUpper(trim(string(coalesce(item()?['f']?['MONEDA'],''))))",
+                                            "estudiante": "@trim(string(coalesce(item()?['f']?['ESTUDIANTE'],'')))",
+                                            "solicitado_por": "@trim(string(coalesce(item()?['f']?['SOLICITADO_POR'],'')))",
+                                            "sede": "@trim(string(coalesce(item()?['f']?['SEDE'],'')))",
+                                            "observacion": "@trim(string(coalesce(item()?['f']?['OBSERVACION'],'')))"
+                                          }
+                                        },
+                                        "runAfter": {
+                                          "Filas_con_posicion": [
+                                            "Succeeded"
+                                          ]
+                                        }
+                                      },
+                                      "Filas_formato": {
+                                        "type": "Select",
+                                        "inputs": {
+                                          "from": "@body('Filas_texto')",
+                                          "select": {
+                                            "fila_tabla": "@item()?['fila_tabla']",
+                                            "banco": "@item()?['banco']",
+                                            "cuenta": "@item()?['cuenta']",
+                                            "codigo": "@item()?['codigo']",
+                                            "importe_txt": "@item()?['importe_txt']",
+                                            "moneda": "@item()?['moneda']",
+                                            "estudiante": "@item()?['estudiante']",
+                                            "solicitado_por": "@item()?['solicitado_por']",
+                                            "sede": "@item()?['sede']",
+                                            "observacion": "@item()?['observacion']",
+                                            "faltan": "@concat(if(empty(item()?['banco']),'BANCO, ',''),if(empty(item()?['cuenta']),'CUENTA_BANCARIA, ',''),if(empty(item()?['codigo']),'CODIGO_ASIGNACION, ',''),if(empty(item()?['importe_txt']),'IMPORTE, ',''),if(empty(item()?['moneda']),'MONEDA, ',''),if(empty(item()?['estudiante']),'ESTUDIANTE, ',''),if(empty(item()?['solicitado_por']),'SOLICITADO_POR, ',''),if(empty(item()?['sede']),'SEDE, ',''))",
+                                            "en_blanco": "@and(empty(item()?['banco']),empty(item()?['cuenta']),empty(item()?['codigo']),empty(item()?['importe_txt']),empty(item()?['moneda']),empty(item()?['estudiante']),empty(item()?['solicitado_por']),empty(item()?['sede']),empty(item()?['observacion']))",
+                                            "formato_ok": "@and(not(empty(item()?['importe_txt'])),lessOrEquals(length(item()?['importe_txt']),15),or(equals(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(item()?['importe_txt'],'0',''),'1',''),'2',''),'3',''),'4',''),'5',''),'6',''),'7',''),'8',''),'9',''),''),and(equals(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(item()?['importe_txt'],'0',''),'1',''),'2',''),'3',''),'4',''),'5',''),'6',''),'7',''),'8',''),'9',''),'.'),greater(indexOf(item()?['importe_txt'],'.'),0),less(indexOf(item()?['importe_txt'],'.'),sub(length(item()?['importe_txt']),1)),lessOrEquals(sub(length(item()?['importe_txt']),add(indexOf(item()?['importe_txt'],'.'),1)),2))))"
+                                          }
+                                        },
+                                        "runAfter": {
+                                          "Filas_texto": [
+                                            "Succeeded"
+                                          ]
+                                        }
+                                      },
+                                      "Filas_calculo": {
+                                        "type": "Select",
+                                        "inputs": {
+                                          "from": "@body('Filas_formato')",
+                                          "select": {
+                                            "fila_tabla": "@item()?['fila_tabla']",
+                                            "banco": "@item()?['banco']",
+                                            "cuenta": "@item()?['cuenta']",
+                                            "codigo": "@item()?['codigo']",
+                                            "importe_txt": "@item()?['importe_txt']",
+                                            "moneda": "@item()?['moneda']",
+                                            "estudiante": "@item()?['estudiante']",
+                                            "solicitado_por": "@item()?['solicitado_por']",
+                                            "sede": "@item()?['sede']",
+                                            "observacion": "@item()?['observacion']",
+                                            "faltan": "@item()?['faltan']",
+                                            "en_blanco": "@item()?['en_blanco']",
+                                            "formato_ok": "@item()?['formato_ok']",
+                                            "centavos": "@if(item()?['formato_ok'],int(formatNumber(mul(float(item()?['importe_txt']),100),'0')),0)",
+                                            "importe_ok": "@if(item()?['formato_ok'],greater(int(formatNumber(mul(float(item()?['importe_txt']),100),'0')),0),false)",
+                                            "moneda_ok": "@or(equals(item()?['moneda'],'BOB'),equals(item()?['moneda'],'USD'))",
+                                            "incompleta": "@not(empty(item()?['faltan']))"
+                                          }
+                                        },
+                                        "runAfter": {
+                                          "Filas_formato": [
+                                            "Succeeded"
+                                          ]
+                                        }
+                                      },
+                                      "Filas_calculadas": {
+                                        "type": "Select",
+                                        "inputs": {
+                                          "from": "@body('Filas_calculo')",
+                                          "select": {
+                                            "fila_tabla": "@item()?['fila_tabla']",
+                                            "banco": "@item()?['banco']",
+                                            "cuenta": "@item()?['cuenta']",
+                                            "codigo": "@item()?['codigo']",
+                                            "importe_txt": "@item()?['importe_txt']",
+                                            "moneda": "@item()?['moneda']",
+                                            "estudiante": "@item()?['estudiante']",
+                                            "solicitado_por": "@item()?['solicitado_por']",
+                                            "sede": "@item()?['sede']",
+                                            "observacion": "@item()?['observacion']",
+                                            "faltan": "@item()?['faltan']",
+                                            "en_blanco": "@item()?['en_blanco']",
+                                            "formato_ok": "@item()?['formato_ok']",
+                                            "centavos": "@item()?['centavos']",
+                                            "importe_ok": "@item()?['importe_ok']",
+                                            "moneda_ok": "@item()?['moneda_ok']",
+                                            "incompleta": "@item()?['incompleta']",
+                                            "clave_ok": "@and(not(empty(item()?['banco'])),not(empty(item()?['cuenta'])),not(empty(item()?['codigo'])),item()?['importe_ok'])",
+                                            "clave": "@if(and(not(empty(item()?['banco'])),not(empty(item()?['cuenta'])),not(empty(item()?['codigo'])),item()?['importe_ok']),concat(toLower(item()?['banco']),'¦',toLower(item()?['cuenta']),'¦',toLower(item()?['codigo']),'¦',string(item()?['centavos'])),'')"
+                                          }
+                                        },
+                                        "runAfter": {
+                                          "Filas_calculo": [
+                                            "Succeeded"
+                                          ]
+                                        }
+                                      },
+                                      "Filas_a_validar": {
+                                        "type": "Query",
+                                        "inputs": {
+                                          "from": "@body('Filas_calculadas')",
+                                          "where": "@not(item()?['en_blanco'])"
+                                        },
+                                        "runAfter": {
+                                          "Filas_calculadas": [
+                                            "Succeeded"
+                                          ]
+                                        }
+                                      },
+                                      "Marcas_clave": {
+                                        "type": "Select",
+                                        "inputs": {
+                                          "from": "@body('Filas_a_validar')",
+                                          "select": "@if(item()?['clave_ok'],concat('§',item()?['clave'],'¶'),'')"
+                                        },
+                                        "runAfter": {
+                                          "Filas_a_validar": [
+                                            "Succeeded"
+                                          ]
+                                        }
+                                      },
+                                      "Texto_claves": {
+                                        "type": "Compose",
+                                        "inputs": "@join(body('Marcas_clave'),'')",
+                                        "runAfter": {
+                                          "Marcas_clave": [
+                                            "Succeeded"
+                                          ]
+                                        }
+                                      },
+                                      "Hoy_local": {
+                                        "type": "Compose",
+                                        "inputs": "@convertTimeZone(utcNow(),'UTC','SA Western Standard Time','yyyy-MM-dd')",
+                                        "runAfter": {
+                                          "Texto_claves": [
+                                            "Succeeded"
+                                          ]
+                                        }
+                                      },
+                                      "Desde_local": {
+                                        "type": "Compose",
+                                        "inputs": "@formatDateTime(addToTime(concat(outputs('Hoy_local'),'T00:00:00Z'),-2,'Month'),'yyyy-MM-dd')",
+                                        "runAfter": {
+                                          "Hoy_local": [
+                                            "Succeeded"
+                                          ]
+                                        }
+                                      },
+                                      "Etapa_depositos": {
+                                        "type": "SetVariable",
+                                        "inputs": {
+                                          "name": "varEtapa",
+                                          "value": "DEPOSITOS"
+                                        },
+                                        "runAfter": {
+                                          "Desde_local": [
+                                            "Succeeded"
+                                          ]
+                                        }
+                                      },
+                                      "Leer_depositos": {
+                                        "type": "OpenApiConnection",
+                                        "inputs": {
+                                          "host": {
+                                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                                            "connectionName": "shared_sharepointonline",
+                                            "operationId": "HttpRequest"
+                                          },
+                                          "parameters": {
+                                            "dataset": "@outputs('PARAM_SITIO')",
+                                            "parameters/method": "GET",
+                                            "parameters/uri": "@concat('_api/web/lists(guid''',outputs('PARAM_LISTA_DEPOSITOS_ACTIVOS'),''')/items?$select=Id,CLAVE_TRANSACCION,BANCO,CUENTA_BANCARIA,CODIGO_ASIGNACION,IMPORTE,MONEDA,ESTADO_ASIGNACION,FECHA_MOVIMIENTO&$filter=TIPO_MOVIMIENTO eq ''CRÉDITO'' and FECHA_MOVIMIENTO ge datetime''',outputs('Desde_local'),'T00:00:00Z'' and FECHA_MOVIMIENTO le datetime''',outputs('Hoy_local'),'T00:00:00Z''&$top=',string(outputs('PARAM_TOPE_DEPOSITOS')))",
+                                            "parameters/headers": {
+                                              "Accept": "application/json;odata=verbose"
+                                            }
+                                          },
+                                          "authentication": "@parameters('$authentication')",
+                                          "retryPolicy": {
+                                            "type": "none"
+                                          }
+                                        },
+                                        "runAfter": {
+                                          "Etapa_depositos": [
+                                            "Succeeded"
+                                          ]
+                                        }
+                                      },
+                                      "Marca_T6": {
+                                        "type": "SetVariable",
+                                        "inputs": {
+                                          "name": "varT6",
+                                          "value": "@ticks(utcNow())"
+                                        },
+                                        "runAfter": {
+                                          "Leer_depositos": [
+                                            "Succeeded"
+                                          ]
+                                        }
+                                      },
+                                      "Depositos": {
+                                        "type": "Compose",
+                                        "inputs": "@coalesce(body('Leer_depositos')?['d']?['results'],createArray())",
+                                        "runAfter": {
+                                          "Marca_T6": [
+                                            "Succeeded"
+                                          ]
+                                        }
+                                      },
+                                      "Universo_completo": {
+                                        "type": "If",
+                                        "expression": "@not(empty(body('Leer_depositos')?['d']?['__next']))",
+                                        "actions": {
+                                          "Resultado_DEPOSITOS_DEMASIADOS": {
+                                            "type": "SetVariable",
+                                            "inputs": {
+                                              "name": "varResultado",
+                                              "value": {
+                                                "estado": "ERROR",
+                                                "codigo": "DEPOSITOS_DEMASIADOS",
+                                                "mensaje": "@concat('Depositos_Activos devolvió más de ',string(outputs('PARAM_TOPE_DEPOSITOS')),' CRÉDITOS de los últimos 2 meses: el resultado podría estar incompleto. Avise al administrador.')",
+                                                "tabla": "SI",
+                                                "filas": "@outputs('Cantidad_con_datos')"
+                                              }
+                                            },
+                                            "runAfter": {}
+                                          }
+                                        },
+                                        "else": {
+                                          "actions": {
+                                            "Depositos_normalizados": {
+                                              "type": "Select",
+                                              "inputs": {
+                                                "from": "@outputs('Depositos')",
+                                                "select": "@concat('§',concat(toLower(trim(string(coalesce(item()?['BANCO'],'')))),'¦',toLower(trim(string(coalesce(item()?['CUENTA_BANCARIA'],'')))),'¦',toLower(trim(string(coalesce(item()?['CODIGO_ASIGNACION'],'')))),'¦',string(int(formatNumber(mul(float(string(coalesce(item()?['IMPORTE'],0))),100),'0')))),'¶',string(item()?['Id']),'¦',trim(string(coalesce(item()?['CLAVE_TRANSACCION'],''))),'¦',trim(string(coalesce(item()?['ESTADO_ASIGNACION'],''))),'¦',toUpper(trim(string(coalesce(item()?['MONEDA'],'')))),'¦',take(trim(string(coalesce(item()?['FECHA_MOVIMIENTO'],''))),10),'¤')"
+                                              },
+                                              "runAfter": {}
+                                            },
+                                            "Indice_depositos": {
+                                              "type": "Compose",
+                                              "inputs": "@join(body('Depositos_normalizados'),'')",
+                                              "runAfter": {
+                                                "Depositos_normalizados": [
+                                                  "Succeeded"
+                                                ]
+                                              }
+                                            },
+                                            "Etapa_validacion_filas": {
+                                              "type": "SetVariable",
+                                              "inputs": {
+                                                "name": "varEtapa",
+                                                "value": "VALIDACION"
+                                              },
+                                              "runAfter": {
+                                                "Indice_depositos": [
+                                                  "Succeeded"
+                                                ]
+                                              }
+                                            },
+                                            "Filas_coincidencia": {
+                                              "type": "Select",
+                                              "inputs": {
+                                                "from": "@body('Filas_a_validar')",
+                                                "select": {
+                                                  "fila_tabla": "@item()?['fila_tabla']",
+                                                  "banco": "@item()?['banco']",
+                                                  "cuenta": "@item()?['cuenta']",
+                                                  "codigo": "@item()?['codigo']",
+                                                  "importe_txt": "@item()?['importe_txt']",
+                                                  "moneda": "@item()?['moneda']",
+                                                  "estudiante": "@item()?['estudiante']",
+                                                  "solicitado_por": "@item()?['solicitado_por']",
+                                                  "sede": "@item()?['sede']",
+                                                  "observacion": "@item()?['observacion']",
+                                                  "faltan": "@item()?['faltan']",
+                                                  "en_blanco": "@item()?['en_blanco']",
+                                                  "formato_ok": "@item()?['formato_ok']",
+                                                  "centavos": "@item()?['centavos']",
+                                                  "importe_ok": "@item()?['importe_ok']",
+                                                  "moneda_ok": "@item()?['moneda_ok']",
+                                                  "incompleta": "@item()?['incompleta']",
+                                                  "clave_ok": "@item()?['clave_ok']",
+                                                  "clave": "@item()?['clave']",
+                                                  "n_dup": "@if(item()?['clave_ok'],sub(length(split(outputs('Texto_claves'),concat('§',item()?['clave'],'¶'))),1),0)",
+                                                  "n_dep": "@if(item()?['clave_ok'],sub(length(split(outputs('Indice_depositos'),concat('§',item()?['clave'],'¶'))),1),0)",
+                                                  "dep": "@if(item()?['clave_ok'],if(equals(sub(length(split(outputs('Indice_depositos'),concat('§',item()?['clave'],'¶'))),1),1),first(split(last(split(outputs('Indice_depositos'),concat('§',item()?['clave'],'¶'))),'¤')),''),'')"
+                                                }
+                                              },
+                                              "runAfter": {
+                                                "Etapa_validacion_filas": [
+                                                  "Succeeded"
+                                                ]
+                                              }
+                                            },
+                                            "Filas_resultado": {
+                                              "type": "Select",
+                                              "inputs": {
+                                                "from": "@body('Filas_coincidencia')",
+                                                "select": {
+                                                  "fila_tabla": "@item()?['fila_tabla']",
+                                                  "banco": "@item()?['banco']",
+                                                  "cuenta": "@item()?['cuenta']",
+                                                  "codigo": "@item()?['codigo']",
+                                                  "importe_txt": "@item()?['importe_txt']",
+                                                  "moneda": "@item()?['moneda']",
+                                                  "estudiante": "@item()?['estudiante']",
+                                                  "solicitado_por": "@item()?['solicitado_por']",
+                                                  "sede": "@item()?['sede']",
+                                                  "observacion": "@item()?['observacion']",
+                                                  "faltan": "@item()?['faltan']",
+                                                  "en_blanco": "@item()?['en_blanco']",
+                                                  "formato_ok": "@item()?['formato_ok']",
+                                                  "centavos": "@item()?['centavos']",
+                                                  "importe_ok": "@item()?['importe_ok']",
+                                                  "moneda_ok": "@item()?['moneda_ok']",
+                                                  "incompleta": "@item()?['incompleta']",
+                                                  "clave_ok": "@item()?['clave_ok']",
+                                                  "clave": "@item()?['clave']",
+                                                  "n_dup": "@item()?['n_dup']",
+                                                  "n_dep": "@item()?['n_dep']",
+                                                  "dep": "@item()?['dep']",
+                                                  "resultado": "@if(item()?['incompleta'],'FILA_INCOMPLETA',if(not(item()?['importe_ok']),'IMPORTE_INVALIDO',if(not(item()?['moneda_ok']),'MONEDA_INVALIDA',if(greater(item()?['n_dup'],1),'DUPLICADO_ARCHIVO',if(equals(item()?['n_dep'],0),'NO_ENCONTRADO',if(greater(item()?['n_dep'],1),'ASIGNACION_AMBIGUA',if(not(equals(split(item()?['dep'],'¦')[3],item()?['moneda'])),'MONEDA_NO_COINCIDE',if(not(equals(split(item()?['dep'],'¦')[2],'DISPONIBLE')),'NO_DISPONIBLE','VALIDO'))))))))",
+                                                  "conoce": "@and(item()?['clave_ok'],item()?['moneda_ok'],not(item()?['incompleta']),less(item()?['n_dup'],2),equals(item()?['n_dep'],1))",
+                                                  "dep_id": "@if(empty(item()?['dep']),'',split(item()?['dep'],'¦')[0])",
+                                                  "dep_clave": "@if(empty(item()?['dep']),'',split(item()?['dep'],'¦')[1])",
+                                                  "dep_estado": "@if(empty(item()?['dep']),'',split(item()?['dep'],'¦')[2])",
+                                                  "dep_moneda": "@if(empty(item()?['dep']),'',split(item()?['dep'],'¦')[3])",
+                                                  "dep_fecha": "@if(empty(item()?['dep']),'',split(item()?['dep'],'¦')[4])"
+                                                }
+                                              },
+                                              "runAfter": {
+                                                "Filas_coincidencia": [
+                                                  "Succeeded"
+                                                ]
+                                              }
+                                            },
+                                            "Detalle_filas": {
+                                              "type": "Select",
+                                              "inputs": {
+                                                "from": "@body('Filas_resultado')",
+                                                "select": {
+                                                  "fila_excel": "@add(item()?['fila_tabla'],5)",
+                                                  "fila_tabla": "@item()?['fila_tabla']",
+                                                  "resultado": "@item()?['resultado']",
+                                                  "mensaje": "@if(equals(item()?['resultado'],'VALIDO'),concat('Depósito disponible encontrado (ID ',item()?['dep_id'],').'),if(equals(item()?['resultado'],'FILA_INCOMPLETA'),concat('Faltan datos obligatorios: ',take(item()?['faltan'],sub(length(item()?['faltan']),2)),'.'),if(equals(item()?['resultado'],'IMPORTE_INVALIDO'),'IMPORTE inválido: use un número mayor que 0, con punto decimal y como máximo 2 decimales.',if(equals(item()?['resultado'],'MONEDA_INVALIDA'),'MONEDA inválida: use BOB o USD.',if(equals(item()?['resultado'],'DUPLICADO_ARCHIVO'),concat('Hay ',string(item()?['n_dup']),' filas del archivo que apuntan al mismo depósito (BANCO + CUENTA + CÓDIGO + IMPORTE).'),if(equals(item()?['resultado'],'NO_ENCONTRADO'),'No hay un depósito CRÉDITO de los últimos 2 meses con ese BANCO, CUENTA, CÓDIGO e IMPORTE.',if(equals(item()?['resultado'],'ASIGNACION_AMBIGUA'),concat('Hay ',string(item()?['n_dep']),' depósitos con esa misma clave: no se puede elegir uno.'),if(equals(item()?['resultado'],'MONEDA_NO_COINCIDE'),concat('La moneda del Excel (',item()?['moneda'],') no coincide con la del depósito (',item()?['dep_moneda'],').'),concat('El depósito no está disponible para confirmar. Estado actual: ',item()?['dep_estado'],'.')))))))))",
+                                                  "deposito_id": "@if(item()?['conoce'],int(item()?['dep_id']),null)",
+                                                  "clave_transaccion": "@if(item()?['conoce'],item()?['dep_clave'],'')",
+                                                  "estado_actual": "@if(item()?['conoce'],item()?['dep_estado'],'')",
+                                                  "fecha_movimiento": "@if(item()?['conoce'],item()?['dep_fecha'],'')",
+                                                  "moneda_deposito": "@if(item()?['conoce'],item()?['dep_moneda'],'')",
+                                                  "coincidencias": "@item()?['n_dep']",
+                                                  "banco": "@item()?['banco']",
+                                                  "cuenta_bancaria": "@item()?['cuenta']",
+                                                  "codigo_asignacion": "@item()?['codigo']",
+                                                  "importe": "@if(item()?['importe_ok'],div(float(item()?['centavos']),100),null)",
+                                                  "importe_original": "@item()?['importe_txt']",
+                                                  "moneda": "@item()?['moneda']",
+                                                  "estudiante": "@item()?['estudiante']",
+                                                  "solicitado_por": "@item()?['solicitado_por']",
+                                                  "sede": "@item()?['sede']",
+                                                  "observacion": "@item()?['observacion']"
+                                                }
+                                              },
+                                              "runAfter": {
+                                                "Filas_resultado": [
+                                                  "Succeeded"
+                                                ]
+                                              }
+                                            },
+                                            "Filas_validas": {
+                                              "type": "Query",
+                                              "inputs": {
+                                                "from": "@body('Detalle_filas')",
+                                                "where": "@equals(item()?['resultado'],'VALIDO')"
+                                              },
+                                              "runAfter": {
+                                                "Detalle_filas": [
+                                                  "Succeeded"
+                                                ]
+                                              }
+                                            },
+                                            "Cuenta_validas": {
+                                              "type": "Compose",
+                                              "inputs": "@length(body('Filas_validas'))",
+                                              "runAfter": {
+                                                "Filas_validas": [
+                                                  "Succeeded"
+                                                ]
+                                              }
+                                            },
+                                            "Cuenta_total": {
+                                              "type": "Compose",
+                                              "inputs": "@length(body('Detalle_filas'))",
+                                              "runAfter": {
+                                                "Cuenta_validas": [
+                                                  "Succeeded"
+                                                ]
+                                              }
+                                            },
+                                            "Guardar_totales": {
+                                              "type": "SetVariable",
+                                              "inputs": {
+                                                "name": "varTotales",
+                                                "value": "@string(outputs('Cuenta_total'))"
+                                              },
+                                              "runAfter": {
+                                                "Cuenta_total": [
+                                                  "Succeeded"
+                                                ]
+                                              }
+                                            },
+                                            "Guardar_validas": {
+                                              "type": "SetVariable",
+                                              "inputs": {
+                                                "name": "varValidas",
+                                                "value": "@string(outputs('Cuenta_validas'))"
+                                              },
+                                              "runAfter": {
+                                                "Guardar_totales": [
+                                                  "Succeeded"
+                                                ]
+                                              }
+                                            },
+                                            "Guardar_con_error": {
+                                              "type": "SetVariable",
+                                              "inputs": {
+                                                "name": "varConError",
+                                                "value": "@string(sub(outputs('Cuenta_total'),outputs('Cuenta_validas')))"
+                                              },
+                                              "runAfter": {
+                                                "Guardar_validas": [
+                                                  "Succeeded"
+                                                ]
+                                              }
+                                            },
+                                            "Guardar_universo": {
+                                              "type": "SetVariable",
+                                              "inputs": {
+                                                "name": "varUniverso",
+                                                "value": "@string(length(outputs('Depositos')))"
+                                              },
+                                              "runAfter": {
+                                                "Guardar_con_error": [
+                                                  "Succeeded"
+                                                ]
+                                              }
+                                            },
+                                            "Guardar_detalle": {
+                                              "type": "SetVariable",
+                                              "inputs": {
+                                                "name": "varDetalle",
+                                                "value": "@string(body('Detalle_filas'))"
+                                              },
+                                              "runAfter": {
+                                                "Guardar_universo": [
+                                                  "Succeeded"
+                                                ]
+                                              }
+                                            },
+                                            "Resultado_prevalidacion": {
+                                              "type": "SetVariable",
+                                              "inputs": {
+                                                "name": "varResultado",
+                                                "value": {
+                                                  "estado": "@if(equals(outputs('Cuenta_validas'),outputs('Cuenta_total')),'OK','OBSERVADO')",
+                                                  "codigo": "@if(equals(outputs('Cuenta_validas'),outputs('Cuenta_total')),'PREVALIDACION_OK','PREVALIDACION_CON_ERRORES')",
+                                                  "mensaje": "@concat(string(outputs('Cuenta_validas')),' de ',string(outputs('Cuenta_total')),' filas válidas',if(equals(outputs('Cuenta_validas'),outputs('Cuenta_total')),'. ',concat('; ',string(sub(outputs('Cuenta_total'),outputs('Cuenta_validas'))),' con observaciones. ')),'Prevalidación de solo lectura: no se confirmó ningún depósito.')",
+                                                  "tabla": "SI",
+                                                  "filas": "@outputs('Cuenta_total')"
+                                                }
+                                              },
+                                              "runAfter": {
+                                                "Guardar_detalle": [
+                                                  "Succeeded"
+                                                ]
+                                              }
+                                            }
+                                          }
+                                        },
+                                        "runAfter": {
+                                          "Depositos": [
+                                            "Succeeded"
+                                          ]
+                                        }
                                       }
                                     }
                                   },
@@ -735,16 +1391,41 @@
                 },
                 "else": {
                   "actions": {
-                    "Fallo_ERROR_NO_CONTROLADO": {
-                      "type": "SetVariable",
-                      "inputs": {
-                        "name": "varResultado",
-                        "value": {
-                          "estado": "ERROR",
-                          "codigo": "ERROR_NO_CONTROLADO",
-                          "mensaje": "Error inesperado al procesar el archivo. Vuelva a intentar o avise al administrador.",
-                          "tabla": "",
-                          "filas": 0
+                    "Fallo_no_copia": {
+                      "type": "If",
+                      "expression": "@equals(variables('varEtapa'),'DEPOSITOS')",
+                      "actions": {
+                        "Fallo_ERROR_SHAREPOINT": {
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "varResultado",
+                            "value": {
+                              "estado": "ERROR",
+                              "codigo": "ERROR_SHAREPOINT",
+                              "mensaje": "@concat('No se pudo leer Depositos_Activos (HTTP ',string(outputs('Leer_depositos')?['statusCode']),'). Vuelva a intentar o avise al administrador.')",
+                              "tabla": "SI",
+                              "filas": 0
+                            }
+                          },
+                          "runAfter": {}
+                        }
+                      },
+                      "else": {
+                        "actions": {
+                          "Fallo_ERROR_NO_CONTROLADO": {
+                            "type": "SetVariable",
+                            "inputs": {
+                              "name": "varResultado",
+                              "value": {
+                                "estado": "ERROR",
+                                "codigo": "ERROR_NO_CONTROLADO",
+                                "mensaje": "Error inesperado al procesar el archivo. Vuelva a intentar o avise al administrador.",
+                                "tabla": "",
+                                "filas": 0
+                              }
+                            },
+                            "runAfter": {}
+                          }
                         }
                       },
                       "runAfter": {}
@@ -881,7 +1562,7 @@
     },
     "Tiempos": {
       "type": "Compose",
-      "inputs": "@concat('crear=',string(if(greater(variables('varT1'),0),div(sub(variables('varT1'),variables('varT0')),10000),0)),';excel=',string(if(greater(variables('varT2'),0),div(sub(variables('varT2'),variables('varT1')),10000),0)),';borrar=',string(if(greater(variables('varT3'),0),div(sub(variables('varT3'),max(variables('varT2'),variables('varT1'),variables('varT0'))),10000),0)),';total=',string(div(sub(variables('varT4'),variables('varT0')),10000)))",
+      "inputs": "@concat('crear=',string(if(greater(variables('varT1'),0),div(sub(variables('varT1'),variables('varT0')),10000),0)),';excel=',string(if(greater(variables('varT5'),0),div(sub(variables('varT5'),variables('varT1')),10000),if(greater(variables('varT2'),0),div(sub(variables('varT2'),variables('varT1')),10000),0))),';depositos=',string(if(greater(variables('varT6'),0),div(sub(variables('varT6'),variables('varT5')),10000),0)),';borrar=',string(if(greater(variables('varT3'),0),div(sub(variables('varT3'),max(variables('varT2'),variables('varT1'),variables('varT0'))),10000),0)),';total=',string(div(sub(variables('varT4'),variables('varT0')),10000)))",
       "runAfter": {
         "Marca_T4": [
           "Succeeded"
@@ -909,7 +1590,12 @@
           "tabla_encontrada": "@variables('varResultado')?['tabla']",
           "filas_leidas": "@string(variables('varResultado')?['filas'])",
           "copia_temporal_eliminada": "@variables('varBorrada')",
-          "tiempos_ms": "@outputs('Tiempos')"
+          "tiempos_ms": "@outputs('Tiempos')",
+          "filas_totales": "@variables('varTotales')",
+          "filas_validas": "@variables('varValidas')",
+          "filas_con_error": "@variables('varConError')",
+          "depositos_consultados": "@variables('varUniverso')",
+          "detalle_json": "@variables('varDetalle')"
         },
         "schema": {
           "type": "object",
@@ -951,6 +1637,31 @@
             },
             "tiempos_ms": {
               "title": "tiempos_ms",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "filas_totales": {
+              "title": "filas_totales",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "filas_validas": {
+              "title": "filas_validas",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "filas_con_error": {
+              "title": "filas_con_error",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "depositos_consultados": {
+              "title": "depositos_consultados",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "detalle_json": {
+              "title": "detalle_json",
               "type": "string",
               "x-ms-dynamically-added": true
             }
