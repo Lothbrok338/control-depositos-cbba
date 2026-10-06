@@ -39,7 +39,7 @@
             Font: =Font.'Segoe UI'
             Height: =22
             Size: =10
-            Text: ="Prototipo · prevalida un archivo Excel. No confirma ningún depósito."
+            Text: ="Prototipo directo · prevalida un archivo Excel. No confirma ningún depósito."
             Width: =700
             X: =20
             Y: =47
@@ -53,9 +53,7 @@
             Font: =Font.'Segoe UI'
             FontWeight: =FontWeight.Bold
             Height: =32
-            OnSelect: |-
-              =Set(varSondeoP9, false);
-              Navigate(Main_Screen, ScreenTransition.Fade)
+            OnSelect: =Navigate(Main_Screen, ScreenTransition.Fade)
             Size: =9
             Text: ="VOLVER"
             Width: =150
@@ -144,8 +142,7 @@
             Color: =RGBA(255, 255, 255, 1)
             DisplayMode: |-
               =If(
-                  Coalesce(varSubiendoP9, false) ||
-                  Coalesce(varSondeoP9, false) ||
+                  Coalesce(varProcesandoP9, false) ||
                   IsEmpty(attXlsxP9.Attachments) ||
                   !EndsWith(Lower(First(attXlsxP9.Attachments).Name), ".xlsx"),
                   DisplayMode.Disabled,
@@ -156,12 +153,31 @@
             FontWeight: =FontWeight.Bold
             Height: =42
             OnSelect: |-
-              =Set(varSubiendoP9, true);
-              Set(varUidP9, Text(GUID()));
-              Set(varNombreP9, First(attXlsxP9.Attachments).Name);
-              Set(varLoteVivoP9, Blank());
-              Set(varSondeoP9, false);
-              SubmitForm(frmLoteP9)
+              =Set(varProcesandoP9, true);
+              Set(varResultadoP9, Blank());
+              Set(varMsAppP9, Blank());
+              With(
+                  {inicioP9: Now(), archivoP9: First(attXlsxP9.Attachments)},
+                  IfError(
+                      Set(varResultadoP9, P9_MASIVA_PROTO_PREVALIDAR.Run({name: archivoP9.Name, contentBytes: archivoP9.Value}));
+                      Set(varMsAppP9, DateDiff(inicioP9, Now(), TimeUnit.Milliseconds)),
+                      Set(
+                          varResultadoP9,
+                          {
+                              resultado: "ERROR",
+                              codigo: "FLUJO_SIN_RESPUESTA",
+                              mensaje: "El flujo no respondió: " & FirstError.Message,
+                              archivo: archivoP9.Name,
+                              tabla_encontrada: "",
+                              filas_leidas: "0",
+                              copia_temporal_eliminada: "",
+                              tiempos_ms: ""
+                          }
+                      );
+                      Set(varMsAppP9, DateDiff(inicioP9, Now(), TimeUnit.Milliseconds))
+                  )
+              );
+              Set(varProcesandoP9, false)
             Size: =10
             Text: ="PREVALIDAR ARCHIVO"
             Width: =220
@@ -195,43 +211,24 @@
             Align: =Align.Center
             Color: =RGBA(255, 255, 255, 1)
             Fill: |-
-              =Switch(
-                  Coalesce(varLoteVivoP9.ESTADO, ""),
-                  "COMPLETADO", RGBA(46, 125, 50, 1),
-                  "ERROR", RGBA(183, 28, 28, 1),
-                  "PROCESANDO", RGBA(230, 126, 34, 1),
-                  "PENDIENTE", RGBA(230, 126, 34, 1),
-                  "CARGADO", RGBA(0, 120, 212, 1),
-                  RGBA(98, 102, 106, 1)
+              =With(
+                  {estadoP9: If(Coalesce(varProcesandoP9, false), "PROCESANDO", If(!IsBlank(varResultadoP9), varResultadoP9.resultado, If(IsEmpty(attXlsxP9.Attachments), "SIN ARCHIVO", "CARGADO")))},
+                  Switch(
+                      estadoP9,
+                      "COMPLETADO", RGBA(46, 125, 50, 1),
+                      "ERROR", RGBA(183, 28, 28, 1),
+                      "PROCESANDO", RGBA(230, 126, 34, 1),
+                      "CARGADO", RGBA(0, 120, 212, 1),
+                      RGBA(98, 102, 106, 1)
+                  )
               )
             Font: =Font.'Segoe UI'
             FontWeight: =FontWeight.Bold
             Height: =34
             Size: =11
-            Text: =Coalesce(varLoteVivoP9.ESTADO, "SIN LOTE")
+            Text: =If(Coalesce(varProcesandoP9, false), "PROCESANDO", If(!IsBlank(varResultadoP9), varResultadoP9.resultado, If(IsEmpty(attXlsxP9.Attachments), "SIN ARCHIVO", "CARGADO")))
             Width: =200
             X: =640
-            Y: =132
-      - lblSondeoP9:
-          Control: Label@2.5.1
-          Properties:
-            Color: =RGBA(98, 102, 106, 1)
-            Font: =Font.'Segoe UI'
-            Height: =34
-            Size: =9
-            Text: |-
-              =If(
-                  Coalesce(varSondeoP9, false),
-                  "Consultando el estado cada 5 s (" & Coalesce(varTicksP9, 0) & ")...",
-                  If(
-                      !IsBlank(varLoteVivoP9) && Coalesce(varTicksP9, 0) >= 72 && Coalesce(varLoteVivoP9.ESTADO, "") <> "COMPLETADO" && Coalesce(varLoteVivoP9.ESTADO, "") <> "ERROR",
-                      "El proceso tarda más de lo esperado. Pulse ACTUALIZAR ESTADO.",
-                      ""
-                  )
-              )
-            VerticalAlign: =VerticalAlign.Middle
-            Width: =Parent.Width - 900
-            X: =860
             Y: =132
       - lblTitularResultadoP9:
           Control: Label@2.5.1
@@ -242,19 +239,18 @@
             Height: =50
             Size: =12
             Text: |-
-              =Switch(
-                  Coalesce(varLoteVivoP9.ESTADO, ""),
-                  "COMPLETADO",
-                      "ARCHIVO RECIBIDO · TABLA ENCONTRADA · " & Text(varLoteVivoP9.FILAS_LEIDAS) & If(varLoteVivoP9.FILAS_LEIDAS = 1, " FILA LEÍDA", " FILAS LEÍDAS"),
-                  "ERROR",
-                      "RESULTADO: " & Coalesce(varLoteVivoP9.CODIGO_RESULTADO, "ERROR"),
-                  "PROCESANDO",
-                      "Procesando el archivo...",
-                  "PENDIENTE",
-                      "En cola: el proceso comenzará en unos instantes...",
-                  "CARGADO",
-                      "Archivo cargado.",
-                  "Adjunte un Excel y pulse PREVALIDAR ARCHIVO."
+              =If(
+                  Coalesce(varProcesandoP9, false),
+                  "Procesando el archivo (puede tardar unos segundos)...",
+                  If(
+                      IsBlank(varResultadoP9),
+                      If(IsEmpty(attXlsxP9.Attachments), "Adjunte un Excel (.xlsx) para empezar.", "Archivo seleccionado. Pulse PREVALIDAR ARCHIVO."),
+                      If(
+                          varResultadoP9.resultado = "COMPLETADO",
+                          "ARCHIVO RECIBIDO · TABLA ENCONTRADA · " & varResultadoP9.filas_leidas & If(Value(varResultadoP9.filas_leidas) = 1, " FILA LEÍDA", " FILAS LEÍDAS"),
+                          "RESULTADO: " & varResultadoP9.codigo
+                      )
+                  )
               )
             Width: =Parent.Width - 680
             X: =640
@@ -290,7 +286,7 @@
             FontWeight: =FontWeight.Semibold
             Height: =24
             Size: =10
-            Text: =Coalesce(varLoteVivoP9.ARCHIVO_NOMBRE, "—")
+            Text: =Coalesce(varResultadoP9.archivo, "—")
             Width: =Parent.Width - 840
             X: =800
             Y: =272
@@ -315,7 +311,7 @@
             Size: =10
             Text: |-
               =Switch(
-                  Coalesce(varLoteVivoP9.TABLA_ENCONTRADA, ""),
+                  Coalesce(varResultadoP9.tabla_encontrada, ""),
                   "SI", "Sí · tblConfirmacionMasiva",
                   "NO", "No",
                   "—"
@@ -342,7 +338,7 @@
             FontWeight: =FontWeight.Semibold
             Height: =24
             Size: =10
-            Text: =If(Coalesce(varLoteVivoP9.ESTADO, "") = "COMPLETADO", Text(varLoteVivoP9.FILAS_LEIDAS), "—")
+            Text: =If(Coalesce(varResultadoP9.resultado, "") = "COMPLETADO", varResultadoP9.filas_leidas, "—")
             Width: =Parent.Width - 840
             X: =800
             Y: =332
@@ -362,55 +358,63 @@
           Properties:
             Color: =RGBA(52, 55, 58, 1)
             Font: =Font.'Segoe UI'
-            Height: =80
+            Height: =70
             Size: =10
-            Text: =Coalesce(varLoteVivoP9.MENSAJE, "—")
+            Text: =Coalesce(varResultadoP9.mensaje, "—")
             Width: =Parent.Width - 840
             X: =800
             Y: =362
-      - lblResLoteTituloP9:
+      - lblResTiempoTituloP9:
           Control: Label@2.5.1
           Properties:
             Color: =RGBA(98, 102, 106, 1)
             Font: =Font.'Segoe UI'
             Height: =24
             Size: =9
-            Text: ="Lote"
+            Text: ="Tiempo"
             Width: =150
             X: =640
-            Y: =452
-      - lblResLoteP9:
+            Y: =442
+      - lblResTiempoP9:
+          Control: Label@2.5.1
+          Properties:
+            Color: =RGBA(98, 102, 106, 1)
+            Font: =Font.'Segoe UI'
+            Height: =40
+            Size: =9
+            Text: |-
+              =If(IsBlank(varMsAppP9), "—", "App: " & Text(varMsAppP9) & " ms · Flujo: " & Coalesce(varResultadoP9.tiempos_ms, "—"))
+            Width: =Parent.Width - 840
+            X: =800
+            Y: =442
+      - lblResCopiaTituloP9:
           Control: Label@2.5.1
           Properties:
             Color: =RGBA(98, 102, 106, 1)
             Font: =Font.'Segoe UI'
             Height: =24
-            Size: =8
-            Text: =Coalesce(varLoteVivoP9.LOTE_UID, "—") & If(IsBlank(varLoteVivoP9.FECHA_ESTADO), "", "  ·  " & Text(varLoteVivoP9.FECHA_ESTADO, "dd/mm/yyyy hh:mm:ss"))
+            Size: =9
+            Text: ="Copia temporal"
+            Width: =150
+            X: =640
+            Y: =490
+      - lblResCopiaP9:
+          Control: Label@2.5.1
+          Properties:
+            Color: =RGBA(98, 102, 106, 1)
+            Font: =Font.'Segoe UI'
+            Height: =24
+            Size: =9
+            Text: |-
+              =Switch(
+                  Coalesce(varResultadoP9.copia_temporal_eliminada, ""),
+                  "SI", "Eliminada",
+                  "NO", "NO se pudo eliminar (avise al administrador)",
+                  "NO_APLICA", "No se creó",
+                  "—"
+              )
             Width: =Parent.Width - 840
             X: =800
-            Y: =452
-      - btnActualizarEstadoP9:
-          Control: Classic/Button@2.2.0
-          Properties:
-            BorderColor: =RGBA(123, 22, 50, 1)
-            BorderThickness: =1
-            Color: =RGBA(123, 22, 50, 1)
-            DisplayMode: =If(IsBlank(varLoteP9), DisplayMode.Disabled, DisplayMode.Edit)
-            Fill: =RGBA(255, 255, 255, 1)
-            Font: =Font.'Segoe UI'
-            FontWeight: =FontWeight.Bold
-            Height: =32
-            OnSelect: |-
-              =IfError(
-                  Refresh(P9_MASIVA_PROTO_LOTES);
-                  Set(varLoteVivoP9, LookUp(P9_MASIVA_PROTO_LOTES, ID = varLoteP9.ID)),
-                  Notify("No se pudo consultar el estado del lote.", NotificationType.Warning)
-              )
-            Size: =9
-            Text: ="ACTUALIZAR ESTADO"
-            Width: =180
-            X: =640
             Y: =490
       - lblAvisoPrototipoP9:
           Control: Label@2.5.1
@@ -419,7 +423,7 @@
             Font: =Font.'Segoe UI'
             Height: =22
             Size: =8
-            Text: ="PROTOTIPO · lista temporal P9_MASIVA_PROTO_LOTES · no se consulta ni se modifica Depositos_Activos."
+            Text: ="PROTOTIPO · sin lotes ni historial · la copia temporal se borra al terminar · no se consulta ni modifica Depositos_Activos."
             Width: =Parent.Width - 40
             X: =20
             Y: =Parent.Height - 36

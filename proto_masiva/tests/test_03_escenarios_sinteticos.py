@@ -1,213 +1,215 @@
-"""Escenarios sintéticos de P9_MASIVA_PROTO_PREVALIDAR contra el tenant SIMULADO.
+"""Escenarios sintéticos del flujo DIRECTO contra el tenant SIMULADO (sin listas, sin lotes, sin estados persistentes).
 
 [VALIDADO LOCALMENTE] significa: el flujo generado, interpretado por el intérprete WDL local, produce este resultado con un
-Excel/SharePoint falsos. NO prueba el runtime Microsoft: ver RESULTADO_PROTOTIPO.md («REQUIERE VALIDACIÓN TENANT»).
+Excel/SharePoint falsos. NO prueba el runtime Microsoft ni mide tiempos reales: eso es MEDICION_TENANT.md.
 """
 import json
+import re
 from pathlib import Path
 
 import pytest
+from openpyxl import load_workbook
 
 from proto_masiva.flows import construir as F
-from simulador import AHORA, TenantSimulado, configurar, procesar
+from simulador import TenantSimulado, configurar, procesar
 
-RAIZ = Path(__file__).resolve().parents[1]
-XLSX = RAIZ / "xlsx"
-ESQUEMA = json.loads((RAIZ / "sharepoint/esquema_P9_MASIVA_PROTO_LOTES.json").read_text(encoding="utf-8"))
-ESQUEMA = {**ESQUEMA, "columnas": ESQUEMA["columnas"] + [{"nombre_tecnico": "Title"}]}
-
-
-def tenant(archivo, **kw):
-    t = TenantSimulado(ESQUEMA)
-    adjunto = (XLSX / archivo).read_bytes() if archivo else None
-    return t, t.crear_lote(adjunto, nombre=archivo or "", **kw)["ID"]
+XLSX = Path(__file__).resolve().parents[1] / "xlsx"
+MED = XLSX / "medicion"
+EJEMPLO, PLANTILLA = "Ejemplo_Confirmacion_Masiva_P9.xlsx", "Plantilla_Confirmacion_Masiva_P9.xlsx"
 
 
-def final(t, lote):
-    return t.lotes[lote]
+def correr(archivo, ruta=XLSX, **kw):
+    return procesar(archivo, (ruta / archivo).read_bytes(), **kw)
+
+
+def resp(ensayo):
+    assert ensayo.estado_final == "Succeeded" and ensayo.respuesta is not None
+    return ensayo.respuesta
 
 
 # ------------------------------------------------------------------ A-E (los cinco pedidos)
-def test_A_archivo_correcto_3_filas():  # Ejemplo_Confirmacion_Masiva_P9.xlsx (3 filas ficticias)
-    t, lote = tenant("Ejemplo_Confirmacion_Masiva_P9.xlsx")
-    r = procesar(t, lote)
-    f = final(t, lote)
-    assert r.estado_final == "Succeeded"
-    assert (f["ESTADO"], f["CODIGO_RESULTADO"], f["TABLA_ENCONTRADA"], f["FILAS_LEIDAS"]) == ("COMPLETADO", "OK", "SI", 3)
-    assert f["MENSAJE"] == "Archivo leído correctamente"
-    assert f["ARCHIVO_NOMBRE"] == "Ejemplo_Confirmacion_Masiva_P9.xlsx"
+def test_A_archivo_correcto_3_filas():
+    t, e = correr(EJEMPLO)
+    r = resp(e)
+    assert (r["resultado"], r["codigo"], r["tabla_encontrada"], r["filas_leidas"]) == ("COMPLETADO", "OK", "SI", "3")
+    assert r["mensaje"] == "Archivo leído correctamente" and r["archivo"] == EJEMPLO
+    assert r["copia_temporal_eliminada"] == "SI" and not t.biblioteca
 
 
 def test_A2_otro_archivo_de_3_filas():
-    t, lote = tenant("01_OK_3filas.xlsx")
-    procesar(t, lote)
-    assert (final(t, lote)["ESTADO"], final(t, lote)["FILAS_LEIDAS"]) == ("COMPLETADO", 3)
+    r = resp(correr("01_OK_3filas.xlsx")[1])
+    assert (r["resultado"], r["filas_leidas"]) == ("COMPLETADO", "3")
 
 
-@pytest.mark.parametrize("archivo", ["Plantilla_Confirmacion_Masiva_P9.xlsx", "02a_TABLA_VACIA_1fila_en_blanco.xlsx",
-                                      "02b_TABLA_SOLO_ENCABEZADO.xlsx"])
-def test_B_tabla_vacia_es_ERROR_ARCHIVO_VACIO_controlado(archivo):  # incluye la Plantilla de producción, vacía
-    """Diseño: una importación sin filas NO es COMPLETADO (no hay nada que confirmar). Resultado controlado, sin fallo del flujo."""
-    t, lote = tenant(archivo)
-    r = procesar(t, lote)
-    f = final(t, lote)
-    assert r.estado_final == "Succeeded"
-    assert (f["ESTADO"], f["CODIGO_RESULTADO"], f["TABLA_ENCONTRADA"], f["FILAS_LEIDAS"]) == ("ERROR", "ARCHIVO_VACIO", "SI", 0)
+@pytest.mark.parametrize("archivo", [PLANTILLA, "02a_TABLA_VACIA_1fila_en_blanco.xlsx", "02b_TABLA_SOLO_ENCABEZADO.xlsx"])
+def test_B_tabla_vacia_es_ERROR_ARCHIVO_VACIO_controlado(archivo):
+    """Diseño: una importación sin filas NO es COMPLETADO (no hay nada que confirmar). Resultado controlado, el flujo no falla."""
+    t, e = correr(archivo)
+    r = resp(e)
+    assert (r["resultado"], r["codigo"], r["tabla_encontrada"], r["filas_leidas"]) == ("ERROR", "ARCHIVO_VACIO", "SI", "0")
+    assert r["copia_temporal_eliminada"] == "SI" and not t.biblioteca
 
 
 def test_C_sin_tabla():
-    t, lote = tenant("03_SIN_TABLA.xlsx")
-    r = procesar(t, lote)
-    f = final(t, lote)
-    assert r.estado_final == "Succeeded"  # el fallo de Excel fue capturado y clasificado
-    assert (f["ESTADO"], f["CODIGO_RESULTADO"], f["TABLA_ENCONTRADA"], f["FILAS_LEIDAS"]) == ("ERROR", "TABLA_NO_ENCONTRADA", "NO", 0)
+    t, e = correr("03_SIN_TABLA.xlsx")
+    r = resp(e)
+    assert (r["resultado"], r["codigo"], r["tabla_encontrada"], r["filas_leidas"]) == ("ERROR", "TABLA_NO_ENCONTRADA", "NO", "0")
+    assert r["copia_temporal_eliminada"] == "SI" and not t.biblioteca  # aun con fallo de Excel, la copia se borra
 
 
 def test_D_encabezado_cambiado():
-    t, lote = tenant("05_ENCABEZADO_CAMBIADO.xlsx")
-    procesar(t, lote)
-    f = final(t, lote)
-    assert (f["ESTADO"], f["CODIGO_RESULTADO"], f["TABLA_ENCONTRADA"]) == ("ERROR", "ESTRUCTURA_INVALIDA", "SI")
-    assert "CUENTA_BANCARIA" in f["MENSAJE"] and "plantilla oficial" in f["MENSAJE"]
-    assert f["FILAS_LEIDAS"] == 0
+    r = resp(correr("05_ENCABEZADO_CAMBIADO.xlsx")[1])
+    assert (r["resultado"], r["codigo"], r["tabla_encontrada"], r["filas_leidas"]) == ("ERROR", "ESTRUCTURA_INVALIDA", "SI", "0")
+    assert "CUENTA_BANCARIA" in r["mensaje"] and "plantilla oficial" in r["mensaje"]
 
 
 def test_E_tabla_con_nombre_distinto():
-    t, lote = tenant("04_TABLA_NOMBRE_DISTINTO.xlsx")
-    procesar(t, lote)
-    f = final(t, lote)
-    assert (f["ESTADO"], f["CODIGO_RESULTADO"], f["TABLA_ENCONTRADA"]) == ("ERROR", "TABLA_NO_ENCONTRADA", "NO")
+    r = resp(correr("04_TABLA_NOMBRE_DISTINTO.xlsx")[1])
+    assert (r["resultado"], r["codigo"], r["tabla_encontrada"]) == ("ERROR", "TABLA_NO_ENCONTRADA", "NO")
 
 
-# ------------------------------------------------------------------ máquina de estados y seguridad del disparo
-def test_el_flujo_marca_PROCESANDO_primero_y_termina_en_estado_terminal_una_sola_vez():
-    t, lote = tenant("Ejemplo_Confirmacion_Masiva_P9.xlsx")
-    procesar(t, lote)
-    estados = [c["ESTADO"] for _, i, c in t.escrituras if i == lote and "ESTADO" in c]
-    assert estados == ["PROCESANDO", "COMPLETADO"]
-    assert final(t, lote)["FECHA_ESTADO"] == AHORA
+# ------------------------------------------------------------------ entradas anómalas (el flujo no toca nada)
+@pytest.mark.parametrize("nombre,contenido,codigo", [(None, None, "SIN_ARCHIVO"), ("", b"x", "SIN_ARCHIVO"), ("a.xlsx", b"", "SIN_ARCHIVO"),
+                                                     ("datos.csv", b"a,b\n", "NO_ES_XLSX"), ("libro.xls", b"x", "NO_ES_XLSX")])
+def test_entradas_invalidas_no_crean_copia_ni_llaman_a_excel(nombre, contenido, codigo):
+    t, e = procesar(nombre, contenido)
+    r = resp(e)
+    assert (r["resultado"], r["codigo"], r["copia_temporal_eliminada"]) == ("ERROR", codigo, "NO_APLICA")
+    assert t.llamadas == [] and not t.creados
 
 
-def test_nunca_escribe_PENDIENTE_ni_se_redispara_con_sus_propias_escrituras():
-    t, lote = tenant("03_SIN_TABLA.xlsx")
-    procesar(t, lote)
-    for _, _, cuerpo in t.escrituras:
-        assert cuerpo["ESTADO"] in ("PROCESANDO", "COMPLETADO", "ERROR")
+def test_la_extension_no_distingue_mayusculas():
+    r = resp(procesar("PLANTILLA.XLSX", (XLSX / EJEMPLO).read_bytes())[1])
+    assert (r["resultado"], r["filas_leidas"]) == ("COMPLETADO", "3")
+
+
+def test_xlsx_corrupto_no_se_confunde_con_tabla_ausente_y_se_borra_la_copia():
+    t, e = procesar("roto.xlsx", b"esto no es un zip")
+    r = resp(e)
+    assert (r["resultado"], r["codigo"]) == ("ERROR", "ERROR_LECTURA_EXCEL") and "HTTP 400" in r["mensaje"]
+    assert r["copia_temporal_eliminada"] == "SI" and not t.biblioteca
+
+
+# ------------------------------------------------------------------ fallos de infraestructura
+@pytest.mark.parametrize("http", [409, 403, 500])
+def test_si_falla_crear_la_copia_no_hay_nada_que_borrar_ni_se_lee_excel(http):
+    t = TenantSimulado()
+    t.fallos["crear"] = ("Failed", http)
+    r = resp(correr(EJEMPLO, tenant=t)[1])
+    assert (r["resultado"], r["codigo"], r["copia_temporal_eliminada"]) == ("ERROR", "ERROR_COPIA_ARCHIVO", "NO_APLICA")
+    assert [op for op, _ in t.llamadas] == ["CreateFile"]
+
+
+@pytest.mark.parametrize("http,codigo", [(423, "ARCHIVO_BLOQUEADO"), (500, "ERROR_LECTURA_EXCEL"), (404, "TABLA_NO_ENCONTRADA")])
+def test_fallos_de_excel_se_clasifican_y_la_copia_se_borra(http, codigo):
+    t = TenantSimulado()
+    t.fallos["excel"] = ("Failed", http)
+    r = resp(correr(EJEMPLO, tenant=t)[1])
+    assert (r["resultado"], r["codigo"], r["filas_leidas"], r["copia_temporal_eliminada"]) == ("ERROR", codigo, "0", "SI")
+    assert not t.biblioteca
+
+
+def test_si_no_se_puede_borrar_la_copia_el_resultado_de_negocio_no_cambia_solo_se_informa():
+    t = TenantSimulado()
+    t.fallos["borrar"] = ("Failed", 423)
+    t2, e = correr(EJEMPLO, tenant=t)
+    r = resp(e)
+    assert (r["resultado"], r["codigo"], r["filas_leidas"]) == ("COMPLETADO", "OK", "3")
+    assert r["copia_temporal_eliminada"] == "NO" and len(t.biblioteca) == 1  # queda 1 archivo huérfano, y la app lo sabe
+
+
+def test_fallo_de_excel_y_de_borrado_a_la_vez():
+    t = TenantSimulado()
+    t.fallos.update(excel=("Failed", 500), borrar=("Failed", 500))
+    r = resp(correr(EJEMPLO, tenant=t)[1])
+    assert (r["resultado"], r["codigo"], r["copia_temporal_eliminada"]) == ("ERROR", "ERROR_LECTURA_EXCEL", "NO")
+
+
+def test_archivo_bloqueado_423_luego_liberado():
+    t = TenantSimulado()
+    r1 = resp(correr(EJEMPLO, tenant=t, definicion=None)[1])
+    assert r1["resultado"] == "COMPLETADO"
+    t.fallos["excel"] = ("Failed", 423)
+    assert resp(correr(EJEMPLO, tenant=t)[1])["codigo"] == "ARCHIVO_BLOQUEADO"
+    del t.fallos["excel"]
+    assert resp(correr(EJEMPLO, tenant=t)[1])["resultado"] == "COMPLETADO"  # reintentar el mismo archivo funciona; no hay estado que limpiar
+
+
+# ------------------------------------------------------------------ tamaño: el flujo NO inventa límites
+def test_sin_tope_configurado_el_flujo_lee_mil_filas():
+    t, e = correr("Filas_1000.xlsx", ruta=MED)
+    r = resp(e)
+    assert (r["resultado"], r["codigo"], r["filas_leidas"]) == ("COMPLETADO", "OK", "1000") and F.MAX_FILAS == 0
+
+
+def test_si_la_lectura_alcanza_el_umbral_de_paginacion_avisa_en_vez_de_contar_de_menos():
+    t, e = correr("Filas_2000.xlsx", ruta=MED)
+    r = resp(e)
+    assert (r["resultado"], r["codigo"]) == ("ERROR", "DEMASIADAS_FILAS") and "podría estar incompleto" in r["mensaje"]
+    assert r["filas_leidas"] == "0" and r["copia_temporal_eliminada"] == "SI"
+
+
+def test_el_umbral_de_paginacion_es_el_unico_parametro_compartido_entre_la_accion_y_la_comprobacion():
     d = F.construir_definicion()
-    from simulador import EnsayoMasivo
-    assert not EnsayoMasivo(d, t, t.lotes[lote]).dispara()  # ya terminal: la condición del disparador no se cumple
+    assert d["actions"]["PARAM_PAGINACION"]["inputs"] == F.PAGINACION
+    excel = d["actions"]["TRY"]["actions"]["Entrada_valida"]["actions"]["Leer_tabla_Excel"]
+    assert excel["runtimeConfiguration"]["paginationPolicy"]["minimumItemCount"] == F.PAGINACION
 
 
-@pytest.mark.parametrize("estado", ["CARGADO", "PROCESANDO", "COMPLETADO", "ERROR", ""])
-def test_solo_se_dispara_con_PENDIENTE(estado):
-    t, lote = tenant("Ejemplo_Confirmacion_Masiva_P9.xlsx", ESTADO=estado)
-    r = procesar(t, lote)
-    assert r.estado_final == "NoDisparado" and not t.escrituras and not t.llamadas
+@pytest.mark.parametrize("tope,codigo", [(2, "DEMASIADAS_FILAS"), (3, "OK"), (4, "OK")])
+def test_el_maximo_de_filas_es_un_parametro_opcional_que_se_fija_despues_de_medir(tope, codigo):
+    d = configurar(F.construir_definicion(max_filas=tope))
+    r = resp(correr(EJEMPLO, definicion=d)[1])
+    assert r["codigo"] == codigo
+    if codigo != "OK":
+        assert "máximo permitido es 2" in r["mensaje"] and r["filas_leidas"] == "3" and r["resultado"] == "ERROR"
 
 
-def test_reintento_tras_ERROR_vuelve_a_funcionar_sin_chocar_con_el_archivo_anterior():
-    t, lote = tenant("03_SIN_TABLA.xlsx")
-    procesar(t, lote)
-    assert final(t, lote)["ESTADO"] == "ERROR"
-    t.adjuntos[lote] = [("corregido.xlsx", (XLSX / "Ejemplo_Confirmacion_Masiva_P9.xlsx").read_bytes())]
-    t.lotes[lote]["ESTADO"] = "PENDIENTE"  # lo que hace el botón de la app
-    import simulador
-    simulador.AHORA  # el nombre de la copia incluye la fecha; fuerza otra copia con otro instante
-    d = configurar(F.construir_definicion())
-    d["actions"]["TRY"]["actions"]["Hay_adjunto"]["actions"]["Es_xlsx"]["actions"]["Nombre_copia"]["inputs"] = \
-        "@concat(outputs('Lote')?['uid'],'_2.xlsx')"
-    procesar(t, lote, d)
-    assert (final(t, lote)["ESTADO"], final(t, lote)["FILAS_LEIDAS"]) == ("COMPLETADO", 3)
-    assert len(t.biblioteca) == 2
+# ------------------------------------------------------------------ tiempos (para medir en tenant)
+def test_la_respuesta_trae_los_tiempos_por_etapa():
+    r = resp(correr(EJEMPLO)[1])
+    m = re.fullmatch(r"crear=(\d+);excel=(\d+);borrar=(\d+);total=(\d+)", r["tiempos_ms"])
+    assert m, r["tiempos_ms"]
+    crear, excel, borrar, total = map(int, m.groups())
+    assert crear > 0 and excel > 0 and borrar > 0 and total >= crear + excel + borrar  # reloj simulado, no tiempos reales
 
 
-# ------------------------------------------------------------------ entradas anómalas
-def test_sin_adjunto():
-    t, lote = tenant(None)
-    procesar(t, lote)
-    f = final(t, lote)
-    assert (f["ESTADO"], f["CODIGO_RESULTADO"]) == ("ERROR", "SIN_ADJUNTO")
-    assert not t.biblioteca
+def test_sin_archivo_las_etapas_no_ejecutadas_valen_cero():
+    r = resp(procesar(None, None)[1])
+    assert r["tiempos_ms"].startswith("crear=0;excel=0;")
 
 
-def test_adjunto_que_no_es_xlsx():
-    t = TenantSimulado(ESQUEMA)
-    lote = t.crear_lote(b"a,b\n1,2\n", nombre="datos.csv")["ID"]
-    procesar(t, lote)
-    assert (final(t, lote)["ESTADO"], final(t, lote)["CODIGO_RESULTADO"]) == ("ERROR", "NO_ES_XLSX")
-    assert not t.biblioteca
+# ------------------------------------------------------------------ aislamiento y ausencia de la infraestructura eliminada
+def test_solo_toca_la_carpeta_temporal_y_excel_y_deja_la_biblioteca_como_la_encontro():
+    t, e = correr(EJEMPLO)
+    assert {op for op, _ in t.llamadas} == {"CreateFile", "GetItems", "DeleteFile"}
+    assert all(c == F.CARPETA_TEMP for c, _, _ in t.biblioteca.values()) and t.creados == t.borrados and not t.biblioteca
 
 
-def test_xlsx_corrupto_no_se_confunde_con_tabla_ausente():
-    t = TenantSimulado(ESQUEMA)
-    lote = t.crear_lote(b"esto no es un zip", nombre="roto.xlsx")["ID"]
-    procesar(t, lote)
-    f = final(t, lote)
-    assert (f["ESTADO"], f["CODIGO_RESULTADO"]) == ("ERROR", "ERROR_LECTURA_EXCEL")
-    assert "HTTP 400" in f["MENSAJE"]
+def test_el_flujo_ya_no_tiene_lotes_listas_estados_ni_sondeo():
+    texto = json.dumps(F.construir_definicion(), ensure_ascii=False)
+    for prohibido in ("LOTE", "Lote", "PENDIENTE", "PROCESANDO", "CARGADO", "HttpRequest", "GetOnUpdatedItems", "GetAttachments",
+                      "GetAttachmentContent", "GetByTitle", "MERGE", "IF-MATCH", "ETag", "Depositos_Activos", "Depositos_Reversiones",
+                      "TIPO_CAMBIO", "Confirmaciones_Masivas"):
+        assert prohibido not in texto, prohibido
 
 
-# ------------------------------------------------------------------ fallos de infraestructura (clasificación)
-@pytest.mark.parametrize("clave,http,codigo", [("adjuntos", 500, "ERROR_ADJUNTO"), ("contenido", 500, "ERROR_ADJUNTO"),
-                                               ("crear", 409, "ERROR_COPIA_ARCHIVO"), ("crear", 403, "ERROR_COPIA_ARCHIVO"),
-                                               ("excel", 423, "ARCHIVO_BLOQUEADO"), ("excel", 500, "ERROR_LECTURA_EXCEL"),
-                                               ("excel", 404, "TABLA_NO_ENCONTRADA")])
-def test_fallos_de_conector_se_clasifican(clave, http, codigo):
-    t, lote = tenant("Ejemplo_Confirmacion_Masiva_P9.xlsx")
-    t.fallos[clave] = ("Failed", http)
-    procesar(t, lote)
-    f = final(t, lote)
-    assert (f["ESTADO"], f["CODIGO_RESULTADO"]) == ("ERROR", codigo)
-    assert f["FILAS_LEIDAS"] == 0
+def test_cada_ejecucion_es_independiente_no_queda_estado_entre_llamadas():
+    t = TenantSimulado()
+    a = resp(correr(EJEMPLO, tenant=t)[1])
+    b = resp(correr("03_SIN_TABLA.xlsx", tenant=t)[1])
+    c = resp(correr(EJEMPLO, tenant=t)[1])
+    assert (a["codigo"], b["codigo"], c["codigo"]) == ("OK", "TABLA_NO_ENCONTRADA", "OK") and not t.biblioteca
 
 
-def test_archivo_abierto_bloqueado_423_y_luego_liberado():
-    t, lote = tenant("Ejemplo_Confirmacion_Masiva_P9.xlsx")
-    t.bloqueados.add(f"{t.lotes[lote]['LOTE_UID']}_20261005120000.xlsx")
-    procesar(t, lote)
-    assert final(t, lote)["CODIGO_RESULTADO"] == "ARCHIVO_BLOQUEADO"
-
-
-def test_excel_sin_configurar_no_se_presenta_como_tabla_inexistente_salvo_404():
-    """Con el marcador <CONFIGURAR_...> sin sustituir, el conector real fallaría; un 500 se reporta como lectura, no como tabla."""
-    t, lote = tenant("Ejemplo_Confirmacion_Masiva_P9.xlsx")
-    t.fallos["excel"] = ("Failed", 500)
-    procesar(t, lote, F.construir_definicion())
-    assert final(t, lote)["CODIGO_RESULTADO"] == "ERROR_LECTURA_EXCEL"
-
-
-def test_si_falla_la_escritura_final_el_flujo_falla_visiblemente_y_el_lote_queda_PROCESANDO():
-    """Riesgo conocido, documentado: el flujo no tiene a dónde reportar si SharePoint rechaza el último MERGE."""
-    t, lote = tenant("Ejemplo_Confirmacion_Masiva_P9.xlsx")
-    t.fallos["merge_final"] = ("Failed", 500)
-    r = procesar(t, lote)
-    assert r.estado_final == "Failed" and final(t, lote)["ESTADO"] == "PROCESANDO"
-
-
-# ------------------------------------------------------------------ aislamiento
-def test_solo_toca_la_lista_de_lotes_y_la_carpeta_temporal():
-    t, lote = tenant("Ejemplo_Confirmacion_Masiva_P9.xlsx")
-    procesar(t, lote)
-    assert {op for op, _ in t.llamadas} == {"HttpRequest", "GetAttachments", "GetAttachmentContent", "CreateFile", "GetItems"}
-    assert all(c == F.CARPETA_TEMP for c, _, _ in t.biblioteca.values())
-    texto = json.dumps(F.construir_definicion())
-    assert "Depositos_Activos" not in texto and "Depositos_Reversiones" not in texto
-    assert "ETag" not in texto and "TIPO_CAMBIO" not in texto
-
-
-def test_el_flujo_solo_escribe_columnas_declaradas_en_el_esquema():
-    declaradas = {c["nombre_tecnico"] for c in ESQUEMA["columnas"]}
-    assert set(F.CAMPOS_ESCRITOS) <= declaradas
-    t, lote = tenant("Ejemplo_Confirmacion_Masiva_P9.xlsx")
-    procesar(t, lote)
-    escritas = {k for _, _, c in t.escrituras for k in c}
-    assert escritas == set(F.CAMPOS_ESCRITOS) - {"ARCHIVO_NOMBRE"} | ({"ARCHIVO_NOMBRE"} & escritas)
-    assert escritas <= set(F.CAMPOS_ESCRITOS)
-
-
-def test_codigos_de_resultado_del_flujo_estan_en_el_esquema():
-    permitidos = next(c for c in ESQUEMA["columnas"] if c["nombre_tecnico"] == "CODIGO_RESULTADO")["valores"]
-    assert set(F.CODIGOS) == set(permitidos)
-    visto = set(json.dumps(F.construir_definicion()).split('"codigo": "')[1:])
-    for fragmento in visto:
-        assert fragmento.split('"')[0] in permitidos
+def test_resultados_posibles_y_codigos_son_los_declarados():
+    assert set(F.SALIDAS) == {"resultado", "codigo", "mensaje", "archivo", "tabla_encontrada", "filas_leidas",
+                              "copia_temporal_eliminada", "tiempos_ms"}
+    declarados = set(F.CODIGOS)
+    vistos = set()
+    for archivo in (EJEMPLO, PLANTILLA, "03_SIN_TABLA.xlsx", "05_ENCABEZADO_CAMBIADO.xlsx"):
+        r = resp(correr(archivo)[1])
+        assert r["resultado"] in ("COMPLETADO", "ERROR")
+        vistos.add(r["codigo"])
+    assert vistos <= declarados
+    assert set(re.findall(r'"codigo": "([A-Z_]+)"', json.dumps(F.construir_definicion()))) <= declarados

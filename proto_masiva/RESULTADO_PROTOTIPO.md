@@ -1,101 +1,100 @@
-# P9 CONFIRMACIÓN MASIVA — Prototipo funcional (datos ficticios)
+# P9 CONFIRMACIÓN MASIVA — Prototipo DIRECTO (sin lotes), datos ficticios
 
 > ## ESTADO DE VALIDACIÓN (leer primero)
 >
-> - **117/117 pruebas son sintéticas/locales**: usan un tenant simulado dentro de este repositorio, no Power Automate, SharePoint ni Excel Online reales.
-> - **NO hay validación real en tenant.** Nada de lo descrito aquí se ha ejecutado todavía en Microsoft 365.
-> - **Nombres internos de algunas operaciones de Power Automate siguen por validar** (`GetOnUpdatedItems`, `GetAttachments`, `GetAttachmentContent`, `CreateFile`, Excel `GetItems`): se escribieron de memoria, sin poder consultar la documentación de Microsoft.
-> - **La latencia del disparador de SharePoint sigue por medir.**
-> - **El control de adjuntos y el temporizador requieren validación manual en Studio** (se crean a mano; el formulario, `OnSuccess` y `Launch(...?download=1)` tampoco están probados).
+> - **139/139 pruebas son sintéticas/locales**: usan un tenant simulado dentro de este repositorio, no Power Automate, SharePoint ni Excel Online reales.
+> - **NO hay validación real en tenant.** Nada se ha ejecutado todavía en Microsoft 365, y **no se ha medido ningún tiempo ni límite**. `MEDICION_TENANT.md` está en blanco a propósito.
+> - **Nombres internos de varias operaciones de Power Automate siguen por validar** (entrada de tipo Archivo del disparador, `CreateFile`, `DeleteFile`, Excel `GetItems`): se escribieron de memoria, sin poder consultar la documentación de Microsoft.
+> - **El control de adjuntos y la forma de la llamada `.Run({name, contentBytes})` requieren validación manual en Studio.**
 > - **No se ha tocado `Depositos_Activos`** ni ningún artefacto de producción: el prototipo no lo consulta ni lo modifica, y todos los cambios están bajo `proto_masiva/`.
 
-Rama `experiment/p9-masiva-prototipo`, partiendo de `941dac9` (checkpoint de producción `3b407e2` intacto). **Nada de esto se ha probado todavía en tu tenant.** Etiquetas: **[VALIDADO LOCALMENTE]** = probado con un tenant simulado en este repositorio; **[REQUIERE VALIDACIÓN TENANT]** = solo se sabrá al ejecutarlo en Microsoft 365.
+Rama `experiment/p9-masiva-prototipo` (checkpoint de producción `3b407e2` intacto).
 
-## QUÉ FUNCIONA
+## QUÉ CAMBIÓ (decisión funcional: sin trazabilidad de lotes)
+
+**Eliminado del diseño y del repositorio del prototipo:** `P9_MASIVA_PROTO_LOTES`, `Confirmaciones_Masivas`, `Confirmaciones_Masivas_Detalle`, `LOTE_UID`, historial de lotes, estados persistentes `PENDIENTE`/`PROCESANDO`, copia permanente del Excel, temporizador/sondeo y procesamiento asíncrono basado en listas. (También se eliminó el kit anterior de medición `RUNBOOK.md` / `REGISTRO_RESULTADOS.md`, que giraba en torno a esa lista.)
 
 ```
 Main_Screen ──[IMPORTACIÓN MASIVA]──► P9_Confirmacion_Masiva
    DESCARGAR PLANTILLA · ADJUNTAR EXCEL · PREVALIDAR ARCHIVO
-        │ crea el lote en P9_MASIVA_PROTO_LOTES (con el XLSX adjunto) → ESTADO = PENDIENTE
+        │  .Run({name, contentBytes})          ← la app ESPERA la respuesta
         ▼
-   flujo P9_MASIVA_PROTO_PREVALIDAR (se dispara solo con ESTADO = PENDIENTE)
-        PROCESANDO → copia el XLSX a Documents/P9_MASIVA_PROTO → lee tblConfirmacionMasiva → cuenta filas
-        → COMPLETADO | ERROR (con código y mensaje)
-        ▲
-   la pantalla consulta el lote cada 5 s y muestra:
-        ARCHIVO RECIBIDO · TABLA ENCONTRADA · 3 FILAS LEÍDAS
+   flujo P9_MASIVA_PROTO_PREVALIDAR
+        valida nombre/extensión → crea copia TMP_<guid>.xlsx en Documents/P9_MASIVA_TEMP
+        → Excel Online lee tblConfirmacionMasiva → valida estructura, cuenta filas
+        → BORRA la copia (pase lo que pase) → responde
+        ▼
+   la pantalla muestra:  ARCHIVO RECIBIDO · TABLA ENCONTRADA · 3 FILAS LEÍDAS
+                         + mensaje, tiempo de la app, tiempos del flujo, ¿copia eliminada?
 ```
 
-Una sola arquitectura: estado en la lista + disparador + sondeo. **No usa «Respuesta temprana»** (nunca se probó que el flujo siga después de responder). **No consulta ni modifica `Depositos_Activos`**, ni usa ETag, ni confirma nada.
+Si la app se cierra durante el proceso, se vuelve a cargar el Excel (no hay reanudación). La confirmación futura detectará lo ya confirmado por el estado real del depósito (`YA_CONFIRMADO` / `NO_DISPONIBLE`), no por un historial de lotes.
 
-Existen de verdad (en este repo): las plantillas Excel definitivas (`Plantilla_…` vacía y `Ejemplo_…`, ver `PLANTILLA_PRODUCCION.md`), la pantalla, el botón, el flujo (JSON + ZIP importable), el esquema de la lista, las instrucciones y 117 pruebas.
+**El único artefacto residual** es la lista `P9_MASIVA_PROTO_ADJUNTO`: **vacía y nunca escrita**. Es **solo un vehículo técnico** para alojar el control de adjuntos: en Power Apps ese control solo vive dentro de un formulario y un formulario necesita un origen de datos. **No guarda lotes, estados, historial, trazabilidad ni archivos permanentes y no es parte de la lógica de negocio** (el flujo ni la referencia). Si en tu Studio puedes usar el control de adjuntos suelto, se elimina también (`sharepoint/INSTRUCCIONES_VEHICULO.md`).
 
-## QUÉ SE PROBÓ
+## QUÉ SE PROBÓ [VALIDADO LOCALMENTE]
 
-117 pruebas, todas pasan (`python -m pytest proto_masiva/tests -q -p no:cacheprovider`):
+`python -m pytest proto_masiva/tests -q -p no:cacheprovider` → **139 pasan**.
 
 | Archivo de pruebas | Cubre | Pruebas |
 |---|---|---|
-| `test_01_plantillas.py` | los 6 fixtures de los escenarios A–E: 9 columnas, sin TIPO_CAMBIO, cuentas inventadas | 13 |
-| `test_02_flujo_definicion.py` | estructura del flujo y del ZIP, cadena de acciones sin pasos en paralelo, referencias válidas, solo escribe en el lote, `IF-MATCH: *` únicamente en la lista de estado, nunca reescribe `PENDIENTE` | 12 |
-| `test_03_escenarios_sinteticos.py` | escenarios A–E y los casos anómalos (abajo) con un tenant simulado | 32 |
-| `test_04_powerapps.py` | YAML válido, 30 controles únicos, referencias resolubles, fórmulas balanceadas, botón = original + 1 bloque | 17 |
-| `test_05_plantillas_produccion.py` | Plantilla vacía y Ejemplo: tabla, 9 columnas, formatos, listas, 6 bancos / 13 cuentas, sin macros ni TIPO_CAMBIO, determinismo, rechazo de 14 plantillas defectuosas, fórmulas evaluadas en LibreOffice | 43 |
+| `test_01_plantillas.py` | los 6 fixtures de A–E: 9 columnas, sin TIPO_CAMBIO, cuentas inventadas | 13 |
+| `test_02_flujo_definicion.py` | estructura del flujo y del ZIP, disparador, cadena sin pasos en paralelo, referencias válidas, reintentos, solo 3 operaciones y ninguna lista, sin lotes ni estados, `PARAM_MAX_FILAS = 0` | 14 |
+| `test_03_escenarios_sinteticos.py` | escenarios A–E y casos anómalos, fallos de copia/Excel/borrado, tamaño, tiempos, aislamiento | 36 |
+| `test_04_powerapps.py` | YAML, 30 controles, la app llama al flujo con el archivo, sin temporizador ni lotes, salidas del flujo = las que usa la app, botón de `Main_Screen`, lista vehículo solo como vehículo técnico | 20 |
+| `test_05_plantillas_produccion.py` | Plantilla vacía y Ejemplo (catálogo extraído, 14 plantillas defectuosas rechazadas, fórmulas evaluadas en LibreOffice) | 43 |
+| `test_06_medicion.py` | los 7 archivos de medición y que el protocolo no traiga cifras inventadas | 13 |
 
-Además, durante el trabajo las pruebas detectaron **un defecto real de mi primer borrador** (`Etapa_excel` corría en paralelo con la copia) y quedó corregido y protegido con una prueba estructural. Reintroduje a propósito 4 defectos (reescribir `PENDIENTE`, escribir en otra lista, no validar encabezados, contar filas en blanco): las pruebas los detectan.
+| # | Archivo (`xlsx/`) | Resultado en simulación |
+|---|---|---|
+| A | `Ejemplo_Confirmacion_Masiva_P9.xlsx` | `COMPLETADO · OK · filas_leidas = 3 · tabla = SI`, copia eliminada |
+| B | `Plantilla_…P9.xlsx` (vacía), `02a_…`, `02b_…` | `ERROR · ARCHIVO_VACIO` (controlado; el flujo no falla) |
+| C | `03_SIN_TABLA.xlsx` | `ERROR · TABLA_NO_ENCONTRADA` (**supuesto: Excel responde 404**) |
+| D | `05_ENCABEZADO_CAMBIADO.xlsx` | `ERROR · ESTRUCTURA_INVALIDA` (nombra `CUENTA_BANCARIA`) |
+| E | `04_TABLA_NOMBRE_DISTINTO.xlsx` | `ERROR · TABLA_NO_ENCONTRADA` |
 
-El simulador usa el intérprete WDL del repo (P8, solo lectura) más conectores falsos. **No es Power Automate**: no valida nombres de operación, tiempos ni códigos HTTP reales.
+Además, con tenant simulado: sin archivo / no-xlsx (`SIN_ARCHIVO`, `NO_ES_XLSX`; no se crea nada), xlsx corrupto (`ERROR_LECTURA_EXCEL`, no se confunde con tabla ausente), fallo al crear la copia, Excel bloqueado/500/404, **fallo al borrar la copia (el resultado de negocio no cambia; solo se informa `copia_temporal_eliminada = NO`)**, 1000 filas sin tope, y 2000 filas → `DEMASIADAS_FILAS` (la lectura alcanzó el umbral de paginación: se avisa en vez de contar de menos). Reintroduje a propósito 5 defectos (no borrar si falla Excel, que el borrado bloquee la respuesta, contar filas en blanco, quitar el aviso de umbral, clasificar mal la etapa de copia): las pruebas los detectan.
 
-## RESULTADO DE CADA PRUEBA
+## QUÉ NO SE PROBÓ: tiempos y límites
 
-| # | Archivo (en `xlsx/`) | Resultado esperado y obtenido en simulación | Estado |
-|---|---|---|---|
-| A | `Ejemplo_Confirmacion_Masiva_P9.xlsx` (3 filas) | `COMPLETADO · OK · FILAS_LEIDAS = 3 · Tabla = SI` · «Archivo leído correctamente» | [VALIDADO LOCALMENTE] · [REQUIERE VALIDACIÓN TENANT] |
-| A′ | `01_OK_3filas.xlsx` | idéntico a A | ídem |
-| B | `Plantilla_Confirmacion_Masiva_P9.xlsx` (la vacía de producción), `02a_…`, `02b_…` | `ERROR · ARCHIVO_VACIO · Tabla = SI · 0 filas`. **Decisión:** una importación sin filas no se marca COMPLETADO (no hay nada que confirmar). Resultado controlado: el flujo no falla | ídem |
-| C | `03_SIN_TABLA.xlsx` | `ERROR · TABLA_NO_ENCONTRADA · Tabla = NO` | ídem. **Supuesto:** el conector Excel responde 404 |
-| D | `05_ENCABEZADO_CAMBIADO.xlsx` | `ERROR · ESTRUCTURA_INVALIDA` · «Faltan o cambiaron encabezados: CUENTA_BANCARIA…» | ídem |
-| E | `04_TABLA_NOMBRE_DISTINTO.xlsx` | `ERROR · TABLA_NO_ENCONTRADA` | ídem. Mismo supuesto 404 |
+La pregunta «¿el flujo directo termina en tiempos razonables?» **solo se responde en el tenant**. Está preparado, sin ninguna cifra supuesta:
 
-Otros casos simulados (todos terminan en estado final controlado): lote sin adjunto (`SIN_ADJUNTO`), adjunto que no es `.xlsx` (`NO_ES_XLSX`), XLSX corrupto (`ERROR_LECTURA_EXCEL`, no se confunde con tabla ausente), archivo bloqueado 423 (`ARCHIVO_BLOQUEADO`), fallos de adjuntos/copia/Excel (`ERROR_ADJUNTO`, `ERROR_COPIA_ARCHIVO`, `ERROR_LECTURA_EXCEL`), reintento tras ERROR, un lote que no está en `PENDIENTE` nunca dispara, el flujo nunca se redispara con sus propias escrituras, y si falla la **última** escritura el flujo falla de forma visible y el lote queda en `PROCESANDO` (riesgo conocido, abajo).
+- El flujo **devuelve sus propios tiempos** (`crear / excel / borrar / total`) y la pantalla muestra además el tiempo medido por la app.
+- `xlsx/medicion/Filas_NNNN.xlsx`: 10, 50, 100, 250, 500, 1000 y 2000 filas ficticias (17–94 KB).
+- `MEDICION_TENANT.md`: protocolo y tabla **en blanco** (`NO MEDIDO`).
+- Si aparece un tiempo de espera real, la decisión ya tomada es **fijar un máximo de filas por archivo**: `PARAM_MAX_FILAS` (hoy 0 = sin tope) y no crear lotes. **No se fijó ningún máximo.** El umbral de paginación (2000) es la configuración de lectura de Excel, no un límite de negocio; sirve para no devolver un recuento truncado.
+- Las mediciones son de **prevalidación (lectura)**; la confirmación hará además una lectura y una escritura por fila y tendrá su propio máximo.
 
-## QUÉ NECESITO HACER YO EN POWER APPS
+## QUÉ NECESITO HACER YO
 
-Detalle en `powerapps/INSTRUCCIONES_PEGADO.md`. Resumen: en una **copia** de la app, agregar la lista como origen de datos; crear la pantalla `P9_Confirmacion_Masiva`; **tres controles se crean a mano** porque no hay forma fiable de pegarlos en YAML: el formulario `frmLoteP9` (solo con «Datos adjuntos», control renombrado `attXlsxP9`), y el temporizador `tmrSondeoP9`; pegar `P9_Confirmacion_Masiva_CONTROLES_PEGAR.yaml`; escribir a mano `OnVisible`/`OnHidden`; y añadir **un botón** a `Main_Screen` (`powerapps/BOTON_MAIN_SCREEN.txt`, bloque en `BOTON_MAIN_SCREEN_PEGAR.yaml`). El botón es el único control nuevo de `Main_Screen`: 79 → 80 controles, ningún otro cambia; `Main_Screen_CON_BOTON_IMPORTACION_MASIVA.yaml` es el original + ese bloque (prueba: quitando el bloque queda byte a byte igual).
+**En SharePoint** (`sharepoint/INSTRUCCIONES_VEHICULO.md`): lista vacía `P9_MASIVA_PROTO_ADJUNTO` con adjuntos habilitados; carpetas `Documents/P9_MASIVA_TEMP` (temporal, vacía) y `Documents/P9_MASIVA_PROTO` (con la Plantilla).
 
-## QUÉ NECESITO IMPORTAR/CREAR EN POWER AUTOMATE Y SHAREPOINT
+**En Power Automate** (`flows/INSTRUCCIONES_FLUJO.md`): importar `P9_MASIVA_PROTO_PREVALIDAR.zip` y **revisar 4 puntos** (entrada de tipo Archivo del disparador, `Crear_archivo`, `Leer_tabla_Excel`, `Borrar_copia_temporal`).
 
-1. **Lista** `P9_MASIVA_PROTO_LOTES` (9 columnas) y carpeta `Documents/P9_MASIVA_PROTO` con la plantilla: `sharepoint/INSTRUCCIONES_LISTA.md`.
-2. **Importar** `flows/P9_MASIVA_PROTO_PREVALIDAR.zip` (Importar paquete heredado) con conexiones SharePoint y **Excel Online (Business)**, y **revisar 5 puntos** (`flows/INSTRUCCIONES_FLUJO.md`): disparador, adjuntos, contenido, crear archivo y lectura de Excel (ubicación/biblioteca de Excel hay que elegirlas: no puedo conocerlas).
+**En Power Apps** (`powerapps/INSTRUCCIONES_PEGADO.md`), en una **copia** de la app: agregar la lista vehículo y el flujo; crear la pantalla; **un solo control manual** (el formulario `frmArchivoP9` con el control de adjuntos renombrado `attXlsxP9`); pegar `P9_Confirmacion_Masiva_CONTROLES_PEGAR.yaml`; escribir `OnVisible`; añadir un botón a `Main_Screen` (`powerapps/BOTON_MAIN_SCREEN.txt`: 79 → 80 controles, ninguno otro cambia).
 
 ## QUÉ SIGUE SIN ESTAR VALIDADO EN TENANT
 
-- **Nombres internos de 5 operaciones/parámetros** (`GetOnUpdatedItems`, `GetAttachments`, `GetAttachmentContent`, `CreateFile`, Excel `GetItems`): los escribí de memoria; `learn.microsoft.com` está bloqueado desde este entorno. Son lo más probable que pida un reajuste en el diseñador (2 minutos por acción). Lo que ya está validado en tu tenant por flujos anteriores: `HttpRequest` a SharePoint, `GetOnNewItems`, `GetFileContent`.
-- **Latencia del disparador de SharePoint**: no medida. Es la parte lenta del diseño (el sondeo de la app es 5 s, pero el flujo puede tardar ~1 min en arrancar). Si resulta inaceptable, hay que cambiar de patrón.
-- **Que `OnSuccess` del formulario corra después de subir el adjunto** (de lo que depende no tener que esperar adjuntos en el flujo; si no, el flujo responde `SIN_ADJUNTO` y se reintenta con PREVALIDAR).
-- **Comportamiento real del conector Excel**: código HTTP con tabla ausente (supuesto 404; si es 400, ver `INSTRUCCIONES_FLUJO.md`), tabla vacía, encabezado cambiado, archivo abierto, tiempo hasta poder leer un archivo recién creado (la simulación no lo reproduce; no se agregó Delay ni reintento por no tener evidencia de que haga falta).
-- **Control de adjuntos, temporizador y `Launch(...?download=1)`** en tu Studio; permisos de los usuarios sobre la carpeta y la lista.
-- Todo lo anterior son hipótesis hasta que lo ejecutes.
-
-**Riesgos conocidos (no resueltos en el prototipo):** si SharePoint rechaza la escritura final, el lote queda en `PROCESANDO` y la app dejará de sondear a los 6 min (botón ACTUALIZAR ESTADO; falta un vigilante); `IF-MATCH: *` se usa solo en la lista de estado del prototipo, de un único escritor — **no** se hereda a `Depositos_Activos`.
+- **Todo tiempo y todo límite** (ver arriba).
+- Nombres internos de `CreateFile`, `DeleteFile`, Excel `GetItems` y la **entrada de tipo Archivo** del disparador.
+- Que `.Run({name, contentBytes})` sea la forma de llamada que acepta tu Studio.
+- Que el control de adjuntos conserve `attXlsxP9.Attachments` **sin enviar el formulario**.
+- El comportamiento real de Excel Online: código HTTP con tabla ausente (supuesto 404), tabla vacía, encabezado cambiado, archivo abierto, tiempo hasta poder leer un archivo recién creado, y si retiene el archivo e impide borrarlo (el flujo lo informa en `copia_temporal_eliminada`).
+- `Launch(…?download=1)` y los permisos de los usuarios.
 
 ## PASOS PARA GABRIEL
 
-1. Crea la lista `P9_MASIVA_PROTO_LOTES` y la carpeta `P9_MASIVA_PROTO` con la plantilla (`sharepoint/INSTRUCCIONES_LISTA.md`, ~10 min).
-2. Sube también a esa carpeta los archivos de prueba que quieras usar (están en `xlsx/`).
-3. Power Automate: importa `flows/P9_MASIVA_PROTO_PREVALIDAR.zip`, mapea SharePoint y Excel Online (Business).
-4. Abre el flujo y revisa los 5 puntos de `flows/INSTRUCCIONES_FLUJO.md`; guarda y deja el flujo **Activado**.
-5. Power Apps: guarda una **copia** de la app P9 y agrega la lista como origen de datos.
-6. Crea la pantalla `P9_Confirmacion_Masiva`, el formulario `frmLoteP9` (renombra el control de adjuntos `attXlsxP9`) y el temporizador `tmrSondeoP9` (`powerapps/INSTRUCCIONES_PEGADO.md`, pasos 2–4).
-7. Pega `P9_Confirmacion_Masiva_CONTROLES_PEGAR.yaml` sobre la pantalla y escribe `OnVisible`/`OnHidden` (pasos 5–6).
-8. En `Main_Screen`, pega el botón (`BOTON_MAIN_SCREEN.txt`, opción A) y comprueba que no hay errores nuevos en el comprobador.
-9. Prueba con los 5 archivos de la tabla A–E (F5 desde `Main_Screen` → IMPORTACIÓN MASIVA) y anota, para cada uno, el **estado final, el código y el tiempo** desde PREVALIDAR hasta COMPLETADO/ERROR. Si algún resultado difiere de lo esperado, copia el `MENSAJE` del lote: lleva el código HTTP real.
-10. Cuando termines, elimina todo lo temporal (`sharepoint/INSTRUCCIONES_LISTA.md` §5 y `flows/INSTRUCCIONES_FLUJO.md`, última sección) y pásame los resultados.
-
-## DECISIONES TOMADAS (por simplicidad)
-
-Estado `ESTADO` como texto (no Opción); tabla vacía = `ERROR/ARCHIVO_VACIO`; filas totalmente en blanco no cuentan; 5 s de sondeo con tope de 6 min; copia temporal con nombre `LOTE_UID_aaaaMMddHHmmss.xlsx` (nunca choca al reintentar); sin autocompletar nada; sin `TIPO_CAMBIO` en plantilla, flujo ni pantalla; paginación de Excel a 2000 filas.
+1. Crea la lista vacía `P9_MASIVA_PROTO_ADJUNTO` y las carpetas `P9_MASIVA_TEMP` y `P9_MASIVA_PROTO`; sube la Plantilla a la segunda.
+2. Power Automate: importa el ZIP del flujo y revisa los 4 puntos de `flows/INSTRUCCIONES_FLUJO.md`; déjalo **Activado**.
+3. Power Apps: guarda una **copia** de la app P9; agrega la lista vehículo y el flujo.
+4. Crea la pantalla `P9_Confirmacion_Masiva` y el formulario `frmArchivoP9` (control de adjuntos = `attXlsxP9`).
+5. Pega los controles y escribe `OnVisible` (`powerapps/INSTRUCCIONES_PEGADO.md`, pasos 4–5).
+6. Pega el botón en `Main_Screen` (`BOTON_MAIN_SCREEN.txt`) y revisa el comprobador de aplicaciones.
+7. Prueba con `Ejemplo_Confirmacion_Masiva_P9.xlsx` (debe dar COMPLETADO y 3 filas). Si `.Run(...)` marca error, anota qué firma pide Studio.
+8. Haz las pruebas de comportamiento y mide con los 7 archivos de `xlsx/medicion/` (3 ejecuciones cada uno) en `MEDICION_TENANT.md`.
+9. Verifica que `Documents/P9_MASIVA_TEMP` quedó vacía y anota si hubo `copia_temporal_eliminada = NO`.
+10. Con las medidas, decidimos el máximo de filas (si hace falta). Al terminar, elimina lo temporal (`sharepoint/INSTRUCCIONES_VEHICULO.md` §3).
 
 ## MAPA DE ARCHIVOS (todo bajo `proto_masiva/`)
 
-`xlsx/{Plantilla,Ejemplo}_Confirmacion_Masiva_P9.xlsx` (+6 fixtures de A–E) · `generar_plantillas_produccion.py`, `catalogo_p9.py`, `catalogo_bancos_p9.json`, `contrato_plantilla.py`, `PLANTILLA_PRODUCCION.md` · `powerapps/{P9_Confirmacion_Masiva.pa.yaml, …_CONTROLES_PEGAR.yaml, BOTON_MAIN_SCREEN.txt, BOTON_MAIN_SCREEN_PEGAR.yaml, Main_Screen_CON_BOTON_IMPORTACION_MASIVA.yaml, INSTRUCCIONES_PEGADO.md, aplicar_boton.py, derivar_pegar.py}` · `flows/{construir.py, P9_MASIVA_PROTO_PREVALIDAR_definition.json, P9_MASIVA_PROTO_PREVALIDAR.zip, INSTRUCCIONES_FLUJO.md}` · `sharepoint/{esquema_P9_MASIVA_PROTO_LOTES.json, INSTRUCCIONES_LISTA.md}` · `tests/` · `RUNBOOK.md` y `REGISTRO_RESULTADOS.md` (kit anterior de medición, marcado como superado).
+`xlsx/{Plantilla,Ejemplo}_Confirmacion_Masiva_P9.xlsx` · `xlsx/medicion/Filas_NNNN.xlsx` · `xlsx/` (6 fixtures de A–E) · `contrato_plantilla.py` · `catalogo_p9.py` + `catalogo_bancos_p9.json` · `generar_plantillas_produccion.py` · `generar_medicion.py` · `generar_xlsx.py` (fixtures) · `PLANTILLA_PRODUCCION.md` · `MEDICION_TENANT.md` · `powerapps/{P9_Confirmacion_Masiva.pa.yaml, …_CONTROLES_PEGAR.yaml, BOTON_MAIN_SCREEN.txt, BOTON_MAIN_SCREEN_PEGAR.yaml, Main_Screen_CON_BOTON_IMPORTACION_MASIVA.yaml, INSTRUCCIONES_PEGADO.md, aplicar_boton.py, derivar_pegar.py}` · `flows/{construir.py, P9_MASIVA_PROTO_PREVALIDAR_definition.json, P9_MASIVA_PROTO_PREVALIDAR.zip, INSTRUCCIONES_FLUJO.md}` · `sharepoint/INSTRUCCIONES_VEHICULO.md` · `tests/`.

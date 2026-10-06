@@ -129,7 +129,7 @@ def filas_ejemplo(cat):
              "SOLICITANTE EJEMPLO", "COCHABAMBA", "FILA DE EJEMPLO: borrar") for i, c in enumerate(elegidas, 1)]
 
 
-def hoja_carga(wb, cat, con_ejemplos):
+def hoja_carga(wb, cat, con_ejemplos, filas=None):
     ws = wb.active
     ws.title = HOJA_CARGA
     ws.sheet_properties.tabColor = GRANATE
@@ -150,7 +150,7 @@ def hoja_carga(wb, cat, con_ejemplos):
         c.fill = PatternFill("solid", fgColor=GRANATE if nombre in OBLIGATORIAS else GRIS)
         c.alignment = Alignment(horizontal="center", vertical="center")
     ws.row_dimensions[FILA_ENC].height = 22
-    filas = filas_ejemplo(cat) if con_ejemplos else []
+    filas = list(filas) if filas is not None else (filas_ejemplo(cat) if con_ejemplos else [])
     for r, fila in enumerate(filas, PRIMERA):
         for c, valor in enumerate(fila, 1):
             ws.cell(r, c, valor)
@@ -178,7 +178,7 @@ def hoja_carga(wb, cat, con_ejemplos):
 
 
 # ------------------------------------------------------------------------------------------------ verificación y guardado
-def verificar(datos: bytes, cat: dict, con_ejemplos: bool) -> None:
+def verificar(datos: bytes, cat: dict, con_ejemplos) -> None:
     """Aborta con la lista completa de incumplimientos."""
     fallos = []
     with zipfile.ZipFile(io.BytesIO(datos)) as z:
@@ -238,10 +238,13 @@ def verificar(datos: bytes, cat: dict, con_ejemplos: bool) -> None:
     fin_tabla = int(re.sub(r"\D", "", ws.tables[NOMBRE_TABLA].ref.split(":")[1]))
     datos_tabla = [[c.value for c in ws[r][:len(ENCABEZADOS)]] for r in range(PRIMERA, fin_tabla + 1)]
     con_datos = [f for f in datos_tabla if any(v not in (None, "") for v in f)]
-    if con_ejemplos and len(con_datos) != 3:
-        fallos.append(f"el ejemplo debe tener 3 filas, tiene {len(con_datos)}")
-    if not con_ejemplos and con_datos:
-        fallos.append("la plantilla de producción trae filas con datos")
+    if isinstance(con_ejemplos, bool):  # True = Ejemplo (3 filas), False = Plantilla de producción (0 filas)
+        if con_ejemplos and len(con_datos) != 3:
+            fallos.append(f"el ejemplo debe tener 3 filas, tiene {len(con_datos)}")
+        if not con_ejemplos and con_datos:
+            fallos.append("la plantilla de producción trae filas con datos")
+    elif len(con_datos) != con_ejemplos:  # nº exacto de filas (archivos de medición)
+        fallos.append(f"se esperaban {con_ejemplos} filas con datos y hay {len(con_datos)}")
     if fallos:
         raise AssertionError("Plantilla inválida:\n - " + "\n - ".join(fallos))
 
@@ -261,16 +264,17 @@ def _zip_determinista(wb) -> bytes:
     return salida.getvalue()
 
 
-def construir(con_ejemplos: bool, cat: dict | None = None) -> bytes:
+def construir(con_ejemplos, cat: dict | None = None, filas=None) -> bytes:
+    """con_ejemplos: False = vacía, True = 3 ejemplos; con `filas` explícitas, se verifica que el nº de filas coincida."""
     cat = cat or catalogo_p9.extraer()
     wb = Workbook()
-    hoja_carga(wb, cat, con_ejemplos)
+    hoja_carga(wb, cat, con_ejemplos, filas)
     hoja_catalogos(wb, cat)
     wb.properties.creator = "P9 CONFIRMACIÓN MASIVA"
     wb.properties.title = TITULO
     wb.properties.created = wb.properties.modified = FECHA_FIJA
     datos = _zip_determinista(wb)
-    verificar(datos, cat, con_ejemplos)
+    verificar(datos, cat, con_ejemplos if filas is None else len(filas))
     return datos
 
 

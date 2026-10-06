@@ -12,33 +12,33 @@
     }
   },
   "triggers": {
-    "Cuando_un_lote_queda_PENDIENTE": {
-      "type": "OpenApiConnection",
-      "recurrence": {
-        "frequency": "Minute",
-        "interval": 1
-      },
-      "splitOn": "@triggerOutputs()?['body/value']",
+    "manual": {
+      "type": "Request",
+      "kind": "PowerAppV2",
       "inputs": {
-        "host": {
-          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
-          "connectionName": "shared_sharepointonline",
-          "operationId": "GetOnUpdatedItems"
-        },
-        "parameters": {
-          "dataset": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
-          "table": "P9_MASIVA_PROTO_LOTES"
-        },
-        "authentication": "@parameters('$authentication')"
-      },
-      "conditions": [
-        {
-          "expression": "@equals(triggerBody()?['ESTADO'],'PENDIENTE')"
-        }
-      ],
-      "runtimeConfiguration": {
-        "concurrency": {
-          "runs": 1
+        "schema": {
+          "type": "object",
+          "properties": {
+            "file": {
+              "title": "file",
+              "type": "object",
+              "x-ms-dynamically-added": true,
+              "description": "Archivo XLSX seleccionado en la app",
+              "x-ms-content-hint": "FILE",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "contentBytes": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "required": [
+            "file"
+          ]
         }
       }
     }
@@ -49,20 +49,11 @@
       "inputs": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
       "runAfter": {}
     },
-    "PARAM_LISTA": {
-      "type": "Compose",
-      "inputs": "P9_MASIVA_PROTO_LOTES",
-      "runAfter": {
-        "PARAM_SITIO": [
-          "Succeeded"
-        ]
-      }
-    },
     "PARAM_CARPETA": {
       "type": "Compose",
-      "inputs": "/Documents/P9_MASIVA_PROTO",
+      "inputs": "/Documents/P9_MASIVA_TEMP",
       "runAfter": {
-        "PARAM_LISTA": [
+        "PARAM_SITIO": [
           "Succeeded"
         ]
       }
@@ -86,14 +77,117 @@
         ]
       }
     },
-    "Lote": {
+    "PARAM_PAGINACION": {
       "type": "Compose",
-      "inputs": {
-        "id": "@coalesce(triggerBody()?['ID'],0)",
-        "uid": "@coalesce(triggerBody()?['LOTE_UID'],concat('LOTE-',string(coalesce(triggerBody()?['ID'],0))))"
-      },
+      "inputs": 2000,
       "runAfter": {
         "PARAM_ENCABEZADOS": [
+          "Succeeded"
+        ]
+      }
+    },
+    "PARAM_MAX_FILAS": {
+      "type": "Compose",
+      "inputs": 0,
+      "runAfter": {
+        "PARAM_PAGINACION": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Entrada": {
+      "type": "Compose",
+      "inputs": {
+        "nombre": "@trim(coalesce(triggerBody()?['file']?['name'],''))",
+        "base64": "@coalesce(triggerBody()?['file']?['contentBytes'],'')"
+      },
+      "runAfter": {
+        "PARAM_MAX_FILAS": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varT0": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varT0",
+            "type": "integer",
+            "value": "@ticks(utcNow())"
+          }
+        ]
+      },
+      "runAfter": {
+        "Entrada": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varT1": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varT1",
+            "type": "integer",
+            "value": 0
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varT0": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varT2": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varT2",
+            "type": "integer",
+            "value": 0
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varT1": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varT3": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varT3",
+            "type": "integer",
+            "value": 0
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varT2": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varT4": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varT4",
+            "type": "integer",
+            "value": 0
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varT3": [
           "Succeeded"
         ]
       }
@@ -105,22 +199,22 @@
           {
             "name": "varEtapa",
             "type": "string",
-            "value": "INICIO"
+            "value": "ENTRADA"
           }
         ]
       },
       "runAfter": {
-        "Lote": [
+        "Inicializar_varT4": [
           "Succeeded"
         ]
       }
     },
-    "Inicializar_varArchivo": {
+    "Inicializar_varArchivoId": {
       "type": "InitializeVariable",
       "inputs": {
         "variables": [
           {
-            "name": "varArchivo",
+            "name": "varArchivoId",
             "type": "string",
             "value": ""
           }
@@ -128,6 +222,23 @@
       },
       "runAfter": {
         "Inicializar_varEtapa": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varBorrada": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varBorrada",
+            "type": "string",
+            "value": "NO_APLICA"
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varArchivoId": [
           "Succeeded"
         ]
       }
@@ -142,7 +253,7 @@
             "value": {
               "estado": "ERROR",
               "codigo": "ERROR_NO_CONTROLADO",
-              "mensaje": "El lote no se procesó. Vuelva a intentar.",
+              "mensaje": "El archivo no se procesó. Vuelva a intentar.",
               "tabla": "",
               "filas": 0
             }
@@ -150,56 +261,16 @@
         ]
       },
       "runAfter": {
-        "Inicializar_varArchivo": [
+        "Inicializar_varBorrada": [
           "Succeeded"
         ]
       }
     },
-    "Cuerpo_procesando": {
+    "Validar_entrada": {
       "type": "Compose",
-      "inputs": {
-        "ESTADO": "PROCESANDO",
-        "MENSAJE": "Procesando el archivo...",
-        "CODIGO_RESULTADO": "",
-        "TABLA_ENCONTRADA": "",
-        "FILAS_LEIDAS": 0,
-        "FECHA_ESTADO": "@utcNow()"
-      },
+      "inputs": "@if(or(empty(outputs('Entrada')?['nombre']),empty(outputs('Entrada')?['base64'])),'SIN_ARCHIVO',if(not(endsWith(toLower(outputs('Entrada')?['nombre']),'.xlsx')),'NO_ES_XLSX',''))",
       "runAfter": {
         "Inicializar_varResultado": [
-          "Succeeded"
-        ]
-      }
-    },
-    "Marcar_PROCESANDO": {
-      "type": "OpenApiConnection",
-      "inputs": {
-        "host": {
-          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
-          "connectionName": "shared_sharepointonline",
-          "operationId": "HttpRequest"
-        },
-        "parameters": {
-          "dataset": "@outputs('PARAM_SITIO')",
-          "parameters/method": "POST",
-          "parameters/uri": "@concat('_api/web/lists/GetByTitle(''',outputs('PARAM_LISTA'),''')/items(',string(outputs('Lote')?['id']),')')",
-          "parameters/headers": {
-            "Accept": "application/json;odata=nometadata",
-            "Content-Type": "application/json;odata=nometadata",
-            "X-HTTP-Method": "MERGE",
-            "IF-MATCH": "*"
-          },
-          "parameters/body": "@string(outputs('Cuerpo_procesando'))"
-        },
-        "authentication": "@parameters('$authentication')",
-        "retryPolicy": {
-          "type": "fixed",
-          "count": 2,
-          "interval": "PT5S"
-        }
-      },
-      "runAfter": {
-        "Cuerpo_procesando": [
           "Succeeded"
         ]
       }
@@ -207,331 +278,290 @@
     "TRY": {
       "type": "Scope",
       "actions": {
-        "Etapa_adjuntos": {
-          "type": "SetVariable",
-          "inputs": {
-            "name": "varEtapa",
-            "value": "ADJUNTOS"
-          },
-          "runAfter": {}
-        },
-        "Obtener_adjuntos": {
-          "type": "OpenApiConnection",
-          "inputs": {
-            "host": {
-              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
-              "connectionName": "shared_sharepointonline",
-              "operationId": "GetAttachments"
-            },
-            "parameters": {
-              "dataset": "@outputs('PARAM_SITIO')",
-              "table": "@outputs('PARAM_LISTA')",
-              "id": "@outputs('Lote')?['id']"
-            },
-            "authentication": "@parameters('$authentication')"
-          },
-          "runAfter": {
-            "Etapa_adjuntos": [
-              "Succeeded"
-            ]
-          }
-        },
-        "Hay_adjunto": {
+        "Entrada_valida": {
           "type": "If",
-          "expression": "@greater(length(body('Obtener_adjuntos')),0)",
+          "expression": "@empty(outputs('Validar_entrada'))",
           "actions": {
-            "Adjunto": {
-              "type": "Compose",
-              "inputs": "@first(body('Obtener_adjuntos'))",
-              "runAfter": {}
-            },
-            "Nombre_adjunto": {
-              "type": "Compose",
-              "inputs": "@coalesce(outputs('Adjunto')?['DisplayName'],outputs('Adjunto')?['Name'],'')",
-              "runAfter": {
-                "Adjunto": [
-                  "Succeeded"
-                ]
-              }
-            },
-            "Guardar_nombre": {
+            "Etapa_copia": {
               "type": "SetVariable",
               "inputs": {
-                "name": "varArchivo",
-                "value": "@outputs('Nombre_adjunto')"
+                "name": "varEtapa",
+                "value": "COPIA"
               },
+              "runAfter": {}
+            },
+            "Nombre_copia": {
+              "type": "Compose",
+              "inputs": "@concat('TMP_',guid(),'.xlsx')",
               "runAfter": {
-                "Nombre_adjunto": [
+                "Etapa_copia": [
                   "Succeeded"
                 ]
               }
             },
-            "Es_xlsx": {
+            "Crear_archivo": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "CreateFile"
+                },
+                "parameters": {
+                  "dataset": "@outputs('PARAM_SITIO')",
+                  "folderPath": "@outputs('PARAM_CARPETA')",
+                  "name": "@outputs('Nombre_copia')",
+                  "body": "@base64ToBinary(outputs('Entrada')?['base64'])"
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              },
+              "runAfter": {
+                "Nombre_copia": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Guardar_id_de_la_copia": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varArchivoId",
+                "value": "@string(body('Crear_archivo')?['Id'])"
+              },
+              "runAfter": {
+                "Crear_archivo": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Marca_T1": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varT1",
+                "value": "@ticks(utcNow())"
+              },
+              "runAfter": {
+                "Guardar_id_de_la_copia": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Etapa_excel": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varEtapa",
+                "value": "EXCEL"
+              },
+              "runAfter": {
+                "Marca_T1": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Leer_tabla_Excel": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_excelonlinebusiness",
+                  "connectionName": "shared_excelonlinebusiness",
+                  "operationId": "GetItems"
+                },
+                "parameters": {
+                  "source": "<CONFIGURAR_UBICACION_EXCEL>",
+                  "drive": "<CONFIGURAR_BIBLIOTECA_EXCEL>",
+                  "file": "@body('Crear_archivo')?['Id']",
+                  "table": "tblConfirmacionMasiva"
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              },
+              "runtimeConfiguration": {
+                "paginationPolicy": {
+                  "minimumItemCount": 2000
+                }
+              },
+              "runAfter": {
+                "Etapa_excel": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Filas_brutas": {
+              "type": "Compose",
+              "inputs": "@coalesce(body('Leer_tabla_Excel')?['value'],createArray())",
+              "runAfter": {
+                "Leer_tabla_Excel": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Hay_filas": {
               "type": "If",
-              "expression": "@endsWith(toLower(outputs('Nombre_adjunto')),'.xlsx')",
+              "expression": "@greater(length(outputs('Filas_brutas')),0)",
               "actions": {
-                "Etapa_contenido": {
-                  "type": "SetVariable",
-                  "inputs": {
-                    "name": "varEtapa",
-                    "value": "CONTENIDO"
-                  },
-                  "runAfter": {}
-                },
-                "Obtener_contenido_adjunto": {
-                  "type": "OpenApiConnection",
-                  "inputs": {
-                    "host": {
-                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
-                      "connectionName": "shared_sharepointonline",
-                      "operationId": "GetAttachmentContent"
-                    },
-                    "parameters": {
-                      "dataset": "@outputs('PARAM_SITIO')",
-                      "table": "@outputs('PARAM_LISTA')",
-                      "id": "@outputs('Lote')?['id']",
-                      "attachmentId": "@outputs('Adjunto')?['Id']"
-                    },
-                    "authentication": "@parameters('$authentication')"
-                  },
-                  "runAfter": {
-                    "Etapa_contenido": [
-                      "Succeeded"
-                    ]
-                  }
-                },
-                "Etapa_copia": {
-                  "type": "SetVariable",
-                  "inputs": {
-                    "name": "varEtapa",
-                    "value": "COPIA"
-                  },
-                  "runAfter": {
-                    "Obtener_contenido_adjunto": [
-                      "Succeeded"
-                    ]
-                  }
-                },
-                "Nombre_copia": {
-                  "type": "Compose",
-                  "inputs": "@concat(outputs('Lote')?['uid'],'_',formatDateTime(utcNow(),'yyyyMMddHHmmss'),'.xlsx')",
-                  "runAfter": {
-                    "Etapa_copia": [
-                      "Succeeded"
-                    ]
-                  }
-                },
-                "Crear_archivo": {
-                  "type": "OpenApiConnection",
-                  "inputs": {
-                    "host": {
-                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
-                      "connectionName": "shared_sharepointonline",
-                      "operationId": "CreateFile"
-                    },
-                    "parameters": {
-                      "dataset": "@outputs('PARAM_SITIO')",
-                      "folderPath": "@outputs('PARAM_CARPETA')",
-                      "name": "@outputs('Nombre_copia')",
-                      "body": "@body('Obtener_contenido_adjunto')"
-                    },
-                    "authentication": "@parameters('$authentication')"
-                  },
-                  "runAfter": {
-                    "Nombre_copia": [
-                      "Succeeded"
-                    ]
-                  }
-                },
-                "Etapa_excel": {
-                  "type": "SetVariable",
-                  "inputs": {
-                    "name": "varEtapa",
-                    "value": "EXCEL"
-                  },
-                  "runAfter": {
-                    "Crear_archivo": [
-                      "Succeeded"
-                    ]
-                  }
-                },
-                "Leer_tabla_Excel": {
-                  "type": "OpenApiConnection",
-                  "inputs": {
-                    "host": {
-                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_excelonlinebusiness",
-                      "connectionName": "shared_excelonlinebusiness",
-                      "operationId": "GetItems"
-                    },
-                    "parameters": {
-                      "source": "<CONFIGURAR_UBICACION_EXCEL>",
-                      "drive": "<CONFIGURAR_BIBLIOTECA_EXCEL>",
-                      "file": "@body('Crear_archivo')?['Id']",
-                      "table": "tblConfirmacionMasiva"
-                    },
-                    "authentication": "@parameters('$authentication')",
-                    "retryPolicy": {
-                      "type": "none"
-                    }
-                  },
-                  "runtimeConfiguration": {
-                    "paginationPolicy": {
-                      "minimumItemCount": 2000
-                    }
-                  },
-                  "runAfter": {
-                    "Etapa_excel": [
-                      "Succeeded"
-                    ]
-                  }
-                },
-                "Filas_brutas": {
-                  "type": "Compose",
-                  "inputs": "@coalesce(body('Leer_tabla_Excel')?['value'],createArray())",
-                  "runAfter": {
-                    "Leer_tabla_Excel": [
-                      "Succeeded"
-                    ]
-                  }
-                },
-                "Hay_filas": {
+                "Limite_de_lectura": {
                   "type": "If",
-                  "expression": "@greater(length(outputs('Filas_brutas')),0)",
+                  "expression": "@greaterOrEquals(length(outputs('Filas_brutas')),outputs('PARAM_PAGINACION'))",
                   "actions": {
-                    "Encabezados_faltantes": {
-                      "type": "Query",
+                    "Resultado_DEMASIADAS_FILAS_LECTURA": {
+                      "type": "SetVariable",
                       "inputs": {
-                        "from": "@outputs('PARAM_ENCABEZADOS')",
-                        "where": "@not(contains(first(outputs('Filas_brutas')),item()))"
+                        "name": "varResultado",
+                        "value": {
+                          "estado": "ERROR",
+                          "codigo": "DEMASIADAS_FILAS",
+                          "mensaje": "@concat('La lectura alcanzó el límite de ',string(outputs('PARAM_PAGINACION')),' filas: el recuento podría estar incompleto. Divida el archivo.')",
+                          "tabla": "SI",
+                          "filas": 0
+                        }
                       },
                       "runAfter": {}
-                    },
-                    "Estructura": {
-                      "type": "If",
-                      "expression": "@greater(length(body('Encabezados_faltantes')),0)",
-                      "actions": {
-                        "Resultado_ESTRUCTURA_INVALIDA": {
-                          "type": "SetVariable",
-                          "inputs": {
-                            "name": "varResultado",
-                            "value": {
-                              "estado": "ERROR",
-                              "codigo": "ESTRUCTURA_INVALIDA",
-                              "mensaje": "@concat('Faltan o cambiaron encabezados: ',join(body('Encabezados_faltantes'),', '),'. Use la plantilla oficial.')",
-                              "tabla": "SI",
-                              "filas": 0
-                            }
-                          },
-                          "runAfter": {}
-                        }
-                      },
-                      "else": {
-                        "actions": {
-                          "Filas_con_datos": {
-                            "type": "Query",
-                            "inputs": {
-                              "from": "@outputs('Filas_brutas')",
-                              "where": "@not(and(empty(item()?['BANCO']),empty(item()?['CUENTA_BANCARIA']),empty(item()?['CODIGO_ASIGNACION']),empty(item()?['IMPORTE']),empty(item()?['MONEDA']),empty(item()?['ESTUDIANTE']),empty(item()?['SOLICITADO_POR']),empty(item()?['SEDE']),empty(item()?['OBSERVACION'])))"
-                            },
-                            "runAfter": {}
-                          },
-                          "Cantidad_con_datos": {
-                            "type": "Compose",
-                            "inputs": "@length(body('Filas_con_datos'))",
-                            "runAfter": {
-                              "Filas_con_datos": [
-                                "Succeeded"
-                              ]
-                            }
-                          },
-                          "Hay_datos": {
-                            "type": "If",
-                            "expression": "@greater(outputs('Cantidad_con_datos'),0)",
-                            "actions": {
-                              "Resultado_OK": {
-                                "type": "SetVariable",
-                                "inputs": {
-                                  "name": "varResultado",
-                                  "value": {
-                                    "estado": "COMPLETADO",
-                                    "codigo": "OK",
-                                    "mensaje": "Archivo leído correctamente",
-                                    "tabla": "SI",
-                                    "filas": "@outputs('Cantidad_con_datos')"
-                                  }
-                                },
-                                "runAfter": {}
-                              }
-                            },
-                            "else": {
-                              "actions": {
-                                "Resultado_ARCHIVO_VACIO": {
-                                  "type": "SetVariable",
-                                  "inputs": {
-                                    "name": "varResultado",
-                                    "value": {
-                                      "estado": "ERROR",
-                                      "codigo": "ARCHIVO_VACIO",
-                                      "mensaje": "La tabla no tiene filas con datos. Complete la plantilla y vuelva a intentar.",
-                                      "tabla": "SI",
-                                      "filas": 0
-                                    }
-                                  },
-                                  "runAfter": {}
-                                }
-                              }
-                            },
-                            "runAfter": {
-                              "Cantidad_con_datos": [
-                                "Succeeded"
-                              ]
-                            }
-                          }
-                        }
-                      },
-                      "runAfter": {
-                        "Encabezados_faltantes": [
-                          "Succeeded"
-                        ]
-                      }
                     }
                   },
                   "else": {
                     "actions": {
-                      "Resultado_TABLA_SIN_FILAS": {
-                        "type": "SetVariable",
+                      "Encabezados_faltantes": {
+                        "type": "Query",
                         "inputs": {
-                          "name": "varResultado",
-                          "value": {
-                            "estado": "ERROR",
-                            "codigo": "ARCHIVO_VACIO",
-                            "mensaje": "La tabla no tiene filas. Complete la plantilla y vuelva a intentar.",
-                            "tabla": "SI",
-                            "filas": 0
-                          }
+                          "from": "@outputs('PARAM_ENCABEZADOS')",
+                          "where": "@not(contains(first(outputs('Filas_brutas')),item()))"
                         },
                         "runAfter": {}
+                      },
+                      "Estructura": {
+                        "type": "If",
+                        "expression": "@greater(length(body('Encabezados_faltantes')),0)",
+                        "actions": {
+                          "Resultado_ESTRUCTURA_INVALIDA": {
+                            "type": "SetVariable",
+                            "inputs": {
+                              "name": "varResultado",
+                              "value": {
+                                "estado": "ERROR",
+                                "codigo": "ESTRUCTURA_INVALIDA",
+                                "mensaje": "@concat('Faltan o cambiaron encabezados: ',join(body('Encabezados_faltantes'),', '),'. Use la plantilla oficial.')",
+                                "tabla": "SI",
+                                "filas": 0
+                              }
+                            },
+                            "runAfter": {}
+                          }
+                        },
+                        "else": {
+                          "actions": {
+                            "Filas_con_datos": {
+                              "type": "Query",
+                              "inputs": {
+                                "from": "@outputs('Filas_brutas')",
+                                "where": "@not(and(empty(item()?['BANCO']),empty(item()?['CUENTA_BANCARIA']),empty(item()?['CODIGO_ASIGNACION']),empty(item()?['IMPORTE']),empty(item()?['MONEDA']),empty(item()?['ESTUDIANTE']),empty(item()?['SOLICITADO_POR']),empty(item()?['SEDE']),empty(item()?['OBSERVACION'])))"
+                              },
+                              "runAfter": {}
+                            },
+                            "Cantidad_con_datos": {
+                              "type": "Compose",
+                              "inputs": "@length(body('Filas_con_datos'))",
+                              "runAfter": {
+                                "Filas_con_datos": [
+                                  "Succeeded"
+                                ]
+                              }
+                            },
+                            "Hay_datos": {
+                              "type": "If",
+                              "expression": "@greater(outputs('Cantidad_con_datos'),0)",
+                              "actions": {
+                                "Hay_tope": {
+                                  "type": "If",
+                                  "expression": "@and(greater(outputs('PARAM_MAX_FILAS'),0),greater(outputs('Cantidad_con_datos'),outputs('PARAM_MAX_FILAS')))",
+                                  "actions": {
+                                    "Resultado_DEMASIADAS_FILAS_MAX": {
+                                      "type": "SetVariable",
+                                      "inputs": {
+                                        "name": "varResultado",
+                                        "value": {
+                                          "estado": "ERROR",
+                                          "codigo": "DEMASIADAS_FILAS",
+                                          "mensaje": "@concat('El archivo tiene ',string(outputs('Cantidad_con_datos')),' filas y el máximo permitido es ',string(outputs('PARAM_MAX_FILAS')),'. Divida el archivo.')",
+                                          "tabla": "SI",
+                                          "filas": "@outputs('Cantidad_con_datos')"
+                                        }
+                                      },
+                                      "runAfter": {}
+                                    }
+                                  },
+                                  "else": {
+                                    "actions": {
+                                      "Resultado_OK": {
+                                        "type": "SetVariable",
+                                        "inputs": {
+                                          "name": "varResultado",
+                                          "value": {
+                                            "estado": "COMPLETADO",
+                                            "codigo": "OK",
+                                            "mensaje": "Archivo leído correctamente",
+                                            "tabla": "SI",
+                                            "filas": "@outputs('Cantidad_con_datos')"
+                                          }
+                                        },
+                                        "runAfter": {}
+                                      }
+                                    }
+                                  },
+                                  "runAfter": {}
+                                }
+                              },
+                              "else": {
+                                "actions": {
+                                  "Resultado_ARCHIVO_VACIO": {
+                                    "type": "SetVariable",
+                                    "inputs": {
+                                      "name": "varResultado",
+                                      "value": {
+                                        "estado": "ERROR",
+                                        "codigo": "ARCHIVO_VACIO",
+                                        "mensaje": "La tabla no tiene filas con datos. Complete la plantilla y vuelva a intentar.",
+                                        "tabla": "SI",
+                                        "filas": 0
+                                      }
+                                    },
+                                    "runAfter": {}
+                                  }
+                                }
+                              },
+                              "runAfter": {
+                                "Cantidad_con_datos": [
+                                  "Succeeded"
+                                ]
+                              }
+                            }
+                          }
+                        },
+                        "runAfter": {
+                          "Encabezados_faltantes": [
+                            "Succeeded"
+                          ]
+                        }
                       }
                     }
                   },
-                  "runAfter": {
-                    "Filas_brutas": [
-                      "Succeeded"
-                    ]
-                  }
+                  "runAfter": {}
                 }
               },
               "else": {
                 "actions": {
-                  "Resultado_NO_ES_XLSX": {
+                  "Resultado_TABLA_SIN_FILAS": {
                     "type": "SetVariable",
                     "inputs": {
                       "name": "varResultado",
                       "value": {
                         "estado": "ERROR",
-                        "codigo": "NO_ES_XLSX",
-                        "mensaje": "El archivo adjunto no es .xlsx. Use la plantilla oficial.",
-                        "tabla": "",
+                        "codigo": "ARCHIVO_VACIO",
+                        "mensaje": "La tabla no tiene filas. Complete la plantilla y vuelva a intentar.",
+                        "tabla": "SI",
                         "filas": 0
                       }
                     },
@@ -540,7 +570,19 @@
                 }
               },
               "runAfter": {
-                "Guardar_nombre": [
+                "Filas_brutas": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Marca_T2": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varT2",
+                "value": "@ticks(utcNow())"
+              },
+              "runAfter": {
+                "Hay_filas": [
                   "Succeeded"
                 ]
               }
@@ -548,31 +590,52 @@
           },
           "else": {
             "actions": {
-              "Resultado_SIN_ADJUNTO": {
-                "type": "SetVariable",
-                "inputs": {
-                  "name": "varResultado",
-                  "value": {
-                    "estado": "ERROR",
-                    "codigo": "SIN_ADJUNTO",
-                    "mensaje": "El lote no tiene archivo adjunto. Adjunte el Excel y vuelva a intentar.",
-                    "tabla": "",
-                    "filas": 0
+              "Entrada_invalida": {
+                "type": "If",
+                "expression": "@equals(outputs('Validar_entrada'),'SIN_ARCHIVO')",
+                "actions": {
+                  "Resultado_SIN_ARCHIVO": {
+                    "type": "SetVariable",
+                    "inputs": {
+                      "name": "varResultado",
+                      "value": {
+                        "estado": "ERROR",
+                        "codigo": "SIN_ARCHIVO",
+                        "mensaje": "No se recibió ningún archivo. Adjunte el Excel y vuelva a intentar.",
+                        "tabla": "",
+                        "filas": 0
+                      }
+                    },
+                    "runAfter": {}
+                  }
+                },
+                "else": {
+                  "actions": {
+                    "Resultado_NO_ES_XLSX": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "varResultado",
+                        "value": {
+                          "estado": "ERROR",
+                          "codigo": "NO_ES_XLSX",
+                          "mensaje": "El archivo no es .xlsx. Use la plantilla oficial.",
+                          "tabla": "",
+                          "filas": 0
+                        }
+                      },
+                      "runAfter": {}
+                    }
                   }
                 },
                 "runAfter": {}
               }
             }
           },
-          "runAfter": {
-            "Obtener_adjuntos": [
-              "Succeeded"
-            ]
-          }
+          "runAfter": {}
         }
       },
       "runAfter": {
-        "Marcar_PROCESANDO": [
+        "Validar_entrada": [
           "Succeeded"
         ]
       }
@@ -662,7 +725,7 @@
                       "value": {
                         "estado": "ERROR",
                         "codigo": "ERROR_COPIA_ARCHIVO",
-                        "mensaje": "No se pudo copiar el archivo a la carpeta temporal.",
+                        "mensaje": "No se pudo crear la copia temporal del archivo.",
                         "tabla": "",
                         "filas": 0
                       }
@@ -672,41 +735,16 @@
                 },
                 "else": {
                   "actions": {
-                    "Fallo_no_copia": {
-                      "type": "If",
-                      "expression": "@or(equals(variables('varEtapa'),'ADJUNTOS'),equals(variables('varEtapa'),'CONTENIDO'))",
-                      "actions": {
-                        "Fallo_ERROR_ADJUNTO": {
-                          "type": "SetVariable",
-                          "inputs": {
-                            "name": "varResultado",
-                            "value": {
-                              "estado": "ERROR",
-                              "codigo": "ERROR_ADJUNTO",
-                              "mensaje": "No se pudo leer el archivo adjunto del lote.",
-                              "tabla": "",
-                              "filas": 0
-                            }
-                          },
-                          "runAfter": {}
-                        }
-                      },
-                      "else": {
-                        "actions": {
-                          "Fallo_ERROR_NO_CONTROLADO": {
-                            "type": "SetVariable",
-                            "inputs": {
-                              "name": "varResultado",
-                              "value": {
-                                "estado": "ERROR",
-                                "codigo": "ERROR_NO_CONTROLADO",
-                                "mensaje": "Error inesperado al procesar el lote. Vuelva a intentar o avise al administrador.",
-                                "tabla": "",
-                                "filas": 0
-                              }
-                            },
-                            "runAfter": {}
-                          }
+                    "Fallo_ERROR_NO_CONTROLADO": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "varResultado",
+                        "value": {
+                          "estado": "ERROR",
+                          "codigo": "ERROR_NO_CONTROLADO",
+                          "mensaje": "Error inesperado al procesar el archivo. Vuelva a intentar o avise al administrador.",
+                          "tabla": "",
+                          "filas": 0
                         }
                       },
                       "runAfter": {}
@@ -727,16 +765,52 @@
         ]
       }
     },
-    "Cuerpo_final": {
-      "type": "Compose",
-      "inputs": {
-        "ESTADO": "@variables('varResultado')?['estado']",
-        "MENSAJE": "@variables('varResultado')?['mensaje']",
-        "CODIGO_RESULTADO": "@variables('varResultado')?['codigo']",
-        "TABLA_ENCONTRADA": "@variables('varResultado')?['tabla']",
-        "FILAS_LEIDAS": "@variables('varResultado')?['filas']",
-        "FECHA_ESTADO": "@utcNow()",
-        "ARCHIVO_NOMBRE": "@if(empty(variables('varArchivo')),coalesce(triggerBody()?['ARCHIVO_NOMBRE'],''),variables('varArchivo'))"
+    "LIMPIEZA": {
+      "type": "Scope",
+      "actions": {
+        "Hay_copia_temporal": {
+          "type": "If",
+          "expression": "@not(empty(variables('varArchivoId')))",
+          "actions": {
+            "Borrar_copia_temporal": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "DeleteFile"
+                },
+                "parameters": {
+                  "dataset": "@outputs('PARAM_SITIO')",
+                  "id": "@variables('varArchivoId')"
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "fixed",
+                  "count": 2,
+                  "interval": "PT5S"
+                }
+              },
+              "runAfter": {}
+            },
+            "Marcar_borrada": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varBorrada",
+                "value": "SI"
+              },
+              "runAfter": {
+                "Borrar_copia_temporal": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {}
+        }
       },
       "runAfter": {
         "TRY": [
@@ -753,37 +827,135 @@
         ]
       }
     },
-    "Escribir_resultado": {
-      "type": "OpenApiConnection",
-      "inputs": {
-        "host": {
-          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
-          "connectionName": "shared_sharepointonline",
-          "operationId": "HttpRequest"
-        },
-        "parameters": {
-          "dataset": "@outputs('PARAM_SITIO')",
-          "parameters/method": "POST",
-          "parameters/uri": "@concat('_api/web/lists/GetByTitle(''',outputs('PARAM_LISTA'),''')/items(',string(outputs('Lote')?['id']),')')",
-          "parameters/headers": {
-            "Accept": "application/json;odata=nometadata",
-            "Content-Type": "application/json;odata=nometadata",
-            "X-HTTP-Method": "MERGE",
-            "IF-MATCH": "*"
+    "LIMPIEZA_FALLO": {
+      "type": "Scope",
+      "actions": {
+        "Marcar_no_borrada": {
+          "type": "SetVariable",
+          "inputs": {
+            "name": "varBorrada",
+            "value": "NO"
           },
-          "parameters/body": "@string(outputs('Cuerpo_final'))"
-        },
-        "authentication": "@parameters('$authentication')",
-        "retryPolicy": {
-          "type": "fixed",
-          "count": 2,
-          "interval": "PT5S"
+          "runAfter": {}
         }
       },
       "runAfter": {
-        "Cuerpo_final": [
+        "LIMPIEZA": [
+          "Failed",
+          "TimedOut"
+        ]
+      }
+    },
+    "Marca_T3": {
+      "type": "SetVariable",
+      "inputs": {
+        "name": "varT3",
+        "value": "@ticks(utcNow())"
+      },
+      "runAfter": {
+        "LIMPIEZA": [
+          "Succeeded",
+          "Failed",
+          "Skipped",
+          "TimedOut"
+        ],
+        "LIMPIEZA_FALLO": [
+          "Succeeded",
+          "Failed",
+          "Skipped",
+          "TimedOut"
+        ]
+      }
+    },
+    "Marca_T4": {
+      "type": "SetVariable",
+      "inputs": {
+        "name": "varT4",
+        "value": "@ticks(utcNow())"
+      },
+      "runAfter": {
+        "Marca_T3": [
           "Succeeded"
         ]
+      }
+    },
+    "Tiempos": {
+      "type": "Compose",
+      "inputs": "@concat('crear=',string(if(greater(variables('varT1'),0),div(sub(variables('varT1'),variables('varT0')),10000),0)),';excel=',string(if(greater(variables('varT2'),0),div(sub(variables('varT2'),variables('varT1')),10000),0)),';borrar=',string(if(greater(variables('varT3'),0),div(sub(variables('varT3'),max(variables('varT2'),variables('varT1'),variables('varT0'))),10000),0)),';total=',string(div(sub(variables('varT4'),variables('varT0')),10000)))",
+      "runAfter": {
+        "Marca_T4": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Responder_a_PowerApps": {
+      "type": "Response",
+      "kind": "PowerApp",
+      "runAfter": {
+        "Tiempos": [
+          "Succeeded",
+          "Failed",
+          "Skipped",
+          "TimedOut"
+        ]
+      },
+      "inputs": {
+        "statusCode": 200,
+        "body": {
+          "resultado": "@variables('varResultado')?['estado']",
+          "codigo": "@variables('varResultado')?['codigo']",
+          "mensaje": "@variables('varResultado')?['mensaje']",
+          "archivo": "@outputs('Entrada')?['nombre']",
+          "tabla_encontrada": "@variables('varResultado')?['tabla']",
+          "filas_leidas": "@string(variables('varResultado')?['filas'])",
+          "copia_temporal_eliminada": "@variables('varBorrada')",
+          "tiempos_ms": "@outputs('Tiempos')"
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "resultado": {
+              "title": "resultado",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "codigo": {
+              "title": "codigo",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "mensaje": {
+              "title": "mensaje",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "archivo": {
+              "title": "archivo",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "tabla_encontrada": {
+              "title": "tabla_encontrada",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "filas_leidas": {
+              "title": "filas_leidas",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "copia_temporal_eliminada": {
+              "title": "copia_temporal_eliminada",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "tiempos_ms": {
+              "title": "tiempos_ms",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            }
+          }
+        }
       }
     }
   },
