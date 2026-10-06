@@ -369,7 +369,7 @@
                   "operationId": "GetItems"
                 },
                 "parameters": {
-                  "source": "<CONFIGURAR_UBICACION_EXCEL>",
+                  "source": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
                   "drive": "<CONFIGURAR_BIBLIOTECA_EXCEL>",
                   "file": "@body('Crear_archivo')?['Id']",
                   "table": "tblConfirmacionMasiva"

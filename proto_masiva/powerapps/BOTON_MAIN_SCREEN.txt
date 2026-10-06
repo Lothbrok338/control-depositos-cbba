@@ -1,3 +1,7 @@
+ESTADO: PENDIENTE DE INTEGRACIÓN / NO VALIDADO EN TENANT.
+  Este botón está preparado en el repositorio (y probado solo con pruebas estáticas), pero NO se ha agregado a Main_Screen en el tenant,
+  ni en la copia P9_PRUEBA_MASIVA ni en producción. No lo pegues en la app productiva.
+
 BOTÓN «IMPORTACIÓN MASIVA» EN Main_Screen — CAMBIO MÍNIMO (1 control nuevo, 0 controles modificados)
 
 QUÉ SE AÑADE

@@ -59,20 +59,22 @@ La hoja `_CATALOGOS` (oculta) guarda los catálogos (BANCO, MONEDA, cuentas con 
 
 - El generador **se auto-verifica antes de guardar** y sobre los bytes finales: 9 columnas en orden, tabla, sin `TIPO_CAMBIO`, texto en CUENTA/CODIGO, 2 decimales, 6 bancos, 13 cuentas exactas sin duplicados, validaciones de BANCO, CUENTA, MONEDA e IMPORTE, sin macros ni vínculos, 3 filas en el ejemplo y 0 en la plantilla. Un set de 14 plantillas defectuosas se rechaza (`test_05`).
 - **[VALIDADO LOCALMENTE]** con LibreOffice 24.2: ambos archivos abren; la fórmula de la lista dependiente devuelve 4/2/2/2/2/1 cuentas por banco y 13 sin banco; las reglas de color se evalúan como se espera.
-- **[REQUIERE VALIDACIÓN EN EXCEL]** El comportamiento real de las listas desplegables y de las reglas de color en **Excel de escritorio y Excel Online** no se pudo probar aquí (no hay Excel). Las funciones usadas son estándar de Excel. Si la lista de CUENTA no filtra en Excel Online, la validación sigue permitiendo elegir entre las 13 cuentas.
+- **[VALIDADO EN TENANT · Excel de escritorio]** Desplegable de bancos, cuentas dependientes (BCP muestra solo sus 2 cuentas), BISA y `CODIGO_ASIGNACION` conservan los ceros iniciales, `MONEDA` permite BOB/USD.
+- **[PENDIENTE]** Las reglas de color no se han reportado como probadas en ningún Excel, y el comportamiento de las listas desplegables en **Excel Online** tampoco. Si la lista de CUENTA no filtra en Excel Online, la validación sigue permitiendo elegir entre las 13 cuentas.
 
-## DESCARGAR PLANTILLA en Power Apps (preparado, sin URL inventada)
+## DESCARGAR PLANTILLA en Power Apps (validado por UniqueId)
 
-- **Dónde guardar el archivo:** en una biblioteca de documentos de SharePoint que los usuarios de la app puedan **leer**, siempre con el nombre `Plantilla_Confirmacion_Masiva_P9.xlsx` (el prototipo usa `Documents/P9_MASIVA_PROTO/`; la carpeta definitiva se decide después). Hay una sola copia: no se sube el Ejemplo ahí.
-- **Qué actualizar cuando tengamos la URL:** **una sola línea**, en `OnVisible` de la pantalla `P9_Confirmacion_Masiva`:
-  `Set(varUrlPlantillaP9, "<URL del archivo>?download=1")`.
-  El botón `btnDescargarPlantillaP9` ya ejecuta `Launch(varUrlPlantillaP9)` y no cambia. El `?download=1` y la apertura en el navegador no están probados en tu tenant.
+- **Dónde está el archivo hoy:** `/personal/gtorricot_univalle_edu/Documents/Documents/P9_MASIVA_PROTO/Plantilla_Confirmacion_Masiva_P9.xlsx` en el OneDrive del propietario (sitio personal `https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu`). La carpeta `Documents` está **anidada**: por eso las rutas sin ella devolvían «no existe». Hay una sola copia (no se sube el Ejemplo ahí). Antes de producción conviene moverla a una biblioteca de SharePoint de la que no dependa una cuenta personal (pendiente; ver `ESTADO_CHECKPOINT_TENANT.md`).
+- **URL de descarga (VALIDADA EN TENANT al pegarla en el navegador: se descarga el XLSX físicamente, no abre Excel):**
+  `https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu/_layouts/15/download.aspx?UniqueId=84b7ef88-43aa-43d2-8d1c-0f0b682dafbd`
+- **En la app:** `btnDescargarPlantillaP9` ejecuta `Launch("<esa URL>")`, escrita directamente en el botón. No hay variable de URL, ni `Download()`, ni `?download=1`, ni el enlace compartido de OneDrive (ese abre Excel y no descarga). El clic del botón dentro de la app no se ha registrado como probado.
+- **Actualizar la plantilla:** el UniqueId pertenece al archivo actual. Usa *Reemplazar* o sube una **nueva versión**; si lo borras y lo recreas, el UniqueId puede cambiar y hay que cambiar la URL del botón.
 - El Excel no se modifica: nada de la URL va dentro del archivo.
 
 ## PASOS PARA GABRIEL
 
-1. Abre `Plantilla_Confirmacion_Masiva_P9.xlsx` en Excel y comprueba **una vez** que BANCO y CUENTA_BANCARIA muestran las listas (elige `BCP` y mira que solo salgan sus 2 cuentas). Si no filtra, avísame; igual puedes elegir entre las 13.
-2. Súbela a la biblioteca de SharePoint elegida (una sola copia, con ese nombre) y copia su URL.
-3. En Power Apps, pega esa URL en la línea `Set(varUrlPlantillaP9, …)` de `OnVisible` de `P9_Confirmacion_Masiva`.
+1. Abre `Plantilla_Confirmacion_Masiva_P9.xlsx` en Excel de escritorio (ya validado) y, si usas Excel Online, comprueba que BANCO y CUENTA_BANCARIA muestran las listas: elige `BCP` y mira que solo salgan sus 2 cuentas. En Excel Online esto está pendiente.
+2. Si vas a cambiar la plantilla, **reemplaza el archivo** (o sube nueva versión) en `Documents/Documents/P9_MASIVA_PROTO/`; no lo borres.
+3. Si el archivo se recrea, obtén su UniqueId nuevo y actualiza la URL en `btnDescargarPlantillaP9` (y en `powerapps/P9_Confirmacion_Masiva.pa.yaml`).
 4. Entrega a los usuarios solo la **Plantilla** (vacía); el **Ejemplo** es solo para mostrarles cómo llenarla.
 5. Para cambiar bancos o cuentas en el futuro, no edites el Excel: se cambian en `Main_Screen` y se vuelve a ejecutar `python proto_masiva/generar_plantillas_produccion.py`.

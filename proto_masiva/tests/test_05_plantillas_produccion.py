@@ -342,7 +342,7 @@ def test_libreoffice_evalua_las_reglas_de_ayuda_visual(calc):
 # --------------------------------------------------------------------------- documentación
 def test_documentacion_de_la_descarga_desde_power_apps():
     texto = (RAIZ / "PLANTILLA_PRODUCCION.md").read_text(encoding="utf-8")
-    for fragmento in ("Plantilla_Confirmacion_Masiva_P9.xlsx", "varUrlPlantillaP9", "OnVisible", "P9_Confirmacion_Masiva",
+    for fragmento in ("Plantilla_Confirmacion_Masiva_P9.xlsx", "download.aspx?UniqueId=84b7ef88-43aa-43d2-8d1c-0f0b682dafbd", "btnDescargarPlantillaP9", "P9_Confirmacion_Masiva",
                       "PASOS PARA GABRIEL", "tblConfirmacionMasiva"):
         assert fragmento in texto, fragmento
     assert texto.count("\n1. ") + texto.count("\n2. ") >= 2

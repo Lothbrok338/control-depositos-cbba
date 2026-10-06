@@ -1,6 +1,6 @@
 # Medición en el tenant del flujo directo (a rellenar por quien lo ejecute)
 
-**Estado: NO MEDIDO.** Desde el entorno donde se construyó el prototipo no hay acceso a Power Platform: ningún número de este documento viene de una ejecución real. **No se ha supuesto ningún límite** de filas, de tiempo ni de tamaño. La pregunta es una sola: *¿el flujo directo (la app espera la respuesta) termina dentro de tiempos razonables, y hasta cuántas filas?* La respuesta sale de la tabla de abajo, no de la teoría.
+**Estado: NO MEDIDO por tamaño.** El protocolo de abajo (10 a 2000 filas) **no se ha ejecutado**: la tabla de resultados sigue en blanco y ningún número de ella se ha supuesto. Solo existen dos mediciones sueltas observadas durante la validación del flujo (sección «Observaciones sueltas»). **No se ha supuesto ningún límite** de filas, de tiempo ni de tamaño. La pregunta es una sola: *¿el flujo directo (la app espera la respuesta) termina dentro de tiempos razonables, y hasta cuántas filas?* La respuesta sale de la tabla de abajo, no de la teoría.
 
 Si aparece un tiempo de espera real, la decisión ya tomada es **fijar un máximo de filas por archivo** (`PARAM_MAX_FILAS` en el flujo, hoy 0 = sin tope) y **no** crear infraestructura de lotes.
 
@@ -17,6 +17,17 @@ Si aparece un tiempo de espera real, la decisión ya tomada es **fijar un máxim
 | `Filas_2000.xlsx` | 2000 | 92 KB | `002ee17fdc9d…` |
 
 Se generan con `python proto_masiva/generar_medicion.py` (deterministas). Los tamaños son una **escala de prueba**, no un dato de la plataforma; `Filas_2000.xlsx` coincide con el umbral de paginación configurado (2000) y **debe** responder `DEMASIADAS_FILAS` (no un recuento truncado).
+
+## Observaciones sueltas (validación del flujo, 2026-10-06; NO sustituyen al protocolo)
+
+Dos ejecuciones reales en el tenant (el archivo usado en cada una no quedó registrado; la validación funcional se hizo con `Ejemplo_Confirmacion_Masiva_P9.xlsx`, 3 filas). **No se generalizan** a otros tamaños:
+
+| | Power Apps | Flujo total | Crear archivo | Excel | Borrar |
+|---|---|---|---|---|---|
+| Ejecución 1 | 14,108 s | 10,443 s | 1,684 s | 5,259 s | 3,439 s |
+| Ejecución 2, tras agregar a mano un Delay de 10 s y reintentos al borrado | 22,004 s | 19,216 s | 2,177 s | 3,738 s | 13,268 s |
+
+En ambas el borrado de la copia terminó en HTTP 423 (Locked); ver `ESTADO_CHECKPOINT_TENANT.md`. El tiempo de «Borrar» de la ejecución 2 incluye la espera y los reintentos agregados a mano, que no están en el generador del flujo.
 
 ## Protocolo
 
@@ -45,19 +56,19 @@ Para cada archivo, **3 ejecuciones** (la primera tras un rato sin usar el flujo 
 
 | Caso | Archivo | Esperado (simulación) | Real |
 |---|---|---|---|
-| A. Correcto | `Ejemplo_Confirmacion_Masiva_P9.xlsx` | COMPLETADO, 3 filas | |
-| B. Tabla vacía | `Plantilla_Confirmacion_Masiva_P9.xlsx` | ERROR / ARCHIVO_VACIO | |
-| C. Sin tabla | `03_SIN_TABLA.xlsx` | ERROR / TABLA_NO_ENCONTRADA (**supuesto: HTTP 404**) | |
-| D. Encabezado cambiado | `05_ENCABEZADO_CAMBIADO.xlsx` | ERROR / ESTRUCTURA_INVALIDA | |
-| E. Otra tabla | `04_TABLA_NOMBRE_DISTINTO.xlsx` | ERROR / TABLA_NO_ENCONTRADA | |
-| F. Archivo abierto | `Ejemplo…` abierto en Excel mientras se adjunta | (a observar) | |
-| G. No es xlsx | cualquier `.csv` | ERROR / NO_ES_XLSX (no llega al flujo si la app lo bloquea) | |
+| A. Correcto | `Ejemplo_Confirmacion_Masiva_P9.xlsx` | COMPLETADO, 3 filas | **Validado en tenant:** COMPLETADO · ARCHIVO RECIBIDO · TABLA ENCONTRADA · 3 FILAS LEÍDAS · «Archivo leído correctamente» |
+| B. Tabla vacía | `Plantilla_Confirmacion_Masiva_P9.xlsx` | ERROR / ARCHIVO_VACIO |  PENDIENTE (no probado en tenant) |
+| C. Sin tabla | `03_SIN_TABLA.xlsx` | ERROR / TABLA_NO_ENCONTRADA (**supuesto: HTTP 404**) |  PENDIENTE (no probado en tenant) |
+| D. Encabezado cambiado | `05_ENCABEZADO_CAMBIADO.xlsx` | ERROR / ESTRUCTURA_INVALIDA |  PENDIENTE (no probado en tenant) |
+| E. Otra tabla | `04_TABLA_NOMBRE_DISTINTO.xlsx` | ERROR / TABLA_NO_ENCONTRADA |  PENDIENTE (no probado en tenant) |
+| F. Archivo abierto | `Ejemplo…` abierto en Excel mientras se adjunta | (a observar) |  PENDIENTE (no probado en tenant) |
+| G. No es xlsx | cualquier `.csv` | ERROR / NO_ES_XLSX (no llega al flujo si la app lo bloquea) |  PENDIENTE (no probado en tenant) |
 
 ## Cosas a observar además
 
-1. **Primera llamada:** ¿`.Run({name, contentBytes})` funciona tal cual? Si no, qué firma pide Studio (ver `powerapps/INSTRUCCIONES_PEGADO.md`).
-2. **Borrado de la copia:** ¿con qué frecuencia sale `NO`? Si ocurre a menudo (Excel Online puede retener el archivo unos segundos), se añadirá un tiempo de espera antes de borrar o una limpieza programada; **no se añade nada hasta ver datos**.
-3. **Carpeta `P9_MASIVA_TEMP`** al final de la sesión: debería estar vacía. Anota cuántos `TMP_*.xlsx` quedaron.
+1. **Primera llamada:** `.Run({name, contentBytes})` **funciona tal cual en el tenant** (validado). Nada que anotar salvo que Studio cambie.
+2. **Borrado de la copia:** **observado: sale `NO` (HTTP 423 Locked)**; un Delay de 10 s y reintentos agregados a mano no lo resolvieron. Decisión vigente: se aceptan `TMP_*.xlsx` residuales; no se agrega limpiador ni infraestructura.
+3. **Carpeta `P9_MASIVA_TEMP`** al final de la sesión: contendrá `TMP_*.xlsx` residuales (ver arriba). Anota cuántos quedaron y en cuál de las dos carpetas con ese nombre (ver `ESTADO_CHECKPOINT_TENANT.md`).
 
 ## Cómo decidir el máximo de filas (sin inventar números)
 

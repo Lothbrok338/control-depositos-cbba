@@ -107,7 +107,9 @@ def test_lectura_de_excel_tabla_exacta_paginacion_y_archivo_recien_creado():
     assert excel["inputs"]["host"]["operationId"] == "GetItems"
     assert p["table"] == "tblConfirmacionMasiva" == P.NOMBRE_TABLA
     assert p["file"] == "@body('Crear_archivo')?['Id']"
-    assert p["source"] == F.PLACEHOLDER_UBICACION and p["drive"] == F.PLACEHOLDER_BIBLIOTECA
+    assert p["source"] == F.UBICACION_EXCEL == F.SITIO == "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu"  # validado en tenant
+    assert p["drive"] == F.PLACEHOLDER_BIBLIOTECA  # el id interno de la biblioteca OneDrive es opaco: se elige en el diseñador
+    assert "<CONFIGURAR_UBICACION_EXCEL>" not in json.dumps(DEF)
     assert excel["runtimeConfiguration"]["paginationPolicy"]["minimumItemCount"] == F.PAGINACION
 
 

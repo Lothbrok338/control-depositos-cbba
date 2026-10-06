@@ -80,7 +80,7 @@
             Font: =Font.'Segoe UI'
             FontWeight: =FontWeight.Bold
             Height: =36
-            OnSelect: =Launch(varUrlPlantillaP9)
+            OnSelect: =Launch("https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu/_layouts/15/download.aspx?UniqueId=84b7ef88-43aa-43d2-8d1c-0f0b682dafbd")
             Size: =9
             Text: ="DESCARGAR PLANTILLA"
             Width: =220
@@ -395,6 +395,7 @@
             Height: =24
             Size: =9
             Text: ="Copia temporal"
+            Visible: =false
             Width: =150
             X: =640
             Y: =490
@@ -413,6 +414,7 @@
                   "NO_APLICA", "No se creó",
                   "—"
               )
+            Visible: =false
             Width: =Parent.Width - 840
             X: =800
             Y: =490

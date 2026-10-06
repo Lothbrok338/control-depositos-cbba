@@ -26,6 +26,10 @@ MANUALES = {"frmArchivoP9", "attXlsxP9"}  # los únicos controles que se crean a
 TIPOS_USADOS_EN_P9 = {"GroupContainer@1.5.0", "Rectangle@2.3.0", "Label@2.5.1", "Classic/Button@2.2.0"}
 CODIGOS_APP = set(F.CODIGOS) | {"FLUJO_SIN_RESPUESTA"}  # este último lo fabrica la app si el flujo no responde
 ESTADOS_UI = {"SIN ARCHIVO", "CARGADO", "PROCESANDO", "COMPLETADO", "ERROR"}
+# VALIDADO EN TENANT (URL pegada en el navegador → se descarga el XLSX): descarga por UniqueId del archivo real. Si el archivo se borra y se
+# vuelve a crear, el UniqueId cambia: actualizar la plantilla con «reemplazar»/nueva versión, no borrando.
+URL_DESCARGA = ("https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu/_layouts/15/download.aspx"
+                "?UniqueId=84b7ef88-43aa-43d2-8d1c-0f0b682dafbd")
 
 
 def controles(hijos):
@@ -59,7 +63,7 @@ def test_yaml_valido_con_nombres_unicos_y_tipos_conocidos():
 def test_elementos_minimos_pedidos():
     p = lambda n, k="Text": CONTROLES[n]["Properties"][k]  # noqa: E731
     assert p("lblTituloMasivaP9") == '="IMPORTACIÓN MASIVA"'
-    assert p("btnDescargarPlantillaP9") == '="DESCARGAR PLANTILLA"' and p("btnDescargarPlantillaP9", "OnSelect") == "=Launch(varUrlPlantillaP9)"
+    assert p("btnDescargarPlantillaP9") == '="DESCARGAR PLANTILLA"' and p("btnDescargarPlantillaP9", "OnSelect") == f'=Launch("{URL_DESCARGA}")'
     assert "attXlsxP9.Attachments" in p("lblArchivoSeleccionadoP9")
     assert p("btnPrevalidarP9") == '="PREVALIDAR ARCHIVO"'
     assert "attXlsxP9.Attachments" in p("lblEstadoP9") and "varResultadoP9.resultado" in p("lblEstadoP9")
@@ -67,6 +71,29 @@ def test_elementos_minimos_pedidos():
         assert any(c["Properties"].get("Text") == f'="{rotulo}"' for c in CONTROLES.values()), rotulo
     assert p("btnVolverMasivaP9") == '="VOLVER"'
     assert p("btnVolverMasivaP9", "OnSelect") == "=Navigate(Main_Screen, ScreenTransition.Fade)"
+
+
+def test_la_descarga_es_por_uniqueid_y_no_quedan_rutas_ni_variables_antiguas():
+    boton = CONTROLES["btnDescargarPlantillaP9"]["Properties"]["OnSelect"]
+    assert boton == f'=Launch("{URL_DESCARGA}")' and "Download(" not in boton and "?download=1" not in boton
+    for ruta in PA.glob("*"):
+        if ruta.suffix in {".yaml", ".md", ".txt", ".py"}:
+            texto = ruta.read_text(encoding="utf-8")
+            assert "varUrlPlantillaP9" not in texto, ruta.name
+            assert "/Documents/P9_MASIVA_PROTO/" not in texto.replace("/Documents/Documents/P9_MASIVA_PROTO/", ""), ruta.name  # la ruta sin anidar nunca existió
+            assert "/:x:/g/" not in texto, ruta.name  # el enlace compartido abre Excel, no descarga
+
+
+def test_el_OnVisible_final_no_tiene_variable_de_plantilla():
+    assert PANTALLA["Properties"]["OnVisible"].splitlines() == [
+        "=Set(varProcesandoP9, false);", "Set(varResultadoP9, Blank());", "Set(varMsAppP9, Blank());", "ResetForm(frmArchivoP9)"]
+
+
+def test_los_labels_de_copia_temporal_estan_ocultos_pero_siguen_existiendo():
+    # DeleteFile devuelve 423 (Excel retiene la copia): el usuario no necesita ver «Copia temporal / NO se pudo eliminar»
+    for nombre in ("lblResCopiaTituloP9", "lblResCopiaP9"):
+        assert CONTROLES[nombre]["Properties"]["Visible"] == "=false", nombre
+    assert len(CONTROLES) == 30
 
 
 def test_prevalidar_llama_al_flujo_con_el_archivo_y_maneja_el_error_de_llamada():

@@ -138,10 +138,11 @@ class EnsayoDirecto(EnsayoWDL):
         return self
 
 
-def configurar(definicion, ubicacion="me", biblioteca="b!BIBLIOTECA-FICTICIA"):
-    """Sustituye los marcadores <CONFIGURAR_...> como haría el usuario en el diseñador."""
+def configurar(definicion, biblioteca="b!BIBLIOTECA-FICTICIA"):
+    """Sustituye el único marcador que queda (<CONFIGURAR_BIBLIOTECA_EXCEL>) como haría el usuario en el diseñador.
+    La ubicación de Excel ya viene fijada en la definición (sitio personal, validado en tenant)."""
     import json
-    texto = json.dumps(definicion).replace(F.PLACEHOLDER_UBICACION, ubicacion).replace(F.PLACEHOLDER_BIBLIOTECA, biblioteca)
+    texto = json.dumps(definicion).replace(F.PLACEHOLDER_BIBLIOTECA, biblioteca)
     return json.loads(texto)
 
 

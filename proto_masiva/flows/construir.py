@@ -11,9 +11,15 @@ No toca Depositos_Activos. Solo usa una carpeta de biblioteca (copia temporal) y
 etapa para MEDIR en el tenant; el flujo NO fija ningún límite de filas (PARAM_MAX_FILAS = 0), salvo detectar que la lectura alcanzó el
 umbral de paginación configurado para no devolver un recuento truncado.
 
-Operaciones ya validadas en tu tenant por flujos anteriores: disparador Power Apps V2 + Response PowerApp (P9_ASIGNAR_DEPOSITO V4.2).
-NO validadas todavía en tenant (nombres internos de memoria; ver flows/INSTRUCCIONES_FLUJO.md): entrada de tipo File del disparador,
-CreateFile, DeleteFile y Excel Online GetItems.
+Validado en el tenant (ver ESTADO_CHECKPOINT_TENANT.md): disparador Power Apps V2 con UNA entrada de tipo File (`file`), CreateFile,
+Excel Online GetItems sobre tblConfirmacionMasiva y Response PowerApp: el Ejemplo de 3 filas devolvió COMPLETADO / 3 filas leídas.
+Observado y NO resuelto: DeleteFile responde HTTP 423 (Locked) porque Excel Online retiene la copia; quedan TMP_*.xlsx en la carpeta
+temporal y el flujo lo informa en `copia_temporal_eliminada = NO` sin cambiar el resultado de negocio. Este generador NO incluye el
+Delay de 10 s que se probó a mano en el tenant (no resolvió el 423).
+
+Excel Online en el tenant: Location = SITIO (valor real, ver más abajo); Document Library = «OneDrive» (se elige en el diseñador:
+su identificador interno es opaco y no se versiona, por eso `PLACEHOLDER_BIBLIOTECA` es el único marcador que queda);
+File = Id dinámico de Crear_archivo; Table = tblConfirmacionMasiva.
 """
 from __future__ import annotations
 
@@ -30,8 +36,8 @@ CARPETA_SALIDA = Path(__file__).resolve().parent
 NOMBRE_FLUJO = "P9_MASIVA_PROTO_PREVALIDAR"
 SITIO = "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu"
 CARPETA_TEMP = "/Documents/P9_MASIVA_TEMP"
-PLACEHOLDER_UBICACION = "<CONFIGURAR_UBICACION_EXCEL>"
-PLACEHOLDER_BIBLIOTECA = "<CONFIGURAR_BIBLIOTECA_EXCEL>"
+UBICACION_EXCEL = SITIO   # «Location» de Excel Online en el tenant: el sitio personal (OneDrive for Business). VALIDADO en tenant
+PLACEHOLDER_BIBLIOTECA = "<CONFIGURAR_BIBLIOTECA_EXCEL>"   # «Document Library» = OneDrive: se elige en el diseñador (id interno opaco)
 API_SP = "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
 API_XL = "/providers/Microsoft.PowerApps/apis/shared_excelonlinebusiness"
 PAGINACION = 2000   # umbral de paginación de la lectura de Excel (config.); si la lectura lo alcanza se avisa en vez de contar de menos
@@ -116,7 +122,7 @@ def leer_y_clasificar():
         Etapa_excel=asignar("varEtapa", "EXCEL"),
         Leer_tabla_Excel={"type": "OpenApiConnection", "inputs": {
             "host": {"apiId": API_XL, "connectionName": "shared_excelonlinebusiness", "operationId": "GetItems"},
-            "parameters": {"source": PLACEHOLDER_UBICACION, "drive": PLACEHOLDER_BIBLIOTECA,
+            "parameters": {"source": UBICACION_EXCEL, "drive": PLACEHOLDER_BIBLIOTECA,
                            "file": "@body('Crear_archivo')?['Id']", "table": TABLA},
             "authentication": "@parameters('$authentication')", "retryPolicy": {"type": "none"}},
             "runtimeConfiguration": {"paginationPolicy": {"minimumItemCount": PAGINACION}}},
