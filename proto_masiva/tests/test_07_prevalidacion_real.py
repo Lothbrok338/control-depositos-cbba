@@ -535,3 +535,25 @@ def test_32_las_formulas_regionales_estan_balanceadas_y_usan_solo_columnas_del_e
         assert not re.search(r"Patch\(|SubmitForm|Collect\((?!\s*colPrevalidacionP9)|Depositos_Activos", limpio), nombre
     campos = set(re.findall(r"ThisRecord\.Value\.(\w+)", m.formula("btnPrevalidarP9", "OnSelect")))
     assert campos == set(PV.DETALLE_CAMPOS)
+
+
+# ====================================================================== límite de negocio: máximo 1999 filas, sin lectura parcial silenciosa
+def _n_filas(n):
+    return [fila(codigo=f"LIM-{i:05d}", importe=10.0 + (i % 50)) for i in range(1, n + 1)]
+
+
+def test_33_1999_filas_se_prevalidan_completas():
+    t, e = procesar("limite.xlsx", xlsx_con_filas(_n_filas(1999)), tenant=TenantSimulado(depositos=[]))
+    r = e.respuesta
+    assert (r["resultado"], r["codigo"], r["filas_totales"]) == ("OBSERVADO", "PREVALIDACION_CON_ERRORES", "1999")  # sin depósitos: todas NO_ENCONTRADO
+    assert len(json.loads(r["detalle_json"])) == 1999 and r["filas_leidas"] == "1999"
+
+
+def test_33b_2000_filas_o_mas_se_rechaza_el_archivo_completo_con_mensaje_claro():
+    for n in (2000, 2001):
+        t, e = procesar("limite.xlsx", xlsx_con_filas(_n_filas(n)), tenant=TenantSimulado(depositos=[D1]))
+        r = e.respuesta
+        assert (r["resultado"], r["codigo"]) == ("ERROR", "DEMASIADAS_FILAS")
+        assert r["mensaje"] == "El archivo tiene 2000 filas o más y el máximo permitido es 1999. No se procesó ninguna fila: divida el archivo en partes más pequeñas."
+        assert r["detalle_json"] == "[]" and (r["filas_totales"], r["filas_validas"]) == ("0", "0")
+        assert t.consultas == []                                  # ni siquiera se consulta Depositos_Activos: no hay lectura parcial silenciosa

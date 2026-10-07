@@ -1,0 +1,27 @@
+{
+  "escenario": "el único depósito fue asignado por otro usuario entre PREVALIDAR y CONFIRMAR",
+  "respuesta": {
+    "resultado": "PARCIAL",
+    "codigo": "NINGUNA_CONFIRMADA",
+    "mensaje": "0 de 1 depósitos confirmados; 1 requieren revisión.",
+    "filas_recibidas": "1",
+    "filas_confirmadas": "0",
+    "filas_no_confirmadas": "1",
+    "detalle_json": "[{\"fila_excel\":6,\"deposito_id\":1,\"resultado\":\"NO_DISPONIBLE\",\"mensaje\":\"El depósito ya no está DISPONIBLE (estado actual: ASIGNADO). No se aplicó ningún cambio.\",\"estado_final\":\"ASIGNADO\",\"banco\":\"BNB\",\"cuenta_bancaria\":\"3000100152\",\"codigo_asignacion\":\"COD-0001\",\"importe\":100.0,\"moneda\":\"BOB\"}]",
+    "tiempos_ms": "total=14;filas=1;ms_por_fila=20"
+  },
+  "detalle_json_expandido": [
+    {
+      "fila_excel": 6,
+      "deposito_id": 1,
+      "resultado": "NO_DISPONIBLE",
+      "mensaje": "El depósito ya no está DISPONIBLE (estado actual: ASIGNADO). No se aplicó ningún cambio.",
+      "estado_final": "ASIGNADO",
+      "banco": "BNB",
+      "cuenta_bancaria": "3000100152",
+      "codigo_asignacion": "COD-0001",
+      "importe": 100.0,
+      "moneda": "BOB"
+    }
+  ]
+}

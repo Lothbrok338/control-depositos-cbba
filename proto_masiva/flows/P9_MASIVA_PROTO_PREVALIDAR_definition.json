@@ -551,7 +551,7 @@
                         "value": {
                           "estado": "ERROR",
                           "codigo": "DEMASIADAS_FILAS",
-                          "mensaje": "@concat('La lectura alcanzó el límite de ',string(outputs('PARAM_PAGINACION')),' filas: el recuento podría estar incompleto. Divida el archivo.')",
+                          "mensaje": "@concat('El archivo tiene ',string(outputs('PARAM_PAGINACION')),' filas o más y el máximo permitido es ',string(sub(outputs('PARAM_PAGINACION'),1)),'. No se procesó ninguna fila: divida el archivo en partes más pequeñas.')",
                           "tabla": "SI",
                           "filas": 0
                         }

@@ -1,0 +1,14 @@
+{
+  "escenario": "detalle_json no es un arreglo JSON: no se toca SharePoint",
+  "respuesta": {
+    "resultado": "ERROR",
+    "codigo": "ENTRADA_INVALIDA",
+    "mensaje": "Faltan detalle_json o usuario_email, o detalle_json no es un arreglo JSON. No se confirmó ningún depósito.",
+    "filas_recibidas": "0",
+    "filas_confirmadas": "0",
+    "filas_no_confirmadas": "0",
+    "detalle_json": "[]",
+    "tiempos_ms": "total=7;filas=0;ms_por_fila=14"
+  },
+  "detalle_json_expandido": []
+}

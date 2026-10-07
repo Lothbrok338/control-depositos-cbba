@@ -1,0 +1,914 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "$authentication": {
+      "defaultValue": {},
+      "type": "SecureObject"
+    },
+    "$connections": {
+      "defaultValue": {},
+      "type": "Object"
+    }
+  },
+  "triggers": {
+    "manual": {
+      "type": "Request",
+      "kind": "PowerAppV2",
+      "inputs": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "title": "detalle_json",
+              "type": "string",
+              "x-ms-dynamically-added": true,
+              "description": "Filas VALIDO de la prevalidación, como arreglo JSON (JSON(..., JSONFormat.Compact))",
+              "x-ms-content-hint": "TEXT"
+            },
+            "text_1": {
+              "title": "usuario_email",
+              "type": "string",
+              "x-ms-dynamically-added": true,
+              "description": "Correo del usuario que confirma (User().Email), como en la confirmación individual",
+              "x-ms-content-hint": "TEXT"
+            }
+          },
+          "required": [
+            "text",
+            "text_1"
+          ]
+        }
+      }
+    }
+  },
+  "actions": {
+    "PARAM_SITIO": {
+      "type": "Compose",
+      "inputs": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
+      "runAfter": {}
+    },
+    "PARAM_LISTA_DEPOSITOS_ACTIVOS": {
+      "type": "Compose",
+      "inputs": "296c450a-25d6-415b-ad10-c909c74817cb",
+      "runAfter": {
+        "PARAM_SITIO": [
+          "Succeeded"
+        ]
+      }
+    },
+    "PARAM_MAX_FILAS_POR_LLAMADA": {
+      "type": "Compose",
+      "inputs": 50,
+      "runAfter": {
+        "PARAM_LISTA_DEPOSITOS_ACTIVOS": [
+          "Succeeded"
+        ]
+      }
+    },
+    "PARAM_MAX_FILAS_ARCHIVO": {
+      "type": "Compose",
+      "inputs": 1999,
+      "runAfter": {
+        "PARAM_MAX_FILAS_POR_LLAMADA": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Entrada": {
+      "type": "Compose",
+      "inputs": {
+        "texto": "@trim(coalesce(triggerBody()?['text'],''))",
+        "usuario": "@trim(coalesce(triggerBody()?['text_1'],''))"
+      },
+      "runAfter": {
+        "PARAM_MAX_FILAS_ARCHIVO": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varT0": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varT0",
+            "type": "integer",
+            "value": "@ticks(utcNow())"
+          }
+        ]
+      },
+      "runAfter": {
+        "Entrada": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varEtapa": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varEtapa",
+            "type": "string",
+            "value": "ENTRADA"
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varT0": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varResultados": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varResultados",
+            "type": "array",
+            "value": []
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varEtapa": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varRecibidas": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varRecibidas",
+            "type": "string",
+            "value": "0"
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varResultados": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varErrorCodigo": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varErrorCodigo",
+            "type": "string",
+            "value": ""
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varRecibidas": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varErrorMensaje": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varErrorMensaje",
+            "type": "string",
+            "value": ""
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varErrorCodigo": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Validar_entrada": {
+      "type": "Compose",
+      "inputs": "@if(or(empty(outputs('Entrada')?['texto']),empty(outputs('Entrada')?['usuario']),greater(length(outputs('Entrada')?['usuario']),255),not(startsWith(outputs('Entrada')?['texto'],'['))),'ENTRADA_INVALIDA','')",
+      "runAfter": {
+        "Inicializar_varErrorMensaje": [
+          "Succeeded"
+        ]
+      }
+    },
+    "TRY": {
+      "type": "Scope",
+      "actions": {
+        "Entrada_valida": {
+          "type": "If",
+          "expression": "@empty(outputs('Validar_entrada'))",
+          "actions": {
+            "Filas": {
+              "type": "Compose",
+              "inputs": "@json(outputs('Entrada')?['texto'])",
+              "runAfter": {}
+            },
+            "Total": {
+              "type": "Compose",
+              "inputs": "@length(outputs('Filas'))",
+              "runAfter": {
+                "Filas": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Guardar_recibidas": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varRecibidas",
+                "value": "@string(outputs('Total'))"
+              },
+              "runAfter": {
+                "Total": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Validar_lote": {
+              "type": "Compose",
+              "inputs": "@if(equals(outputs('Total'),0),'SIN_FILAS',if(greater(outputs('Total'),min(outputs('PARAM_MAX_FILAS_POR_LLAMADA'),outputs('PARAM_MAX_FILAS_ARCHIVO'))),'LOTE_EXCEDE_LIMITE',''))",
+              "runAfter": {
+                "Guardar_recibidas": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Lote_valido": {
+              "type": "If",
+              "expression": "@empty(outputs('Validar_lote'))",
+              "actions": {
+                "Etapa_preparar": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "varEtapa",
+                    "value": "PREPARAR"
+                  },
+                  "runAfter": {}
+                },
+                "Hoy_local": {
+                  "type": "Compose",
+                  "inputs": "@convertTimeZone(utcNow(),'UTC','SA Western Standard Time','yyyy-MM-dd')",
+                  "runAfter": {
+                    "Etapa_preparar": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Desde_local": {
+                  "type": "Compose",
+                  "inputs": "@formatDateTime(addToTime(concat(outputs('Hoy_local'),'T00:00:00Z'),-2,'Month'),'yyyy-MM-dd')",
+                  "runAfter": {
+                    "Hoy_local": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Filas_texto": {
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@outputs('Filas')",
+                    "select": {
+                      "fila_excel": "@item()?['fila_excel']",
+                      "id_txt": "@trim(string(coalesce(item()?['deposito_id'],'')))",
+                      "clave": "@trim(string(coalesce(item()?['clave_transaccion'],'')))",
+                      "banco": "@trim(string(coalesce(item()?['banco'],'')))",
+                      "cuenta": "@trim(string(coalesce(item()?['cuenta_bancaria'],'')))",
+                      "codigo": "@trim(string(coalesce(item()?['codigo_asignacion'],'')))",
+                      "importe_txt": "@trim(string(coalesce(item()?['importe'],'')))",
+                      "moneda": "@toUpper(trim(string(coalesce(item()?['moneda'],''))))",
+                      "estudiante": "@trim(string(coalesce(item()?['estudiante'],'')))",
+                      "solicitado_por": "@trim(string(coalesce(item()?['solicitado_por'],'')))",
+                      "sede": "@trim(string(coalesce(item()?['sede'],'')))",
+                      "observacion": "@trim(string(coalesce(item()?['observacion'],'')))"
+                    }
+                  },
+                  "runAfter": {
+                    "Desde_local": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Filas_formato": {
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@body('Filas_texto')",
+                    "select": {
+                      "fila_excel": "@item()?['fila_excel']",
+                      "id_txt": "@item()?['id_txt']",
+                      "clave": "@item()?['clave']",
+                      "banco": "@item()?['banco']",
+                      "cuenta": "@item()?['cuenta']",
+                      "codigo": "@item()?['codigo']",
+                      "importe_txt": "@item()?['importe_txt']",
+                      "moneda": "@item()?['moneda']",
+                      "estudiante": "@item()?['estudiante']",
+                      "solicitado_por": "@item()?['solicitado_por']",
+                      "sede": "@item()?['sede']",
+                      "observacion": "@item()?['observacion']",
+                      "id_ok": "@and(not(empty(item()?['id_txt'])),lessOrEquals(length(item()?['id_txt']),9),equals(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(item()?['id_txt'],'0',''),'1',''),'2',''),'3',''),'4',''),'5',''),'6',''),'7',''),'8',''),'9',''),''))",
+                      "formato_ok": "@and(not(empty(item()?['importe_txt'])),lessOrEquals(length(item()?['importe_txt']),15),or(equals(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(item()?['importe_txt'],'0',''),'1',''),'2',''),'3',''),'4',''),'5',''),'6',''),'7',''),'8',''),'9',''),''),and(equals(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(item()?['importe_txt'],'0',''),'1',''),'2',''),'3',''),'4',''),'5',''),'6',''),'7',''),'8',''),'9',''),'.'),greater(indexOf(item()?['importe_txt'],'.'),0),less(indexOf(item()?['importe_txt'],'.'),sub(length(item()?['importe_txt']),1)),lessOrEquals(sub(length(item()?['importe_txt']),add(indexOf(item()?['importe_txt'],'.'),1)),2))))"
+                    }
+                  },
+                  "runAfter": {
+                    "Filas_texto": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Filas_validadas": {
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@body('Filas_formato')",
+                    "select": {
+                      "fila_excel": "@item()?['fila_excel']",
+                      "id_txt": "@item()?['id_txt']",
+                      "clave": "@item()?['clave']",
+                      "banco": "@item()?['banco']",
+                      "cuenta": "@item()?['cuenta']",
+                      "codigo": "@item()?['codigo']",
+                      "importe_txt": "@item()?['importe_txt']",
+                      "moneda": "@item()?['moneda']",
+                      "estudiante": "@item()?['estudiante']",
+                      "solicitado_por": "@item()?['solicitado_por']",
+                      "sede": "@item()?['sede']",
+                      "observacion": "@item()?['observacion']",
+                      "id_ok": "@item()?['id_ok']",
+                      "formato_ok": "@item()?['formato_ok']",
+                      "centavos": "@if(item()?['formato_ok'],int(formatNumber(mul(float(item()?['importe_txt']),100),'0')),0)",
+                      "invalida": "@if(or(not(item()?['id_ok']),if(item()?['id_ok'],equals(int(item()?['id_txt']),0),false)),'ID_INVALIDO',if(or(empty(item()?['clave']),empty(item()?['banco']),empty(item()?['cuenta']),empty(item()?['codigo']),empty(item()?['moneda']),empty(item()?['estudiante']),empty(item()?['solicitado_por']),empty(item()?['sede'])),'CAMPOS_OBLIGATORIOS',if(or(greater(length(item()?['clave']),255),greater(length(item()?['banco']),255),greater(length(item()?['cuenta']),255),greater(length(item()?['codigo']),255),greater(length(item()?['moneda']),255),greater(length(item()?['estudiante']),255),greater(length(item()?['solicitado_por']),255),greater(length(item()?['sede']),255),greater(length(item()?['observacion']),255)),'CAMPO_EXCEDE_255',if(not(item()?['formato_ok']),'IMPORTE_INVALIDO',if(equals(int(formatNumber(mul(float(item()?['importe_txt']),100),'0')),0),'IMPORTE_INVALIDO',if(not(or(equals(item()?['moneda'],'BOB'),equals(item()?['moneda'],'USD'))),'MONEDA_INVALIDA',''))))))"
+                    }
+                  },
+                  "runAfter": {
+                    "Filas_formato": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Filas_a_procesar": {
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@body('Filas_validadas')",
+                    "where": "@empty(item()?['invalida'])"
+                  },
+                  "runAfter": {
+                    "Filas_validadas": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Filas_invalidas": {
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@body('Filas_validadas')",
+                    "where": "@not(empty(item()?['invalida']))"
+                  },
+                  "runAfter": {
+                    "Filas_a_procesar": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Resultados_invalidas": {
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@body('Filas_invalidas')",
+                    "select": {
+                      "fila_excel": "@item()?['fila_excel']",
+                      "deposito_id": "@if(item()?['id_ok'],int(item()?['id_txt']),null)",
+                      "resultado": "ERROR_FILA",
+                      "mensaje": "@concat('Fila inválida en los datos enviados (',item()?['invalida'],'). No se aplicó ningún cambio.')",
+                      "estado_final": "",
+                      "banco": "@item()?['banco']",
+                      "cuenta_bancaria": "@item()?['cuenta']",
+                      "codigo_asignacion": "@item()?['codigo']",
+                      "importe": "@if(item()?['formato_ok'],div(float(item()?['centavos']),100.0),null)",
+                      "moneda": "@item()?['moneda']"
+                    }
+                  },
+                  "runAfter": {
+                    "Filas_invalidas": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Cargar_invalidas": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "varResultados",
+                    "value": "@body('Resultados_invalidas')"
+                  },
+                  "runAfter": {
+                    "Resultados_invalidas": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Etapa_confirmar": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "varEtapa",
+                    "value": "CONFIRMAR"
+                  },
+                  "runAfter": {
+                    "Cargar_invalidas": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Para_cada_fila": {
+                  "type": "Foreach",
+                  "foreach": "@body('Filas_a_procesar')",
+                  "runtimeConfiguration": {
+                    "concurrency": {
+                      "repetitions": 1
+                    }
+                  },
+                  "actions": {
+                    "TRY_FILA": {
+                      "type": "Scope",
+                      "actions": {
+                        "Leer_deposito": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                              "connectionName": "shared_sharepointonline",
+                              "operationId": "HttpRequest"
+                            },
+                            "parameters": {
+                              "dataset": "@outputs('PARAM_SITIO')",
+                              "parameters/method": "GET",
+                              "parameters/uri": "@concat('_api/web/lists(guid''',outputs('PARAM_LISTA_DEPOSITOS_ACTIVOS'),''')','/items(',items('Para_cada_fila')?['id_txt'],')?$select=Id,CLAVE_TRANSACCION,ESTADO_ASIGNACION,TIPO_MOVIMIENTO,FECHA_MOVIMIENTO,BANCO,CUENTA_BANCARIA,CODIGO_ASIGNACION,IMPORTE,MONEDA,USUARIO_ASIGNACION,FECHA_HORA_ASIGNACION')",
+                              "parameters/headers": {
+                                "Accept": "application/json;odata=verbose"
+                              }
+                            },
+                            "authentication": "@parameters('$authentication')",
+                            "retryPolicy": {
+                              "type": "fixed",
+                              "count": 2,
+                              "interval": "PT2S"
+                            }
+                          },
+                          "runAfter": {}
+                        },
+                        "Cambio": {
+                          "type": "Compose",
+                          "inputs": "@if(not(equals(string(coalesce(body('Leer_deposito')?['d']?['Id'],body('Leer_deposito')?['d']?['ID'],0)),items('Para_cada_fila')?['id_txt'])),'ID',if(not(equals(trim(string(coalesce(body('Leer_deposito')?['d']?['CLAVE_TRANSACCION'],''))),items('Para_cada_fila')?['clave'])),'CLAVE_TRANSACCION',if(not(equals(trim(string(coalesce(body('Leer_deposito')?['d']?['ESTADO_ASIGNACION'],''))),'DISPONIBLE')),'ESTADO_ASIGNACION',if(not(equals(trim(string(coalesce(body('Leer_deposito')?['d']?['TIPO_MOVIMIENTO'],''))),'CRÉDITO')),'TIPO_MOVIMIENTO',if(or(less(take(string(coalesce(body('Leer_deposito')?['d']?['FECHA_MOVIMIENTO'],'')),10),outputs('Desde_local')),greater(take(string(coalesce(body('Leer_deposito')?['d']?['FECHA_MOVIMIENTO'],'')),10),outputs('Hoy_local'))),'FECHA_MOVIMIENTO',if(not(equals(toLower(trim(string(coalesce(body('Leer_deposito')?['d']?['BANCO'],'')))),toLower(items('Para_cada_fila')?['banco']))),'BANCO',if(not(equals(toLower(trim(string(coalesce(body('Leer_deposito')?['d']?['CUENTA_BANCARIA'],'')))),toLower(items('Para_cada_fila')?['cuenta']))),'CUENTA_BANCARIA',if(not(equals(toLower(trim(string(coalesce(body('Leer_deposito')?['d']?['CODIGO_ASIGNACION'],'')))),toLower(items('Para_cada_fila')?['codigo']))),'CODIGO_ASIGNACION',if(not(equals(int(formatNumber(mul(float(string(coalesce(body('Leer_deposito')?['d']?['IMPORTE'],0))),100),'0')),items('Para_cada_fila')?['centavos'])),'IMPORTE',if(not(equals(toUpper(trim(string(coalesce(body('Leer_deposito')?['d']?['MONEDA'],'')))),items('Para_cada_fila')?['moneda'])),'MONEDA',''))))))))))",
+                          "runAfter": {
+                            "Leer_deposito": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "ETag_fresco": {
+                          "type": "Compose",
+                          "inputs": "@coalesce(body('Leer_deposito')?['d']?['__metadata']?['etag'],outputs('Leer_deposito')?['headers']?['ETag'],'')",
+                          "runAfter": {
+                            "Cambio": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Revalidacion": {
+                          "type": "Compose",
+                          "inputs": {
+                            "codigo": "@if(empty(outputs('Cambio')),if(empty(outputs('ETag_fresco')),'ERROR_FILA','OK'),if(equals(outputs('Cambio'),'ESTADO_ASIGNACION'),'NO_DISPONIBLE','CONFLICTO_DATOS'))",
+                            "campo": "@outputs('Cambio')",
+                            "estado": "@trim(string(coalesce(body('Leer_deposito')?['d']?['ESTADO_ASIGNACION'],'')))",
+                            "etag": "@outputs('ETag_fresco')"
+                          },
+                          "runAfter": {
+                            "ETag_fresco": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Puede_confirmar": {
+                          "type": "If",
+                          "expression": "@equals(outputs('Revalidacion')?['codigo'],'OK')",
+                          "actions": {
+                            "Cuerpo_actualizacion": {
+                              "type": "Compose",
+                              "inputs": {
+                                "ESTADO_ASIGNACION": "ASIGNADO",
+                                "ESTUDIANTE": "@items('Para_cada_fila')?['estudiante']",
+                                "CODIGO_ESTUDIANTE": "",
+                                "SOLICITADO_POR": "@items('Para_cada_fila')?['solicitado_por']",
+                                "SEDE_ASIGNACION": "@items('Para_cada_fila')?['sede']",
+                                "OBSERVACION": "@items('Para_cada_fila')?['observacion']",
+                                "USUARIO_ASIGNACION": "@outputs('Entrada')?['usuario']",
+                                "FECHA_HORA_ASIGNACION": "@utcNow()"
+                              },
+                              "runAfter": {}
+                            },
+                            "Actualizar_deposito": {
+                              "type": "OpenApiConnection",
+                              "inputs": {
+                                "host": {
+                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                                  "connectionName": "shared_sharepointonline",
+                                  "operationId": "HttpRequest"
+                                },
+                                "parameters": {
+                                  "dataset": "@outputs('PARAM_SITIO')",
+                                  "parameters/method": "POST",
+                                  "parameters/uri": "@concat('_api/web/lists(guid''',outputs('PARAM_LISTA_DEPOSITOS_ACTIVOS'),''')','/items(',items('Para_cada_fila')?['id_txt'],')')",
+                                  "parameters/headers": {
+                                    "Accept": "application/json;odata=nometadata",
+                                    "Content-Type": "application/json;odata=nometadata",
+                                    "X-HTTP-Method": "MERGE",
+                                    "IF-MATCH": "@outputs('Revalidacion')?['etag']"
+                                  },
+                                  "parameters/body": "@string(outputs('Cuerpo_actualizacion'))"
+                                },
+                                "authentication": "@parameters('$authentication')",
+                                "retryPolicy": {
+                                  "type": "none"
+                                }
+                              },
+                              "runAfter": {
+                                "Cuerpo_actualizacion": [
+                                  "Succeeded"
+                                ]
+                              }
+                            },
+                            "Agregar_confirmado": {
+                              "type": "AppendToArrayVariable",
+                              "inputs": {
+                                "name": "varResultados",
+                                "value": {
+                                  "fila_excel": "@items('Para_cada_fila')?['fila_excel']",
+                                  "deposito_id": "@int(items('Para_cada_fila')?['id_txt'])",
+                                  "resultado": "CONFIRMADO",
+                                  "mensaje": "Depósito confirmado correctamente.",
+                                  "estado_final": "ASIGNADO",
+                                  "banco": "@items('Para_cada_fila')?['banco']",
+                                  "cuenta_bancaria": "@items('Para_cada_fila')?['cuenta']",
+                                  "codigo_asignacion": "@items('Para_cada_fila')?['codigo']",
+                                  "importe": "@div(float(items('Para_cada_fila')?['centavos']),100.0)",
+                                  "moneda": "@items('Para_cada_fila')?['moneda']"
+                                }
+                              },
+                              "runAfter": {
+                                "Actualizar_deposito": [
+                                  "Succeeded"
+                                ]
+                              }
+                            }
+                          },
+                          "else": {
+                            "actions": {
+                              "Agregar_no_confirmado": {
+                                "type": "AppendToArrayVariable",
+                                "inputs": {
+                                  "name": "varResultados",
+                                  "value": {
+                                    "fila_excel": "@items('Para_cada_fila')?['fila_excel']",
+                                    "deposito_id": "@int(items('Para_cada_fila')?['id_txt'])",
+                                    "resultado": "@outputs('Revalidacion')?['codigo']",
+                                    "mensaje": "@if(equals(outputs('Revalidacion')?['codigo'],'NO_DISPONIBLE'),concat('El depósito ya no está DISPONIBLE (estado actual: ',outputs('Revalidacion')?['estado'],'). No se aplicó ningún cambio.'),if(equals(outputs('Revalidacion')?['codigo'],'CONFLICTO_DATOS'),concat('El depósito cambió desde la prevalidación (',outputs('Revalidacion')?['campo'],'). No se aplicó ningún cambio.'),'SharePoint no devolvió el ETag del depósito; no se aplicó ningún cambio.'))",
+                                    "estado_final": "@outputs('Revalidacion')?['estado']",
+                                    "banco": "@items('Para_cada_fila')?['banco']",
+                                    "cuenta_bancaria": "@items('Para_cada_fila')?['cuenta']",
+                                    "codigo_asignacion": "@items('Para_cada_fila')?['codigo']",
+                                    "importe": "@div(float(items('Para_cada_fila')?['centavos']),100.0)",
+                                    "moneda": "@items('Para_cada_fila')?['moneda']"
+                                  }
+                                },
+                                "runAfter": {}
+                              }
+                            }
+                          },
+                          "runAfter": {
+                            "Revalidacion": [
+                              "Succeeded"
+                            ]
+                          }
+                        }
+                      },
+                      "runAfter": {}
+                    },
+                    "CATCH_FILA": {
+                      "type": "Scope",
+                      "actions": {
+                        "Agregar_error_fila": {
+                          "type": "AppendToArrayVariable",
+                          "inputs": {
+                            "name": "varResultados",
+                            "value": {
+                              "fila_excel": "@items('Para_cada_fila')?['fila_excel']",
+                              "deposito_id": "@int(items('Para_cada_fila')?['id_txt'])",
+                              "resultado": "@if(and(equals(actions('Actualizar_deposito')?['status'],'Failed'),equals(outputs('Actualizar_deposito')?['statusCode'],412)),'CONFLICTO',if(equals(actions('Actualizar_deposito')?['status'],'Failed'),'ERROR_FILA',if(and(equals(actions('Leer_deposito')?['status'],'Failed'),equals(outputs('Leer_deposito')?['statusCode'],404)),'NO_ENCONTRADO','ERROR_FILA')))",
+                              "mensaje": "@if(and(equals(actions('Actualizar_deposito')?['status'],'Failed'),equals(outputs('Actualizar_deposito')?['statusCode'],412)),'Otro usuario modificó el depósito mientras se confirmaba. No se aplicó tu confirmación.',if(equals(actions('Actualizar_deposito')?['status'],'Failed'),concat('No se pudo confirmar el depósito (HTTP ',string(outputs('Actualizar_deposito')?['statusCode']),'). Verifique su estado con PREVALIDAR antes de reintentar.'),if(and(equals(actions('Leer_deposito')?['status'],'Failed'),equals(outputs('Leer_deposito')?['statusCode'],404)),'El depósito ya no existe en SharePoint. No se aplicó ningún cambio.',if(equals(actions('Leer_deposito')?['status'],'Failed'),concat('No se pudo leer el depósito (HTTP ',string(outputs('Leer_deposito')?['statusCode']),'). No se aplicó ningún cambio.'),'Error inesperado al procesar la fila. Verifique el depósito con PREVALIDAR antes de reintentar.'))))",
+                              "estado_final": "@if(and(equals(actions('Actualizar_deposito')?['status'],'Failed'),not(equals(outputs('Actualizar_deposito')?['statusCode'],412))),'DESCONOCIDO','')",
+                              "banco": "@items('Para_cada_fila')?['banco']",
+                              "cuenta_bancaria": "@items('Para_cada_fila')?['cuenta']",
+                              "codigo_asignacion": "@items('Para_cada_fila')?['codigo']",
+                              "importe": "@div(float(items('Para_cada_fila')?['centavos']),100.0)",
+                              "moneda": "@items('Para_cada_fila')?['moneda']"
+                            }
+                          },
+                          "runAfter": {}
+                        }
+                      },
+                      "runAfter": {
+                        "TRY_FILA": [
+                          "Failed",
+                          "TimedOut"
+                        ]
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Etapa_confirmar": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Error_de_lote": {
+                    "type": "If",
+                    "expression": "@equals(outputs('Validar_lote'),'SIN_FILAS')",
+                    "actions": {
+                      "Sin_filas_codigo": {
+                        "type": "SetVariable",
+                        "inputs": {
+                          "name": "varErrorCodigo",
+                          "value": "SIN_FILAS"
+                        },
+                        "runAfter": {}
+                      },
+                      "Sin_filas_mensaje": {
+                        "type": "SetVariable",
+                        "inputs": {
+                          "name": "varErrorMensaje",
+                          "value": "No hay filas VALIDO para confirmar. No se confirmó ningún depósito."
+                        },
+                        "runAfter": {
+                          "Sin_filas_codigo": [
+                            "Succeeded"
+                          ]
+                        }
+                      }
+                    },
+                    "else": {
+                      "actions": {
+                        "Lote_excede_codigo": {
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "varErrorCodigo",
+                            "value": "LOTE_EXCEDE_LIMITE"
+                          },
+                          "runAfter": {}
+                        },
+                        "Lote_excede_mensaje": {
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "varErrorMensaje",
+                            "value": "@concat('Se enviaron ',string(outputs('Total')),' filas y el máximo por confirmación es ',string(min(outputs('PARAM_MAX_FILAS_POR_LLAMADA'),outputs('PARAM_MAX_FILAS_ARCHIVO'))),'. No se confirmó ningún depósito: divida la confirmación en partes más pequeñas.')"
+                          },
+                          "runAfter": {
+                            "Lote_excede_codigo": [
+                              "Succeeded"
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "runAfter": {}
+                  }
+                }
+              },
+              "runAfter": {
+                "Validar_lote": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {
+              "Entrada_invalida_codigo": {
+                "type": "SetVariable",
+                "inputs": {
+                  "name": "varErrorCodigo",
+                  "value": "ENTRADA_INVALIDA"
+                },
+                "runAfter": {}
+              },
+              "Entrada_invalida_mensaje": {
+                "type": "SetVariable",
+                "inputs": {
+                  "name": "varErrorMensaje",
+                  "value": "Faltan detalle_json o usuario_email, o detalle_json no es un arreglo JSON. No se confirmó ningún depósito."
+                },
+                "runAfter": {
+                  "Entrada_invalida_codigo": [
+                    "Succeeded"
+                  ]
+                }
+              }
+            }
+          },
+          "runAfter": {}
+        }
+      },
+      "runAfter": {
+        "Validar_entrada": [
+          "Succeeded"
+        ]
+      }
+    },
+    "CATCH": {
+      "type": "Scope",
+      "actions": {
+        "Clasificar_fallo": {
+          "type": "If",
+          "expression": "@equals(variables('varEtapa'),'ENTRADA')",
+          "actions": {
+            "Fallo_entrada_codigo": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varErrorCodigo",
+                "value": "ENTRADA_INVALIDA"
+              },
+              "runAfter": {}
+            },
+            "Fallo_entrada_mensaje": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varErrorMensaje",
+                "value": "detalle_json no es un arreglo JSON válido. No se confirmó ningún depósito."
+              },
+              "runAfter": {
+                "Fallo_entrada_codigo": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {
+              "Fallo_global_codigo": {
+                "type": "SetVariable",
+                "inputs": {
+                  "name": "varErrorCodigo",
+                  "value": "ERROR_NO_CONTROLADO"
+                },
+                "runAfter": {}
+              },
+              "Fallo_global_mensaje": {
+                "type": "SetVariable",
+                "inputs": {
+                  "name": "varErrorMensaje",
+                  "value": "El proceso se interrumpió antes de terminar: algunos depósitos pueden haberse confirmado. Vuelva a PREVALIDAR para ver el estado real de cada uno antes de reintentar."
+                },
+                "runAfter": {
+                  "Fallo_global_codigo": [
+                    "Succeeded"
+                  ]
+                }
+              }
+            }
+          },
+          "runAfter": {}
+        }
+      },
+      "runAfter": {
+        "TRY": [
+          "Failed",
+          "TimedOut"
+        ]
+      }
+    },
+    "Confirmadas": {
+      "type": "Query",
+      "inputs": {
+        "from": "@variables('varResultados')",
+        "where": "@equals(item()?['resultado'],'CONFIRMADO')"
+      },
+      "runAfter": {
+        "TRY": [
+          "Succeeded",
+          "Failed",
+          "Skipped",
+          "TimedOut"
+        ],
+        "CATCH": [
+          "Succeeded",
+          "Failed",
+          "Skipped",
+          "TimedOut"
+        ]
+      }
+    },
+    "Cuenta_confirmadas": {
+      "type": "Compose",
+      "inputs": "@length(body('Confirmadas'))",
+      "runAfter": {
+        "Confirmadas": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Cuenta_recibidas": {
+      "type": "Compose",
+      "inputs": "@int(variables('varRecibidas'))",
+      "runAfter": {
+        "Cuenta_confirmadas": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Tiempos": {
+      "type": "Compose",
+      "inputs": "@concat('total=',string(div(sub(ticks(utcNow()),variables('varT0')),10000)),';filas=',variables('varRecibidas'),';ms_por_fila=',string(div(div(sub(ticks(utcNow()),variables('varT0')),10000),max(1,outputs('Cuenta_recibidas')))))",
+      "runAfter": {
+        "Cuenta_recibidas": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Responder_a_PowerApps": {
+      "type": "Response",
+      "kind": "PowerApp",
+      "runAfter": {
+        "Tiempos": [
+          "Succeeded",
+          "Failed",
+          "Skipped",
+          "TimedOut"
+        ]
+      },
+      "inputs": {
+        "statusCode": 200,
+        "body": {
+          "resultado": "@if(not(empty(variables('varErrorCodigo'))),'ERROR',if(equals(outputs('Cuenta_confirmadas'),outputs('Cuenta_recibidas')),'OK','PARCIAL'))",
+          "codigo": "@if(not(empty(variables('varErrorCodigo'))),variables('varErrorCodigo'),if(equals(outputs('Cuenta_confirmadas'),outputs('Cuenta_recibidas')),'CONFIRMACION_OK',if(equals(outputs('Cuenta_confirmadas'),0),'NINGUNA_CONFIRMADA','CONFIRMACION_PARCIAL')))",
+          "mensaje": "@if(not(empty(variables('varErrorCodigo'))),variables('varErrorMensaje'),concat(string(outputs('Cuenta_confirmadas')),' de ',string(outputs('Cuenta_recibidas')),' depósitos confirmados',if(equals(outputs('Cuenta_confirmadas'),outputs('Cuenta_recibidas')),'.',concat('; ',string(sub(outputs('Cuenta_recibidas'),outputs('Cuenta_confirmadas'))),' requieren revisión.'))))",
+          "filas_recibidas": "@variables('varRecibidas')",
+          "filas_confirmadas": "@string(outputs('Cuenta_confirmadas'))",
+          "filas_no_confirmadas": "@string(sub(outputs('Cuenta_recibidas'),outputs('Cuenta_confirmadas')))",
+          "detalle_json": "@string(variables('varResultados'))",
+          "tiempos_ms": "@outputs('Tiempos')"
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "resultado": {
+              "title": "resultado",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "codigo": {
+              "title": "codigo",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "mensaje": {
+              "title": "mensaje",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "filas_recibidas": {
+              "title": "filas_recibidas",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "filas_confirmadas": {
+              "title": "filas_confirmadas",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "filas_no_confirmadas": {
+              "title": "filas_no_confirmadas",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "detalle_json": {
+              "title": "detalle_json",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "tiempos_ms": {
+              "title": "tiempos_ms",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "outputs": {}
+}

@@ -23,7 +23,7 @@ import derivar_pegar  # noqa: E402
 
 PANTALLA = yaml.safe_load((PA / "P9_Confirmacion_Masiva.pa.yaml").read_text(encoding="utf-8"))["Screens"]["P9_Confirmacion_Masiva"]
 MANUALES = {"frmArchivoP9", "attXlsxP9"}  # los únicos controles que se crean a mano en Studio
-TIPOS_USADOS_EN_P9 = {"GroupContainer@1.5.0", "Rectangle@2.3.0", "Label@2.5.1", "Classic/Button@2.2.0"}
+TIPOS_USADOS_EN_P9 = {"GroupContainer@1.5.0", "Rectangle@2.3.0", "Label@2.5.1", "Classic/Button@2.2.0", "Gallery@2.15.0"}
 CODIGOS_APP = set(F.CODIGOS) | {"FLUJO_SIN_RESPUESTA"}  # este último lo fabrica la app si el flujo no responde
 ESTADOS_UI = {"SIN ARCHIVO", "CARGADO", "PROCESANDO", "OK", "OBSERVADO", "ERROR"}
 # VALIDADO EN TENANT (URL pegada en el navegador → se descarga el XLSX): descarga por UniqueId del archivo real. Si el archivo se borra y se
@@ -56,7 +56,7 @@ def sin_cadenas(formula):
 # --------------------------------------------------------------------------- pantalla
 def test_yaml_valido_con_nombres_unicos_y_tipos_conocidos():
     nombres = [n for n, _ in controles(PANTALLA["Children"])]
-    assert len(nombres) == len(set(nombres)) == 30
+    assert len(nombres) == len(set(nombres)) == 35  # 30 + btnConfirmarMasivamenteP9, btnVerObservacionesP9, galObservacionesP9 y sus 2 etiquetas
     assert {c["Control"] for c in CONTROLES.values()} <= TIPOS_USADOS_EN_P9
 
 
@@ -86,14 +86,18 @@ def test_la_descarga_es_por_uniqueid_y_no_quedan_rutas_ni_variables_antiguas():
 
 def test_el_OnVisible_final_no_tiene_variable_de_plantilla():
     assert PANTALLA["Properties"]["OnVisible"].splitlines() == [
-        "=Set(varProcesandoP9, false);", "Set(varResultadoP9, Blank());", "Set(varMsAppP9, Blank());", "ResetForm(frmArchivoP9)"]
+        "=Set(varProcesandoP9, false);", "Set(varResultadoP9, Blank());", "Set(varMsAppP9, Blank());",
+        "Set(varProcesandoConfirmacionP9, false);", "Set(varConfirmacionMasivaFinalizadaP9, false);", "Set(varResultadoConfirmacionP9, Blank());",
+        "Set(varMsConfirmacionP9, Blank());", "Set(varVerObservacionesP9, false);", "Clear(colPrevalidacionP9);", "Clear(colConfirmacionP9);",
+        "ResetForm(frmArchivoP9)"]
+    assert "varConfirmarMasivaVisible" not in (PA / "P9_Confirmacion_Masiva.pa.yaml").read_text(encoding="utf-8")  # no hay segundo modal
 
 
 def test_los_labels_de_copia_temporal_estan_ocultos_pero_siguen_existiendo():
     # DeleteFile devuelve 423 (Excel retiene la copia): el usuario no necesita ver «Copia temporal / NO se pudo eliminar»
     for nombre in ("lblResCopiaTituloP9", "lblResCopiaP9"):
         assert CONTROLES[nombre]["Properties"]["Visible"] == "=false", nombre
-    assert len(CONTROLES) == 30
+    assert len(CONTROLES) == 35
 
 
 def test_prevalidar_llama_al_flujo_con_el_archivo_y_maneja_el_error_de_llamada():
@@ -123,7 +127,7 @@ def test_las_salidas_del_flujo_que_usa_la_app_existen_en_la_respuesta_del_flujo(
     usados = set()
     for donde, f in formulas():
         usados |= set(re.findall(r"varResultadoP9\.([a-z_]+)", sin_cadenas(f)))
-    assert usados <= set(F.SALIDAS_RESPUESTA) and set(F.SALIDAS) <= usados and "detalle_json" in usados  # las 8 de siempre + las nuevas
+    assert usados <= set(F.SALIDAS_RESPUESTA) and (set(F.SALIDAS) - {"tiempos_ms"}) <= usados and "detalle_json" in usados  # el desglose técnico del flujo ya no se muestra al usuario  # las 8 de siempre + las nuevas
     registro = re.search(r"Set\(\s*varResultadoP9,\s*\{(.*?)\}\s*\)", CONTROLES["btnPrevalidarP9"]["Properties"]["OnSelect"], re.S)
     assert set(re.findall(r"([a-z_]+):", registro[1])) == set(F.SALIDAS_RESPUESTA)  # el resultado de error fabricado por la app tiene la misma forma
     assert re.search(r'detalle_json: "\[\]"', registro[1])  # y un detalle vacío válido, para que ParseJSON no falle
@@ -292,5 +296,5 @@ def test_la_pantalla_ya_no_dice_que_no_consulta_Depositos_Activos_ni_usa_estados
     texto = (PA / "P9_Confirmacion_Masiva.pa.yaml").read_text(encoding="utf-8")
     assert "COMPLETADO" not in texto and "no se consulta" not in texto and "se borra al terminar" not in texto
     aviso = CONTROLES["lblAvisoPrototipoP9"]["Properties"]["Text"]
-    assert "SOLO LECTURA" in aviso and "no lo modifica" in aviso and "no confirma" in aviso
+    assert "relee cada depósito" in aviso and "solo confirma lo que sigue válido" in aviso and "sin lotes ni historial" in aviso
     assert "OK" in CONTROLES["lblEstadoP9"]["Properties"]["Fill"] and "OBSERVADO" in CONTROLES["lblEstadoP9"]["Properties"]["Fill"]

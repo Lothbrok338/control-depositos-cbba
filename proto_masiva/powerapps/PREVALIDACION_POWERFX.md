@@ -1,8 +1,8 @@
 # Power Fx de la prevalidación real (colección `colPrevalidacionP9`)
 
-> **Estado: preparado, NO validado en el tenant.** Las fórmulas pasan las pruebas estáticas del repositorio (paréntesis, nombres de columna contra
-> `flows/esquema_detalle_json.json`, sin escrituras), pero **no se han ejecutado en Power Apps Studio**. Este archivo se **genera** desde
-> `P9_Confirmacion_Masiva.pa.yaml` (`python proto_masiva/powerapps/generar_powerfx.py`): no lo edites a mano.
+> **Estado: la prevalidación con esta colección ya fue validada en el tenant** (fase anterior). Las fórmulas que se muestran son las **vigentes**, que
+> incluyen los reinicios de la fase de confirmación: lo que cambia en esta fase, con los pasos exactos, está en **`CONFIRMACION_POWERFX.md`**.
+> Este archivo se **genera** desde `P9_Confirmacion_Masiva.pa.yaml` (`python proto_masiva/powerapps/generar_powerfx.py`): no lo edites a mano.
 
 Las fórmulas están escritas para tu configuración regional: `;` entre argumentos y `;;` entre sentencias.
 
@@ -30,7 +30,12 @@ Selecciona cada control, elige la propiedad en la barra de fórmulas, **borra to
 =Set(varProcesandoP9; true);;
 Set(varResultadoP9; Blank());;
 Set(varMsAppP9; Blank());;
+Set(varResultadoConfirmacionP9; Blank());;
+Set(varMsConfirmacionP9; Blank());;
+Set(varConfirmacionMasivaFinalizadaP9; false);;
+Set(varVerObservacionesP9; false);;
 Clear(colPrevalidacionP9);;
+Clear(colConfirmacionP9);;
 With(
     {inicioP9: Now(); archivoP9: First(attXlsxP9.Attachments)};
     IfError(
@@ -95,13 +100,15 @@ Set(varProcesandoP9; false)
 
 ```
 =With(
-    {estadoP9: If(Coalesce(varProcesandoP9; false); "PROCESANDO"; If(!IsBlank(varResultadoP9); varResultadoP9.resultado; If(IsEmpty(attXlsxP9.Attachments); "SIN ARCHIVO"; "CARGADO")))};
+    {estadoP9: If(Coalesce(varProcesandoConfirmacionP9; false); "CONFIRMANDO"; If(Coalesce(varProcesandoP9; false); "PROCESANDO"; If(!IsBlank(varResultadoConfirmacionP9); varResultadoConfirmacionP9.resultado; If(!IsBlank(varResultadoP9); varResultadoP9.resultado; If(IsEmpty(attXlsxP9.Attachments); "SIN ARCHIVO"; "CARGADO")))))};
     Switch(
         estadoP9;
         "OK"; RGBA(46; 125; 50; 1);
         "OBSERVADO"; RGBA(198; 125; 0; 1);
+        "PARCIAL"; RGBA(198; 125; 0; 1);
         "ERROR"; RGBA(183; 28; 28; 1);
         "PROCESANDO"; RGBA(230; 126; 34; 1);
+        "CONFIRMANDO"; RGBA(230; 126; 34; 1);
         "CARGADO"; RGBA(0; 120; 212; 1);
         RGBA(98; 102; 106; 1)
     )
@@ -112,15 +119,30 @@ Set(varProcesandoP9; false)
 
 ```
 =If(
-    Coalesce(varProcesandoP9; false);
-    "Procesando el archivo (puede tardar unos segundos)...";
+    Coalesce(varProcesandoConfirmacionP9; false);
+    "Confirmando los depósitos válidos (puede tardar)...";
     If(
-        IsBlank(varResultadoP9);
-        If(IsEmpty(attXlsxP9.Attachments); "Adjunte un Excel (.xlsx) para empezar."; "Archivo seleccionado. Pulse PREVALIDAR ARCHIVO.");
+        Coalesce(varProcesandoP9; false);
+        "Procesando el archivo (puede tardar unos segundos)...";
         If(
-            varResultadoP9.resultado = "OK" || varResultadoP9.resultado = "OBSERVADO";
-            "PREVALIDACIÓN · " & varResultadoP9.filas_validas & " DE " & varResultadoP9.filas_totales & If(Value(varResultadoP9.filas_totales) = 1; " FILA VÁLIDA"; " FILAS VÁLIDAS");
-            "RESULTADO: " & varResultadoP9.codigo
+            !IsBlank(varResultadoConfirmacionP9);
+            Switch(
+                varResultadoConfirmacionP9.resultado;
+                "OK";
+                "CONFIRMACIÓN COMPLETADA" & Char(10) & varResultadoConfirmacionP9.filas_confirmadas & " de " & varResultadoConfirmacionP9.filas_recibidas & " depósitos confirmados.";
+                "PARCIAL";
+                If(Value(varResultadoConfirmacionP9.filas_confirmadas) = 0; "NO SE CONFIRMÓ NINGÚN DEPÓSITO"; "CONFIRMACIÓN PARCIAL") & Char(10) & varResultadoConfirmacionP9.filas_confirmadas & " de " & varResultadoConfirmacionP9.filas_recibidas & " depósitos confirmados." & Char(10) & varResultadoConfirmacionP9.filas_no_confirmadas & " requieren revisión.";
+                "NO SE PUDO CONFIRMAR" & Char(10) & varResultadoConfirmacionP9.mensaje
+            );
+            If(
+                IsBlank(varResultadoP9);
+                If(IsEmpty(attXlsxP9.Attachments); "Adjunte un Excel (.xlsx) para empezar."; "Archivo seleccionado. Pulse PREVALIDAR ARCHIVO.");
+                If(
+                    varResultadoP9.resultado = "OK" || varResultadoP9.resultado = "OBSERVADO";
+                    "PREVALIDACIÓN · " & varResultadoP9.filas_validas & " DE " & varResultadoP9.filas_totales & If(Value(varResultadoP9.filas_totales) = 1; " FILA VÁLIDA"; " FILAS VÁLIDAS");
+                    "RESULTADO: " & varResultadoP9.codigo
+                )
+            )
         )
     )
 )
@@ -135,7 +157,7 @@ Set(varProcesandoP9; false)
 ### 5 · `lblAvisoPrototipoP9` → **Text**
 
 ```
-="PROTOTIPO · prevalidación de SOLO LECTURA (lee Depositos_Activos, no lo modifica y no confirma ningún depósito) · sin lotes ni historial."
+="PROTOTIPO · CONFIRMAR MASIVAMENTE relee cada depósito antes de escribir y solo confirma lo que sigue válido · sin lotes ni historial."
 ```
 
 ## Usar la colección (sin galería bonita todavía)

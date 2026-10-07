@@ -1,6 +1,7 @@
 # P9 CONFIRMACIÓN MASIVA — Prototipo DIRECTO (sin lotes), datos ficticios
 
-> **Fase actual: PREVALIDACIÓN REAL contra `Depositos_Activos` (solo lectura) — implementada y probada localmente, NO validada en tenant.**
+> **Fase actual: CONFIRMACIÓN MASIVA (solo las filas VALIDO, con ETag fresco) — implementada y probada localmente, NO validada en tenant: `CONFIRMACION_MASIVA.md`, pasos en `flows/INSTRUCCIONES_CONFIRMAR.md`.**
+> Fase anterior: PREVALIDACIÓN REAL contra `Depositos_Activos` (solo lectura) — validada manualmente en el tenant.
 > Reglas, internal names reales, contrato de respuesta, `detalle_json` y límites: **`PREVALIDACION_REAL.md`**. Pasos para el tenant: **`flows/ACTUALIZAR_FLUJO_PREVALIDACION.md`**.
 > Lo descrito abajo como «TENANT VALIDATED» se refiere al **checkpoint estructural anterior** (Ejemplo de 3 filas → COMPLETADO); con la nueva versión el resultado de ese mismo archivo
 > pasa a ser `OK`/`OBSERVADO` según haya o no depósitos coincidentes, y eso aún no se ha ejecutado en el tenant.
@@ -80,7 +81,9 @@ La pregunta «¿el flujo directo termina en tiempos razonables, y hasta cuántas
 | Flujo `P9_MASIVA_PROTO_PREVALIDAR` importado, configurado (Excel: sitio personal / OneDrive / `Id` / `tblConfirmacionMasiva`) y guardado | Hecho y probado con el Ejemplo |
 | App `P9_PRUEBA_MASIVA` (copia) con la pantalla `P9_Confirmacion_Masiva`, `frmArchivoP9` + `attXlsxP9` y los 30 controles | Hecho y probado con el Ejemplo |
 | `OnVisible` final (sin variable de URL) y labels de copia temporal ocultos | Hecho |
-| Botón `IMPORTACIÓN MASIVA` en `Main_Screen` | **PENDIENTE DE INTEGRACIÓN / NO VALIDADO EN TENANT** |
+| Botón `IMPORTACIÓN MASIVA` en `Main_Screen` | Agregado y probado manualmente en `P9_PRUEBA_MASIVA` (navegación ida y vuelta) |
+| Prevalidación real | Validada manualmente en el tenant (ver `ESTADO_CHECKPOINT_TENANT.md` §5b) |
+| **Confirmación masiva** | **Implementada localmente (`CONFIRMACION_MASIVA.md`), NO validada en tenant. ESCRIBE en `Depositos_Activos`** |
 
 ## QUÉ SIGUE SIN ESTAR VALIDADO EN TENANT
 
@@ -103,4 +106,4 @@ La pregunta «¿el flujo directo termina en tiempos razonables, y hasta cuántas
 
 ## MAPA DE ARCHIVOS (todo bajo `proto_masiva/`)
 
-`PREVALIDACION_REAL.md` · `ESTADO_CHECKPOINT_TENANT.md` · `flows/{prevalidacion.py, esquema_detalle_json.json, ejemplos_respuesta/, GUIA_ACCIONES_PREVALIDACION.md, ACTUALIZAR_FLUJO_PREVALIDACION.md, guia_manual.py}` · `powerapps/{PREVALIDACION_POWERFX.md, generar_powerfx.py}` · `xlsx/{Plantilla,Ejemplo}_Confirmacion_Masiva_P9.xlsx` · `xlsx/medicion/Filas_NNNN.xlsx` · `xlsx/` (6 fixtures de A–E) · `contrato_plantilla.py` · `catalogo_p9.py` + `catalogo_bancos_p9.json` · `generar_plantillas_produccion.py` · `generar_medicion.py` · `generar_xlsx.py` (fixtures) · `PLANTILLA_PRODUCCION.md` · `MEDICION_TENANT.md` · `powerapps/{P9_Confirmacion_Masiva.pa.yaml, …_CONTROLES_PEGAR.yaml, BOTON_MAIN_SCREEN.txt, BOTON_MAIN_SCREEN_PEGAR.yaml, Main_Screen_CON_BOTON_IMPORTACION_MASIVA.yaml, INSTRUCCIONES_PEGADO.md, aplicar_boton.py, derivar_pegar.py}` · `flows/{construir.py, P9_MASIVA_PROTO_PREVALIDAR_definition.json, P9_MASIVA_PROTO_PREVALIDAR.zip, INSTRUCCIONES_FLUJO.md}` · `sharepoint/INSTRUCCIONES_VEHICULO.md` · `tests/`.
+`CONFIRMACION_MASIVA.md` · `PREVALIDACION_REAL.md` · `ESTADO_CHECKPOINT_TENANT.md` · `flows/{prevalidacion.py, esquema_detalle_json.json, ejemplos_respuesta/, GUIA_ACCIONES_PREVALIDACION.md, ACTUALIZAR_FLUJO_PREVALIDACION.md, guia_manual.py}` · `powerapps/{PREVALIDACION_POWERFX.md, generar_powerfx.py}` · `xlsx/{Plantilla,Ejemplo}_Confirmacion_Masiva_P9.xlsx` · `xlsx/medicion/Filas_NNNN.xlsx` · `xlsx/` (6 fixtures de A–E) · `contrato_plantilla.py` · `catalogo_p9.py` + `catalogo_bancos_p9.json` · `generar_plantillas_produccion.py` · `generar_medicion.py` · `generar_xlsx.py` (fixtures) · `PLANTILLA_PRODUCCION.md` · `MEDICION_TENANT.md` · `powerapps/{P9_Confirmacion_Masiva.pa.yaml, …_CONTROLES_PEGAR.yaml, BOTON_MAIN_SCREEN.txt, BOTON_MAIN_SCREEN_PEGAR.yaml, Main_Screen_CON_BOTON_IMPORTACION_MASIVA.yaml, INSTRUCCIONES_PEGADO.md, aplicar_boton.py, derivar_pegar.py}` · `flows/{construir.py, P9_MASIVA_PROTO_PREVALIDAR_definition.json, P9_MASIVA_PROTO_PREVALIDAR.zip, INSTRUCCIONES_FLUJO.md}` · `sharepoint/INSTRUCCIONES_VEHICULO.md` · `tests/`.

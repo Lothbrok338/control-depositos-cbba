@@ -1,8 +1,6 @@
-ESTADO: PENDIENTE DE INTEGRACIÓN / NO VALIDADO EN TENANT.
-  Este botón está preparado en el repositorio (y probado solo con pruebas estáticas), pero NO se ha agregado a Main_Screen en el tenant,
-  ni en la copia P9_PRUEBA_MASIVA ni en producción. No lo pegues en la app productiva.
-
-BOTÓN «IMPORTACIÓN MASIVA» EN Main_Screen — CAMBIO MÍNIMO (1 control nuevo, 0 controles modificados)
+ESTADO: AGREGADO Y PROBADO MANUALMENTE por Gabriel en la copia P9_PRUEBA_MASIVA (2026-10-07): Main_Screen -> botón IMPORTACIÓN MASIVA -> pantalla
+  P9_Confirmacion_Masiva -> VOLVER -> Main_Screen funciona. No hay export de esa app en el repositorio: estos artefactos siguen siendo la referencia.
+  Main_Screen de PRODUCCIÓN no se tocó ni debe tocarse. No lo pegues en la app productiva.
 
 QUÉ SE AÑADE
   Un único control: btnImportacionMasivaP9 (Classic/Button@2.2.0).

@@ -128,8 +128,9 @@ def leer_y_clasificar():
     con_filas = secuencia(
         Limite_de_lectura=si("@greaterOrEquals(length(outputs('Filas_brutas')),outputs('PARAM_PAGINACION'))",
                              fijar("Resultado_DEMASIADAS_FILAS_LECTURA", "ERROR", "DEMASIADAS_FILAS",
-                                   "@concat('La lectura alcanzó el límite de ',string(outputs('PARAM_PAGINACION')),"
-                                   "' filas: el recuento podría estar incompleto. Divida el archivo.')", "SI", 0),
+                                   "@concat('El archivo tiene ',string(outputs('PARAM_PAGINACION')),' filas o más y el máximo permitido es ',"
+                                   "string(sub(outputs('PARAM_PAGINACION'),1)),'. No se procesó ninguna fila: divida el archivo en partes más pequeñas.')",
+                                   "SI", 0),
                              revisar_encabezados))
     return secuencia(
         Etapa_excel=asignar("varEtapa", "EXCEL"),
@@ -269,16 +270,23 @@ CONEXIONES = {"shared_sharepointonline": ("SharePoint", "sharepointonline"),
 FECHA_ZIP = (2026, 10, 5, 0, 0, 0)
 
 
-def _uuid(parte):
-    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"control-depositos-cbba:p9:masiva-proto:{NOMBRE_FLUJO}:{parte}"))
+DESCRIPCION_FLUJO = ("PROTOTIPO directo: recibe un XLSX, lee tblConfirmacionMasiva y prevalida cada fila contra Depositos_Activos "
+                     "(SOLO LECTURA, un GET). Sin lotes. No confirma ni modifica ningún depósito.")
 
 
-def archivos_paquete(definition):
-    flujo, interno = _uuid("resource"), _uuid("definition")
+def _uuid(parte, nombre=NOMBRE_FLUJO):
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"control-depositos-cbba:p9:masiva-proto:{nombre}:{parte}"))
+
+
+def archivos_paquete(definition, nombre=NOMBRE_FLUJO, conexiones_flujo=None, descripcion=DESCRIPCION_FLUJO):
+    """Paquete heredado de un flujo. Con los valores por defecto es el de P9_MASIVA_PROTO_PREVALIDAR (sin cambios byte a byte);
+    `construir_confirmar.py` lo reutiliza con su nombre, su única conexión (SharePoint) y su descripción."""
+    _uuid_ = lambda parte: _uuid(parte, nombre)  # noqa: E731
+    flujo, interno = _uuid_("resource"), _uuid_("definition")
     recursos, referencias, apis, conexiones, dependencias = {}, {}, {}, {}, []
-    for clave, (titulo, nombre_api) in CONEXIONES.items():
+    for clave, (titulo, nombre_api) in (conexiones_flujo or CONEXIONES).items():
         api_id = f"/providers/Microsoft.PowerApps/apis/{clave}"
-        r_api, r_con = _uuid(clave + ":api"), _uuid(clave + ":connection")
+        r_api, r_con = _uuid_(clave + ":api"), _uuid_(clave + ":connection")
         dependencias += [r_api, r_con]
         recursos[r_api] = {"id": api_id, "name": clave, "type": "Microsoft.PowerApps/apis", "suggestedCreationType": "Existing",
                            "details": {"displayName": titulo}, "configurableBy": "System", "hierarchy": "Child", "dependsOn": []}
@@ -290,26 +298,26 @@ def archivos_paquete(definition):
                               "isProcessSimpleApiReferenceConversionAlreadyDone": False}
         apis[clave], conexiones[clave] = r_api, r_con
     recursos[flujo] = {"type": "Microsoft.Flow/flows", "suggestedCreationType": "New", "creationType": "New, Update",
-                       "details": {"displayName": NOMBRE_FLUJO}, "configurableBy": "User", "hierarchy": "Root",
+                       "details": {"displayName": nombre}, "configurableBy": "User", "hierarchy": "Root",
                        "dependsOn": dependencias}
     envoltura = {"name": interno, "id": f"/providers/Microsoft.Flow/flows/{interno}", "type": "Microsoft.Flow/flows",
-                 "properties": {"apiId": "/providers/Microsoft.PowerApps/apis/shared_logicflows", "displayName": NOMBRE_FLUJO,
+                 "properties": {"apiId": "/providers/Microsoft.PowerApps/apis/shared_logicflows", "displayName": nombre,
                                 "definition": definition, "connectionReferences": referencias,
                                 "flowFailureAlertSubscribed": False, "isManaged": False}}
     base = f"Microsoft.Flow/flows/{flujo}"
     return {
         "manifest.json": {"schema": "1.0", "details": {
-            "displayName": NOMBRE_FLUJO, "description": "PROTOTIPO directo: recibe un XLSX, lee tblConfirmacionMasiva y prevalida cada fila contra Depositos_Activos (SOLO LECTURA, un GET). Sin lotes. No confirma ni modifica ningún depósito.",
-            "createdTime": "2026-10-05T00:00:00Z", "packageTelemetryId": _uuid("telemetry"), "creator": "N/A",
+            "displayName": nombre, "description": descripcion,
+            "createdTime": "2026-10-05T00:00:00Z", "packageTelemetryId": _uuid_("telemetry"), "creator": "N/A",
             "sourceEnvironment": ""}, "resources": recursos},
         "Microsoft.Flow/flows/manifest.json": {"packageSchemaVersion": "1.0", "flowAssets": {"assetPaths": [flujo]}},
         f"{base}/apisMap.json": apis, f"{base}/connectionsMap.json": conexiones, f"{base}/definition.json": envoltura}
 
 
-def zip_bytes(definition) -> bytes:
+def zip_bytes(definition, **paquete) -> bytes:
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as z:
-        for ruta, contenido in archivos_paquete(definition).items():
+        for ruta, contenido in archivos_paquete(definition, **paquete).items():
             info = zipfile.ZipInfo(ruta, date_time=FECHA_ZIP)
             info.create_system, info.compress_type, info.external_attr = 3, zipfile.ZIP_DEFLATED, 0o644 << 16
             z.writestr(info, json.dumps(contenido, ensure_ascii=False, separators=(",", ":")))

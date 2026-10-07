@@ -152,7 +152,7 @@ def test_sin_tope_configurado_el_flujo_lee_mil_filas():
 def test_si_la_lectura_alcanza_el_umbral_de_paginacion_avisa_en_vez_de_contar_de_menos():
     t, e = correr("Filas_2000.xlsx", ruta=MED)
     r = resp(e)
-    assert (r["resultado"], r["codigo"]) == ("ERROR", "DEMASIADAS_FILAS") and "podría estar incompleto" in r["mensaje"]
+    assert (r["resultado"], r["codigo"]) == ("ERROR", "DEMASIADAS_FILAS") and "el máximo permitido es 1999" in r["mensaje"] and "No se procesó ninguna fila" in r["mensaje"]
     assert r["filas_leidas"] == "0" and r["copia_temporal_eliminada"] == "SI"
 
 

@@ -7,6 +7,13 @@ Screens:
         =Set(varProcesandoP9, false);
         Set(varResultadoP9, Blank());
         Set(varMsAppP9, Blank());
+        Set(varProcesandoConfirmacionP9, false);
+        Set(varConfirmacionMasivaFinalizadaP9, false);
+        Set(varResultadoConfirmacionP9, Blank());
+        Set(varMsConfirmacionP9, Blank());
+        Set(varVerObservacionesP9, false);
+        Clear(colPrevalidacionP9);
+        Clear(colConfirmacionP9);
         ResetForm(frmArchivoP9)
     Children:
       - cntImportacionMasivaP9:
@@ -50,7 +57,7 @@ Screens:
                   Font: =Font.'Segoe UI'
                   Height: =22
                   Size: =10
-                  Text: ="Prototipo directo · prevalida un archivo Excel. No confirma ningún depósito."
+                  Text: ="Prototipo directo · prevalida un archivo Excel y confirma solo las filas que siguen siendo válidas."
                   Width: =700
                   X: =20
                   Y: =47
@@ -154,6 +161,7 @@ Screens:
                   DisplayMode: |-
                     =If(
                         Coalesce(varProcesandoP9, false) ||
+                        Coalesce(varProcesandoConfirmacionP9, false) ||
                         IsEmpty(attXlsxP9.Attachments) ||
                         !EndsWith(Lower(First(attXlsxP9.Attachments).Name), ".xlsx"),
                         DisplayMode.Disabled,
@@ -167,7 +175,12 @@ Screens:
                     =Set(varProcesandoP9, true);
                     Set(varResultadoP9, Blank());
                     Set(varMsAppP9, Blank());
+                    Set(varResultadoConfirmacionP9, Blank());
+                    Set(varMsConfirmacionP9, Blank());
+                    Set(varConfirmacionMasivaFinalizadaP9, false);
+                    Set(varVerObservacionesP9, false);
                     Clear(colPrevalidacionP9);
+                    Clear(colConfirmacionP9);
                     With(
                         {inicioP9: Now(), archivoP9: First(attXlsxP9.Attachments)},
                         IfError(
@@ -260,13 +273,15 @@ Screens:
                   Color: =RGBA(255, 255, 255, 1)
                   Fill: |-
                     =With(
-                        {estadoP9: If(Coalesce(varProcesandoP9, false), "PROCESANDO", If(!IsBlank(varResultadoP9), varResultadoP9.resultado, If(IsEmpty(attXlsxP9.Attachments), "SIN ARCHIVO", "CARGADO")))},
+                        {estadoP9: If(Coalesce(varProcesandoConfirmacionP9, false), "CONFIRMANDO", If(Coalesce(varProcesandoP9, false), "PROCESANDO", If(!IsBlank(varResultadoConfirmacionP9), varResultadoConfirmacionP9.resultado, If(!IsBlank(varResultadoP9), varResultadoP9.resultado, If(IsEmpty(attXlsxP9.Attachments), "SIN ARCHIVO", "CARGADO")))))},
                         Switch(
                             estadoP9,
                             "OK", RGBA(46, 125, 50, 1),
                             "OBSERVADO", RGBA(198, 125, 0, 1),
+                            "PARCIAL", RGBA(198, 125, 0, 1),
                             "ERROR", RGBA(183, 28, 28, 1),
                             "PROCESANDO", RGBA(230, 126, 34, 1),
+                            "CONFIRMANDO", RGBA(230, 126, 34, 1),
                             "CARGADO", RGBA(0, 120, 212, 1),
                             RGBA(98, 102, 106, 1)
                         )
@@ -275,7 +290,7 @@ Screens:
                   FontWeight: =FontWeight.Bold
                   Height: =34
                   Size: =11
-                  Text: =If(Coalesce(varProcesandoP9, false), "PROCESANDO", If(!IsBlank(varResultadoP9), varResultadoP9.resultado, If(IsEmpty(attXlsxP9.Attachments), "SIN ARCHIVO", "CARGADO")))
+                  Text: =If(Coalesce(varProcesandoConfirmacionP9, false), "CONFIRMANDO", If(Coalesce(varProcesandoP9, false), "PROCESANDO", If(!IsBlank(varResultadoConfirmacionP9), varResultadoConfirmacionP9.resultado, If(!IsBlank(varResultadoP9), varResultadoP9.resultado, If(IsEmpty(attXlsxP9.Attachments), "SIN ARCHIVO", "CARGADO")))))
                   Width: =200
                   X: =640
                   Y: =132
@@ -285,19 +300,34 @@ Screens:
                   Color: =RGBA(94, 16, 38, 1)
                   Font: =Font.'Segoe UI'
                   FontWeight: =FontWeight.Bold
-                  Height: =50
+                  Height: =62
                   Size: =12
                   Text: |-
                     =If(
-                        Coalesce(varProcesandoP9, false),
-                        "Procesando el archivo (puede tardar unos segundos)...",
+                        Coalesce(varProcesandoConfirmacionP9, false),
+                        "Confirmando los depósitos válidos (puede tardar)...",
                         If(
-                            IsBlank(varResultadoP9),
-                            If(IsEmpty(attXlsxP9.Attachments), "Adjunte un Excel (.xlsx) para empezar.", "Archivo seleccionado. Pulse PREVALIDAR ARCHIVO."),
+                            Coalesce(varProcesandoP9, false),
+                            "Procesando el archivo (puede tardar unos segundos)...",
                             If(
-                                varResultadoP9.resultado = "OK" || varResultadoP9.resultado = "OBSERVADO",
-                                "PREVALIDACIÓN · " & varResultadoP9.filas_validas & " DE " & varResultadoP9.filas_totales & If(Value(varResultadoP9.filas_totales) = 1, " FILA VÁLIDA", " FILAS VÁLIDAS"),
-                                "RESULTADO: " & varResultadoP9.codigo
+                                !IsBlank(varResultadoConfirmacionP9),
+                                Switch(
+                                    varResultadoConfirmacionP9.resultado,
+                                    "OK",
+                                    "CONFIRMACIÓN COMPLETADA" & Char(10) & varResultadoConfirmacionP9.filas_confirmadas & " de " & varResultadoConfirmacionP9.filas_recibidas & " depósitos confirmados.",
+                                    "PARCIAL",
+                                    If(Value(varResultadoConfirmacionP9.filas_confirmadas) = 0, "NO SE CONFIRMÓ NINGÚN DEPÓSITO", "CONFIRMACIÓN PARCIAL") & Char(10) & varResultadoConfirmacionP9.filas_confirmadas & " de " & varResultadoConfirmacionP9.filas_recibidas & " depósitos confirmados." & Char(10) & varResultadoConfirmacionP9.filas_no_confirmadas & " requieren revisión.",
+                                    "NO SE PUDO CONFIRMAR" & Char(10) & varResultadoConfirmacionP9.mensaje
+                                ),
+                                If(
+                                    IsBlank(varResultadoP9),
+                                    If(IsEmpty(attXlsxP9.Attachments), "Adjunte un Excel (.xlsx) para empezar.", "Archivo seleccionado. Pulse PREVALIDAR ARCHIVO."),
+                                    If(
+                                        varResultadoP9.resultado = "OK" || varResultadoP9.resultado = "OBSERVADO",
+                                        "PREVALIDACIÓN · " & varResultadoP9.filas_validas & " DE " & varResultadoP9.filas_totales & If(Value(varResultadoP9.filas_totales) = 1, " FILA VÁLIDA", " FILAS VÁLIDAS"),
+                                        "RESULTADO: " & varResultadoP9.codigo
+                                    )
+                                )
                             )
                         )
                     )
@@ -313,6 +343,7 @@ Screens:
                   Height: =20
                   Size: =9
                   Text: ="RESUMEN"
+                  Visible: =!Coalesce(varVerObservacionesP9, false)
                   Width: =200
                   X: =640
                   Y: =245
@@ -324,6 +355,7 @@ Screens:
                   Height: =24
                   Size: =9
                   Text: ="Archivo"
+                  Visible: =!Coalesce(varVerObservacionesP9, false)
                   Width: =150
                   X: =640
                   Y: =272
@@ -336,6 +368,7 @@ Screens:
                   Height: =24
                   Size: =10
                   Text: =Coalesce(varResultadoP9.archivo, "—")
+                  Visible: =!Coalesce(varVerObservacionesP9, false)
                   Width: =Parent.Width - 840
                   X: =800
                   Y: =272
@@ -347,6 +380,7 @@ Screens:
                   Height: =24
                   Size: =9
                   Text: ="Tabla encontrada"
+                  Visible: =!Coalesce(varVerObservacionesP9, false)
                   Width: =150
                   X: =640
                   Y: =302
@@ -365,6 +399,7 @@ Screens:
                         "NO", "No",
                         "—"
                     )
+                  Visible: =!Coalesce(varVerObservacionesP9, false)
                   Width: =Parent.Width - 840
                   X: =800
                   Y: =302
@@ -376,6 +411,7 @@ Screens:
                   Height: =24
                   Size: =9
                   Text: ="Filas leídas"
+                  Visible: =!Coalesce(varVerObservacionesP9, false)
                   Width: =150
                   X: =640
                   Y: =332
@@ -388,6 +424,7 @@ Screens:
                   Height: =24
                   Size: =10
                   Text: =If(Coalesce(varResultadoP9.tabla_encontrada, "") = "SI", varResultadoP9.filas_leidas, "—")
+                  Visible: =!Coalesce(varVerObservacionesP9, false)
                   Width: =Parent.Width - 840
                   X: =800
                   Y: =332
@@ -399,6 +436,7 @@ Screens:
                   Height: =24
                   Size: =9
                   Text: ="Mensaje"
+                  Visible: =!Coalesce(varVerObservacionesP9, false)
                   Width: =150
                   X: =640
                   Y: =362
@@ -409,7 +447,8 @@ Screens:
                   Font: =Font.'Segoe UI'
                   Height: =70
                   Size: =10
-                  Text: =Coalesce(varResultadoP9.mensaje, "—")
+                  Text: =Coalesce(varResultadoConfirmacionP9.mensaje, varResultadoP9.mensaje, "—")
+                  Visible: =!Coalesce(varVerObservacionesP9, false)
                   Width: =Parent.Width - 840
                   X: =800
                   Y: =362
@@ -420,8 +459,9 @@ Screens:
                   Font: =Font.'Segoe UI'
                   Height: =24
                   Size: =9
-                  Text: ="Tiempo"
-                  Width: =150
+                  Text: ="TIEMPO DE PROCESAMIENTO"
+                  Visible: =!Coalesce(varVerObservacionesP9, false)
+                  Width: =300
                   X: =640
                   Y: =442
             - lblResTiempoP9:
@@ -429,13 +469,13 @@ Screens:
                 Properties:
                   Color: =RGBA(98, 102, 106, 1)
                   Font: =Font.'Segoe UI'
-                  Height: =40
-                  Size: =9
-                  Text: |-
-                    =If(IsBlank(varMsAppP9), "—", "App: " & Text(varMsAppP9) & " ms · Flujo: " & Coalesce(varResultadoP9.tiempos_ms, "—"))
-                  Width: =Parent.Width - 840
-                  X: =800
-                  Y: =442
+                  Height: =24
+                  Size: =10
+                  Text: =If(IsBlank(Coalesce(varMsConfirmacionP9, varMsAppP9)), "—", Text(Coalesce(varMsConfirmacionP9, varMsAppP9) / 1000, "0.0") & " segundos")
+                  Visible: =!Coalesce(varVerObservacionesP9, false)
+                  Width: =300
+                  X: =640
+                  Y: =466
             - lblResCopiaTituloP9:
                 Control: Label@2.5.1
                 Properties:
@@ -467,6 +507,163 @@ Screens:
                   Width: =Parent.Width - 840
                   X: =800
                   Y: =490
+            - btnConfirmarMasivamenteP9:
+                Control: Classic/Button@2.2.0
+                Properties:
+                  BorderStyle: =BorderStyle.None
+                  Color: =RGBA(255, 255, 255, 1)
+                  DisplayMode: |-
+                    =If(
+                        !Coalesce(varProcesandoP9, false) &&
+                        !Coalesce(varProcesandoConfirmacionP9, false) &&
+                        !Coalesce(varConfirmacionMasivaFinalizadaP9, false) &&
+                        CountRows(Filter(colPrevalidacionP9, resultado = "VALIDO")) > 0,
+                        DisplayMode.Edit,
+                        DisplayMode.Disabled
+                    )
+                  Fill: =RGBA(46, 125, 50, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =46
+                  OnSelect: |-
+                    =Set(varProcesandoConfirmacionP9, true);
+                    Set(varResultadoConfirmacionP9, Blank());
+                    Set(varMsConfirmacionP9, Blank());
+                    Set(varVerObservacionesP9, false);
+                    Clear(colConfirmacionP9);
+                    With(
+                        {inicioConfirmacionP9: Now()},
+                        IfError(
+                            Set(
+                                varResultadoConfirmacionP9,
+                                P9_MASIVA_PROTO_CONFIRMAR.Run(
+                                    JSON(
+                                        ShowColumns(Filter(colPrevalidacionP9, resultado = "VALIDO"), "fila_excel", "deposito_id", "clave_transaccion", "banco", "cuenta_bancaria", "codigo_asignacion", "importe", "moneda", "estudiante", "solicitado_por", "sede", "observacion"),
+                                        JSONFormat.Compact
+                                    ),
+                                    User().Email
+                                )
+                            );
+                            Set(varMsConfirmacionP9, DateDiff(inicioConfirmacionP9, Now(), TimeUnit.Milliseconds));
+                            IfError(
+                                ClearCollect(
+                                    colConfirmacionP9,
+                                    ForAll(
+                                        Table(ParseJSON(varResultadoConfirmacionP9.detalle_json)),
+                                        {
+                                            fila_excel: Value(ThisRecord.Value.fila_excel),
+                                            deposito_id: Value(ThisRecord.Value.deposito_id),
+                                            resultado: Text(ThisRecord.Value.resultado),
+                                            mensaje: Text(ThisRecord.Value.mensaje),
+                                            estado_final: Text(ThisRecord.Value.estado_final),
+                                            banco: Text(ThisRecord.Value.banco),
+                                            cuenta_bancaria: Text(ThisRecord.Value.cuenta_bancaria),
+                                            codigo_asignacion: Text(ThisRecord.Value.codigo_asignacion),
+                                            importe: Value(ThisRecord.Value.importe),
+                                            moneda: Text(ThisRecord.Value.moneda)
+                                        }
+                                    )
+                                ),
+                                Notify("No se pudo leer el detalle de la confirmación: " & FirstError.Message, NotificationType.Warning)
+                            ),
+                            Set(
+                                varResultadoConfirmacionP9,
+                                {
+                                    resultado: "ERROR",
+                                    codigo: "FLUJO_SIN_RESPUESTA",
+                                    mensaje: "El flujo no respondió: " & FirstError.Message & ". Es posible que haya seguido confirmando depósitos: vuelva a PREVALIDAR para ver el estado real antes de reintentar.",
+                                    filas_recibidas: "0",
+                                    filas_confirmadas: "0",
+                                    filas_no_confirmadas: "0",
+                                    detalle_json: "[]",
+                                    tiempos_ms: ""
+                                }
+                            );
+                            Set(varMsConfirmacionP9, DateDiff(inicioConfirmacionP9, Now(), TimeUnit.Milliseconds))
+                        )
+                    );
+                    Set(varConfirmacionMasivaFinalizadaP9, true);
+                    Set(varProcesandoConfirmacionP9, false)
+                  Size: =11
+                  Text: ="CONFIRMAR MASIVAMENTE (" & CountRows(Filter(colPrevalidacionP9, resultado = "VALIDO")) & ")"
+                  Width: =330
+                  X: =20
+                  Y: =506
+            - btnVerObservacionesP9:
+                Control: Classic/Button@2.2.0
+                Properties:
+                  BorderColor: =RGBA(123, 22, 50, 1)
+                  BorderThickness: =1
+                  Color: =RGBA(123, 22, 50, 1)
+                  DisplayMode: =If(If(!IsBlank(varResultadoConfirmacionP9), CountRows(Filter(colConfirmacionP9, resultado <> "CONFIRMADO")), CountRows(Filter(colPrevalidacionP9, resultado <> "VALIDO"))) > 0 && !Coalesce(varProcesandoP9, false) && !Coalesce(varProcesandoConfirmacionP9, false), DisplayMode.Edit, DisplayMode.Disabled)
+                  Fill: =RGBA(255, 255, 255, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =32
+                  OnSelect: =Set(varVerObservacionesP9, !Coalesce(varVerObservacionesP9, false))
+                  Size: =9
+                  Text: =If(Coalesce(varVerObservacionesP9, false), "OCULTAR OBSERVACIONES", "VER OBSERVACIONES (" & If(!IsBlank(varResultadoConfirmacionP9), CountRows(Filter(colConfirmacionP9, resultado <> "CONFIRMADO")), CountRows(Filter(colPrevalidacionP9, resultado <> "VALIDO"))) & ")")
+                  Width: =260
+                  X: =640
+                  Y: =495
+            - galObservacionesP9:
+                Control: Gallery@2.15.0
+                Variant: BrowseLayout_Vertical_ThreeTextVariant_ver5.0
+                Properties:
+                  BorderColor: =RGBA(217, 218, 221, 1)
+                  Fill: =RGBA(255, 255, 255, 1)
+                  Height: =240
+                  Items: |-
+                    =If(
+                        !IsBlank(varResultadoConfirmacionP9),
+                        ShowColumns(Filter(colConfirmacionP9, resultado <> "CONFIRMADO"), "fila_excel", "resultado", "mensaje"),
+                        ShowColumns(Filter(colPrevalidacionP9, resultado <> "VALIDO"), "fila_excel", "resultado", "mensaje")
+                    )
+                  TemplateFill: =RGBA(255, 255, 255, 1)
+                  TemplateSize: =66
+                  Visible: =Coalesce(varVerObservacionesP9, false)
+                  Width: =Parent.Width - 680
+                  X: =640
+                  Y: =245
+                Children:
+                  - lblObsTituloP9:
+                      Control: Label@2.5.1
+                      Properties:
+                        Color: =RGBA(94, 16, 38, 1)
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Bold
+                        Height: =24
+                        Size: =10
+                        Text: |-
+                          ="Fila " & ThisItem.fila_excel & " · " & Switch(
+                              ThisItem.resultado,
+                              "FILA_INCOMPLETA", "Datos incompletos",
+                              "IMPORTE_INVALIDO", "Importe inválido",
+                              "MONEDA_INVALIDA", "Moneda inválida",
+                              "DUPLICADO_ARCHIVO", "Fila repetida en el archivo",
+                              "NO_ENCONTRADO", "Depósito no encontrado",
+                              "ASIGNACION_AMBIGUA", "Asignación ambigua",
+                              "MONEDA_NO_COINCIDE", "La moneda no coincide",
+                              "NO_DISPONIBLE", "Depósito no disponible",
+                              "CONFLICTO", "Conflicto con otro usuario",
+                              "CONFLICTO_DATOS", "El depósito cambió",
+                              "ERROR_FILA", "Error al procesar la fila",
+                              ThisItem.resultado
+                          )
+                        Width: =Parent.TemplateWidth - 20
+                        X: =10
+                        Y: =6
+                  - lblObsMensajeP9:
+                      Control: Label@2.5.1
+                      Properties:
+                        Color: =RGBA(52, 55, 58, 1)
+                        Font: =Font.'Segoe UI'
+                        Height: =36
+                        Size: =9
+                        Text: =ThisItem.mensaje
+                        Width: =Parent.TemplateWidth - 20
+                        X: =10
+                        Y: =30
             - lblAvisoPrototipoP9:
                 Control: Label@2.5.1
                 Properties:
@@ -474,7 +671,7 @@ Screens:
                   Font: =Font.'Segoe UI'
                   Height: =22
                   Size: =8
-                  Text: ="PROTOTIPO · prevalidación de SOLO LECTURA (lee Depositos_Activos, no lo modifica y no confirma ningún depósito) · sin lotes ni historial."
+                  Text: ="PROTOTIPO · CONFIRMAR MASIVAMENTE relee cada depósito antes de escribir y solo confirma lo que sigue válido · sin lotes ni historial."
                   Width: =Parent.Width - 40
                   X: =20
                   Y: =Parent.Height - 36

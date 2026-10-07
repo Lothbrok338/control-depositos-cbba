@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "detalle_json de P9_MASIVA_PROTO_CONFIRMAR",
+  "description": "Texto JSON: arreglo con UN objeto por fila recibida. Las filas mal formadas (ERROR_FILA sin tocar SharePoint) van primero; después, las procesadas en el orden recibido. Es solo la respuesta a Power Apps (memoria de la app): NO se guarda como historial ni lote. No incluye ETag.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "fila_excel",
+      "deposito_id",
+      "resultado",
+      "mensaje",
+      "estado_final",
+      "banco",
+      "cuenta_bancaria",
+      "codigo_asignacion",
+      "importe",
+      "moneda"
+    ],
+    "properties": {
+      "fila_excel": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "description": "fila de la hoja de Excel (la misma de la prevalidación)"
+      },
+      "deposito_id": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "description": "ID SharePoint del depósito; null si el ID enviado no era válido"
+      },
+      "resultado": {
+        "type": "string",
+        "enum": [
+          "CONFIRMADO",
+          "NO_ENCONTRADO",
+          "NO_DISPONIBLE",
+          "CONFLICTO",
+          "CONFLICTO_DATOS",
+          "ERROR_FILA"
+        ]
+      },
+      "mensaje": {
+        "type": "string",
+        "description": "explicación en español para el usuario"
+      },
+      "estado_final": {
+        "type": "string",
+        "description": "ASIGNADO si se confirmó; el estado real leído si no estaba DISPONIBLE; DESCONOCIDO tras un intento de escritura que falló sin 412 (no se sabe si SharePoint lo aplicó: re-PREVALIDAR); vacío si no se llegó a leer o hubo 412"
+      },
+      "banco": {
+        "type": "string"
+      },
+      "cuenta_bancaria": {
+        "type": "string"
+      },
+      "codigo_asignacion": {
+        "type": "string"
+      },
+      "importe": {
+        "type": [
+          "number",
+          "null"
+        ],
+        "description": "importe enviado por la app (null si no era válido)"
+      },
+      "moneda": {
+        "type": "string"
+      }
+    }
+  }
+}

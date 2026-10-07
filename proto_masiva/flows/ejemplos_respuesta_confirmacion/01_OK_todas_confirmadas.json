@@ -1,0 +1,51 @@
+{
+  "escenario": "3 filas VALIDO que siguen siendo válidas: las 3 se confirman",
+  "respuesta": {
+    "resultado": "OK",
+    "codigo": "CONFIRMACION_OK",
+    "mensaje": "3 de 3 depósitos confirmados.",
+    "filas_recibidas": "3",
+    "filas_confirmadas": "3",
+    "filas_no_confirmadas": "0",
+    "detalle_json": "[{\"fila_excel\":6,\"deposito_id\":1,\"resultado\":\"CONFIRMADO\",\"mensaje\":\"Depósito confirmado correctamente.\",\"estado_final\":\"ASIGNADO\",\"banco\":\"BNB\",\"cuenta_bancaria\":\"3000100152\",\"codigo_asignacion\":\"C1\",\"importe\":101.0,\"moneda\":\"BOB\"},{\"fila_excel\":7,\"deposito_id\":2,\"resultado\":\"CONFIRMADO\",\"mensaje\":\"Depósito confirmado correctamente.\",\"estado_final\":\"ASIGNADO\",\"banco\":\"BNB\",\"cuenta_bancaria\":\"3000100152\",\"codigo_asignacion\":\"C2\",\"importe\":102.0,\"moneda\":\"BOB\"},{\"fila_excel\":8,\"deposito_id\":3,\"resultado\":\"CONFIRMADO\",\"mensaje\":\"Depósito confirmado correctamente.\",\"estado_final\":\"ASIGNADO\",\"banco\":\"BNB\",\"cuenta_bancaria\":\"3000100152\",\"codigo_asignacion\":\"C3\",\"importe\":103.0,\"moneda\":\"BOB\"}]",
+    "tiempos_ms": "total=34;filas=3;ms_por_fila=13"
+  },
+  "detalle_json_expandido": [
+    {
+      "fila_excel": 6,
+      "deposito_id": 1,
+      "resultado": "CONFIRMADO",
+      "mensaje": "Depósito confirmado correctamente.",
+      "estado_final": "ASIGNADO",
+      "banco": "BNB",
+      "cuenta_bancaria": "3000100152",
+      "codigo_asignacion": "C1",
+      "importe": 101.0,
+      "moneda": "BOB"
+    },
+    {
+      "fila_excel": 7,
+      "deposito_id": 2,
+      "resultado": "CONFIRMADO",
+      "mensaje": "Depósito confirmado correctamente.",
+      "estado_final": "ASIGNADO",
+      "banco": "BNB",
+      "cuenta_bancaria": "3000100152",
+      "codigo_asignacion": "C2",
+      "importe": 102.0,
+      "moneda": "BOB"
+    },
+    {
+      "fila_excel": 8,
+      "deposito_id": 3,
+      "resultado": "CONFIRMADO",
+      "mensaje": "Depósito confirmado correctamente.",
+      "estado_final": "ASIGNADO",
+      "banco": "BNB",
+      "cuenta_bancaria": "3000100152",
+      "codigo_asignacion": "C3",
+      "importe": 103.0,
+      "moneda": "BOB"
+    }
+  ]
+}

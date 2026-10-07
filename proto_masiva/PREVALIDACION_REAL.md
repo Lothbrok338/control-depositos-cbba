@@ -1,8 +1,9 @@
 # P9 CONFIRMACIÓN MASIVA — Prevalidación REAL contra `Depositos_Activos` (solo lectura)
 
-> **Estado: implementada y probada con un tenant SIMULADO; NO validada en tu tenant.** Ninguna regla de este documento se ha ejecutado todavía en
-> Power Automate ni contra tu lista real. La sección «Qué NO está validado en tenant» lista, una por una, las cosas que solo el tenant puede confirmar.
-> **Esta fase termina en prevalidación: no confirma depósitos, no escribe en `Depositos_Activos` (ni MERGE, ni POST, ni ETag) y no hay botón CONFIRMAR MASIVAMENTE.**
+> **Estado (actualizado 2026-10-07): validada MANUALMENTE en tu tenant** para lo que confirmaste: carga XLSX, múltiples filas, consulta a `Depositos_Activos`, `OK`/`OBSERVADO`, `VALIDO`, `NO_DISPONIBLE`
+> (para `ASIGNADO`), `NO_ENCONTRADO`, `DUPLICADO_ARCHIVO`, `FILA_INCOMPLETA`, mensaje por fila y que **no modifica** `Depositos_Activos`. **Lo demás de la sección «Qué NO está validado» sigue sin validar**
+> (p. ej. el día de borde de la ventana de 2 meses, `MONEDA_NO_COINCIDE`, `ASIGNACION_AMBIGUA`, volumen y tiempos grandes).
+> **Fase siguiente:** la confirmación (`CONFIRMACION_MASIVA.md`) es la parte que ESCRIBE; esta prevalidación sigue siendo de solo lectura.
 
 Rama `experiment/p9-masiva-prototipo`. Todo vive bajo `proto_masiva/`. Producción (`3b407e2`), confirmación individual, reversión, PDF, V4.2 y `Main_Screen` no se tocan.
 

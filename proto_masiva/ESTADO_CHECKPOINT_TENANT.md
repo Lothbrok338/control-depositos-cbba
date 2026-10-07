@@ -58,7 +58,7 @@ El protocolo de medición por tamaño (10…2000 filas) **sigue sin ejecutarse**
 
 ## 4 · PENDIENTE (no validado en tenant)
 
-- **Botón «IMPORTACIÓN MASIVA» en `Main_Screen`**: existe como artefacto en el repo (`powerapps/BOTON_MAIN_SCREEN*`), **no se agregó en el tenant**. **PENDIENTE DE INTEGRACIÓN / NO VALIDADO EN TENANT.** `Main_Screen` de producción no se tocó.
+- ~~Botón «IMPORTACIÓN MASIVA» en `Main_Screen`~~ → **agregado y probado manualmente en `P9_PRUEBA_MASIVA` (2026-10-07):** navegación Main_Screen → pantalla → VOLVER → Main_Screen validada. Sigue sin export en el repo; `Main_Screen` de producción no se tocó.
 - **Clic del botón DESCARGAR PLANTILLA dentro de la app** con `Launch("<URL por UniqueId>")`: la URL se validó pegada en el navegador; no se registró una prueba del clic en la app publicada ni en otros navegadores/equipos.
 - **Smoke tests adicionales**: plantilla vacía → `ARCHIVO_VACIO`; `03_SIN_TABLA.xlsx` → `TABLA_NO_ENCONTRADA` (supuesto: Excel responde 404); `05_ENCABEZADO_CAMBIADO.xlsx` → `ESTRUCTURA_INVALIDA`; `04_TABLA_NOMBRE_DISTINTO.xlsx` → `TABLA_NO_ENCONTRADA`; archivo abierto; archivos no `.xlsx`.
 - **Mediciones por tamaño** (10, 50, 100, 250, 500, 1000, 2000 filas) y decisión de un máximo de filas (`PARAM_MAX_FILAS` sigue en 0).
@@ -73,7 +73,13 @@ El protocolo de medición por tamaño (10…2000 filas) **sigue sin ejecutarse**
 
 Bancos: BNB, BCP, BISA, BANCO UNIÓN, BANCO ECONÓMICO, BMSC (13 cuentas, ver `catalogo_bancos_p9.json`). «(Todos)» solo existe como comodidad visual en Power Apps; no es un banco.
 
-## 5b · Fase siguiente: prevalidación real (IMPLEMENTADA LOCALMENTE, NO VALIDADA EN TENANT)
+## 5b · Fases siguientes
+
+**Prevalidación real — validada manualmente en el tenant (2026-10-07)**, según lo confirmado por Gabriel: carga XLSX, `tblConfirmacionMasiva`, varias filas, consulta a `Depositos_Activos`, resultado global `OK`/`OBSERVADO`, `VALIDO`, `NO_DISPONIBLE` (para `ASIGNADO`), `NO_ENCONTRADO`, `DUPLICADO_ARCHIVO`, `FILA_INCOMPLETA`, fila + mensaje, y que no modifica `Depositos_Activos`; al pegar varias filas desde la primera de la tabla, Excel la amplía sola. **Sigue sin validar** lo que no se mencionó (día de borde de la ventana de 2 meses, volumen y tiempos grandes, multiusuario).
+
+**Confirmación masiva — implementada localmente, NO validada en tenant:** `CONFIRMACION_MASIVA.md`.
+
+### Detalle de la prevalidación real (histórico)
 
 La sección 6 describía la prevalidación contra `Depositos_Activos` como diseño futuro. **Ya está implementada** (solo lectura) y probada con un tenant simulado:
 `PREVALIDACION_REAL.md`. **Nada de ella está en la lista «TENANT VALIDATED» de este documento**: no se ha importado ni ejecutado en Power Automate ni en Power Apps.

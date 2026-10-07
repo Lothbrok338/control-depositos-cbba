@@ -54,6 +54,22 @@ def describir(nombre, accion, numero, sangria=""):
                 f"Configuración → Directiva de reintentos: **Ninguna**. Uri (expresión):", bloque_codigo(mostrar(p["parameters/uri"]))]
     elif tipo == "If":
         sal += [f"{sangria}**Condición (Condition)** · modo avanzado, expresión:", bloque_codigo(mostrar(accion["expression"]))]
+    elif tipo == "InitializeVariable":
+        v = i["variables"][0]
+        sal += [f"{sangria}**Inicializar variable** · Nombre: `{v['name']}` · Tipo: `{v['type']}` · Valor: `{json.dumps(v['value'], ensure_ascii=False)}`"]
+    elif tipo == "AppendToArrayVariable":
+        sal += [f"{sangria}**Anexar a variable de matriz (Append to array variable)** · Nombre: `{i['name']}` · Valor (objeto; cada propiedad es una expresión o un texto fijo):"]
+        for clave, valor in i["value"].items():
+            sal += [f"{sangria}- Propiedad `{clave}`:", bloque_codigo(mostrar(valor))]
+    elif tipo == "Scope":
+        sal += [f"{sangria}**Ámbito (Scope)**" + (f" · se ejecuta después de: `{json.dumps(accion['runAfter'], ensure_ascii=False)}`" if accion.get("runAfter") else "")]
+    elif tipo == "Foreach":
+        sal += [f"{sangria}**Aplicar a cada uno (Apply to each)** · Seleccione una salida de los pasos anteriores:", bloque_codigo(mostrar(accion["foreach"])),
+                f"{sangria}Configuración (⋯) → **Control de simultaneidad: Activado, grado de paralelismo = 1** (secuencial)."]
+    elif tipo == "Response":
+        sal += [f"{sangria}**Responder a una aplicación de PowerApps o a un flujo** · una salida de tipo **Texto** por cada fila (título → valor):"]
+        for clave, valor in i["body"].items():
+            sal += [f"{sangria}- `{clave}`:", bloque_codigo(mostrar(valor))]
     else:
         raise AssertionError(tipo)
     return "\n".join(sal)
@@ -64,6 +80,9 @@ def aplanar(acciones, contador, sangria=""):
     for nombre, accion in acciones.items():
         contador[0] += 1
         texto.append(describir(nombre, accion, contador[0], sangria))
+        if accion["type"] in ("Scope", "Foreach"):
+            texto.append(f"{sangria}> **Dentro de `{nombre}`:**\n")
+            texto.append(aplanar(accion["actions"], contador, sangria + "> "))
         if accion["type"] == "If":
             texto.append(f"{sangria}> **Rama Sí (True) de `{nombre}`:**\n")
             texto.append(aplanar(accion["actions"], contador, sangria + "> "))
@@ -144,6 +163,37 @@ Cambia el contenido de la **rama No de `Fallo_no_excel`** para que sea esta cond
     return "\n\n".join(p if isinstance(p, str) else str(p) for p in partes) + "\n"
 
 
+def documento_confirmar() -> str:
+    from proto_masiva.flows import construir_confirmar as K
+    d = K.construir_definicion()
+    (nombre, disparo), = d["triggers"].items()
+    entradas = "\n".join(f"{n}. Entrada de tipo **Texto** · Título: `{p['title']}` · Descripción: {p['description']}"
+                         for n, (c, p) in enumerate(disparo["inputs"]["schema"]["properties"].items(), 1))
+    encabezado = f'''# Guía de acciones de `P9_MASIVA_PROTO_CONFIRMAR` (opción B: armarlo a mano)
+
+> **Úsala solo si no puedes importar el ZIP** (`INSTRUCCIONES_CONFIRMAR.md`, opción A). Se **genera** desde la misma definición que el ZIP
+> (`python proto_masiva/flows/guia_manual.py`): las expresiones son idénticas. **No está validada en el tenant.**
+> Cada expresión se pega en la pestaña **Expresión** (sin el `@` inicial). Respeta los nombres de las acciones: se refieren unas a otras por nombre.
+
+## Disparador
+
+**Desencadenador:** *Power Apps (V2)* con **dos** entradas, en este orden (la app las pasa como argumentos posicionales):
+
+{entradas}
+
+## Acciones, de arriba abajo (todas en una sola cadena; lo indentado va dentro del bloque que lo contiene)
+
+Cada acción se ejecuta **después de la anterior** salvo que se indique otra cosa. Las acciones `CATCH`, `CATCH_FILA`, `Confirmadas` y `Responder_a_PowerApps` se configuran
+con **«Configurar ejecución posterior»** (⋯ → Configurar la ejecución posterior): marca las casillas indicadas en `runAfter` de la definición
+(`CATCH`/`CATCH_FILA`: *ha error* y *superó el tiempo de espera*; `Confirmadas`, `Responder_a_PowerApps` y `Tiempos`: **todas** las casillas).
+'''
+    contador = [0]
+    cuerpo = aplanar(d["actions"], contador)
+    return encabezado + "\n" + cuerpo + "\n"
+
+
 if __name__ == "__main__":
     (CARPETA / "GUIA_ACCIONES_PREVALIDACION.md").write_text(documento(), encoding="utf-8")
+    (CARPETA / "GUIA_ACCIONES_CONFIRMACION.md").write_text(documento_confirmar(), encoding="utf-8")
     print(CARPETA / "GUIA_ACCIONES_PREVALIDACION.md")
+    print(CARPETA / "GUIA_ACCIONES_CONFIRMACION.md")

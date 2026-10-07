@@ -126,7 +126,7 @@ class EnsayoDirecto(EnsayoWDL):
     def _nodo(self, n):
         if n[0] == "funcion" and n[1] in ("toLower", "trim", "first", "createArray", "take", "utcNow", "ticks", "div",
                                           "greaterOrEquals", "base64ToBinary", "guid", "toUpper", "split", "last", "indexOf", "int",
-                                          "formatNumber", "mul", "convertTimeZone", "addToTime", "formatDateTime"):
+                                          "formatNumber", "mul", "convertTimeZone", "addToTime", "formatDateTime", "min"):
             args = [self._nodo(a) for a in n[2]]
             f = n[1]
             if f == "toLower":
@@ -145,6 +145,8 @@ class EnsayoDirecto(EnsayoWDL):
                 return int((datetime.strptime(args[0], ISO) - datetime(1, 1, 1)).total_seconds() * 10_000_000)
             if f == "div":  # entero÷entero = entero; si alguno es decimal, división decimal (como Power Automate)
                 return args[0] / args[1] if isinstance(args[0], float) or isinstance(args[1], float) else args[0] // args[1]
+            if f == "min":
+                return min(args)
             if f == "toUpper":
                 return args[0].upper()
             if f == "split":
