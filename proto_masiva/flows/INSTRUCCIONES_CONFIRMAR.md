@@ -13,7 +13,7 @@ Archivos (rama `experiment/p9-masiva-prototipo`, carpeta `proto_masiva/`):
 |---|---|
 | `flows/P9_MASIVA_PROTO_CONFIRMAR.zip` | el flujo nuevo (opción A) |
 | `flows/GUIA_ACCIONES_CONFIRMACION.md` | las mismas acciones, una por una, por si el ZIP no se pudiera importar (opción B) |
-| `powerapps/CONFIRMACION_POWERFX.md` | las fórmulas A–V de Power Apps, en tu sintaxis (`;` y `;;`) |
+| `powerapps/CONFIRMACION_POWERFX.md` | las fórmulas A–Q de Power Apps (sobre tus controles reales), en tu sintaxis (`;` y `;;`) |
 | `CONFIRMACION_MASIVA.md` | reglas, contratos, análisis de escala y lo no validado |
 
 ## PARTE 1 · Power Automate: importar el flujo NUEVO
@@ -45,20 +45,25 @@ Si una acción muestra ⚠ o campos vacíos, **vuelve a elegir la conexión de S
 
 ## PARTE 2 · Power Apps (`P9_PRUEBA_MASIVA`, la COPIA)
 
-Ya creaste a mano `btnVerObservacionesP9`, `galObservacionesP9` y `btnConfirmarMasivamenteP9`. **No pegues controles encima**: solo se cambian fórmulas.
+La pantalla `P9_Confirmacion_Masiva` **ya existe en tu app con todos los controles** (`btnConfirmarMasivamenteP9`, `btnVerObservacionesP9`, `galObservacionesP9`…). El repositorio ya se
+sincronizó con el **export real** de esa app (`powerapps/tenant/`, ver `SYNC_TENANT_UI.md`). **No pegues controles ni YAML**: solo se reemplazan **18 propiedades** (fórmulas) en 13 elementos.
+Nada cambia de posición, tamaño ni estilo.
 
 1. `make.powerapps.com` → **Aplicaciones** → `P9_PRUEBA_MASIVA` → **Editar**.
 2. **Agregar el flujo nuevo:** panel izquierdo → **Power Automate** (icono ⚡) → **Agregar flujo** → `P9_MASIVA_PROTO_CONFIRMAR`.
-3. **Pegar las fórmulas** de `powerapps/CONFIRMACION_POWERFX.md`, **de la A a la V, en orden**: selecciona el control → elige la propiedad en la barra de fórmulas → **borra todo** → pega.
-   - Si tus controles se llaman distinto (p. ej. las etiquetas internas de la galería, `lblObsTituloP9`/`lblObsMensajeP9`), aplica la fórmula al control equivalente.
-   - **B** va en el control de adjuntos `attXlsxP9` (propiedades **OnAddFile** y **OnRemoveFile**, la misma fórmula).
-   - **T** se aplica a las 11 etiquetas del resumen (las que se ocultan al abrir las observaciones).
-   - Si dejaste en alguna fórmula la variable `varConfirmarMasivaVisible` (el modal descartado): **bórrala**; ya no se usa.
+3. **Pegar las fórmulas** de `powerapps/CONFIRMACION_POWERFX.md`, **de la A a la Q, en ese orden** (la **A primero**: define las variables y `colConfirmacionP9` que usan las demás): selecciona el control → elige
+   la propiedad en la barra de fórmulas → **borra todo** → pega.
+   - Los nombres del documento son los **reales de tu app** (p. ej. `Title1` es la etiqueta del título dentro de `galObservacionesP9`). Si alguno no existe, para y avísame; no lo recrees.
+   - **D** va en `attXlsxP9` (dentro de `frmArchivoP9` → `dcAdjuntosP9`): propiedades **OnAddFile** y **OnRemoveFile**, la misma fórmula en las dos.
+   - **C** quita `Set(varConfirmarMasivaVisible; false)` del `OnVisible` (el segundo modal está descartado).
+   - **No cambian:** `Text` de `btnConfirmarMasivamenteP9`, `OnSelect` de `btnVerObservacionesP9`, `Title1_1`, `lblResMensajeP9.Visible`, `lblResTiempoTituloP9`, `Main_Screen` (lista completa al final de `CONFIRMACION_POWERFX.md`).
+   - Todas las ramas de cada `IfError` terminan en `true`/`false` (la misma forma que Studio ya aceptó en la prevalidación): **no cambies eso a mano**.
 4. **Comprobador de aplicaciones** (icono del estetoscopio): sin errores. Si marca error en:
    - `P9_MASIVA_PROTO_CONFIRMAR.Run(…)`: comprueba que IntelliSense pida **dos argumentos de texto** (`detalle_json`, `usuario_email`); si pide otra forma, avísame y se ajusta **solo esa línea**.
    - `ThisRecord.Value`: prueba `ThisRecord.<campo>` solo en esa línea y avísame qué firma aceptó.
-   - `ShowColumns`/`JSON`/`OnAddFile`: copia el texto exacto del error.
-5. **Guardar**. **No publiques sobre producción.** Reproduce con F5 desde la pantalla `P9_Confirmacion_Masiva`.
+   - `ShowColumns`/`JSON`/`OnAddFile`/`With` dentro de `ForAll`: copia el texto exacto del error.
+5. Mira que el titular de dos líneas («CONFIRMACIÓN COMPLETADA / 1 de 1 depósitos confirmados.») quepa en `lblTitularResultadoP9`; si se corta, sube su alto (único ajuste visual posible).
+6. **Guardar**. **No publiques sobre producción.** Reproduce con F5 desde la pantalla `P9_Confirmacion_Masiva`.
 
 ## PARTE 3 · Pruebas en el tenant (en este orden; no avances si una falla)
 
@@ -95,5 +100,5 @@ Cambió solo el **texto** del error para archivos de 2000 filas o más; el compo
 ## Si algo falla — volver atrás
 
 - **Flujo:** Mis flujos → `P9_MASIVA_PROTO_CONFIRMAR` → **⋯ → Desactivar** (y **Eliminar** si quieres). No afecta a ningún otro flujo.
-- **Power Apps:** restaura las fórmulas anteriores desde `powerapps/P9_Confirmacion_Masiva.pa.yaml` del commit `cfcf01c` (o desde el historial de versiones de la app: **Configuración → Versiones**).
+- **Power Apps:** restaura las fórmulas anteriores desde el historial de versiones de la app (**Configuración → Versiones**) o, propiedad por propiedad, desde `powerapps/tenant/P9_Confirmacion_Masiva.pa.yaml` (el export de tu app ANTES de integrar la confirmación).
 - **Datos:** lo ya confirmado **no se revierte solo**. Para devolver un depósito a `DISPONIBLE` usa la reversión vigente (solicitud y aprobación).

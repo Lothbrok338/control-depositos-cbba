@@ -120,7 +120,7 @@ La paginación de Excel está en 2000. Si la lectura alcanza 2000 filas o más, 
 2. **La escritura real a escala**: V4.2 está validado fila a fila; una secuencia larga no. Tiempos, timeout, 429 y cuotas: sin medir (§7).
 3. **El tamaño de `detalle_json` como entrada** (327 bytes por fila medidos con una fila típica; ~650 KB para 1999) frente al límite de entradas de texto del desencadenador de Power Apps: no verificado.
 4. **Power Apps:** la sintaxis `JSON(ShowColumns(…); JSONFormat.Compact)` pasada a `Run`, `Table(ParseJSON(…))` con `ThisRecord.Value`, y `OnAddFile`/`OnRemoveFile` del control de adjuntos. Las fórmulas no se ejecutaron en Studio.
-5. **La pantalla del repositorio es una reconstrucción** de la UX que ya armaste a mano (no hay export del tenant): posiciones, nombres de las etiquetas internas de la galería y el texto traducido de cada estado pueden diferir de los tuyos.
+5. **La pantalla ya NO es una reconstrucción:** el repositorio se sincronizó con el export real de `P9_PRUEBA_MASIVA` (`powerapps/tenant/`, `SYNC_TENANT_UI.md`) y la confirmación se integró cambiando solo 18 propiedades de fórmula (geometría y estilo intactos). Lo que sigue sin validar es que Studio acepte esas fórmulas (en especial `JSON(ShowColumns(…))`, `With` dentro de `ForAll` y `OnAddFile`) y cómo se ve el titular de dos líneas dentro del alto 50 del tenant.
 6. La propiedad `Id` del resultado de la lectura por ID (V4.2 la pide en el `$select` pero no consta que la lea).
 7. **Esta prueba ESCRIBE en `Depositos_Activos` real.** No hay rollback automático. Los pasos de prueba (`flows/INSTRUCCIONES_CONFIRMAR.md`) usan depósitos que de todos modos se van a confirmar.
 

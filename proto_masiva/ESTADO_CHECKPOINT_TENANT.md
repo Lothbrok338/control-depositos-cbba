@@ -1,5 +1,7 @@
 # P9 CONFIRMACIÓN MASIVA — Estado del checkpoint (prototipo validado parcialmente en tenant)
 
+> **Actualización:** el estado posterior (prevalidación real, observaciones, tiempo humanizado, navegación y botón de confirmación) está en **`SYNC_TENANT_UI.md`**, tomado del export real de `P9_PRUEBA_MASIVA`. Este documento conserva el checkpoint anterior.
+
 Fecha del checkpoint: 2026-10-06 · Rama `experiment/p9-masiva-prototipo` · Base anterior `5fc535c`.
 Producción (`3b407e2`, `candidate/p9-reversion-pendiente-ux`) **no se tocó**: todo vive bajo `proto_masiva/`.
 

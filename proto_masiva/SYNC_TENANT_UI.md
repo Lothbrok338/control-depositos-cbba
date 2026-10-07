@@ -51,4 +51,33 @@ Derivados regenerados desde el export: `P9_Confirmacion_Masiva_CONTROLES_PEGAR.y
 - `Subtitle1` (dentro de la galería) muestra `ThisItem.clave_transaccion` y se solapa verticalmente con `Title1_1` (Y 27 vs 28). Como la galería está validada visualmente, no se cambió; si en pantalla se ve doble texto, es el origen.
 - `cmbCuentaP9_1` muestra solo el número de cuenta (no «MN · 3000…»): es un ajuste del tenant, no de producción.
 - El checker de la app del export solo reporta accesibilidad (`TabIndex`, foco, etiquetas), una variable sin usar y un `CountRows` sobre galería: sin errores de fórmula.
-- El tenant no llama aún al flujo de confirmación: **`test_08` #36–43 (Power Fx de la confirmación) quedan en rojo en ESTE commit a propósito**; se reconcilian en el commit siguiente (integración).
+- El tenant no llamaba aún al flujo de confirmación: en el commit del checkpoint (`48d00b5`) `test_08` #36–43 (Power Fx de la confirmación) quedaron en rojo a propósito; se reconcilian en el commit de integración (sección siguiente).
+
+## Fase 2 · Integración de la confirmación sobre la pantalla REAL (commit siguiente al checkpoint)
+
+`P9_MASIVA_PROTO_CONFIRMAR` (flujo y ZIP) **no se modificó**: `P9_MASIVA_PROTO_CONFIRMAR.zip` es idéntico byte a byte al adjunto (sha256 `0f5c1bef…3e2`) y su revisión no encontró ningún error funcional
+(GET fresco por fila, ETag fresco, `IF-MATCH` concreto, `MERGE` sin reintentos, `Foreach` secuencial, `CATCH_FILA` que continúa, `Responder_a_PowerApps` siempre se ejecuta).
+
+`powerapps/P9_Confirmacion_Masiva.pa.yaml` = export del tenant + **18 propiedades de fórmula en 13 elementos** (los mismos 44 controles; geometría y estilo idénticos; lo prueba `test_08 #44`):
+
+| Elemento | Propiedad(es) | Cambio |
+|---|---|---|
+| `btnConfirmarMasivamenteP9` | `OnSelect`, `DisplayMode` | `OnSelect` llama a `P9_MASIVA_PROTO_CONFIRMAR.Run(JSON(solo VALIDO), User().Email)` en UN clic, sin modal; `IfError` con ramas `true`/`false`. `DisplayMode` también bloquea mientras confirma y tras confirmar ese resultado. `Text` no cambia |
+| Pantalla | `OnVisible` | se quita `varConfirmarMasivaVisible`; se añade el reinicio de la confirmación |
+| `attXlsxP9` | `OnAddFile`, `OnRemoveFile` | reinician resultado, variables y colecciones al cambiar de archivo |
+| `btnPrevalidarP9` | `DisplayMode`, `OnSelect` | no prevalida mientras se confirma; prevalidar reinicia la confirmación. El resto es la fórmula REAL del tenant |
+| `btnVerObservacionesP9` | `Text`, `Visible` | cuenta las observaciones de la prevalidación o, tras confirmar, las filas NO confirmadas |
+| `galObservacionesP9` / `Title1` | `Items` / `Text` | tras confirmar muestra las filas no confirmadas (misma forma de 4 columnas, incl. `clave_transaccion` por `With`+`LookUp`); el título conoce `CONFLICTO`, `CONFLICTO_DATOS`, `ERROR_FILA` en mayúsculas, como el resto |
+| `lblEstadoP9` | `Text`, `Fill` | estados `CONFIRMANDO` y `PARCIAL` |
+| `lblTitularResultadoP9` | `Text` | resultado de la confirmación en DOS líneas (cabe en el alto 50 del tenant) |
+| `lblResMensajeP9` / `lblResTiempoP9` | `Text` | mensaje del flujo / tiempo de la confirmación con el mismo formato «8,9 segundos» |
+| `lblSubtituloMasivaP9` / `lblAvisoPrototipoP9` | `Text` | ya no dicen «No confirma ningún depósito» / «SOLO LECTURA» |
+
+Decisiones por prevalecer el tenant: NO se aplica la fórmula «Visible de las 11 etiquetas del resumen» del diseño anterior (el tenant oculta el resumen con la galería blanca y `lblResMensajeP9.Visible`); NO se añade `DisplayMode` a `btnVerObservacionesP9` (el tenant no lo tiene);
+se conserva el rótulo «Tiempo de Procesamiento» y el texto `IMPORTACION MASIVA` sin tilde.
+
+### Auditoría de `IfError` (compatibilidad de tipos)
+
+`auditar_iferror.py` comprueba que la última sentencia de cada argumento de cada `IfError` sea `true`/`false`. Resultado: el YAML reconstruido de `88aef95` tenía el patrón rechazado por Studio en **dos** fórmulas
+(`btnPrevalidarP9.OnSelect` y `btnConfirmarMasivamenteP9.OnSelect`, 2 de 4 `IfError`); el export del tenant ya tenía corregida la primera; la integración corrige la segunda con la misma forma. Hoy: 4 `IfError`, 0 incompatibles
+(tests `test_04` ×3 y `test_08 #45`, mutados para comprobar que fallan si se reintroduce el patrón).

@@ -1,8 +1,8 @@
 # Power Fx de la prevalidación real (colección `colPrevalidacionP9`)
 
-> **Estado: la prevalidación con esta colección ya fue validada en el tenant** (fase anterior). Las fórmulas que se muestran son las **vigentes**, que
-> incluyen los reinicios de la fase de confirmación: lo que cambia en esta fase, con los pasos exactos, está en **`CONFIRMACION_POWERFX.md`**.
-> Este archivo se **genera** desde `P9_Confirmacion_Masiva.pa.yaml` (`python proto_masiva/powerapps/generar_powerfx.py`): no lo edites a mano.
+> **Estado: la prevalidación con esta colección ya fue validada en el tenant.** Las fórmulas que se muestran son las **REALES de `P9_PRUEBA_MASIVA`** (export del tenant,
+> `tenant/P9_Confirmacion_Masiva.pa.yaml`), incluida la corrección `IfError(…;; true, …;; false)`. Lo que cambia en la fase de confirmación, con los pasos exactos,
+> está en **`CONFIRMACION_POWERFX.md`**. Este archivo se **genera** (`python proto_masiva/powerapps/generar_powerfx.py`): no lo edites a mano.
 
 Las fórmulas están escritas para tu configuración regional: `;` entre argumentos y `;;` entre sentencias.
 

@@ -473,8 +473,23 @@ def sin_cadenas(f):
     return re.sub(r'"(?:[^"]|"")*"', '""', f)
 
 
+def plano(f):
+    """El export de Studio formatea las fórmulas en varias líneas: se compara sin saltos ni sangrías."""
+    f = re.sub(r"\s+", " ", f).strip()
+    f = re.sub(r"\s+\)", ")", re.sub(r"\(\s+", "(", f))
+    return re.sub(r"\s+\}", "}", re.sub(r"\{\s+", "{", f))
+
+
+def fx(nombre, propiedad):
+    return plano(PFX.formula(nombre, propiedad))
+
+
+def fx_crudo(nombre, propiedad):
+    return PFX.formula(nombre, propiedad)
+
+
 def test_36_el_boton_llama_al_flujo_con_el_JSON_compacto_de_SOLO_las_filas_VALIDO_y_el_correo():
-    f = PFX.formula("btnConfirmarMasivamenteP9", "OnSelect")
+    f = fx("btnConfirmarMasivamenteP9", "OnSelect")
     assert f"{K.NOMBRE_FLUJO}.Run(" in f and "JSONFormat.Compact" in f and "User().Email" in f
     assert 'Filter(colPrevalidacionP9, resultado = "VALIDO")' in f                       # nunca las filas observadas
     columnas = re.search(r'ShowColumns\(Filter\(colPrevalidacionP9, resultado = "VALIDO"\), ([^)]*)\)', f)[1]
@@ -487,36 +502,38 @@ def test_37_no_hay_segundo_modal_ni_doble_confirmacion_ni_escrituras_desde_la_ap
     texto = (REPO / "proto_masiva/powerapps/P9_Confirmacion_Masiva.pa.yaml").read_text(encoding="utf-8")
     for prohibido in ("varConfirmarMasivaVisible", "mostrarConfirmacion", "SubmitForm", "Patch(", "Collect(Depositos", "Refresh(", "Timer"):
         assert prohibido not in texto, prohibido
-    f = PFX.formula("btnConfirmarMasivamenteP9", "OnSelect")
+    f = fx("btnConfirmarMasivamenteP9", "OnSelect")
     assert re.findall(r"\w*Collect\(", f) == ["ClearCollect("] and f.count(".Run(") == 1  # UNA llamada al flujo por clic
 
 
 def test_38_el_boton_queda_Disabled_mientras_corre_y_despues_de_confirmar_ese_resultado():
-    dm = PFX.formula("btnConfirmarMasivamenteP9", "DisplayMode")
+    dm = fx("btnConfirmarMasivamenteP9", "DisplayMode")
     for condicion in ("!Coalesce(varProcesandoP9, false)", "!Coalesce(varProcesandoConfirmacionP9, false)",
                       "!Coalesce(varConfirmacionMasivaFinalizadaP9, false)", 'CountRows(Filter(colPrevalidacionP9, resultado = "VALIDO")) > 0'):
         assert condicion in dm, condicion
-    on = PFX.formula("btnConfirmarMasivamenteP9", "OnSelect")
+    on = fx("btnConfirmarMasivamenteP9", "OnSelect")
     assert on.index("Set(varProcesandoConfirmacionP9, true)") < on.index(".Run(") < on.index("Set(varConfirmacionMasivaFinalizadaP9, true)") \
         < on.index("Set(varProcesandoConfirmacionP9, false)")
-    assert PFX.formula("btnConfirmarMasivamenteP9", "Text") == '"CONFIRMAR MASIVAMENTE (" & CountRows(Filter(colPrevalidacionP9, resultado = "VALIDO")) & ")"'
+    assert fx("btnConfirmarMasivamenteP9", "Text") == '"CONFIRMAR MASIVAMENTE (" & CountRows(Filter(colPrevalidacionP9, resultado = "VALIDO")) & ")"'
     # tras un tiempo de espera de la app el botón también queda bloqueado: hay que volver a PREVALIDAR (el flujo pudo seguir confirmando)
     assert on.index("FLUJO_SIN_RESPUESTA") < on.index("Set(varConfirmacionMasivaFinalizadaP9, true)") and "vuelva a PREVALIDAR" in on
 
 
 def test_39_se_reinicia_al_prevalidar_de_nuevo_y_al_cambiar_de_archivo():
-    prev = PFX.formula("btnPrevalidarP9", "OnSelect")
+    prev = fx("btnPrevalidarP9", "OnSelect")
     for necesario in ("Set(varResultadoConfirmacionP9, Blank())", "Set(varConfirmacionMasivaFinalizadaP9, false)", "Set(varVerObservacionesP9, false)",
                       "Clear(colConfirmacionP9)", "Clear(colPrevalidacionP9)"):
         assert necesario in prev, necesario
-    assert "Coalesce(varProcesandoConfirmacionP9, false)" in PFX.formula("btnPrevalidarP9", "DisplayMode")  # no se prevalida mientras se confirma
-    nuevo = PFX.REINICIO_NUEVO_ARCHIVO
+    assert "Coalesce(varProcesandoConfirmacionP9, false)" in fx("btnPrevalidarP9", "DisplayMode")  # no se prevalida mientras se confirma
+    nuevo = fx_crudo("attXlsxP9", "OnAddFile")
+    assert nuevo == fx_crudo("attXlsxP9", "OnRemoveFile")                      # adjuntar y quitar el archivo reinician lo mismo
+    assert "Clear(colConfirmacionP9)" in nuevo and "Set(varResultadoConfirmacionP9, Blank())" in nuevo
     for necesario in ("Set(varConfirmacionMasivaFinalizadaP9, false)", "Clear(colPrevalidacionP9)", "Set(varResultadoP9, Blank())"):
         assert necesario in nuevo, necesario
 
 
 def test_40_la_coleccion_de_confirmacion_usa_las_columnas_del_esquema_con_conversion_explicita():
-    f = PFX.formula("btnConfirmarMasivamenteP9", "OnSelect")
+    f = fx_crudo("btnConfirmarMasivamenteP9", "OnSelect")
     assert "ParseJSON(varResultadoConfirmacionP9.detalle_json)" in f
     cols = re.findall(r"^\s+(\w+): (Value|Text)\(ThisRecord\.Value\.(\w+)\)", f, re.M)
     assert [c for c, _, _ in cols] == [c for _, _, c in cols] == list(K.DETALLE_CAMPOS)
@@ -529,15 +546,15 @@ def test_40_la_coleccion_de_confirmacion_usa_las_columnas_del_esquema_con_conver
 
 
 def test_41_el_panel_muestra_el_resultado_pedido_sin_otro_modal():
-    titular = PFX.formula("lblTitularResultadoP9", "Text")
+    titular = fx("lblTitularResultadoP9", "Text")
     for texto in ("CONFIRMACIÓN COMPLETADA", "CONFIRMACIÓN PARCIAL", "NO SE CONFIRMÓ NINGÚN DEPÓSITO", "depósitos confirmados.", "requieren revisión."):
         assert texto in titular, texto
     assert "filas_confirmadas" in titular and "filas_recibidas" in titular and "filas_no_confirmadas" in titular
-    items = PFX.formula("galObservacionesP9", "Items")
+    items = fx("galObservacionesP9", "Items")
     assert 'Filter(colConfirmacionP9, resultado <> "CONFIRMADO")' in items and 'Filter(colPrevalidacionP9, resultado <> "VALIDO")' in items  # solo las NO confirmadas
-    tiempo = PFX.formula("lblResTiempoP9", "Text")
+    tiempo = fx("lblResTiempoP9", "Text")
     assert "segundos" in tiempo and "tiempos_ms" not in tiempo and "ms" not in re.sub(r'"[^"]*"', "", tiempo).replace("varMs", "")  # humanizado, sin desglose técnico
-    assert PFX.formula("lblResTiempoTituloP9", "Text") == '"TIEMPO DE PROCESAMIENTO"'
+    assert fx("lblResTiempoTituloP9", "Text") == '"Tiempo de Procesamiento"'  # el rótulo REAL del tenant (no se cambia)
 
 
 def test_42_las_formulas_regionales_estan_balanceadas_y_no_tocan_listas():
@@ -556,3 +573,106 @@ def test_43_los_documentos_generados_son_la_salida_actual_de_los_generadores():
     from p9.wdl import recorrer
     for nombre, _ in recorrer(K.construir_definicion()["actions"]):
         assert f"`{nombre}`" in guia, nombre
+
+
+# ====================================================================== 44-48 · reconciliación con el export REAL del tenant
+import yaml  # noqa: E402
+
+PA = REPO / "proto_masiva/powerapps"
+
+
+def _props_del_yaml(ruta):
+    """{(control, propiedad): valor} de la pantalla; la propia pantalla va como «__pantalla__»."""
+    doc = yaml.safe_load(ruta.read_text(encoding="utf-8"))["Screens"]["P9_Confirmacion_Masiva"]
+    salida = {("__pantalla__", k): v for k, v in doc["Properties"].items()}
+
+    def recorrer(hijos):
+        for h in hijos:
+            (nombre, c), = h.items()
+            salida.update({(nombre, k): v for k, v in (c.get("Properties") or {}).items()})
+            salida[(nombre, "__Control__")] = c["Control"]
+            recorrer(c.get("Children", []))
+    recorrer(doc["Children"])
+    return salida
+
+
+# Las ÚNICAS propiedades que la integración de la confirmación cambia respecto del export del tenant (18, en 13 elementos)
+CAMBIOS_ESPERADOS = {
+    ("__pantalla__", "OnVisible"), ("attXlsxP9", "OnAddFile"), ("attXlsxP9", "OnRemoveFile"),
+    ("btnPrevalidarP9", "DisplayMode"), ("btnPrevalidarP9", "OnSelect"),
+    ("btnConfirmarMasivamenteP9", "DisplayMode"), ("btnConfirmarMasivamenteP9", "OnSelect"),
+    ("btnVerObservacionesP9", "Text"), ("btnVerObservacionesP9", "Visible"),
+    ("galObservacionesP9", "Items"), ("Title1", "Text"),
+    ("lblEstadoP9", "Text"), ("lblEstadoP9", "Fill"), ("lblTitularResultadoP9", "Text"), ("lblResMensajeP9", "Text"),
+    ("lblResTiempoP9", "Text"), ("lblSubtituloMasivaP9", "Text"), ("lblAvisoPrototipoP9", "Text")}
+GEOMETRIA_Y_ESTILO = {"X", "Y", "Width", "Height", "Fill", "Color", "Size", "Font", "FontWeight", "BorderColor", "BorderStyle", "BorderThickness", "Align",
+                      "TemplateSize", "TemplateFill", "VerticalAlign", "AutoHeight"}
+
+
+def test_44_la_integracion_solo_cambia_formulas_previstas_y_nunca_geometria_ni_estilo_del_tenant():
+    tenant, integrado = _props_del_yaml(PA / "tenant/P9_Confirmacion_Masiva.pa.yaml"), _props_del_yaml(PA / "P9_Confirmacion_Masiva.pa.yaml")
+    assert {k for k in tenant if k[1] == "__Control__"} == {k for k in integrado if k[1] == "__Control__"}      # mismos 44 controles, mismos tipos
+    cambiadas = {k for k in set(tenant) | set(integrado) if plano(str(tenant.get(k))) != plano(str(integrado.get(k)))}
+    assert cambiadas == CAMBIOS_ESPERADOS, sorted(cambiadas ^ CAMBIOS_ESPERADOS)
+    # lblEstadoP9.Fill cambia por sus NUEVOS colores de estado, pero la geometría/estilo de todos los controles queda idéntica al tenant
+    assert not [k for k in cambiadas if k[1] in GEOMETRIA_Y_ESTILO and k != ("lblEstadoP9", "Fill")]
+    assert plano(str(tenant[("lblEstadoP9", "Fill")])).count('"OK", RGBA(46, 125, 50, 1)') == 1
+
+
+def test_45_ningun_IfError_de_la_pantalla_mezcla_tabla_y_booleano_y_el_de_la_confirmacion_tiene_la_forma_validada_en_el_tenant():
+    sys_path = str(PA)
+    import sys
+    sys.path.insert(0, sys_path)
+    import auditar_iferror as AI
+    assert AI.auditar(PA / "P9_Confirmacion_Masiva.pa.yaml") == [] and AI.auditar(PA / "tenant/P9_Confirmacion_Masiva.pa.yaml") == []
+    f = fx_crudo("btnConfirmarMasivamenteP9", "OnSelect")
+    externo, interno = AI.llamadas_iferror(f)
+    assert [AI.ultima_sentencia(a) for a in externo] == ["true", "false"] and [AI.ultima_sentencia(a) for a in interno] == ["true", "false"]
+    assert plano(interno[0]).startswith("ClearCollect(colConfirmacionP9,") and plano(interno[1]).startswith('Notify("No se pudo leer el detalle de la confirmación: "')
+    # misma forma que la prevalidación ya aceptada por Studio: calcado, solo cambian nombres
+    prev = AI.llamadas_iferror(fx_crudo("btnPrevalidarP9", "OnSelect"))
+    assert [[AI.ultima_sentencia(a) for a in ll] for ll in prev] == [["true", "false"], ["true", "false"]]
+    # el 4.º argumento fabricado por la app coincide con la forma del 8-texto del flujo (misma variable, mismo tipo en las dos asignaciones)
+    assert fx("btnConfirmarMasivamenteP9", "OnSelect").count("Set(varResultadoConfirmacionP9,") == 3  # Blank(), respuesta del flujo, registro de error
+
+
+def test_46_las_dos_ramas_de_Items_de_la_galeria_tienen_las_mismas_columnas_y_el_titulo_conoce_cada_resultado():
+    items = fx("galObservacionesP9", "Items")
+    antes = re.search(r'ShowColumns\(Filter\(colPrevalidacionP9, resultado <> "VALIDO"\), ([^)]*)\)', items)[1]
+    despues = re.search(r'ForAll\(Filter\(colConfirmacionP9, resultado <> "CONFIRMADO"\), \{(.*)\}\), ShowColumns', items)[1]
+    columnas_antes = re.findall(r'"(\w+)"', antes)
+    columnas_despues = re.findall(r"(\w+): ", sin_cadenas(despues).replace("With({filaP9: ThisRecord.fila_excel}", "With({}"))
+    assert columnas_antes == columnas_despues[:len(columnas_antes)] == ["fila_excel", "resultado", "mensaje", "clave_transaccion"]
+    # los dos hijos de la galería que lee la plantilla de Studio (ThisItem.…) existen en ambas ramas
+    gal = _props_del_yaml(PA / "P9_Confirmacion_Masiva.pa.yaml")
+    leidos = set()
+    for (n, prop), v in gal.items():
+        if n in {"Title1", "Subtitle1", "Title1_1"} and prop == "Text":
+            leidos |= set(re.findall(r"ThisItem\.(\w+)", str(v)))
+    assert leidos <= set(columnas_antes) | {"IsSelected"}, leidos
+    titulo = plano(str(gal[("Title1", "Text")]))
+    for codigo in K.RESULTADOS_FILA[1:]:                       # todo lo que NO es CONFIRMADO tiene rótulo propio en el título
+        assert f'"{codigo}"' in titulo, codigo
+    assert '"CONFLICTO", "CONFLICTO CON OTRO USUARIO"' in titulo and '"ERROR_FILA", "ERROR AL PROCESAR LA FILA"' in titulo
+
+
+def test_47_el_modal_descartado_no_queda_en_ningun_artefacto_de_la_pantalla():
+    for ruta in (PA / "P9_Confirmacion_Masiva.pa.yaml", PA / "P9_Confirmacion_Masiva_CONTROLES_PEGAR.yaml", PA / "CONFIRMACION_POWERFX.md",
+                 PA / "PREVALIDACION_POWERFX.md"):
+        texto = ruta.read_text(encoding="utf-8")
+        if ruta.name == "CONFIRMACION_POWERFX.md":     # se nombra solo para decir que ya no se usa
+            assert texto.count("varConfirmarMasivaVisible") == 2 and "**ya no se usa**" in texto
+        else:
+            assert "varConfirmarMasivaVisible" not in texto, ruta.name
+    # la fuente real del tenant SÍ la conserva (checkpoint): es lo que la integración retira
+    assert (PA / "tenant/P9_Confirmacion_Masiva.pa.yaml").read_text(encoding="utf-8").count("varConfirmarMasivaVisible") == 2
+
+
+def test_48_la_llamada_al_flujo_coincide_con_el_disparador_dos_textos_en_orden_y_el_json_es_el_de_las_filas_validas():
+    esquema_disparador = K.construir_definicion()["triggers"]["manual"]["inputs"]["schema"]
+    disparador = esquema_disparador["properties"]                      # claves internas text, text_1; el nombre que ve Power Apps es `title`
+    assert [v["title"] for v in disparador.values()] == ["detalle_json", "usuario_email"] and all(v["type"] == "string" for v in disparador.values())
+    assert esquema_disparador["required"] == list(disparador)
+    run = fx("btnConfirmarMasivamenteP9", "OnSelect")
+    argumentos = re.search(r"P9_MASIVA_PROTO_CONFIRMAR\.Run\(JSON\(ShowColumns\(.*?\), JSONFormat\.Compact\), User\(\)\.Email\)\)", run)
+    assert argumentos, "Run(<JSON compacto de las VALIDO>, User().Email): exactamente dos argumentos, en el orden del disparador"

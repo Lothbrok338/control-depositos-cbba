@@ -30,7 +30,7 @@ MANUALES = {"frmArchivoP9", "attXlsxP9"}  # se crearon a mano en Studio; el expo
 TIPOS_USADOS_EN_P9 = {"GroupContainer@1.5.0", "Rectangle@2.3.0", "Label@2.5.1", "Classic/Button@2.2.0", "Gallery@2.15.0",
                       "Form@2.4.4", "TypedDataCard@1.0.7", "Attachments@2.3.0"}
 CODIGOS_APP = set(F.CODIGOS) | {"FLUJO_SIN_RESPUESTA"}  # este último lo fabrica la app si el flujo no responde
-ESTADOS_UI = {"SIN ARCHIVO", "CARGADO", "PROCESANDO", "OK", "OBSERVADO", "ERROR"}
+ESTADOS_UI = {"SIN ARCHIVO", "CARGADO", "PROCESANDO", "CONFIRMANDO", "OK", "OBSERVADO", "PARCIAL", "ERROR"}
 # VALIDADO EN TENANT (URL pegada en el navegador → se descarga el XLSX): descarga por UniqueId del archivo real. Si el archivo se borra y se
 # vuelve a crear, el UniqueId cambia: actualizar la plantilla con «reemplazar»/nueva versión, no borrando.
 URL_DESCARGA = ("https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu/_layouts/15/download.aspx"
@@ -45,6 +45,9 @@ def controles(hijos):
 
 
 CONTROLES = dict(controles(PANTALLA["Children"]))
+# EXPORT REAL del tenant (solo lectura): las pruebas «del tenant» fijan lo VALIDADO/PUBLICADO; PANTALLA/CONTROLES son el tenant + la integración de la confirmación.
+PANTALLA_TENANT = yaml.safe_load((PA / "tenant" / "P9_Confirmacion_Masiva.pa.yaml").read_text(encoding="utf-8"))["Screens"]["P9_Confirmacion_Masiva"]
+TENANT = dict(controles(PANTALLA_TENANT["Children"]))
 
 
 def formulas():
@@ -105,14 +108,14 @@ def test_la_descarga_es_por_uniqueid_y_no_quedan_rutas_ni_variables_antiguas():
 
 
 def test_el_OnVisible_real_del_tenant():
-    assert PANTALLA["Properties"]["OnVisible"].splitlines() == [
+    assert PANTALLA_TENANT["Properties"]["OnVisible"].splitlines() == [
         "=Set(varProcesandoP9, false);", "Set(varResultadoP9, Blank());", "Set(varMsAppP9, Blank());", "Clear(colPrevalidacionP9);",
         "Set(varVerObservacionesP9, false);", "Set(varConfirmarMasivaVisible, false);", "ResetForm(frmArchivoP9)"]
     # CHECKPOINT: varConfirmarMasivaVisible es del segundo modal DESCARTADO, pero SIGUE en el tenant. Se registra tal cual y se retira en la integración
     # de la confirmación (siguiente commit). Aquí solo se fija DÓNDE aparece, para que no se propague a ningún otro sitio.
-    texto = (PA / "P9_Confirmacion_Masiva.pa.yaml").read_text(encoding="utf-8")
+    texto = (PA / "tenant" / "P9_Confirmacion_Masiva.pa.yaml").read_text(encoding="utf-8")
     assert texto.count("varConfirmarMasivaVisible") == 2
-    assert CONTROLES["btnConfirmarMasivamenteP9"]["Properties"]["OnSelect"] == "=Set(varConfirmarMasivaVisible, true)"
+    assert TENANT["btnConfirmarMasivamenteP9"]["Properties"]["OnSelect"] == "=Set(varConfirmarMasivaVisible, true)"
 
 
 def test_los_labels_de_copia_temporal_estan_ocultos_pero_siguen_existiendo():
@@ -160,7 +163,7 @@ def test_las_salidas_del_flujo_que_usa_la_app_existen_en_la_respuesta_del_flujo(
 def test_estados_y_codigos_de_la_app_son_los_del_flujo():
     estados, codigos = set(), set()
     for _, f in formulas():
-        estados |= set(re.findall(r'"(SIN ARCHIVO|CARGADO|PROCESANDO|OK|OBSERVADO|ERROR)"', f))
+        estados |= set(re.findall(r'"(SIN ARCHIVO|CARGADO|PROCESANDO|CONFIRMANDO|OK|OBSERVADO|PARCIAL|ERROR)"', f))
         codigos |= set(re.findall(r'codigo: "([A-Z_]+)"', f))
     assert estados <= ESTADOS_UI and estados == ESTADOS_UI
     assert codigos <= CODIGOS_APP
@@ -216,7 +219,7 @@ def test_la_unica_formula_manual_es_el_OnVisible_y_coincide_con_la_del_yaml():
     bloques = bloques_md()
     assert len(bloques) == 1  # ya no hay OnSuccess ni OnTimerEnd
     manual = [l.strip() for l in bloques[0].strip().splitlines()]
-    yaml_ = [l.strip() for l in PANTALLA["Properties"]["OnVisible"].lstrip("=").splitlines()]
+    yaml_ = [l.strip() for l in PANTALLA_TENANT["Properties"]["OnVisible"].lstrip("=").splitlines()]
     assert manual == yaml_
     limpio = sin_cadenas(bloques[0])
     assert limpio.count("(") == limpio.count(")")
@@ -331,15 +334,21 @@ def test_si_el_detalle_no_se_puede_leer_se_avisa_sin_fingir_que_el_flujo_no_resp
 
 def test_la_pantalla_ya_no_dice_que_no_consulta_Depositos_Activos_ni_usa_estados_antiguos():
     texto = (PA / "P9_Confirmacion_Masiva.pa.yaml").read_text(encoding="utf-8")
-    assert "COMPLETADO" not in texto and "no se consulta" not in texto and "se borra al terminar" not in texto
-    # CHECKPOINT: el aviso del tenant sigue siendo el de la prevalidación; la integración de la confirmación lo cambia (siguiente commit)
-    assert CONTROLES["lblAvisoPrototipoP9"]["Properties"]["Text"] == '="Prevalidación de SOLO LECTURA"'
-    assert "OK" in CONTROLES["lblEstadoP9"]["Properties"]["Fill"] and "OBSERVADO" in CONTROLES["lblEstadoP9"]["Properties"]["Fill"]
+    assert "COMPLETADO" not in texto.replace("CONFIRMACIÓN COMPLETADA", "") and "no se consulta" not in texto and "se borra al terminar" not in texto
+    # export del tenant: el aviso era el de la prevalidación; la integración lo cambia
+    assert TENANT["lblAvisoPrototipoP9"]["Properties"]["Text"] == '="Prevalidación de SOLO LECTURA"'
+    assert "No confirma ningún depósito" in TENANT["lblSubtituloMasivaP9"]["Properties"]["Text"]
+    aviso = CONTROLES["lblAvisoPrototipoP9"]["Properties"]["Text"]
+    assert "relee cada depósito" in aviso and "solo confirma lo que sigue válido" in aviso and "sin lotes ni historial" in aviso
+    assert "No confirma" not in CONTROLES["lblSubtituloMasivaP9"]["Properties"]["Text"]
+    for estado in ("OK", "OBSERVADO", "PARCIAL", "ERROR", "PROCESANDO", "CONFIRMANDO", "CARGADO"):
+        assert f'"{estado}"' in CONTROLES["lblEstadoP9"]["Properties"]["Fill"], estado
+
 
 
 # --------------------------------------------------------------------------- UX REAL del tenant (validada visualmente por Gabriel)
 def test_ux_de_observaciones_real_del_tenant():
-    p = lambda n, k: CONTROLES[n]["Properties"][k]  # noqa: E731
+    p = lambda n, k: TENANT[n]["Properties"][k]  # noqa: E731
     boton = plano(p("btnVerObservacionesP9", "Text"))
     assert boton.startswith('=If(Coalesce(varVerObservacionesP9, false), "OCULTAR OBSERVACIONES", "VER OBSERVACIONES (" &')
     assert 'CountRows(Filter(colPrevalidacionP9, resultado <> "VALIDO"))' in boton
@@ -350,7 +359,7 @@ def test_ux_de_observaciones_real_del_tenant():
     assert p("galObservacionesP9", "Fill") == p("galObservacionesP9", "TemplateFill") == "=RGBA(255, 255, 255, 1)"
     assert p("galObservacionesP9", "Visible") == "=varVerObservacionesP9"
     # cada elemento: título en negrita y mensaje en etiquetas SEPARADAS (nombres reales de Studio: Title1 y Title1_1)
-    assert p("Title1", "FontWeight") == "=FontWeight.Bold" and "FontWeight" not in CONTROLES["Title1_1"]["Properties"]
+    assert p("Title1", "FontWeight") == "=FontWeight.Bold" and "FontWeight" not in TENANT["Title1_1"]["Properties"]
     titulo = plano(p("Title1", "Text"))
     assert titulo.startswith('="Fila " & Text(ThisItem.fila_excel) & " · " & Switch(ThisItem.resultado,')
     for rotulo in ("DUPLICADO EN EL EXCEL", "FALTAN DATOS", "DEPÓSITO NO DISPONIBLE", "DEPÓSITO NO ENCONTRADO"):
@@ -361,19 +370,19 @@ def test_ux_de_observaciones_real_del_tenant():
 
 
 def test_tiempo_de_procesamiento_humanizado_sin_desglose_tecnico():
-    assert CONTROLES["lblResTiempoTituloP9"]["Properties"]["Text"] == '="Tiempo de Procesamiento"'
-    tiempo = plano(CONTROLES["lblResTiempoP9"]["Properties"]["Text"])
+    assert TENANT["lblResTiempoTituloP9"]["Properties"]["Text"] == '="Tiempo de Procesamiento"'
+    tiempo = plano(TENANT["lblResTiempoP9"]["Properties"]["Text"])
     assert '" segundos"' in tiempo and "varMsAppP9 / 1000" in tiempo
     assert "flujo:" not in tiempo and "crear=" not in tiempo and "excel=" not in tiempo and "tiempos_ms" not in tiempo
 
 
-def test_btnConfirmarMasivamenteP9_estado_actual_en_el_tenant():
-    """CHECKPOINT: tal como está HOY en el tenant (aún sin llamar al flujo). La integración (siguiente commit) cambia OnSelect/DisplayMode/Text."""
-    b = CONTROLES["btnConfirmarMasivamenteP9"]["Properties"]
+def test_btnConfirmarMasivamenteP9_estado_validado_en_el_tenant_antes_de_integrar():
+    """CHECKPOINT: tal como estaba en el export del tenant (aún sin llamar al flujo). La integración cambia SOLO OnSelect y DisplayMode (ver test_08)."""
+    b = TENANT["btnConfirmarMasivamenteP9"]["Properties"]
     assert plano(b["Text"]) == '="CONFIRMAR MASIVAMENTE (" & CountRows(Filter(colPrevalidacionP9, resultado = "VALIDO")) & ")"'
     assert plano(b["DisplayMode"]) == ('=If(!varProcesandoP9 && CountRows(Filter(colPrevalidacionP9, resultado = "VALIDO")) > 0, '
                                        "DisplayMode.Edit, DisplayMode.Disabled)")
-    assert b["OnSelect"] == "=Set(varConfirmarMasivaVisible, true)" and "P9_MASIVA_PROTO_CONFIRMAR" not in json.dumps(CONTROLES)
+    assert b["OnSelect"] == "=Set(varConfirmarMasivaVisible, true)" and "P9_MASIVA_PROTO_CONFIRMAR" not in json.dumps(TENANT)
 
 
 # --------------------------------------------------------------------------- IfError: compatibilidad de tipos (Studio rechaza tabla vs booleano)
