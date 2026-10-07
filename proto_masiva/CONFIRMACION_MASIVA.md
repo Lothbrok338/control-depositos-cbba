@@ -26,7 +26,7 @@ No hay: segundo modal, doble confirmación, lotes persistentes, historial de lot
 |---|---|---|
 | Sitio / lista | `https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu` · `296c450a-25d6-415b-ad10-c909c74817cb` | **idénticos** (`p9/contrato.py`) |
 | Lectura por ID | `GET _api/web/lists(guid'…')/items(<ID>)?$select=Id,CLAVE_TRANSACCION,ESTADO_ASIGNACION,USUARIO_ASIGNACION,FECHA_HORA_ASIGNACION`, `Accept: application/json;odata=verbose`, resultado en `body.d` | misma URI y cabecera; el `$select` **añade** `TIPO_MOVIMIENTO, FECHA_MOVIMIENTO, BANCO, CUENTA_BANCARIA, CODIGO_ASIGNACION, IMPORTE, MONEDA` (los mismos nombres internos ya usados por la prevalidación) |
-| Reintentos de la lectura | ninguno | **2 reintentos fijos (PT2S)** — única diferencia: es solo lectura y mitiga errores transitorios 429/5xx |
+| Reintentos de la lectura | ninguno | **2 reintentos fijos (PT5S)** — única diferencia: es solo lectura y mitiga errores transitorios 429/5xx. 5 s es el mínimo que admite Power Automate (un intervalo menor falla al importar con `InvalidRetryPolicy`) |
 | Comprobación de clave | `CLAVE_TRANSACCION` ≠ la enviada → `CLAVE_NO_COINCIDE` | → `CONFLICTO_DATOS` |
 | Comprobación de estado | `ESTADO_ASIGNACION` ≠ `DISPONIBLE` → `NO_DISPONIBLE` | igual: `NO_DISPONIBLE` (con el estado real) |
 | ETag | `coalesce(d.__metadata.etag, headers.ETag, '')`; vacío → `SIN_ETAG` (no escribe) | **la misma expresión**, sobre la lectura **de esa fila**; vacío → `ERROR_FILA` (no escribe) |

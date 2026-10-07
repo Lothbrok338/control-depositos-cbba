@@ -15,6 +15,14 @@ sys.path.insert(0, str(CARPETA.parents[1]))
 from proto_masiva.flows import construir as F  # noqa: E402
 
 
+def politica_reintentos(rp):
+    """Texto de «Configuración → Directiva de reintentos» a partir del `retryPolicy` REAL de la acción."""
+    if rp.get("type") == "none":
+        return "Ninguna"
+    assert rp["type"] == "fixed", rp
+    return f"Intervalo fijo, {rp['count']} reintentos, {rp['interval']}"
+
+
 def mostrar(valor, nivel=0):
     if isinstance(valor, str) and valor.startswith("@"):
         return valor[1:]
@@ -51,7 +59,7 @@ def describir(nombre, accion, numero, sangria=""):
         p = i["parameters"]
         sal += [f"{sangria}**Enviar una solicitud HTTP a SharePoint** · Dirección del sitio: `{p['dataset']}` (la misma de `PARAM_SITIO`) · "
                 f"Método: `{p['parameters/method']}` · Encabezados: `{json.dumps(p['parameters/headers'])}` · "
-                f"Configuración → Directiva de reintentos: **Ninguna**. Uri (expresión):", bloque_codigo(mostrar(p["parameters/uri"]))]
+                f"Configuración → Directiva de reintentos: **{politica_reintentos(i['retryPolicy'])}**. Uri (expresión):", bloque_codigo(mostrar(p["parameters/uri"]))]
     elif tipo == "If":
         sal += [f"{sangria}**Condición (Condition)** · modo avanzado, expresión:", bloque_codigo(mostrar(accion["expression"]))]
     elif tipo == "InitializeVariable":

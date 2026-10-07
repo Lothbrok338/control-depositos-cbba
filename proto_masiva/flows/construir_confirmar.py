@@ -146,14 +146,19 @@ def uri_escritura():
             f"{fila('id_txt')},')')")
 
 
+# Power Automate rechaza al importar (InvalidRetryPolicy) un intervalo fijo menor de 5 s: el rango permitido es PT5S..P1D.
+INTERVALO_REINTENTO_LECTURA = "PT5S"
+
+
 def leer_deposito():
     """Lectura FRESCA por ID (como V4.2: Accept odata=verbose → el ETag viene en d.__metadata.etag). Solo lectura: se permiten 2 reintentos
-    ante errores transitorios (429/5xx); es la ÚNICA diferencia con V4.2, que no reintenta ni siquiera la lectura."""
+    (intervalo fijo de 5 s, el mínimo que admite Power Automate) ante errores transitorios (429/5xx); es la ÚNICA diferencia con V4.2, que no
+    reintenta ni siquiera la lectura. El MERGE NO se reintenta nunca."""
     return {"type": "OpenApiConnection", "inputs": {
         "host": {"apiId": API_SP, "connectionName": "shared_sharepointonline", "operationId": "HttpRequest"},
         "parameters": {"dataset": "@outputs('PARAM_SITIO')", "parameters/method": "GET", "parameters/uri": uri_item(),
                        "parameters/headers": {"Accept": "application/json;odata=verbose"}},
-        "authentication": "@parameters('$authentication')", "retryPolicy": {"type": "fixed", "count": 2, "interval": "PT2S"}}}
+        "authentication": "@parameters('$authentication')", "retryPolicy": {"type": "fixed", "count": 2, "interval": INTERVALO_REINTENTO_LECTURA}}}
 
 
 def texto_deposito(campo):

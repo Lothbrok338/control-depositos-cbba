@@ -33,7 +33,7 @@ El flujo es **nuevo** (no actualiza ninguno existente), así que no hace falta r
 | 1 | Disparador **Power Apps (V2)** | **dos** entradas de tipo Texto, en este orden: `detalle_json` y `usuario_email` |
 | 2 | `PARAM_MAX_FILAS_POR_LLAMADA` (Redactar, arriba) | **50**. Es el tope por llamada: se sube después de medir (ver Parte 3) |
 | 3 | `Para_cada_fila` (dentro de `TRY` → … → `Lote_valido` → rama Sí) | ⋯ → **Configuración** → *Control de simultaneidad* **Activado** con *Grado de paralelismo* = **1** |
-| 4 | `Leer_deposito` (dentro de `TRY_FILA`) | Dirección del sitio `https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu` · Método `GET` · ⋯ → Configuración → *Directiva de reintentos*: **Intervalo fijo, 2 reintentos, PT2S** |
+| 4 | `Leer_deposito` (dentro de `TRY_FILA`) | Dirección del sitio `https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu` · Método `GET` · ⋯ → Configuración → *Directiva de reintentos*: **Intervalo fijo, 2 reintentos, PT5S** (5 s es el mínimo que acepta Power Automate) |
 | 5 | `Actualizar_deposito` (dentro de `TRY_FILA` → `Puede_confirmar` rama Sí) | Método `POST` · Encabezados `X-HTTP-Method: MERGE` e `IF-MATCH` = el ETag fresco (`@outputs('Revalidacion')?['etag']`) · ⋯ → Configuración → *Directiva de reintentos*: **Ninguna**. **No pongas nunca `*` en `IF-MATCH`.** |
 
 Si una acción muestra ⚠ o campos vacíos, **vuelve a elegir la conexión de SharePoint** en esa acción; no cambies ninguna expresión.

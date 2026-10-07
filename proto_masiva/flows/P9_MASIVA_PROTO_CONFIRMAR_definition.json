@@ -454,7 +454,7 @@
                             "retryPolicy": {
                               "type": "fixed",
                               "count": 2,
-                              "interval": "PT2S"
+                              "interval": "PT5S"
                             }
                           },
                           "runAfter": {}

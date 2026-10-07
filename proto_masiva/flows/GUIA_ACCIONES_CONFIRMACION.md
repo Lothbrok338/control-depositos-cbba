@@ -422,7 +422,7 @@ body('Filas_a_procesar')
 
 
 > > > > > #### 33. `Leer_deposito`
-> > > > > **Enviar una solicitud HTTP a SharePoint** · Dirección del sitio: `@outputs('PARAM_SITIO')` (la misma de `PARAM_SITIO`) · Método: `GET` · Encabezados: `{"Accept": "application/json;odata=verbose"}` · Configuración → Directiva de reintentos: **Ninguna**. Uri (expresión):
+> > > > > **Enviar una solicitud HTTP a SharePoint** · Dirección del sitio: `@outputs('PARAM_SITIO')` (la misma de `PARAM_SITIO`) · Método: `GET` · Encabezados: `{"Accept": "application/json;odata=verbose"}` · Configuración → Directiva de reintentos: **Intervalo fijo, 2 reintentos, PT5S**. Uri (expresión):
 ```
 concat('_api/web/lists(guid''',outputs('PARAM_LISTA_DEPOSITOS_ACTIVOS'),''')','/items(',items('Para_cada_fila')?['id_txt'],')?$select=Id,CLAVE_TRANSACCION,ESTADO_ASIGNACION,TIPO_MOVIMIENTO,FECHA_MOVIMIENTO,BANCO,CUENTA_BANCARIA,CODIGO_ASIGNACION,IMPORTE,MONEDA,USUARIO_ASIGNACION,FECHA_HORA_ASIGNACION')
 ```

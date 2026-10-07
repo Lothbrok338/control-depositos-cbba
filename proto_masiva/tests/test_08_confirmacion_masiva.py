@@ -676,3 +676,42 @@ def test_48_la_llamada_al_flujo_coincide_con_el_disparador_dos_textos_en_orden_y
     run = fx("btnConfirmarMasivamenteP9", "OnSelect")
     argumentos = re.search(r"P9_MASIVA_PROTO_CONFIRMAR\.Run\(JSON\(ShowColumns\(.*?\), JSONFormat\.Compact\), User\(\)\.Email\)\)", run)
     assert argumentos, "Run(<JSON compacto de las VALIDO>, User().Email): exactamente dos argumentos, en el orden del disparador"
+
+
+# ====================================================================== 49 · intervalo mínimo de reintento (InvalidRetryPolicy en el tenant)
+def _segundos_iso(duracion):
+    """PT5S / PT1M / PT1H30M / P1D -> segundos (solo los formatos que usa Power Automate)."""
+    m = re.fullmatch(r"P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?", duracion)
+    assert m and any(m.groups()), duracion
+    d, h, mi, s = (int(x or 0) for x in m.groups())
+    return ((d * 24 + h) * 60 + mi) * 60 + s
+
+
+def _politicas_de_reintento(definicion):
+    from p9.wdl import recorrer
+    return {n: a["inputs"]["retryPolicy"] for n, a in recorrer(definicion["actions"]) if isinstance(a.get("inputs"), dict) and "retryPolicy" in a["inputs"]}
+
+
+def test_49_ningun_reintento_fijo_baja_de_5_segundos_y_el_MERGE_sigue_sin_reintentos():
+    """Power Automate rechaza al importar (`InvalidRetryPolicy`) un intervalo fijo fuera de PT5S..P1D: 'PT2S' hizo fallar la importación en el tenant."""
+    import zipfile
+    en_zip = json.loads(zipfile.ZipFile(REPO / "proto_masiva/flows/P9_MASIVA_PROTO_CONFIRMAR.zip").read(
+        next(n for n in zipfile.ZipFile(REPO / "proto_masiva/flows/P9_MASIVA_PROTO_CONFIRMAR.zip").namelist() if n.endswith("/definition.json"))))
+    en_zip = en_zip["properties"]["definition"] if "properties" in en_zip else en_zip
+    en_json = json.loads((REPO / "proto_masiva/flows/P9_MASIVA_PROTO_CONFIRMAR_definition.json").read_text(encoding="utf-8"))
+    for origen, definicion in (("generador", K.construir_definicion()), ("json", en_json), ("zip", en_zip)):
+        politicas = _politicas_de_reintento(definicion)
+        assert politicas["Leer_deposito"] == {"type": "fixed", "count": 2, "interval": "PT5S"}, origen    # mismo número de reintentos (2), intervalo válido
+        assert politicas["Actualizar_deposito"] == {"type": "none"}, origen                                 # el MERGE NO se reintenta nunca
+        for nombre, p in politicas.items():
+            if p["type"] != "none":
+                assert 5 <= _segundos_iso(p["interval"]) <= 24 * 3600, (origen, nombre, p)
+    assert K.INTERVALO_REINTENTO_LECTURA == "PT5S"
+
+
+def test_49b_la_guia_manual_describe_la_politica_real_de_la_lectura_y_el_MERGE():
+    guia = (REPO / "proto_masiva/flows/GUIA_ACCIONES_CONFIRMACION.md").read_text(encoding="utf-8")
+    assert "Directiva de reintentos: **Intervalo fijo, 2 reintentos, PT5S**" in guia and "PT2S" not in guia
+    assert guia.count("Directiva de reintentos: **Ninguna**") >= 1                                           # el MERGE
+    assert "PT2S" not in (REPO / "proto_masiva/flows/INSTRUCCIONES_CONFIRMAR.md").read_text(encoding="utf-8")
+    assert "PT2S" not in (REPO / "proto_masiva/CONFIRMACION_MASIVA.md").read_text(encoding="utf-8")
