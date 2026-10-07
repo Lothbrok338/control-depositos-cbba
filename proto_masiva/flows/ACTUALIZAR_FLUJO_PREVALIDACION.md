@@ -39,7 +39,7 @@ Abre cada acción con un clic en su cabecera:
    - **Archivo (File):** contenido dinámico **`Id`** de la acción `Crear_archivo`. Si quedó vacío, haz clic en el campo → pestaña *Contenido dinámico* → `Id` bajo *Crear archivo*.
    - **Tabla (Table):** valor personalizado `tblConfirmacionMasiva`.
    - **⋯ → Configuración:** *Paginación* activada, umbral **2000**; *Directiva de reintentos* = **Ninguna**.
-2. **`Crear_archivo`**: *Ruta de acceso de la carpeta* `/Documents/P9_MASIVA_TEMP`; *Nombre del archivo* y *Contenido del archivo* sin cambios (si aparece ⚠, vuelve a elegirlos con los desplegables).
+2. **`Crear_archivo`**: *Ruta de acceso de la carpeta* `/Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP`; *Nombre del archivo* y *Contenido del archivo* sin cambios (si aparece ⚠, vuelve a elegirlos con los desplegables).
 3. **`Leer_depositos`** (acción nueva, dentro de `TRY` → … → `Hay_tope` → rama **No**): debe mostrar **Dirección del sitio** = `https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu`, **Método** `GET`. No cambies nada más; si aparece ⚠, vuelve a elegir la conexión de SharePoint.
 4. **`Borrar_copia_temporal`**: sin cambios respecto de antes (la prueba de 10 s de espera que hiciste a mano **no** está en este paquete; no resolvió el error 423 y se decidió no seguir con eso).
 

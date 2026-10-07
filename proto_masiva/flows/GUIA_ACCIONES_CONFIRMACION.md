@@ -13,7 +13,7 @@
 
 ## Cómo funciona (léelo antes de armarlo)
 
-1. `PREPARAR` valida la entrada, cuenta las filas y crea el archivo de estado `confirmacion_<execution_uid>.json` en `Documents/P9_MASIVA_TEMP` (estado PROCESANDO).
+1. `PREPARAR` valida la entrada, cuenta las filas y crea el archivo de estado `confirmacion_<execution_uid>.json` en `Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP` (estado PROCESANDO).
 2. `RESPONDER` contiene **dos** acciones *Responder a una aplicación de PowerApps o a un flujo*, una en cada rama de la condición: **solo una se ejecuta**. Responde ACEPTADO (con `execution_uid`) o ERROR.
 3. `PROCESAR` va **después** de responder: el flujo SIGUE ejecutándose (documentado por Microsoft: las acciones posteriores a la respuesta continúan más allá del límite de 120 s; una ejecución puede durar hasta 30 días).
    Recorre las filas válidas en secuencia (**Control de simultaneidad: Activado, paralelismo 1**) y cada 25 filas actualiza el estado. Al terminar escribe TERMINADO con SOLO las filas no confirmadas.
@@ -39,7 +39,7 @@ https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu
 #### 3. `PARAM_CARPETA`
 **Redactar (Compose)** · Entradas:
 ```
-/Documents/P9_MASIVA_TEMP
+/Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP
 ```
 
 #### 4. `PARAM_MAX_FILAS_POR_LLAMADA`

@@ -51,7 +51,7 @@ Antes: crea el vehículo de adjuntos y la carpeta temporal (`sharepoint/INSTRUCC
 
 - No usar `Download()`, `?download=1`, rutas de carpeta supuestas ni el enlace compartido de OneDrive: el enlace compartido abre Excel y no descarga, y las rutas sin la carpeta `Documents` anidada devuelven «no existe».
 - El UniqueId pertenece al archivo actual. Para actualizar la plantilla usa *Reemplazar* o sube una **nueva versión** del mismo archivo; si lo borras y lo recreas, el UniqueId cambia y hay que actualizar la URL del botón (y el YAML).
-- El archivo vive en `/personal/gtorricot_univalle_edu/Documents/Documents/P9_MASIVA_PROTO/`: la carpeta anidada está documentada en `../ESTADO_CHECKPOINT_TENANT.md`.
+- El archivo se movió dentro de `Documents/CONTROL_DEPOSITOS/P9/`; el botón usa su **UniqueId**, no la ruta (`../RUTAS_P9.md`). Ruta anterior (histórico): `/personal/gtorricot_univalle_edu/Documents/Documents/P9_MASIVA_PROTO/`, ver `../ESTADO_CHECKPOINT_TENANT.md`.
 
 ## Qué NO se toca
 

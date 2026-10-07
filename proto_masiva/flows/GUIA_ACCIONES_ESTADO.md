@@ -1,7 +1,7 @@
 # Guía de acciones de `P9_MASIVA_PROTO_ESTADO` (opción B: armarlo a mano)
 
 > **Úsala solo si no puedes importar el ZIP.** Se **genera** desde la misma definición que el ZIP (`python proto_masiva/flows/guia_manual.py`). **No está validada en el tenant.**
-> Es de **solo lectura**: lee `confirmacion_<execution_uid>.json` de `Documents/P9_MASIVA_TEMP` y lo devuelve a Power Apps. Cada expresión va en la pestaña **Expresión** (sin el `@` inicial).
+> Es de **solo lectura**: lee `confirmacion_<execution_uid>.json` de `Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP` y lo devuelve a Power Apps. Cada expresión va en la pestaña **Expresión** (sin el `@` inicial).
 
 ## Disparador
 
@@ -22,7 +22,7 @@ https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu
 #### 2. `PARAM_CARPETA`
 **Redactar (Compose)** · Entradas:
 ```
-/Documents/P9_MASIVA_TEMP
+/Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP
 ```
 
 #### 3. `Entrada`

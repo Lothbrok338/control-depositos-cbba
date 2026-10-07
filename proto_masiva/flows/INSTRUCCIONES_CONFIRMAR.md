@@ -16,6 +16,7 @@ Se **actualizan los mismos artefactos** (no se crean copias con otro nombre): `P
 | `powerapps/CONFIRMACION_POWERFX.md` | las fórmulas A–I (sobre tus controles reales) y cómo crear el Temporizador, en tu sintaxis (`;` y `;;`) |
 | `flows/GUIA_ACCIONES_CONFIRMACION.md`, `flows/GUIA_ACCIONES_ESTADO.md` | las mismas acciones, una por una, si un ZIP no se pudiera importar (opción B) |
 | `ESCALA_1999.md` | arquitectura, límites de Microsoft (DOCUMENTADO / INFERIDO), solicitudes estimadas y riesgos |
+| `RUTAS_P9.md` | rutas físicas tras mover P9 a `Documents/CONTROL_DEPOSITOS/P9/` (**los TRES ZIP cambiaron**: también el de la prevalidación) |
 
 **Qué cambió para ti:** (1) `P9_MASIVA_PROTO_CONFIRMAR` ya no devuelve el resultado final, devuelve `ACEPTADO` + `execution_uid` en segundos; (2) un Temporizador oculto consulta el avance cada 15 s con `P9_MASIVA_PROTO_ESTADO`;
 (3) el tope de 50 filas desapareció (ahora 1999); (4) **hay que quitar y volver a agregar el flujo en Power Apps** (su contrato cambió).
@@ -38,6 +39,13 @@ La V1 queda respaldada en Git (`git show 82b279e:proto_masiva/flows/P9_MASIVA_PR
 
 Igual que arriba con `P9_MASIVA_PROTO_ESTADO.zip` y **Crear como nuevo** (es nuevo). Misma conexión de SharePoint. Luego **Editar**.
 
+### 1.2b · Actualizar `P9_MASIVA_PROTO_PREVALIDAR` (ruta de la carpeta temporal — único cambio)
+
+Los recursos de P9 se movieron a `Documents/CONTROL_DEPOSITOS/P9/` y la prevalidación ya funcionando todavía escribe sus `TMP_*.xlsx` en la ruta antigua. **Asegúrate de que exista la carpeta `Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP`** y actualiza el flujo:
+- **Opción mínima (sin reimportar):** `P9_MASIVA_PROTO_PREVALIDAR` → **Editar** → acción `PARAM_CARPETA` (Redactar, arriba) → cambia el valor a `/Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP` → **Guardar**. Es lo único que cambia en su paquete.
+- **O** importa `P9_MASIVA_PROTO_PREVALIDAR.zip` con **Actualizar** (mismo procedimiento que 1.1).
+No se toca la lógica ni Power Apps. Detalle y plantilla (se descarga por UniqueId, sin ruta): `../RUTAS_P9.md`.
+
 ### 1.3 · Revisar antes de guardar (abre cada acción con un clic en su cabecera)
 
 **`P9_MASIVA_PROTO_CONFIRMAR`**
@@ -45,7 +53,7 @@ Igual que arriba con `P9_MASIVA_PROTO_ESTADO.zip` y **Crear como nuevo** (es nue
 | # | Acción | Debe quedar así |
 |---|---|---|
 | 1 | Disparador **Power Apps (V2)** | **dos** entradas de tipo Texto, en este orden: `detalle_json` y `usuario_email` |
-| 2 | `PARAM_MAX_FILAS_POR_LLAMADA` (Redactar, arriba) | **1999** (ya no 50). Junto a ella: `PARAM_INTERVALO_PROGRESO` = 25, `PARAM_MAX_DETALLE` = 300, `PARAM_CARPETA` = `/Documents/P9_MASIVA_TEMP` |
+| 2 | `PARAM_MAX_FILAS_POR_LLAMADA` (Redactar, arriba) | **1999** (ya no 50). Junto a ella: `PARAM_INTERVALO_PROGRESO` = 25, `PARAM_MAX_DETALLE` = 300, `PARAM_CARPETA` = `/Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP` |
 | 3 | `RESPONDER` (Condición) | **dos** acciones «Responder a una aplicación de PowerApps o a un flujo»: `Responder_aceptado` (rama Sí) y `Responder_error` (rama No). **No las muevas ni las pongas dentro del bucle** |
 | 4 | `Para_cada_fila` (dentro de `PROCESAR` → rama Sí) | ⋯ → **Configuración** → *Control de simultaneidad* **Activado**, *Grado de paralelismo* = **1** |
 | 5 | `Leer_deposito` (dentro de `TRY_FILA`) | Sitio `https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu` · `GET` · ⋯ → Configuración → *Directiva de reintentos*: **Intervalo fijo, 2 reintentos, PT5S** |
@@ -58,7 +66,7 @@ Si una acción muestra ⚠ o campos vacíos, **vuelve a elegir la conexión de S
 Comprueba que los dos flujos estén **Activados**.
 
 ### 1.4 · La carpeta
-Los archivos de estado `confirmacion_<execution_uid>.json` se crean en `Documents/P9_MASIVA_TEMP`, **la misma carpeta técnica que ya usa la prevalidación** para sus `TMP_*.xlsx` (si ahí ves los `TMP_*`, ahí aparecerán los `confirmacion_*`).
+Los archivos de estado `confirmacion_<execution_uid>.json` se crean en `Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP` (**la carpeta debe existir ahí**: `Crear archivo` no la crea), **la misma carpeta técnica que usa la prevalidación** para sus `TMP_*.xlsx` (si ahí ves los `TMP_*`, ahí aparecerán los `confirmacion_*`).
 No son historial; no se limpian solos (puedes borrarlos a mano; retención sugerida 24 h).
 
 ## PARTE 2 · Power Apps (`P9_PRUEBA_MASIVA`, la COPIA)
@@ -81,7 +89,7 @@ No hay un protocolo de «10, luego 50»: usa el flujo con un lote real. Lo que d
 1. Al pulsar **CONFIRMAR MASIVAMENTE (N)** (N = 1…1999, **un solo clic**): en **segundos** el panel pasa a «CONFIRMACIÓN EN PROCESO · 0 % / 0 de N procesados», el botón queda **Disabled**.
 2. Cada ~15 s avanza: «CONFIRMACIÓN EN PROCESO · 27 % / 350 de 1284 procesados · 347 confirmados · 3 requieren revisión».
 3. Al terminar: «CONFIRMACIÓN COMPLETADA / 1278 de 1284 depósitos confirmados · 6 requieren revisión», `VER OBSERVACIONES (6)` con SOLO esas filas, tiempo total.
-4. En `Documents/P9_MASIVA_TEMP` aparece `confirmacion_<guid>.json` (puedes abrirlo: contadores, estado, y al final solo las no confirmadas).
+4. En `Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP` aparece `confirmacion_<guid>.json` (puedes abrirlo: contadores, estado, y al final solo las no confirmadas).
 5. En `Depositos_Activos` los confirmados están `ASIGNADO`.
 
 **Qué copiarme después** (así se miden los tiempos reales, que NO se pueden suponer): N, el tiempo mostrado, y en el **Historial de ejecuciones** de `P9_MASIVA_PROTO_CONFIRMAR` la duración total, cuándo ejecutó `Responder_aceptado`

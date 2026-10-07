@@ -64,7 +64,7 @@ La hoja `_CATALOGOS` (oculta) guarda los catálogos (BANCO, MONEDA, cuentas con 
 
 ## DESCARGAR PLANTILLA en Power Apps (validado por UniqueId)
 
-- **Dónde está el archivo hoy:** `/personal/gtorricot_univalle_edu/Documents/Documents/P9_MASIVA_PROTO/Plantilla_Confirmacion_Masiva_P9.xlsx` en el OneDrive del propietario (sitio personal `https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu`). La carpeta `Documents` está **anidada**: por eso las rutas sin ella devolvían «no existe». Hay una sola copia (no se sube el Ejemplo ahí). Antes de producción conviene moverla a una biblioteca de SharePoint de la que no dependa una cuenta personal (pendiente; ver `ESTADO_CHECKPOINT_TENANT.md`).
+- **Dónde está el archivo hoy:** el archivo se **movió** físicamente dentro de `Documents/CONTROL_DEPOSITOS/P9/` (la ruta exacta no está registrada en el repositorio). La descarga de Power Apps usa solo su **UniqueId**, así que mover (no copiar) no obliga a cambiar la app: comprueba pegando la URL en el navegador (`../RUTAS_P9.md`). Ruta ANTERIOR a la reorganización: `/personal/gtorricot_univalle_edu/Documents/Documents/P9_MASIVA_PROTO/Plantilla_Confirmacion_Masiva_P9.xlsx` en el OneDrive del propietario (sitio personal `https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu`). La carpeta `Documents` está **anidada**: por eso las rutas sin ella devolvían «no existe». Hay una sola copia (no se sube el Ejemplo ahí). Antes de producción conviene moverla a una biblioteca de SharePoint de la que no dependa una cuenta personal (pendiente; ver `ESTADO_CHECKPOINT_TENANT.md`).
 - **URL de descarga (VALIDADA EN TENANT al pegarla en el navegador: se descarga el XLSX físicamente, no abre Excel):**
   `https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu/_layouts/15/download.aspx?UniqueId=84b7ef88-43aa-43d2-8d1c-0f0b682dafbd`
 - **En la app:** `btnDescargarPlantillaP9` ejecuta `Launch("<esa URL>")`, escrita directamente en el botón. No hay variable de URL, ni `Download()`, ni `?download=1`, ni el enlace compartido de OneDrive (ese abre Excel y no descarga). El clic del botón dentro de la app no se ha registrado como probado.
@@ -74,7 +74,7 @@ La hoja `_CATALOGOS` (oculta) guarda los catálogos (BANCO, MONEDA, cuentas con 
 ## PASOS PARA GABRIEL
 
 1. Abre `Plantilla_Confirmacion_Masiva_P9.xlsx` en Excel de escritorio (ya validado) y, si usas Excel Online, comprueba que BANCO y CUENTA_BANCARIA muestran las listas: elige `BCP` y mira que solo salgan sus 2 cuentas. En Excel Online esto está pendiente.
-2. Si vas a cambiar la plantilla, **reemplaza el archivo** (o sube nueva versión) en `Documents/Documents/P9_MASIVA_PROTO/`; no lo borres.
+2. Si vas a cambiar la plantilla, **reemplaza el archivo** (o sube nueva versión) en su carpeta actual dentro de `Documents/CONTROL_DEPOSITOS/P9/`; no lo borres.
 3. Si el archivo se recrea, obtén su UniqueId nuevo y actualiza la URL en `btnDescargarPlantillaP9` (y en `powerapps/P9_Confirmacion_Masiva.pa.yaml`).
 4. Entrega a los usuarios solo la **Plantilla** (vacía); el **Ejemplo** es solo para mostrarles cómo llenarla.
 5. Para cambiar bancos o cuentas en el futuro, no edites el Excel: se cambian en `Main_Screen` y se vuelve a ejecutar `python proto_masiva/generar_plantillas_produccion.py`.

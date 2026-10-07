@@ -59,7 +59,7 @@
     },
     "PARAM_CARPETA": {
       "type": "Compose",
-      "inputs": "/Documents/P9_MASIVA_TEMP",
+      "inputs": "/Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP",
       "runAfter": {
         "PARAM_LISTA_DEPOSITOS_ACTIVOS": [
           "Succeeded"

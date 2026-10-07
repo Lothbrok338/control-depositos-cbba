@@ -39,7 +39,11 @@ from proto_masiva.flows import prevalidacion as PV
 CARPETA_SALIDA = Path(__file__).resolve().parent
 NOMBRE_FLUJO = "P9_MASIVA_PROTO_PREVALIDAR"
 SITIO = "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu"
-CARPETA_TEMP = "/Documents/P9_MASIVA_TEMP"
+# Nueva estructura física de P9 en el OneDrive (los recursos se movieron DESPUÉS de generar los primeros paquetes): Documents/CONTROL_DEPOSITOS/P9/.
+# ÚNICA fuente de la carpeta temporal: la usan TRES flujos (esta prevalidación para sus TMP_*.xlsx, y confirmación/estado para confirmacion_<uid>.json).
+RAIZ_P9 = "/Documents/CONTROL_DEPOSITOS/P9"
+CARPETA_TEMP = f"{RAIZ_P9}/P9_MASIVA_TEMP"
+CARPETA_TEMP_ANTIGUA = "/Documents/P9_MASIVA_TEMP"   # ruta ANTERIOR a la reorganización: ningún artefacto debe volver a contenerla (test_10)
 UBICACION_EXCEL = SITIO   # «Location» de Excel Online en el tenant: el sitio personal (OneDrive for Business). VALIDADO en tenant
 PLACEHOLDER_BIBLIOTECA = "<CONFIGURAR_BIBLIOTECA_EXCEL>"   # «Document Library» = OneDrive: se elige en el diseñador (id interno opaco)
 API_SP = "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"

@@ -2,9 +2,9 @@
 
     python -m proto_masiva.flows.construir_estado
 
-Existe por una limitación real: Power Apps no puede leer el archivo JSON de `P9_MASIVA_TEMP` (solo ve listas ya conectadas), y el flujo de confirmación ya
+Existe por una limitación real: Power Apps no puede leer el archivo JSON de la carpeta temporal de P9 (solo ve listas ya conectadas), y el flujo de confirmación ya
 respondió y sigue procesando. Este flujo es de SOLO LECTURA: recibe `execution_uid`, lee `confirmacion_<execution_uid>.json` de la carpeta técnica
-`Documents/P9_MASIVA_TEMP` (la misma que ya usa la prevalidación) y devuelve su contenido a Power Apps como 9 textos. No escribe nada.
+`Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP` (la misma que usa la prevalidación) y devuelve su contenido a Power Apps como 9 textos. No escribe nada.
 
 Siempre responde (una sola respuesta, también ante errores): `estado` = PROCESANDO | TERMINADO | ERROR | NO_ENCONTRADO.
 Power Apps lo llama con un Timer cada 10-15 s (NO cada segundo).
@@ -88,7 +88,7 @@ def construir_definicion():
 
 CONEXIONES = {"shared_sharepointonline": ("SharePoint", "sharepointonline")}
 DESCRIPCION = ("PROTOTIPO: devuelve a Power Apps el avance de una confirmación masiva (P9_MASIVA_PROTO_CONFIRMAR) leyendo "
-               "Documents/P9_MASIVA_TEMP/confirmacion_<execution_uid>.json. Solo lectura.")
+               "Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP/confirmacion_<execution_uid>.json. Solo lectura.")
 
 
 def zip_bytes(definition):

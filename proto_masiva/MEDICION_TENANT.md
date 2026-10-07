@@ -68,7 +68,7 @@ Para cada archivo, **3 ejecuciones** (la primera tras un rato sin usar el flujo 
 
 1. **Primera llamada:** `.Run({name, contentBytes})` **funciona tal cual en el tenant** (validado). Nada que anotar salvo que Studio cambie.
 2. **Borrado de la copia:** **observado: sale `NO` (HTTP 423 Locked)**; un Delay de 10 s y reintentos agregados a mano no lo resolvieron. Decisión vigente: se aceptan `TMP_*.xlsx` residuales; no se agrega limpiador ni infraestructura.
-3. **Carpeta `P9_MASIVA_TEMP`** al final de la sesión: contendrá `TMP_*.xlsx` residuales (ver arriba). Anota cuántos quedaron y en cuál de las dos carpetas con ese nombre (ver `ESTADO_CHECKPOINT_TENANT.md`).
+3. **Carpeta `P9_MASIVA_TEMP`** al final de la sesión: contendrá `TMP_*.xlsx` residuales (ver arriba). Anota cuántos quedaron (la carpeta ahora es `Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP`, ver `RUTAS_P9.md`).
 
 ## Cómo decidir el máximo de filas (sin inventar números)
 

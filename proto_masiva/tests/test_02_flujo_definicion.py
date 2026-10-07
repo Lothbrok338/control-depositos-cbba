@@ -101,7 +101,7 @@ def test_politicas_de_reintento_crear_y_leer_sin_reintento_borrar_con_dos():
 
 def test_la_copia_temporal_va_a_su_carpeta_con_nombre_unico_y_se_borra_por_id():
     acciones = dict(recorrer(DEF["actions"]))
-    assert DEF["actions"]["PARAM_CARPETA"]["inputs"] == F.CARPETA_TEMP == "/Documents/P9_MASIVA_TEMP"
+    assert DEF["actions"]["PARAM_CARPETA"]["inputs"] == F.CARPETA_TEMP == "/Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP"
     crear = acciones["Crear_archivo"]["inputs"]["parameters"]
     assert crear["folderPath"] == "@outputs('PARAM_CARPETA')" and crear["body"] == "@base64ToBinary(outputs('Entrada')?['base64'])"
     assert acciones["Nombre_copia"]["inputs"] == "@concat('TMP_',guid(),'.xlsx')"  # nunca choca ni sobrescribe

@@ -3,7 +3,7 @@
 Qué hace, de principio a fin y **sin guardar nada**:
 
 ```
-Power Apps ──XLSX──► [valida nombre/extensión] → [crea copia TMP_<guid>.xlsx en Documents/P9_MASIVA_TEMP]
+Power Apps ──XLSX──► [valida nombre/extensión] → [crea copia TMP_<guid>.xlsx en Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP]
                      → [Excel Online: lee tblConfirmacionMasiva] → [valida estructura y cuenta filas]
                      → [BORRA la copia, pase lo que pase] → responde a Power Apps
 ```
@@ -23,7 +23,7 @@ Archivos: `construir.py` (generador), `P9_MASIVA_PROTO_PREVALIDAR_definition.jso
 
 ## Antes: crear la carpeta temporal
 
-`sharepoint/INSTRUCCIONES_VEHICULO.md` §2 (`Documents/P9_MASIVA_TEMP`).
+`sharepoint/INSTRUCCIONES_VEHICULO.md` §2 (`Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP`).
 
 ## 1 · Importar
 
@@ -38,7 +38,7 @@ La columna «Validado» refleja lo observado en el tenant. Si un paso aparece co
 | # | Dónde | Qué comprobar / elegir |
 |---|---|---|
 | 1 | Disparador *Power Apps (V2)* | **Validado en tenant.** Debe tener **una** entrada de tipo **Archivo (File)** llamada `file`. Si no la reconoce: borra la entrada y créala con *Agregar una entrada → Archivo*. Las acciones leen `triggerBody()?['file']?['name']` y `…['contentBytes']` (contenido en base64) |
-| 2 | `Crear_archivo` | **Validado en tenant** (la copia se crea). Carpeta = `/Documents/P9_MASIVA_TEMP`; nombre = salida de `Nombre_copia`; contenido = `base64ToBinary(…contentBytes…)` (tal como está) |
+| 2 | `Crear_archivo` | **Validado en tenant** (la copia se crea). Carpeta = `/Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP` (antes `/Documents/P9_MASIVA_TEMP`, ver `../RUTAS_P9.md`); nombre = salida de `Nombre_copia`; contenido = `base64ToBinary(…contentBytes…)` (tal como está) |
 | 3 | `Leer_tabla_Excel` | **Validado en tenant** con: **Ubicación** = `https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu` (ya viene en el paquete; si el diseñador la borra, escríbela como valor personalizado) · **Biblioteca de documentos** = `OneDrive` (elígela en el desplegable; reemplaza `<CONFIGURAR_BIBLIOTECA_EXCEL>`) · **Archivo** = contenido dinámico `Id` de `Crear_archivo` · **Tabla** = `tblConfirmacionMasiva` (valor personalizado). En **⋯ → Configuración**: *Paginación* activada con umbral **2000**; *Directiva de reintentos* = Ninguna |
 | 4 | `Borrar_copia_temporal` | Sitio y **Identificador de archivo** = la variable `varArchivoId` (el `Id` de la copia). Reintentos: *Intervalo fijo, 2, PT5S*. **Observado: devuelve HTTP 423 (Locked)** porque Excel Online retiene el archivo; un Delay de 10 s agregado a mano en el tenant tampoco lo resolvió (ese Delay **no** está en este paquete). Decisión vigente: no resolverlo ahora; el flujo informa `copia_temporal_eliminada = NO` |
 
@@ -52,11 +52,11 @@ Si al cambiar Ubicación/Biblioteca se borran Archivo/Tabla, vuelve a ponerlos c
 
 | Parámetro | Valor | Significado |
 |---|---|---|
-| `PARAM_CARPETA` | `/Documents/P9_MASIVA_TEMP` | Carpeta de la copia temporal |
+| `PARAM_CARPETA` | `/Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP` | Carpeta de la copia temporal (la misma que usan `P9_MASIVA_PROTO_CONFIRMAR` y `P9_MASIVA_PROTO_ESTADO`) |
 | `PARAM_PAGINACION` | `2000` | Debe ser igual al umbral de paginación de `Leer_tabla_Excel`. Si la lectura **alcanza** ese número, el flujo responde `DEMASIADAS_FILAS` en vez de devolver un recuento posiblemente truncado |
 | `PARAM_MAX_FILAS` | `0` | **0 = sin tope.** Aquí se fija el máximo de filas por archivo si las mediciones muestran tiempos de espera reales. No se ha fijado ningún valor porque aún no se ha medido |
 
-**Nota sobre carpetas (observado, no resuelto):** en el OneDrive del tenant hay un `Documents` anidado dentro de `Documents` y existen dos carpetas `P9_MASIVA_TEMP`; no está confirmado en cuál escribe `PARAM_CARPETA`. El flujo funciona tal como está; no se reorganiza desde Git (`../ESTADO_CHECKPOINT_TENANT.md`).
+**Nota sobre carpetas:** los recursos de P9 se movieron a `Documents/CONTROL_DEPOSITOS/P9/` y `PARAM_CARPETA` ya apunta ahí (`../RUTAS_P9.md`). **La carpeta `P9_MASIVA_TEMP` debe existir en esa ruta**: `Crear archivo` no la crea. Histórico anterior a la reorganización: `Documents` anidado y dos carpetas `P9_MASIVA_TEMP` (`../ESTADO_CHECKPOINT_TENANT.md`).
 
 ## Si falla la importación: armarlo a mano (≈ 14 acciones)
 

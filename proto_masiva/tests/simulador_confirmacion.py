@@ -4,7 +4,7 @@ NO es SharePoint: es un modelo local que reproduce lo que importa para la concur
   - GET /items(ID)?$select=...   -> devuelve esas columnas + d.__metadata.etag y la cabecera ETag (como V4.2 con odata=verbose);
   - POST + X-HTTP-Method: MERGE + IF-MATCH: aplica el cuerpo SOLO si el ETag coincide (412 si no) y cambia el ETag;
   - `IF-MATCH: *` se RECHAZA (aborta la prueba): la confirmación nunca puede usarlo;
-  - CreateFile / UpdateFile / GetFileContentByPath sobre `Documents/P9_MASIVA_TEMP` (con historial de cada versión del archivo de estado);
+  - CreateFile / UpdateFile / GetFileContentByPath sobre `Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP` (con historial de cada versión del archivo de estado);
   - inyección de fallos por ID y de «carreras» (otro usuario cambia el depósito entre la lectura y la escritura), y fallos al escribir el estado;
   - `string()`/`concat()` por encima de 131.072 caracteres FALLAN, como documenta Microsoft para Power Automate;
   - EL ORDEN de los eventos queda registrado (`eventos`): la respuesta a Power Apps llega ANTES de la primera lectura de un depósito.
@@ -119,7 +119,7 @@ class TenantConfirmacion:
         self.llamadas_archivo.append((operacion, nombre_accion))
         self.eventos.append(("archivo", operacion))
         if operacion == "CreateFile":
-            assert p["folderPath"] == K.CARPETA_ESTADO == "/Documents/P9_MASIVA_TEMP"
+            assert p["folderPath"] == K.CARPETA_ESTADO == "/Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP"
             nombre = p["name"]
             assert re.fullmatch(K.PREFIJO_ESTADO + r"[0-9a-f-]{36}\.json", nombre), nombre
             assert accion["inputs"]["retryPolicy"] == {"type": "none"}              # crear NO se reintenta (no es idempotente)

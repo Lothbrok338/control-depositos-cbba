@@ -10,7 +10,7 @@ confirmación individual `P9_ASIGNAR_DEPOSITO` V4.2 (fuente de verdad: p9/asigna
              MISMOS 8 campos que V4.2 → 412 = CONFLICTO.   (Esta lógica NO cambió respecto de la V1 validada en el tenant.)
 
 ARQUITECTURA (escala hasta 1999 con un solo clic, sin timeout de Power Apps):
-  1. PREPARAR   valida la entrada, cuenta las filas y crea el estado temporal `confirmacion_<execution_uid>.json` (PROCESANDO) en P9_MASIVA_TEMP.
+  1. PREPARAR   valida la entrada, cuenta las filas y crea el estado temporal `confirmacion_<execution_uid>.json` (PROCESANDO) en Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP.
   2. RESPONDER  «Responder a Power Apps» con ACEPTADO + execution_uid: Power Apps recibe la respuesta en segundos (límite entrante de 120 s).
   3. PROCESAR   DESPUÉS de responder el flujo SIGUE ejecutándose (documentado por Microsoft: las acciones posteriores a la respuesta continúan más
                 allá de ese límite; la duración máxima de una ejecución es de 30 días) y recorre las filas válidas, secuencial (concurrencia 1).
@@ -40,7 +40,7 @@ NOMBRE_FLUJO = "P9_MASIVA_PROTO_CONFIRMAR"
 API_SP = "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
 SITIO = C.SITIO_SHAREPOINT
 LISTA_ID = C.LISTA_DEPOSITOS_ACTIVOS_ID
-CARPETA_ESTADO = BASE.CARPETA_TEMP              # "/Documents/P9_MASIVA_TEMP": la MISMA carpeta técnica que ya usa la prevalidación (validada en el tenant)
+CARPETA_ESTADO = BASE.CARPETA_TEMP              # "/Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP": la MISMA carpeta técnica que usa la prevalidación (una sola constante)
 PREFIJO_ESTADO = "confirmacion_"                # confirmacion_<execution_uid>.json
 
 MAX_FILAS_ARCHIVO = 1999       # límite de negocio del archivo (la prevalidación rechaza 2000 o más)

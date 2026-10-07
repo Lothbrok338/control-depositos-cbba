@@ -55,7 +55,7 @@ Power Apps  ── cada 15 s (Temporizador) ── Run(execution_uid) ─►  P9
 - **Transferencia del payload de 1999 filas:** directa por la entrada de texto `detalle_json` (≈ 0,55–0,6 MB; ≈ 300 bytes por fila). **No** se usa archivo intermedio: el límite documentado de mensaje es 100 MB y no hay límite
   documentado para el input de texto del trigger. Es la única hipótesis **INFERIDA** de la arquitectura (ver §6); el JSON solo pasa por `json()`, `length()`, `Select` y `Query`, **nunca** por `string()`/`concat()`/`base64()`
   (límite de 131.072 caracteres): lo verifica `test_el_payload_nunca_pasa_por_string_concat_ni_base64`.
-- **Progreso:** archivo `confirmacion_<execution_uid>.json` en `Documents/P9_MASIVA_TEMP` (la misma carpeta técnica que ya usa la prevalidación). Se crea con `PROCESANDO`, se actualiza cada **25 filas** (solo contadores, < 1 KB) y se
+- **Progreso:** archivo `confirmacion_<execution_uid>.json` en `Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP` (la misma carpeta técnica que usa la prevalidación; ver `RUTAS_P9.md`). Se crea con `PROCESANDO`, se actualiza cada **25 filas** (solo contadores, < 1 KB) y se
   cierra con `TERMINADO` (o `ERROR` si el proceso se interrumpe) con **solo las filas no confirmadas** (como máximo 300, ver §4). No es historial ni lote: un archivo por ejecución, sin limpieza automática (se puede borrar a mano; retención sugerida: 24 h).
 - **Si Power Apps se cierra:** el backend continúa (DOCUMENTADO). En esta versión NO se recupera el seguimiento al volver (fuera de alcance): se vuelve a PREVALIDAR y lo ya confirmado aparece `NO_DISPONIBLE`.
 - **Sin rollback global; sin cambios en la lógica por fila:** `GET` fresco, `ETag` fresco, `IF-MATCH` concreto (nunca `*`), `MERGE` sin reintentos, `412` = `CONFLICTO`, `Leer_deposito` 2 reintentos fijos `PT5S`, secuencial (concurrencia 1), los 8 campos de V4.2.
@@ -110,7 +110,7 @@ Medida con la ejecución simulada (`test_solicitudes_estimadas_para_1999_filas`)
 | Doble clic bloqueado; Temporizador se detiene (TERMINADO / ERROR / 5 fallos seguidos); `ShowColumns` sin comillas; `IfError` 0 incompatibles | ESTÁTICO (YAML/Power Fx) |
 | El flujo continúa tras responder y tras cerrar Power Apps | DOCUMENTADO (no probado en el tenant) |
 | Input de texto de ≈ 0,6 MB en el trigger Power Apps V2 | **INFERIDO** (sin límite documentado) |
-| `CreateFile` / `UpdateFile` / `GetFileContentByPath` sobre `Documents/P9_MASIVA_TEMP` en el tenant (rutas, `Id`) | **PENDIENTE** (la carpeta y `CreateFile` sí se validaron con la prevalidación; `UpdateFile` y la lectura por ruta no) |
+| `CreateFile` / `UpdateFile` / `GetFileContentByPath` sobre `Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP` en el tenant (rutas, `Id`) | **PENDIENTE** (la carpeta y `CreateFile` sí se validaron con la prevalidación; `UpdateFile` y la lectura por ruta no) |
 | Control Temporizador (versión del tipo en el YAML) y fórmulas en Studio | **PENDIENTE** |
 | Tiempo por fila, 10 / 50 / 500 / 1999 reales, throttling, cuota por licencia | **PENDIENTE** (el uso real dará las métricas) |
 

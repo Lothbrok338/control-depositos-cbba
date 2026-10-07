@@ -209,7 +209,7 @@ def documento_confirmar() -> str:
 
 ## Cómo funciona (léelo antes de armarlo)
 
-1. `PREPARAR` valida la entrada, cuenta las filas y crea el archivo de estado `confirmacion_<execution_uid>.json` en `Documents/P9_MASIVA_TEMP` (estado PROCESANDO).
+1. `PREPARAR` valida la entrada, cuenta las filas y crea el archivo de estado `confirmacion_<execution_uid>.json` en `Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP` (estado PROCESANDO).
 2. `RESPONDER` contiene **dos** acciones *Responder a una aplicación de PowerApps o a un flujo*, una en cada rama de la condición: **solo una se ejecuta**. Responde ACEPTADO (con `execution_uid`) o ERROR.
 3. `PROCESAR` va **después** de responder: el flujo SIGUE ejecutándose (documentado por Microsoft: las acciones posteriores a la respuesta continúan más allá del límite de 120 s; una ejecución puede durar hasta 30 días).
    Recorre las filas válidas en secuencia (**Control de simultaneidad: Activado, paralelismo 1**) y cada 25 filas actualiza el estado. Al terminar escribe TERMINADO con SOLO las filas no confirmadas.
@@ -234,7 +234,7 @@ def documento_estado() -> str:
     encabezado = f'''# Guía de acciones de `P9_MASIVA_PROTO_ESTADO` (opción B: armarlo a mano)
 
 > **Úsala solo si no puedes importar el ZIP.** Se **genera** desde la misma definición que el ZIP (`python proto_masiva/flows/guia_manual.py`). **No está validada en el tenant.**
-> Es de **solo lectura**: lee `confirmacion_<execution_uid>.json` de `Documents/P9_MASIVA_TEMP` y lo devuelve a Power Apps. Cada expresión va en la pestaña **Expresión** (sin el `@` inicial).
+> Es de **solo lectura**: lee `confirmacion_<execution_uid>.json` de `Documents/CONTROL_DEPOSITOS/P9/P9_MASIVA_TEMP` y lo devuelve a Power Apps. Cada expresión va en la pestaña **Expresión** (sin el `@` inicial).
 
 ## Disparador
 
