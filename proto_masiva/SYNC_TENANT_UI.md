@@ -81,3 +81,11 @@ se conserva el rótulo «Tiempo de Procesamiento» y el texto `IMPORTACION MASIV
 `auditar_iferror.py` comprueba que la última sentencia de cada argumento de cada `IfError` sea `true`/`false`. Resultado: el YAML reconstruido de `88aef95` tenía el patrón rechazado por Studio en **dos** fórmulas
 (`btnPrevalidarP9.OnSelect` y `btnConfirmarMasivamenteP9.OnSelect`, 2 de 4 `IfError`); el export del tenant ya tenía corregida la primera; la integración corrige la segunda con la misma forma. Hoy: 4 `IfError`, 0 incompatibles
 (tests `test_04` ×3 y `test_08 #45`, mutados para comprobar que fallan si se reintroduce el patrón).
+
+## Fase 3 · Checkpoint V1 funcional (export posterior a la integración)
+
+Fuente: `.msapp` sha256 `3a90a83cb31bf20a218893b7bd96c7050c3de98cd1c4e5ded75c6195f8400645` → `powerapps/tenant_v1/` (verbatim). `tenant/` (export anterior, `666b7f61…`) se conserva como línea base pre-integración.
+Frente al YAML de trabajo de `d180db0` el export final difiere en **3 propiedades de contenido** (el resto es reformateo de espacios de Studio): `btnConfirmarMasivamenteP9.OnSelect` y `galObservacionesP9.Items` con `ShowColumns` **sin comillas**,
+y `lblAvisoPrototipoP9.Text` = «Relee cada depósito antes de escribir y solo confirma lo que sigue válido · sin lotes ni historial.» (sin el prefijo «PROTOTIPO · CONFIRMAR MASIVAMENTE»). Mismos 44 controles; geometría y estilo idénticos;
+`Main_Screen`, `App` y `COMPROBANTE PDF` idénticos al export anterior. `P9_Confirmacion_Masiva.pa.yaml` pasó a ser copia idéntica de `tenant_v1`. Evidencia y matriz: `VALIDACION_TENANT_V1.md`.
+`auditar_iferror.py` ahora también audita `ShowColumns` sin comillas (detecta las 2 fórmulas del estado anterior del repo; 0 en el export final).

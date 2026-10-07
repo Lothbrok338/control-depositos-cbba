@@ -157,13 +157,15 @@ def formula_de(nombre, propiedad):
 def documento_confirmacion() -> str:
     partes = ['''# Power Fx de la CONFIRMACIÓN MASIVA (botón `btnConfirmarMasivamenteP9`)
 
-> **Estado: preparado sobre el export REAL de `P9_PRUEBA_MASIVA`; NO validado en el tenant.** Las fórmulas pasan las pruebas estáticas del repositorio (paréntesis,
-> columnas contra los esquemas de `detalle_json`, sin `Patch`/`SubmitForm`, sin segundo modal, **todas las ramas de cada `IfError` devuelven booleano**), pero **no se
-> ejecutaron en Power Apps Studio**. Se **generan** (`python proto_masiva/powerapps/generar_powerfx.py`) desde `P9_Confirmacion_Masiva.pa.yaml`: no las edites a mano aquí.
+> **Estado: V1 FUNCIONAL VALIDADA EN EL TENANT (camino feliz).** Estas son las fórmulas tal como están en el export REAL de `P9_PRUEBA_MASIVA` posterior a la integración
+> (`tenant_v1/P9_Confirmacion_Masiva.pa.yaml`): con ellas se prevalidó un Excel de 3 filas (2 `VALIDO`, 1 `NO_ENCONTRADO`) y se confirmaron 2 de 2 depósitos, que cambiaron a `ASIGNADO`
+> en `Depositos_Activos`. **No está validado en el tenant:** conflictos/412, fallos parciales, 10 filas, 50 filas, tiempos de espera ni throttling (ver `../VALIDACION_TENANT_V1.md`).
+> Se **generan** (`python proto_masiva/powerapps/generar_powerfx.py`) desde `P9_Confirmacion_Masiva.pa.yaml`: no las edites a mano aquí.
 >
-> **No pegues controles ni el YAML:** los controles ya existen en tu app con estos nombres (el export del tenant es la fuente de verdad: `tenant/P9_Confirmacion_Masiva.pa.yaml`).
-> Solo se **reemplazan 18 propiedades** en 13 elementos (la pantalla y 12 controles; las de abajo). Nada cambia de posición, tamaño ni estilo. Las fórmulas conservan tu corrección de tipos en `IfError`:
-> ambas ramas terminan en `true` / `false`, como ya aceptó Studio en la prevalidación.
+> **No pegues controles ni el YAML:** los controles ya existen en tu app con estos nombres. Solo se **reemplazan 18 propiedades** en 13 elementos (la pantalla y 12 controles; las de abajo).
+> Nada cambia de posición, tamaño ni estilo. Reglas que Studio ya impuso en tu tenant y que NO se deben deshacer a mano:
+> - **`IfError`:** todas las ramas terminan en `true` / `false` (si no, tipos incompatibles).
+> - **`ShowColumns`:** los nombres de columna van **SIN comillas** (`ShowColumns(tabla; fila_excel; deposito_id; …)`); con comillas Studio lo rechazó.
 
 Escritas con `;` entre argumentos y `;;` entre sentencias (tu configuración regional).
 
@@ -197,8 +199,8 @@ Para cada una: selecciona el control → elige la propiedad en la barra de fórm
 
 1. **Comprobador de aplicaciones** (estetoscopio): sin errores nuevos. Cualquier error en `P9_MASIVA_PROTO_CONFIRMAR.Run`, `JSON(ShowColumns(…))`, `ThisRecord.Value` o `With` dentro
    de `ForAll`: copia el texto exacto; se ajusta solo esa línea.
-2. **Alto del titular:** el resultado de la confirmación ocupa dos líneas dentro del alto 50 que ya tienes; si se corta, sube el alto de `lblTitularResultadoP9` (único ajuste visual posible).
-3. Pruebas en el tenant: `flows/INSTRUCCIONES_CONFIRMAR.md`, Parte 3 (empieza con **1 fila**).
+2. **Alto del titular:** el resultado de la confirmación ocupa dos líneas dentro del alto 50 del tenant (se vio correcto en la prueba real de 2 filas).
+3. Pruebas en el tenant: `flows/INSTRUCCIONES_CONFIRMAR.md`, Parte 3. Hecho: T1-equivalente con 2 filas. Pendiente: 10 y 50 filas, conflictos y tiempos.
 ''')
     return "\n".join(partes)
 

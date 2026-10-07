@@ -1,5 +1,7 @@
 # Instalar y probar la CONFIRMACIÓN MASIVA en tu tenant — pasos exactos
 
+> **Estado:** el flujo se importó y la V1 funcionó en el tenant con 2 filas (camino feliz). Lo validado y lo pendiente (10 y 50 filas, conflictos, tiempos) está en `../VALIDACION_TENANT_V1.md`. En Studio, `ShowColumns` lleva los nombres de columna **sin comillas** (ya está así en `CONFIRMACION_POWERFX.md`).
+
 > ## ⚠ Esta prueba ESCRIBE en `Depositos_Activos` REAL
 > `P9_MASIVA_PROTO_CONFIRMAR` cambia depósitos a `ASIGNADO` (como la confirmación individual). **No hay rollback automático** y no se revierte lo ya confirmado.
 > Haz las pruebas **solo con depósitos que de todos modos ibas a confirmar** (con su estudiante, solicitante y sede reales), o acuerda antes cómo se revertirán

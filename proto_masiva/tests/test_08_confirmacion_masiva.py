@@ -493,7 +493,8 @@ def test_36_el_boton_llama_al_flujo_con_el_JSON_compacto_de_SOLO_las_filas_VALID
     assert f"{K.NOMBRE_FLUJO}.Run(" in f and "JSONFormat.Compact" in f and "User().Email" in f
     assert 'Filter(colPrevalidacionP9, resultado = "VALIDO")' in f                       # nunca las filas observadas
     columnas = re.search(r'ShowColumns\(Filter\(colPrevalidacionP9, resultado = "VALIDO"\), ([^)]*)\)', f)[1]
-    enviadas = re.findall(r'"(\w+)"', columnas)
+    assert '"' not in columnas                                                              # Studio exige los nombres de columna SIN comillas
+    enviadas = re.findall(r"\w+", columnas)
     assert enviadas == list(K.CAMPOS_ENTRADA) and set(enviadas) <= set(PV.DETALLE_CAMPOS)  # las 12 del contrato, todas existen en la colección
     assert "CODIGO_ESTUDIANTE" not in f and "codigo_estudiante" not in f                  # lo escribe el flujo como ""
 
@@ -534,7 +535,7 @@ def test_39_se_reinicia_al_prevalidar_de_nuevo_y_al_cambiar_de_archivo():
 
 def test_40_la_coleccion_de_confirmacion_usa_las_columnas_del_esquema_con_conversion_explicita():
     f = fx_crudo("btnConfirmarMasivamenteP9", "OnSelect")
-    assert "ParseJSON(varResultadoConfirmacionP9.detalle_json)" in f
+    assert "ParseJSON(varResultadoConfirmacionP9.detalle_json)" in plano(f)
     cols = re.findall(r"^\s+(\w+): (Value|Text)\(ThisRecord\.Value\.(\w+)\)", f, re.M)
     assert [c for c, _, _ in cols] == [c for _, _, c in cols] == list(K.DETALLE_CAMPOS)
     for campo, conv, _ in cols:
@@ -639,8 +640,9 @@ def test_45_ningun_IfError_de_la_pantalla_mezcla_tabla_y_booleano_y_el_de_la_con
 def test_46_las_dos_ramas_de_Items_de_la_galeria_tienen_las_mismas_columnas_y_el_titulo_conoce_cada_resultado():
     items = fx("galObservacionesP9", "Items")
     antes = re.search(r'ShowColumns\(Filter\(colPrevalidacionP9, resultado <> "VALIDO"\), ([^)]*)\)', items)[1]
+    assert '"' not in antes                                                                  # sin comillas, como exige Studio
     despues = re.search(r'ForAll\(Filter\(colConfirmacionP9, resultado <> "CONFIRMADO"\), \{(.*)\}\), ShowColumns', items)[1]
-    columnas_antes = re.findall(r'"(\w+)"', antes)
+    columnas_antes = re.findall(r"\w+", antes)
     columnas_despues = re.findall(r"(\w+): ", sin_cadenas(despues).replace("With({filaP9: ThisRecord.fila_excel}", "With({}"))
     assert columnas_antes == columnas_despues[:len(columnas_antes)] == ["fila_excel", "resultado", "mensaje", "clave_transaccion"]
     # los dos hijos de la galería que lee la plantilla de Studio (ThisItem.…) existen en ambas ramas
@@ -715,3 +717,62 @@ def test_49b_la_guia_manual_describe_la_politica_real_de_la_lectura_y_el_MERGE()
     assert guia.count("Directiva de reintentos: **Ninguna**") >= 1                                           # el MERGE
     assert "PT2S" not in (REPO / "proto_masiva/flows/INSTRUCCIONES_CONFIRMAR.md").read_text(encoding="utf-8")
     assert "PT2S" not in (REPO / "proto_masiva/CONFIRMACION_MASIVA.md").read_text(encoding="utf-8")
+
+
+# ====================================================================== 50-53 · checkpoint V1 funcional: export final del tenant
+def test_50_ShowColumns_sin_comillas_en_el_yaml_las_fuentes_del_tenant_y_los_documentos_generados():
+    """Studio del tenant RECHAZÓ `ShowColumns(tabla; "fila_excel"; …)` y ACEPTÓ `ShowColumns(tabla; fila_excel; …)`."""
+    import sys
+    sys.path.insert(0, str(PA))
+    import auditar_iferror as AI
+    for yaml_ in ("P9_Confirmacion_Masiva.pa.yaml", "tenant_v1/P9_Confirmacion_Masiva.pa.yaml"):
+        assert [(d, c) for d, f in AI.formulas_del_yaml(PA / yaml_) if (c := AI.showcolumns_con_comillas(f))] == [], yaml_
+        total = sum(f.count("ShowColumns(") for _, f in AI.formulas_del_yaml(PA / yaml_))
+        assert total == 2, yaml_                                                              # el botón (VALIDO) y la rama de prevalidación de la galería
+    bloques = re.findall(r"```\n(.*?)```", (PA / "CONFIRMACION_POWERFX.md").read_text(encoding="utf-8"), re.S)
+    con_show = [b for b in bloques if "ShowColumns(" in b]
+    assert len(con_show) == 2 and all(AI.showcolumns_con_comillas(b, ";") == [] for b in con_show)
+    # el auditor muerde: el patrón rechazado se detecta en sintaxis canónica y regional
+    assert AI.showcolumns_con_comillas('ShowColumns(Filter(t, a = "x"), "fila_excel", "banco")') == ['"fila_excel"', '"banco"']
+    assert AI.showcolumns_con_comillas('ShowColumns(Filter(t; a = "x"); "fila_excel"; banco)', ";") == ['"fila_excel"']
+    assert AI.showcolumns_con_comillas('ShowColumns(Filter(t, a = "x"), fila_excel, banco)') == []
+
+
+def test_51_la_fuente_de_trabajo_es_el_export_final_del_tenant_y_conserva_las_reglas_validadas():
+    tv1 = PA / "tenant_v1"
+    assert (PA / "P9_Confirmacion_Masiva.pa.yaml").read_bytes() == (tv1 / "P9_Confirmacion_Masiva.pa.yaml").read_bytes()
+    assert (PA / "Main_Screen_CON_BOTON_IMPORTACION_MASIVA.yaml").read_bytes() == (tv1 / "Main_Screen.pa.yaml").read_bytes() == (PA / "tenant/Main_Screen.pa.yaml").read_bytes()
+    propias, base = _props_del_yaml(tv1 / "P9_Confirmacion_Masiva.pa.yaml"), _props_del_yaml(PA / "tenant/P9_Confirmacion_Masiva.pa.yaml")
+    assert {k for k in propias if k[1] == "__Control__"} == {k for k in base if k[1] == "__Control__"} and len(base) and \
+        len({k[0] for k in propias if k[1] == "__Control__"}) == 44                           # mismos 44 controles que antes de integrar
+    cambiadas = {k for k in set(propias) | set(base) if plano(str(propias.get(k))) != plano(str(base.get(k)))}
+    assert cambiadas == CAMBIOS_ESPERADOS                                                     # el export final = base + las 18 fórmulas previstas, nada más
+    texto = (tv1 / "P9_Confirmacion_Masiva.pa.yaml").read_text(encoding="utf-8")
+    assert "varConfirmarMasivaVisible" not in texto and "mostrarConfirmacion" not in texto    # D: el segundo modal no vuelve
+    assert texto.count("P9_MASIVA_PROTO_CONFIRMAR.Run(") == 1 and texto.count("P9_MASIVA_PROTO_PREVALIDAR.Run(") == 1
+
+
+def test_52_el_boton_del_tenant_envia_solo_las_filas_VALIDO_con_las_12_columnas_del_contrato_y_el_correo():
+    f = plano(str(_props_del_yaml(PA / "tenant_v1/P9_Confirmacion_Masiva.pa.yaml")[("btnConfirmarMasivamenteP9", "OnSelect")]))
+    m = re.search(r"P9_MASIVA_PROTO_CONFIRMAR\.Run\(JSON\(ShowColumns\(Filter\(colPrevalidacionP9, resultado = \"VALIDO\"\), ([^)]*)\), JSONFormat\.Compact\), User\(\)\.Email\)\)", f)
+    assert m, "Run(JSON(ShowColumns(Filter(colPrevalidacionP9, resultado = \"VALIDO\"), …), JSONFormat.Compact), User().Email)"
+    assert re.findall(r"\w+", m[1]) == list(K.CAMPOS_ENTRADA) and '"' not in m[1]              # E: solo VALIDO, las 12 columnas del contrato, sin comillas
+    en_run = f.split("P9_MASIVA_PROTO_CONFIRMAR.Run(")[1].split("User().Email")[0]
+    assert en_run.count("colPrevalidacionP9") == 1 and en_run.count('resultado = "VALIDO"') == 1 and "<>" not in en_run   # una sola fuente de datos: las VALIDO
+    # F: IfError compatible también en el export final
+    import sys
+    sys.path.insert(0, str(PA))
+    import auditar_iferror as AI
+    assert AI.auditar(PA / "tenant_v1/P9_Confirmacion_Masiva.pa.yaml") == []
+
+
+def test_53_el_flujo_que_funciono_en_el_tenant_conserva_PT5S_en_la_lectura_y_MERGE_sin_reintentos():
+    """B y C del checkpoint V1: lo inspeccionado a mano en el flujo importado (Leer_deposito GET PT5S; Actualizar_deposito POST MERGE, IF-MATCH dinámico, retry None)."""
+    from p9.wdl import recorrer
+    acc = dict(recorrer(K.construir_definicion()["actions"]))
+    leer, merge = acc["Leer_deposito"]["inputs"], acc["Actualizar_deposito"]["inputs"]
+    assert leer["parameters"]["parameters/method"] == "GET" and leer["retryPolicy"] == {"type": "fixed", "count": 2, "interval": "PT5S"}
+    cab = merge["parameters"]["parameters/headers"]
+    assert merge["parameters"]["parameters/method"] == "POST" and cab["X-HTTP-Method"] == "MERGE" and merge["retryPolicy"] == {"type": "none"}
+    assert cab["IF-MATCH"] == "@outputs('Revalidacion')?['etag']" and cab["IF-MATCH"] != "*"
+    assert acc["ETag_fresco"]["inputs"] == "@coalesce(body('Leer_deposito')?['d']?['__metadata']?['etag'],outputs('Leer_deposito')?['headers']?['ETag'],'')"

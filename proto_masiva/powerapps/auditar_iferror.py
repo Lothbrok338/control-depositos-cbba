@@ -8,6 +8,10 @@ la otra un booleano). La corrección aceptada por Studio hace que **todas** las 
 Regla que se comprueba: en cada `IfError` con al menos dos argumentos, la ÚLTIMA sentencia de CADA argumento es `true` o `false`.
 
     python proto_masiva/powerapps/auditar_iferror.py [archivo.pa.yaml]     (sale con código 1 si hay incompatibilidades)
+
+Segunda comprobación (mismo CLI): `ShowColumns` con los nombres de columna SIN comillas. Power Apps Studio del tenant rechazó
+`ShowColumns(tabla; "fila_excel"; …)` y aceptó `ShowColumns(tabla; fila_excel; …)`: ninguna fórmula de la pantalla debe volver a generar
+nombres de columna entre comillas en un `ShowColumns`.
 """
 import sys
 from pathlib import Path
@@ -90,6 +94,26 @@ def incompatibilidades(formula: str) -> list:
     return hallazgos
 
 
+def showcolumns_con_comillas(formula: str, sep: str = ",") -> list:
+    """Nombres de columna escritos entre comillas en algún `ShowColumns(tabla, col1, col2, …)` de la fórmula (vacío = todos sin comillas)."""
+    mascara, malos, desde = _sin_texto_mascara(formula), [], 0
+    while True:
+        i = mascara.find("ShowColumns(", desde)
+        if i < 0:
+            return malos
+        if i > 0 and (mascara[i - 1].isalnum() or mascara[i - 1] == "_"):
+            desde = i + 1
+            continue
+        ini, nivel, j = i + len("ShowColumns("), 1, i + len("ShowColumns(")
+        while nivel and j < len(mascara):
+            nivel += mascara[j] in ABRE
+            nivel -= mascara[j] in CIERRA
+            j += 1
+        args = _separar(formula[ini:j - 1], mascara[ini:j - 1], sep)
+        malos += [a.strip() for a in args[1:] if a.strip().startswith('"')]
+        desde = ini
+
+
 def formulas_del_yaml(ruta: Path):
     doc = yaml.safe_load(ruta.read_text(encoding="utf-8"))
     for nombre_pantalla, pantalla in doc["Screens"].items():
@@ -118,4 +142,8 @@ if __name__ == "__main__":
     for donde, hallazgos in malos:
         for n, k, ultima in hallazgos:
             print(f"  ✗ {donde}: IfError #{n} argumento {k} termina en «{ultima}»")
-    sys.exit(1 if malos else 0)
+    con_comillas = [(donde, c) for donde, f in formulas_del_yaml(archivo) if (c := showcolumns_con_comillas(f))]
+    print(f"{archivo.name}: {sum(f.count('ShowColumns(') for _, f in formulas_del_yaml(archivo))} ShowColumns auditados, {len(con_comillas)} fórmula(s) con columnas entre comillas")
+    for donde, cols in con_comillas:
+        print(f"  ✗ {donde}: {', '.join(cols)}")
+    sys.exit(1 if (malos or con_comillas) else 0)

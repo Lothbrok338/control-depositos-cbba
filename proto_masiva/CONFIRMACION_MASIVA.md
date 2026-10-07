@@ -1,7 +1,8 @@
 # P9 CONFIRMACIÓN MASIVA — Confirmar solo las filas que siguen siendo VALIDO
 
-> **Estado: implementada y probada con un SharePoint SIMULADO; NO validada en tu tenant.** El flujo **escribe** en `Depositos_Activos` (confirma depósitos): léelo antes de probar.
-> Esta fase termina con el flujo listo para probar manualmente en `P9_PRUEBA_MASIVA`. No se importó nada, no se tocó el tenant, no se publicó ninguna app.
+> **Estado: V1 FUNCIONAL en el tenant de prueba (camino feliz), el resto validado solo con un SharePoint SIMULADO.** El 2026-10-07 se importó el flujo, se prevalidó un Excel de 3 filas (2 `VALIDO`, 1 `NO_ENCONTRADO`)
+> y se confirmaron 2 de 2 depósitos con un clic: `Depositos_Activos` cambió a `ASIGNADO` (ver **`VALIDACION_TENANT_V1.md`**, que separa lo REAL en tenant, lo solo simulado y lo PENDIENTE).
+> **No validado en tenant:** conflictos/412, fallos parciales, 10 y 50 filas, tiempos de espera, throttling y escala. El flujo **escribe** en `Depositos_Activos` (confirma depósitos): léelo antes de probar.
 
 Rama `experiment/p9-masiva-prototipo`. Todo vive bajo `proto_masiva/`. `P9_ASIGNAR_DEPOSITO` (V4.2), confirmación individual, reversión, PDF, motor, P8 y el esquema de `Depositos_Activos` **no se tocaron**: V4.2 se usó solo como referencia (el repositorio lo comprueba con tests).
 
@@ -116,11 +117,13 @@ La paginación de Excel está en 2000. Si la lectura alcanza 2000 filas o más, 
 
 ## 9 · Qué NO está validado en tenant
 
-1. **El flujo entero**: no se importó ni se ejecutó. Las pruebas usan un intérprete local de expresiones y un SharePoint falso (con ETags, 412 y carreras simuladas). Un comportamiento distinto del runtime real **no se detectaría aquí**: `actions('X')?['status']` dentro del `Scope` de una iteración, `json()`, `min`/`max`, `int(formatNumber(…))`, `convertTimeZone`, indexación por `item()`.
+(Validado en tenant: el camino feliz de 2 confirmaciones; ver `VALIDACION_TENANT_V1.md`. Lo que sigue es lo que **no**.)
+
+1. **Todo lo que no sea el camino feliz del flujo**: las ramas de 412, `CONFLICTO_DATOS`, `ERROR_FILA`, fila mal formada y `LOTE_EXCEDE_LIMITE` solo se probaron con un intérprete local de expresiones y un SharePoint falso (con ETags, 412 y carreras simuladas). En el tenant se ejecutó una vez, con 2 filas, sin error; un comportamiento distinto del runtime real en las ramas de error **no se detectaría aquí**.
 2. **La escritura real a escala**: V4.2 está validado fila a fila; una secuencia larga no. Tiempos, timeout, 429 y cuotas: sin medir (§7).
 3. **El tamaño de `detalle_json` como entrada** (327 bytes por fila medidos con una fila típica; ~650 KB para 1999) frente al límite de entradas de texto del desencadenador de Power Apps: no verificado.
-4. **Power Apps:** la sintaxis `JSON(ShowColumns(…); JSONFormat.Compact)` pasada a `Run`, `Table(ParseJSON(…))` con `ThisRecord.Value`, y `OnAddFile`/`OnRemoveFile` del control de adjuntos. Las fórmulas no se ejecutaron en Studio.
-5. **La pantalla ya NO es una reconstrucción:** el repositorio se sincronizó con el export real de `P9_PRUEBA_MASIVA` (`powerapps/tenant/`, `SYNC_TENANT_UI.md`) y la confirmación se integró cambiando solo 18 propiedades de fórmula (geometría y estilo intactos). Lo que sigue sin validar es que Studio acepte esas fórmulas (en especial `JSON(ShowColumns(…))`, `With` dentro de `ForAll` y `OnAddFile`) y cómo se ve el titular de dos líneas dentro del alto 50 del tenant.
+4. **Power Apps:** las fórmulas A–Q se pegaron y ejecutaron en Studio con 2 filas (aceptadas; `ShowColumns` **sin comillas**, `IfError` con `true`/`false`). Sin probar: errores del flujo (`FLUJO_SIN_RESPUESTA`), timeout de la app y el reinicio al cambiar de archivo tras confirmar.
+5. **La pantalla ya NO es una reconstrucción:** el repositorio se sincronizó con el export real de `P9_PRUEBA_MASIVA` posterior a la integración (`powerapps/tenant_v1/`, `SYNC_TENANT_UI.md`). Sin validar: cómo se ve el titular de dos líneas con resultados `PARCIAL`/`ERROR`.
 6. La propiedad `Id` del resultado de la lectura por ID (V4.2 la pide en el `$select` pero no consta que la lea).
 7. **Esta prueba ESCRIBE en `Depositos_Activos` real.** No hay rollback automático. Los pasos de prueba (`flows/INSTRUCCIONES_CONFIRMAR.md`) usan depósitos que de todos modos se van a confirmar.
 

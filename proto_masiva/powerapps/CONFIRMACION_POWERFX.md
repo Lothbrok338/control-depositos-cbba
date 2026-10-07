@@ -1,12 +1,14 @@
 # Power Fx de la CONFIRMACIÓN MASIVA (botón `btnConfirmarMasivamenteP9`)
 
-> **Estado: preparado sobre el export REAL de `P9_PRUEBA_MASIVA`; NO validado en el tenant.** Las fórmulas pasan las pruebas estáticas del repositorio (paréntesis,
-> columnas contra los esquemas de `detalle_json`, sin `Patch`/`SubmitForm`, sin segundo modal, **todas las ramas de cada `IfError` devuelven booleano**), pero **no se
-> ejecutaron en Power Apps Studio**. Se **generan** (`python proto_masiva/powerapps/generar_powerfx.py`) desde `P9_Confirmacion_Masiva.pa.yaml`: no las edites a mano aquí.
+> **Estado: V1 FUNCIONAL VALIDADA EN EL TENANT (camino feliz).** Estas son las fórmulas tal como están en el export REAL de `P9_PRUEBA_MASIVA` posterior a la integración
+> (`tenant_v1/P9_Confirmacion_Masiva.pa.yaml`): con ellas se prevalidó un Excel de 3 filas (2 `VALIDO`, 1 `NO_ENCONTRADO`) y se confirmaron 2 de 2 depósitos, que cambiaron a `ASIGNADO`
+> en `Depositos_Activos`. **No está validado en el tenant:** conflictos/412, fallos parciales, 10 filas, 50 filas, tiempos de espera ni throttling (ver `../VALIDACION_TENANT_V1.md`).
+> Se **generan** (`python proto_masiva/powerapps/generar_powerfx.py`) desde `P9_Confirmacion_Masiva.pa.yaml`: no las edites a mano aquí.
 >
-> **No pegues controles ni el YAML:** los controles ya existen en tu app con estos nombres (el export del tenant es la fuente de verdad: `tenant/P9_Confirmacion_Masiva.pa.yaml`).
-> Solo se **reemplazan 18 propiedades** en 13 elementos (la pantalla y 12 controles; las de abajo). Nada cambia de posición, tamaño ni estilo. Las fórmulas conservan tu corrección de tipos en `IfError`:
-> ambas ramas terminan en `true` / `false`, como ya aceptó Studio en la prevalidación.
+> **No pegues controles ni el YAML:** los controles ya existen en tu app con estos nombres. Solo se **reemplazan 18 propiedades** en 13 elementos (la pantalla y 12 controles; las de abajo).
+> Nada cambia de posición, tamaño ni estilo. Reglas que Studio ya impuso en tu tenant y que NO se deben deshacer a mano:
+> - **`IfError`:** todas las ramas terminan en `true` / `false` (si no, tipos incompatibles).
+> - **`ShowColumns`:** los nombres de columna van **SIN comillas** (`ShowColumns(tabla; fila_excel; deposito_id; …)`); con comillas Studio lo rechazó.
 
 Escritas con `;` entre argumentos y `;;` entre sentencias (tu configuración regional).
 
@@ -54,18 +56,18 @@ With(
                             colPrevalidacionP9;
                             resultado = "VALIDO"
                         );
-                        "fila_excel";
-                        "deposito_id";
-                        "clave_transaccion";
-                        "banco";
-                        "cuenta_bancaria";
-                        "codigo_asignacion";
-                        "importe";
-                        "moneda";
-                        "estudiante";
-                        "solicitado_por";
-                        "sede";
-                        "observacion"
+                        fila_excel;
+                        deposito_id;
+                        clave_transaccion;
+                        banco;
+                        cuenta_bancaria;
+                        codigo_asignacion;
+                        importe;
+                        moneda;
+                        estudiante;
+                        solicitado_por;
+                        sede;
+                        observacion
                     );
                     JSONFormat.Compact
                 );
@@ -84,7 +86,11 @@ With(
             ClearCollect(
                 colConfirmacionP9;
                 ForAll(
-                    Table(ParseJSON(varResultadoConfirmacionP9.detalle_json));
+                    Table(
+                        ParseJSON(
+                            varResultadoConfirmacionP9.detalle_json
+                        )
+                    );
                     {
                         fila_excel: Value(ThisRecord.Value.fila_excel);
                         deposito_id: Value(ThisRecord.Value.deposito_id);
@@ -112,7 +118,9 @@ With(
             {
                 resultado: "ERROR";
                 codigo: "FLUJO_SIN_RESPUESTA";
-                mensaje: "El flujo no respondió: " & FirstError.Message & ". Es posible que haya seguido confirmando depósitos: vuelva a PREVALIDAR para ver el estado real antes de reintentar.";
+                mensaje: "El flujo no respondió: " &
+                         FirstError.Message &
+                         ". Es posible que haya seguido confirmando depósitos: vuelva a PREVALIDAR para ver el estado real antes de reintentar.";
                 filas_recibidas: "0";
                 filas_confirmadas: "0";
                 filas_no_confirmadas: "0";
@@ -190,7 +198,10 @@ Clear(colConfirmacionP9)
     Coalesce(varProcesandoP9; false) ||
     Coalesce(varProcesandoConfirmacionP9; false) ||
     IsEmpty(attXlsxP9.Attachments) ||
-    !EndsWith(Lower(First(attXlsxP9.Attachments).Name); ".xlsx");
+    !EndsWith(
+        Lower(First(attXlsxP9.Attachments).Name);
+        ".xlsx"
+    );
     DisplayMode.Disabled;
     DisplayMode.Edit
 )
@@ -377,10 +388,10 @@ Set(varProcesandoP9; false)
             colPrevalidacionP9;
             resultado <> "VALIDO"
         );
-        "fila_excel";
-        "resultado";
-        "mensaje";
-        "clave_transaccion"
+        fila_excel;
+        resultado;
+        mensaje;
+        clave_transaccion
     )
 )
 ```
@@ -490,16 +501,25 @@ Switch(
                 varResultadoConfirmacionP9.resultado;
                 "OK";
                 "CONFIRMACIÓN COMPLETADA" & Char(10) &
-                varResultadoConfirmacionP9.filas_confirmadas & " de " & varResultadoConfirmacionP9.filas_recibidas & " depósitos confirmados.";
+                varResultadoConfirmacionP9.filas_confirmadas &
+                " de " &
+                varResultadoConfirmacionP9.filas_recibidas &
+                " depósitos confirmados.";
                 "PARCIAL";
                 If(
                     Value(varResultadoConfirmacionP9.filas_confirmadas) = 0;
                     "NO SE CONFIRMÓ NINGÚN DEPÓSITO";
                     "CONFIRMACIÓN PARCIAL"
                 ) & Char(10) &
-                varResultadoConfirmacionP9.filas_confirmadas & " de " & varResultadoConfirmacionP9.filas_recibidas & " depósitos confirmados · " &
-                varResultadoConfirmacionP9.filas_no_confirmadas & " requieren revisión.";
-                "NO SE PUDO CONFIRMAR" & Char(10) & "Vea el mensaje en el resumen."
+                varResultadoConfirmacionP9.filas_confirmadas &
+                " de " &
+                varResultadoConfirmacionP9.filas_recibidas &
+                " depósitos confirmados · " &
+                varResultadoConfirmacionP9.filas_no_confirmadas &
+                " requieren revisión.";
+                "NO SE PUDO CONFIRMAR" &
+                Char(10) &
+                "Vea el mensaje en el resumen."
             );
             If(
                 IsBlank(varResultadoP9);
@@ -509,7 +529,8 @@ Switch(
                     "Archivo seleccionado. Pulse PREVALIDAR ARCHIVO."
                 );
                 If(
-                    varResultadoP9.resultado = "OK" || varResultadoP9.resultado = "OBSERVADO";
+                    varResultadoP9.resultado = "OK" ||
+                    varResultadoP9.resultado = "OBSERVADO";
                     "PREVALIDACIÓN · " &
                     varResultadoP9.filas_validas &
                     " DE " &
@@ -557,7 +578,8 @@ Switch(
                     "MONEDA_INVALIDA"; "MONEDA INVÁLIDA";
                     resultado
                 ) &
-                ": " & mensaje;
+                ": " &
+                mensaje;
                 Char(10)
             )
         )
@@ -572,9 +594,13 @@ Switch(
     IsBlank(Coalesce(varMsConfirmacionP9; varMsAppP9));
     "—";
     Text(
-        Round(Coalesce(varMsConfirmacionP9; varMsAppP9) / 1000; 1);
+        Round(
+            Coalesce(varMsConfirmacionP9; varMsAppP9) / 1000;
+            1
+        );
         "0,0"
-    ) & " segundos"
+    ) &
+    " segundos"
 )
 ```
 
@@ -587,7 +613,7 @@ Switch(
 ### Q · `lblAvisoPrototipoP9` → **Text**
 
 ```
-="PROTOTIPO · CONFIRMAR MASIVAMENTE relee cada depósito antes de escribir y solo confirma lo que sigue válido · sin lotes ni historial."
+="Relee cada depósito antes de escribir y solo confirma lo que sigue válido · sin lotes ni historial."
 ```
 
 ## Lo que NO cambia (déjalo como está en tu app)
@@ -603,5 +629,5 @@ Switch(
 
 1. **Comprobador de aplicaciones** (estetoscopio): sin errores nuevos. Cualquier error en `P9_MASIVA_PROTO_CONFIRMAR.Run`, `JSON(ShowColumns(…))`, `ThisRecord.Value` o `With` dentro
    de `ForAll`: copia el texto exacto; se ajusta solo esa línea.
-2. **Alto del titular:** el resultado de la confirmación ocupa dos líneas dentro del alto 50 que ya tienes; si se corta, sube el alto de `lblTitularResultadoP9` (único ajuste visual posible).
-3. Pruebas en el tenant: `flows/INSTRUCCIONES_CONFIRMAR.md`, Parte 3 (empieza con **1 fila**).
+2. **Alto del titular:** el resultado de la confirmación ocupa dos líneas dentro del alto 50 del tenant (se vio correcto en la prueba real de 2 filas).
+3. Pruebas en el tenant: `flows/INSTRUCCIONES_CONFIRMAR.md`, Parte 3. Hecho: T1-equivalente con 2 filas. Pendiente: 10 y 50 filas, conflictos y tiempos.

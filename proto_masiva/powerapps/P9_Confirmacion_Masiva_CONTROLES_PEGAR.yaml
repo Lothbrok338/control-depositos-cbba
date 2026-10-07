@@ -39,8 +39,7 @@
             Font: =Font.'Segoe UI'
             Height: =22
             Size: =10
-            Text: |-
-              ="Prototipo directo · prevalida un archivo Excel y confirma solo las filas que siguen siendo válidas."
+            Text: ="Prototipo directo · prevalida un archivo Excel y confirma solo las filas que siguen siendo válidas."
             Width: =700
             X: =20
             Y: =47
@@ -149,7 +148,10 @@
                   Coalesce(varProcesandoP9, false) ||
                   Coalesce(varProcesandoConfirmacionP9, false) ||
                   IsEmpty(attXlsxP9.Attachments) ||
-                  !EndsWith(Lower(First(attXlsxP9.Attachments).Name), ".xlsx"),
+                  !EndsWith(
+                      Lower(First(attXlsxP9.Attachments).Name),
+                      ".xlsx"
+                  ),
                   DisplayMode.Disabled,
                   DisplayMode.Edit
               )
@@ -377,16 +379,25 @@
                               varResultadoConfirmacionP9.resultado,
                               "OK",
                               "CONFIRMACIÓN COMPLETADA" & Char(10) &
-                              varResultadoConfirmacionP9.filas_confirmadas & " de " & varResultadoConfirmacionP9.filas_recibidas & " depósitos confirmados.",
+                              varResultadoConfirmacionP9.filas_confirmadas &
+                              " de " &
+                              varResultadoConfirmacionP9.filas_recibidas &
+                              " depósitos confirmados.",
                               "PARCIAL",
                               If(
                                   Value(varResultadoConfirmacionP9.filas_confirmadas) = 0,
                                   "NO SE CONFIRMÓ NINGÚN DEPÓSITO",
                                   "CONFIRMACIÓN PARCIAL"
                               ) & Char(10) &
-                              varResultadoConfirmacionP9.filas_confirmadas & " de " & varResultadoConfirmacionP9.filas_recibidas & " depósitos confirmados · " &
-                              varResultadoConfirmacionP9.filas_no_confirmadas & " requieren revisión.",
-                              "NO SE PUDO CONFIRMAR" & Char(10) & "Vea el mensaje en el resumen."
+                              varResultadoConfirmacionP9.filas_confirmadas &
+                              " de " &
+                              varResultadoConfirmacionP9.filas_recibidas &
+                              " depósitos confirmados · " &
+                              varResultadoConfirmacionP9.filas_no_confirmadas &
+                              " requieren revisión.",
+                              "NO SE PUDO CONFIRMAR" &
+                              Char(10) &
+                              "Vea el mensaje en el resumen."
                           ),
                           If(
                               IsBlank(varResultadoP9),
@@ -396,7 +407,8 @@
                                   "Archivo seleccionado. Pulse PREVALIDAR ARCHIVO."
                               ),
                               If(
-                                  varResultadoP9.resultado = "OK" || varResultadoP9.resultado = "OBSERVADO",
+                                  varResultadoP9.resultado = "OK" ||
+                                  varResultadoP9.resultado = "OBSERVADO",
                                   "PREVALIDACIÓN · " &
                                   varResultadoP9.filas_validas &
                                   " DE " &
@@ -549,7 +561,8 @@
                                   "MONEDA_INVALIDA", "MONEDA INVÁLIDA",
                                   resultado
                               ) &
-                              ": " & mensaje,
+                              ": " &
+                              mensaje,
                               Char(10)
                           )
                       )
@@ -580,9 +593,13 @@
                   IsBlank(Coalesce(varMsConfirmacionP9, varMsAppP9)),
                   "—",
                   Text(
-                      Round(Coalesce(varMsConfirmacionP9, varMsAppP9) / 1000, 1),
+                      Round(
+                          Coalesce(varMsConfirmacionP9, varMsAppP9) / 1000,
+                          1
+                      ),
                       "0,0"
-                  ) & " segundos"
+                  ) &
+                  " segundos"
               )
             Width: =Parent.Width - 840
             X: =800
@@ -624,8 +641,7 @@
             Font: =Font.'Segoe UI'
             Height: =22
             Size: =8
-            Text: |-
-              ="PROTOTIPO · CONFIRMAR MASIVAMENTE relee cada depósito antes de escribir y solo confirma lo que sigue válido · sin lotes ni historial."
+            Text: ="Relee cada depósito antes de escribir y solo confirma lo que sigue válido · sin lotes ni historial."
             Width: =Parent.Width - 40
             X: =20
             Y: =Parent.Height - 36
@@ -665,10 +681,10 @@
                           colPrevalidacionP9,
                           resultado <> "VALIDO"
                       ),
-                      "fila_excel",
-                      "resultado",
-                      "mensaje",
-                      "clave_transaccion"
+                      fila_excel,
+                      resultado,
+                      mensaje,
+                      clave_transaccion
                   )
               )
             TemplateFill: =RGBA(255, 255, 255, 1)
@@ -872,18 +888,18 @@
                                           colPrevalidacionP9,
                                           resultado = "VALIDO"
                                       ),
-                                      "fila_excel",
-                                      "deposito_id",
-                                      "clave_transaccion",
-                                      "banco",
-                                      "cuenta_bancaria",
-                                      "codigo_asignacion",
-                                      "importe",
-                                      "moneda",
-                                      "estudiante",
-                                      "solicitado_por",
-                                      "sede",
-                                      "observacion"
+                                      fila_excel,
+                                      deposito_id,
+                                      clave_transaccion,
+                                      banco,
+                                      cuenta_bancaria,
+                                      codigo_asignacion,
+                                      importe,
+                                      moneda,
+                                      estudiante,
+                                      solicitado_por,
+                                      sede,
+                                      observacion
                                   ),
                                   JSONFormat.Compact
                               ),
@@ -902,7 +918,11 @@
                           ClearCollect(
                               colConfirmacionP9,
                               ForAll(
-                                  Table(ParseJSON(varResultadoConfirmacionP9.detalle_json)),
+                                  Table(
+                                      ParseJSON(
+                                          varResultadoConfirmacionP9.detalle_json
+                                      )
+                                  ),
                                   {
                                       fila_excel: Value(ThisRecord.Value.fila_excel),
                                       deposito_id: Value(ThisRecord.Value.deposito_id),
@@ -930,7 +950,9 @@
                           {
                               resultado: "ERROR",
                               codigo: "FLUJO_SIN_RESPUESTA",
-                              mensaje: "El flujo no respondió: " & FirstError.Message & ". Es posible que haya seguido confirmando depósitos: vuelva a PREVALIDAR para ver el estado real antes de reintentar.",
+                              mensaje: "El flujo no respondió: " &
+                                       FirstError.Message &
+                                       ". Es posible que haya seguido confirmando depósitos: vuelva a PREVALIDAR para ver el estado real antes de reintentar.",
                               filas_recibidas: "0",
                               filas_confirmadas: "0",
                               filas_no_confirmadas: "0",

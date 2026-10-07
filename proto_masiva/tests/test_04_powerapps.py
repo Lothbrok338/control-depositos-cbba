@@ -339,7 +339,8 @@ def test_la_pantalla_ya_no_dice_que_no_consulta_Depositos_Activos_ni_usa_estados
     assert TENANT["lblAvisoPrototipoP9"]["Properties"]["Text"] == '="Prevalidación de SOLO LECTURA"'
     assert "No confirma ningún depósito" in TENANT["lblSubtituloMasivaP9"]["Properties"]["Text"]
     aviso = CONTROLES["lblAvisoPrototipoP9"]["Properties"]["Text"]
-    assert "relee cada depósito" in aviso and "solo confirma lo que sigue válido" in aviso and "sin lotes ni historial" in aviso
+    # texto FINAL del tenant (export posterior a la integración): sin el prefijo «PROTOTIPO · CONFIRMAR MASIVAMENTE»
+    assert aviso == '="Relee cada depósito antes de escribir y solo confirma lo que sigue válido · sin lotes ni historial."'
     assert "No confirma" not in CONTROLES["lblSubtituloMasivaP9"]["Properties"]["Text"]
     for estado in ("OK", "OBSERVADO", "PARCIAL", "ERROR", "PROCESANDO", "CONFIRMANDO", "CARGADO"):
         assert f'"{estado}"' in CONTROLES["lblEstadoP9"]["Properties"]["Fill"], estado
