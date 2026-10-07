@@ -1,10 +1,9 @@
-"""Genera, SIN modificar el original, una copia de Main_Screen.yaml con el botón IMPORTACIÓN MASIVA.
+"""Bloque REAL de `btnImportacionMasivaP9` tal como está en el tenant (P9_PRUEBA_MASIVA, `tenant/Main_Screen.pa.yaml`).
 
-    python proto_masiva/powerapps/aplicar_boton.py
-
-Lee p9/reversion/powerapps/Main_Screen.yaml (fuente validada en tenant; intacta) y escribe
-proto_masiva/powerapps/Main_Screen_CON_BOTON_IMPORTACION_MASIVA.yaml. El único cambio es insertar BLOQUE justo antes de
-`lblCantidadResultadosP9_1` (dentro de `cntControlDepositosP9`, a continuación de `btnActualizarP9_1`).
+CHECKPOINT «sync tenant»: `Main_Screen_CON_BOTON_IMPORTACION_MASIVA.yaml` YA NO se genera desde p9/reversion/powerapps/Main_Screen.yaml;
+es una copia VERBATIM del `Main_Screen.pa.yaml` exportado del tenant (que además lleva los fixes manuales de `Visible` con
+`mostrarConfirmacion` y el resto de cambios hechos en Studio). `BLOQUE` solo alimenta `BOTON_MAIN_SCREEN_PEGAR.yaml`. Este módulo ya no escribe
+ningún archivo.
 """
 from pathlib import Path
 
@@ -15,18 +14,22 @@ ANCLA = "            - lblCantidadResultadosP9_1:\n"
 BLOQUE = """            - btnImportacionMasivaP9:
                 Control: Classic/Button@2.2.0
                 Properties:
-                  BorderColor: =RGBA(123, 22, 50, 1)
-                  BorderThickness: =1
-                  Color: =RGBA(123, 22, 50, 1)
-                  Fill: =RGBA(255, 255, 255, 1)
+                  BorderStyle: =BorderStyle.None
+                  Color: =RGBA(255, 255, 255, 1)
+                  Fill: =RGBA(123, 22, 50, 1)
                   Font: =Font.'Segoe UI'
                   FontWeight: =FontWeight.Bold
                   Height: =32
-                  OnSelect: =Navigate(P9_Confirmacion_Masiva, ScreenTransition.Fade)
+                  OnSelect: |-
+                    =Navigate(
+                        P9_Confirmacion_Masiva,
+                        ScreenTransition.Fade
+                    )
                   Size: =9
-                  Text: ="IMPORTACIÓN MASIVA"
-                  Width: =190
-                  X: =700
+                  Text: ="IMPORTACION MASIVA"
+                  Visible: =Not(Coalesce(mostrarConfirmacion, false))
+                  Width: =173
+                  X: =828
                   Y: =27
 """
 
@@ -37,5 +40,4 @@ def aplicar(texto: str) -> str:
 
 
 if __name__ == "__main__":
-    DESTINO.write_bytes(aplicar(ORIGEN.read_bytes().decode("utf-8")).encode("utf-8"))
-    print(DESTINO)
+    raise SystemExit("Obsoleto: Main_Screen_CON_BOTON_IMPORTACION_MASIVA.yaml es el export real del tenant; no se regenera.")

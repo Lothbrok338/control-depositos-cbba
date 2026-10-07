@@ -1,5 +1,7 @@
 # Armar la pantalla `P9_Confirmacion_Masiva` en Power Apps Studio (camino directo)
 
+> **FUENTE DE VERDAD (checkpoint «sync tenant»):** `tenant/P9_Confirmacion_Masiva.pa.yaml` y `tenant/Main_Screen.pa.yaml` son el export REAL de `P9_PRUEBA_MASIVA`. Esta guía describe cómo se armó la pantalla; si algo difiere, manda el export (ver `../SYNC_TENANT_UI.md`).
+
 > **Estado (2026-10-06):** esta pantalla ya se armó y se probó en el tenant, en la copia **`P9_PRUEBA_MASIVA`**, con el `Ejemplo_Confirmacion_Masiva_P9.xlsx` (COMPLETADO, 3 filas). Detalle de lo validado, lo observado sin resolver y lo pendiente: `../ESTADO_CHECKPOINT_TENANT.md`. El botón de `Main_Screen` ya se agregó y probó a mano en esa copia (paso 6).
 
 > **Prevalidación real (NO validada en tenant):** cuando actualices el flujo (`flows/ACTUALIZAR_FLUJO_PREVALIDACION.md`) hay que cambiar **5 fórmulas** de esta pantalla (registro de error, colores de estado, titular, filas leídas, aviso del pie y la colección `colPrevalidacionP9`). Están listas, en tu sintaxis regional, en `PREVALIDACION_POWERFX.md`. Los pasos de abajo describen la pantalla ya validada en el tenant (flujo estructural).
@@ -29,15 +31,12 @@ Antes: crea el vehículo de adjuntos y la carpeta temporal (`sharepoint/INSTRUCC
    Set(varProcesandoP9, false);
    Set(varResultadoP9, Blank());
    Set(varMsAppP9, Blank());
-   Set(varProcesandoConfirmacionP9, false);
-   Set(varConfirmacionMasivaFinalizadaP9, false);
-   Set(varResultadoConfirmacionP9, Blank());
-   Set(varMsConfirmacionP9, Blank());
-   Set(varVerObservacionesP9, false);
    Clear(colPrevalidacionP9);
-   Clear(colConfirmacionP9);
+   Set(varVerObservacionesP9, false);
+   Set(varConfirmarMasivaVisible, false);
    ResetForm(frmArchivoP9)
    ```
+   (Es el `OnVisible` REAL del tenant, tal cual. `varConfirmarMasivaVisible` es del segundo modal descartado: se retira en la integración de la confirmación, ver `CONFIRMACION_POWERFX.md`.)
 6. **Botón en Main_Screen (agregado y probado manualmente en `P9_PRUEBA_MASIVA`; navegación ida y vuelta validada).** Referencia: `BOTON_MAIN_SCREEN.txt` (un único control nuevo). `Main_Screen` de producción no se toca.
 7. **Comprobador de aplicaciones.** Revisa que no haya errores nuevos. La llamada `P9_MASIVA_PROTO_PREVALIDAR.Run({name: archivoP9.Name, contentBytes: archivoP9.Value})` **ya está validada en el tenant** y no hay que cambiarla.
 8. **Probar** (F5): adjuntar → PREVALIDAR ARCHIVO. La pantalla muestra «PROCESANDO» hasta que el flujo responde.

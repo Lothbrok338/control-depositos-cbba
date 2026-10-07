@@ -30,17 +30,28 @@ Selecciona cada control, elige la propiedad en la barra de fórmulas, **borra to
 =Set(varProcesandoP9; true);;
 Set(varResultadoP9; Blank());;
 Set(varMsAppP9; Blank());;
-Set(varResultadoConfirmacionP9; Blank());;
-Set(varMsConfirmacionP9; Blank());;
-Set(varConfirmacionMasivaFinalizadaP9; false);;
-Set(varVerObservacionesP9; false);;
 Clear(colPrevalidacionP9);;
-Clear(colConfirmacionP9);;
+
 With(
     {inicioP9: Now(); archivoP9: First(attXlsxP9.Attachments)};
     IfError(
-        Set(varResultadoP9; P9_MASIVA_PROTO_PREVALIDAR.Run({name: archivoP9.Name; contentBytes: archivoP9.Value}));;
-        Set(varMsAppP9; DateDiff(inicioP9; Now(); TimeUnit.Milliseconds));;
+        Set(
+            varResultadoP9;
+            P9_MASIVA_PROTO_PREVALIDAR.Run(
+                {
+                    name: archivoP9.Name;
+                    contentBytes: archivoP9.Value
+                }
+            )
+        );;
+        Set(
+            varMsAppP9;
+            DateDiff(
+                inicioP9;
+                Now();
+                TimeUnit.Milliseconds
+            )
+        );;
         IfError(
             ClearCollect(
                 colPrevalidacionP9;
@@ -69,9 +80,16 @@ With(
                         observacion: Text(ThisRecord.Value.observacion)
                     }
                 )
-            );
-            Notify("No se pudo leer el detalle de la prevalidación: " & FirstError.Message; NotificationType.Warning)
-        );
+            );;
+            true;
+            Notify(
+                "No se pudo leer el detalle de la prevalidación: " & FirstError.Message;
+                NotificationType.Warning
+            );;
+            false
+        );;
+        true;
+
         Set(
             varResultadoP9;
             {
@@ -90,9 +108,18 @@ With(
                 detalle_json: "[]"
             }
         );;
-        Set(varMsAppP9; DateDiff(inicioP9; Now(); TimeUnit.Milliseconds))
+        Set(
+            varMsAppP9;
+            DateDiff(
+                inicioP9;
+                Now();
+                TimeUnit.Milliseconds
+            )
+        );;
+        false
     )
 );;
+
 Set(varProcesandoP9; false)
 ```
 
@@ -100,15 +127,28 @@ Set(varProcesandoP9; false)
 
 ```
 =With(
-    {estadoP9: If(Coalesce(varProcesandoConfirmacionP9; false); "CONFIRMANDO"; If(Coalesce(varProcesandoP9; false); "PROCESANDO"; If(!IsBlank(varResultadoConfirmacionP9); varResultadoConfirmacionP9.resultado; If(!IsBlank(varResultadoP9); varResultadoP9.resultado; If(IsEmpty(attXlsxP9.Attachments); "SIN ARCHIVO"; "CARGADO")))))};
+    {
+        estadoP9:
+            If(
+                Coalesce(varProcesandoP9; false);
+                "PROCESANDO";
+                If(
+                    !IsBlank(varResultadoP9);
+                    varResultadoP9.resultado;
+                    If(
+                        IsEmpty(attXlsxP9.Attachments);
+                        "SIN ARCHIVO";
+                        "CARGADO"
+                    )
+                )
+            )
+    };
     Switch(
         estadoP9;
         "OK"; RGBA(46; 125; 50; 1);
         "OBSERVADO"; RGBA(198; 125; 0; 1);
-        "PARCIAL"; RGBA(198; 125; 0; 1);
         "ERROR"; RGBA(183; 28; 28; 1);
         "PROCESANDO"; RGBA(230; 126; 34; 1);
-        "CONFIRMANDO"; RGBA(230; 126; 34; 1);
         "CARGADO"; RGBA(0; 120; 212; 1);
         RGBA(98; 102; 106; 1)
     )
@@ -119,30 +159,27 @@ Set(varProcesandoP9; false)
 
 ```
 =If(
-    Coalesce(varProcesandoConfirmacionP9; false);
-    "Confirmando los depósitos válidos (puede tardar)...";
+    Coalesce(varProcesandoP9; false);
+    "Procesando el archivo (puede tardar unos segundos)...";
     If(
-        Coalesce(varProcesandoP9; false);
-        "Procesando el archivo (puede tardar unos segundos)...";
+        IsBlank(varResultadoP9);
         If(
-            !IsBlank(varResultadoConfirmacionP9);
-            Switch(
-                varResultadoConfirmacionP9.resultado;
-                "OK";
-                "CONFIRMACIÓN COMPLETADA" & Char(10) & varResultadoConfirmacionP9.filas_confirmadas & " de " & varResultadoConfirmacionP9.filas_recibidas & " depósitos confirmados.";
-                "PARCIAL";
-                If(Value(varResultadoConfirmacionP9.filas_confirmadas) = 0; "NO SE CONFIRMÓ NINGÚN DEPÓSITO"; "CONFIRMACIÓN PARCIAL") & Char(10) & varResultadoConfirmacionP9.filas_confirmadas & " de " & varResultadoConfirmacionP9.filas_recibidas & " depósitos confirmados." & Char(10) & varResultadoConfirmacionP9.filas_no_confirmadas & " requieren revisión.";
-                "NO SE PUDO CONFIRMAR" & Char(10) & varResultadoConfirmacionP9.mensaje
-            );
+            IsEmpty(attXlsxP9.Attachments);
+            "Adjunte un Excel (.xlsx) para empezar.";
+            "Archivo seleccionado. Pulse PREVALIDAR ARCHIVO."
+        );
+        If(
+            varResultadoP9.resultado = "OK" || varResultadoP9.resultado = "OBSERVADO";
+            "PREVALIDACIÓN · " &
+            varResultadoP9.filas_validas &
+            " DE " &
+            varResultadoP9.filas_totales &
             If(
-                IsBlank(varResultadoP9);
-                If(IsEmpty(attXlsxP9.Attachments); "Adjunte un Excel (.xlsx) para empezar."; "Archivo seleccionado. Pulse PREVALIDAR ARCHIVO.");
-                If(
-                    varResultadoP9.resultado = "OK" || varResultadoP9.resultado = "OBSERVADO";
-                    "PREVALIDACIÓN · " & varResultadoP9.filas_validas & " DE " & varResultadoP9.filas_totales & If(Value(varResultadoP9.filas_totales) = 1; " FILA VÁLIDA"; " FILAS VÁLIDAS");
-                    "RESULTADO: " & varResultadoP9.codigo
-                )
-            )
+                Value(varResultadoP9.filas_totales) = 1;
+                " FILA VÁLIDA";
+                " FILAS VÁLIDAS"
+            );
+            "RESULTADO: " & varResultadoP9.codigo
         )
     )
 )
@@ -151,13 +188,17 @@ Set(varProcesandoP9; false)
 ### 4 · `lblResFilasP9` → **Text**
 
 ```
-=If(Coalesce(varResultadoP9.tabla_encontrada; "") = "SI"; varResultadoP9.filas_leidas; "—")
+=If(
+    Coalesce(varResultadoP9.tabla_encontrada; "") = "SI";
+    varResultadoP9.filas_leidas;
+    "—"
+)
 ```
 
 ### 5 · `lblAvisoPrototipoP9` → **Text**
 
 ```
-="PROTOTIPO · CONFIRMAR MASIVAMENTE relee cada depósito antes de escribir y solo confirma lo que sigue válido · sin lotes ni historial."
+="Prevalidación de SOLO LECTURA"
 ```
 
 ## Usar la colección (sin galería bonita todavía)
