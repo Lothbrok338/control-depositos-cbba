@@ -437,7 +437,7 @@ def finalizar():
     minimo["inputs"]["porcentaje"] = final["inputs"]["porcentaje"]
     return secuencia(
         Estado_final=final,
-        ESCRIBIR_FINAL=ambito(secuencia(Escribir_final=escribir_estado("Estado_final"))),
+        ESCRIBIR_FINAL=ambito(secuencia(Escribir_final_estado=escribir_estado("Estado_final"))),
         ESCRIBIR_FINAL_RESPALDO=ambito(secuencia(Estado_final_minimo=minimo, Escribir_final_minimo=escribir_estado("Estado_final_minimo")),
                                        {"ESCRIBIR_FINAL": FALLOS}))
 

@@ -58,7 +58,7 @@ No se toca la lógica ni Power Apps. Detalle y plantilla (se descarga por Unique
 | 4 | `Para_cada_fila` (dentro de `PROCESAR` → rama Sí) | ⋯ → **Configuración** → *Control de simultaneidad* **Activado**, *Grado de paralelismo* = **1** |
 | 5 | `Leer_deposito` (dentro de `TRY_FILA`) | Sitio `https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu` · `GET` · ⋯ → Configuración → *Directiva de reintentos*: **Intervalo fijo, 2 reintentos, PT5S** |
 | 6 | `Actualizar_deposito` (dentro de `TRY_FILA` → `Puede_confirmar` rama Sí) | `POST` · `X-HTTP-Method: MERGE` · `IF-MATCH` = ETag fresco (`@outputs('Revalidacion')?['etag']`) · *Directiva de reintentos*: **Ninguna**. **Nunca `*`** |
-| 7 | `Crear_estado` · `Escribir_progreso` · `Escribir_final` · `Escribir_final_minimo` | acciones de **SharePoint** (*Crear archivo* / *Actualizar archivo*) con tu conexión; `Crear_estado`: reintentos **Ninguna**; las de *Actualizar archivo*: **Intervalo fijo, 2 reintentos, PT5S** |
+| 7 | `Crear_estado` · `Escribir_progreso` · `Escribir_final_estado` · `Escribir_final_minimo` | acciones de **SharePoint** (*Crear archivo* / *Actualizar archivo*) con tu conexión; `Crear_estado`: reintentos **Ninguna**; las de *Actualizar archivo*: **Intervalo fijo, 2 reintentos, PT5S** |
 
 **`P9_MASIVA_PROTO_ESTADO`**: disparador con **una** entrada de texto `execution_uid`; `Leer_estado` = *Obtener contenido del archivo con la ruta de acceso*, *Inferir tipo de contenido* **No**.
 

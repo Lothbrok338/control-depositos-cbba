@@ -1298,7 +1298,7 @@
             "ESCRIBIR_FINAL": {
               "type": "Scope",
               "actions": {
-                "Escribir_final": {
+                "Escribir_final_estado": {
                   "type": "OpenApiConnection",
                   "inputs": {
                     "host": {

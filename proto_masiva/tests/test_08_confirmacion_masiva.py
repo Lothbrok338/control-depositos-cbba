@@ -426,7 +426,7 @@ def test_29_el_flujo_solo_lee_y_escribe_depositos_por_HttpRequest_y_su_estado_po
     assert sorted(http) == [("Actualizar_deposito", "POST"), ("Leer_deposito", "GET")]    # UNA lectura y UNA escritura de depósitos por fila
     archivos = {n: a["inputs"]["host"]["operationId"] for n, a in acciones.items()
                 if a["type"] == "OpenApiConnection" and a["inputs"]["host"]["operationId"] != "HttpRequest"}
-    assert archivos == {"Crear_estado": "CreateFile", "Escribir_progreso": "UpdateFile", "Escribir_final": "UpdateFile", "Escribir_final_minimo": "UpdateFile"}
+    assert archivos == {"Crear_estado": "CreateFile", "Escribir_progreso": "UpdateFile", "Escribir_final_estado": "UpdateFile", "Escribir_final_minimo": "UpdateFile"}
     bucles = [(n, a["runtimeConfiguration"]["concurrency"]["repetitions"]) for n, a in acciones.items() if a["type"] == "Foreach"]
     assert bucles == [("Para_cada_fila", 1)]                                             # secuencial, sin concurrencia
     assert not [n for n, a in acciones.items() if a["type"] in ("Until", "Terminate", "Wait", "Delay")]
