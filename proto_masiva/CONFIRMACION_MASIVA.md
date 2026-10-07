@@ -4,6 +4,11 @@
 > y se confirmaron 2 de 2 depósitos con un clic: `Depositos_Activos` cambió a `ASIGNADO` (ver **`VALIDACION_TENANT_V1.md`**, que separa lo REAL en tenant, lo solo simulado y lo PENDIENTE).
 > **No validado en tenant:** conflictos/412, fallos parciales, 10 y 50 filas, tiempos de espera, throttling y escala. El flujo **escribe** en `Depositos_Activos` (confirma depósitos): léelo antes de probar.
 
+> ## ⚠ Este documento describe la V1 SÍNCRONA (hasta 50 filas, commit `82b279e`)
+> La **escala a 1999 filas con un clic** (respuesta temprana + procesamiento en segundo plano + estado en archivo + `P9_MASIVA_PROTO_ESTADO`) está en **`ESCALA_1999.md`**. Lo que cambió: el contrato de `P9_MASIVA_PROTO_CONFIRMAR`
+> (§6: ahora responde 5 textos con `ACEPTADO` y `execution_uid`; el resultado final y el detalle de las NO confirmadas llegan por `P9_MASIVA_PROTO_ESTADO`), el tope de 50 (§7: ahora 1999) y que el detalle ya no lista las confirmadas.
+> **Sin cambios:** la lógica por fila (§2, §3, §4, §5), los 8 campos de V4.2 y la ausencia de rollback global. Las secciones 1, 6, 7 y 8 se conservan como historial de la V1.
+
 Rama `experiment/p9-masiva-prototipo`. Todo vive bajo `proto_masiva/`. `P9_ASIGNAR_DEPOSITO` (V4.2), confirmación individual, reversión, PDF, motor, P8 y el esquema de `Depositos_Activos` **no se tocaron**: V4.2 se usó solo como referencia (el repositorio lo comprueba con tests).
 
 ## 1 · UX y arquitectura

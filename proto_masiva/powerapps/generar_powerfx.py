@@ -117,35 +117,28 @@ def formula_pantalla(propiedad):
     return doc["Screens"]["P9_Confirmacion_Masiva"]["Properties"][propiedad].lstrip("=")
 
 
-# Orden de pegado: A primero, porque su `Set`/`ClearCollect` DEFINE las variables y la colección que usan las demás fórmulas.
-# Nombres REALES del tenant (Title1 es la etiqueta del título dentro de la galería, como la nombró Studio).
+# Orden de pegado: A primero, porque su `Set` DEFINE las variables que usan las demás.
+# Parte del export REAL V1 (tenant_v1): solo cambian 9 propiedades + 1 control nuevo (el Timer). Nombres reales.
 CAMBIOS_CONFIRMACION = (
-    ("btnConfirmarMasivamenteP9", "OnSelect", "A · `btnConfirmarMasivamenteP9` → **OnSelect** (UN clic, sin segundo modal; PEGA ESTA PRIMERO: define las variables y `colConfirmacionP9`)"),
-    ("btnConfirmarMasivamenteP9", "DisplayMode", "B · `btnConfirmarMasivamenteP9` → **DisplayMode** (Disabled mientras corre y después de confirmar ese mismo resultado)"),
-    ("pantalla", "OnVisible", "C · Pantalla `P9_Confirmacion_Masiva` → propiedad **OnVisible** (reemplaza todo; retira `varConfirmarMasivaVisible`)"),
+    ("btnConfirmarMasivamenteP9", "OnSelect", "A · `btnConfirmarMasivamenteP9` → **OnSelect** (UN clic: responde enseguida y arranca el seguimiento; PEGA ESTA PRIMERO: define las variables nuevas)"),
+    ("tmrProgresoP9", "OnTimerEnd", "B · `tmrProgresoP9` (Temporizador NUEVO, ver «Crear el Temporizador») → **OnTimerEnd**"),
+    ("pantalla", "OnVisible", "C · Pantalla `P9_Confirmacion_Masiva` → propiedad **OnVisible** (reemplaza todo)"),
     ("attXlsxP9", "OnAddFile", "D · Control de adjuntos `attXlsxP9` → propiedades **OnAddFile** y **OnRemoveFile** (la misma fórmula en las dos)"),
-    ("btnPrevalidarP9", "DisplayMode", "E · `btnPrevalidarP9` → **DisplayMode**"),
-    ("btnPrevalidarP9", "OnSelect", "F · `btnPrevalidarP9` → **OnSelect** (tu fórmula real con `IfError … true / false`, más el reinicio de la confirmación)"),
-    ("btnVerObservacionesP9", "Text", "G · `btnVerObservacionesP9` → **Text**"),
-    ("btnVerObservacionesP9", "Visible", "H · `btnVerObservacionesP9` → **Visible**"),
-    ("galObservacionesP9", "Items", "I · `galObservacionesP9` → **Items** (antes de confirmar: observaciones de la prevalidación; después: filas no confirmadas)"),
-    ("Title1", "Text", "J · `Title1` (etiqueta de título DENTRO de `galObservacionesP9`) → **Text** (añade los resultados de la confirmación)"),
-    ("lblEstadoP9", "Text", "K · `lblEstadoP9` → **Text**"),
-    ("lblEstadoP9", "Fill", "L · `lblEstadoP9` → **Fill**"),
-    ("lblTitularResultadoP9", "Text", "M · `lblTitularResultadoP9` → **Text** (resultado de la confirmación en dos líneas; conserva el alto 50 del tenant)"),
-    ("lblResMensajeP9", "Text", "N · `lblResMensajeP9` → **Text**"),
-    ("lblResTiempoP9", "Text", "O · `lblResTiempoP9` → **Text** (tiempo humanizado, mismo formato «8,9 segundos»)"),
-    ("lblSubtituloMasivaP9", "Text", "P · `lblSubtituloMasivaP9` → **Text**"),
-    ("lblAvisoPrototipoP9", "Text", "Q · `lblAvisoPrototipoP9` → **Text**"))
+    ("btnPrevalidarP9", "OnSelect", "E · `btnPrevalidarP9` → **OnSelect** (tu fórmula real con `IfError … true / false`, más 4 reinicios)"),
+    ("lblTitularResultadoP9", "Text", "F · `lblTitularResultadoP9` → **Text** (avance en dos líneas mientras corre; resultado final en dos líneas; conserva el alto 50)"),
+    ("lblResMensajeP9", "Text", "G · `lblResMensajeP9` → **Text**"),
+    ("lblResTiempoP9", "Text", "H · `lblResTiempoP9` → **Text** (muestra «En curso» mientras corre)"),
+    ("lblAvisoPrototipoP9", "Text", "I · `lblAvisoPrototipoP9` → **Text**"))
 
 NO_CAMBIAN = (
-    "`btnConfirmarMasivamenteP9` → **Text** (ya cuenta las filas `VALIDO`) y toda su geometría/estilo",
-    "`btnVerObservacionesP9` → **OnSelect** (ya alterna `varVerObservacionesP9`) y su aspecto",
-    "`Title1_1` (etiqueta del mensaje dentro de la galería) → `=ThisItem.mensaje`, y `Subtitle1`, `Separator1`, `Rectangle1`",
-    "`lblResMensajeP9` → **Visible** (`=!varVerObservacionesP9`) y `lblResTiempoTituloP9` («Tiempo de Procesamiento»)",
-    "`btnDescargarPlantillaP9`, `btnVolverMasivaP9`, `frmArchivoP9`, `dcAdjuntosP9`, el panel y los demás rótulos del resumen",
+    "`btnConfirmarMasivamenteP9` → **Text** y **DisplayMode** (ya bloquean mientras corre y después de confirmar) y toda su geometría/estilo",
+    "`btnVerObservacionesP9`, `galObservacionesP9`, `Title1`, `Title1_1`, `Subtitle1`: tras terminar muestran SOLO las filas no confirmadas, igual que en la V1 (`colConfirmacionP9` ahora trae solo esas)",
+    "`lblEstadoP9` (Text y Fill): ya muestran `CONFIRMANDO` mientras corre y `OK` / `PARCIAL` / `ERROR` al terminar",
+    "`btnPrevalidarP9` → **DisplayMode**, `btnVolverMasivaP9`, `btnDescargarPlantillaP9`, `frmArchivoP9`, `dcAdjuntosP9` y los demás rótulos del resumen",
     "`Main_Screen`: `btnImportacionMasivaP9`, `cmbCuentaP9_1` y sus `Visible` con `mostrarConfirmacion`",
 )
+
+TIMER_PROPIEDADES = (("Duration", "15000"), ("Repeat", "true"), ("AutoStart", "false"), ("Start", "Coalesce(varMonitorearP9; false)"), ("Visible", "false"))
 
 
 def formula_de(nombre, propiedad):
@@ -155,52 +148,70 @@ def formula_de(nombre, propiedad):
 
 
 def documento_confirmacion() -> str:
-    partes = ['''# Power Fx de la CONFIRMACIÓN MASIVA (botón `btnConfirmarMasivamenteP9`)
+    partes = ['''# Power Fx de la CONFIRMACIÓN MASIVA hasta 1999 filas (un clic, seguimiento por Temporizador)
 
-> **Estado: V1 FUNCIONAL VALIDADA EN EL TENANT (camino feliz).** Estas son las fórmulas tal como están en el export REAL de `P9_PRUEBA_MASIVA` posterior a la integración
-> (`tenant_v1/P9_Confirmacion_Masiva.pa.yaml`): con ellas se prevalidó un Excel de 3 filas (2 `VALIDO`, 1 `NO_ENCONTRADO`) y se confirmaron 2 de 2 depósitos, que cambiaron a `ASIGNADO`
-> en `Depositos_Activos`. **No está validado en el tenant:** conflictos/412, fallos parciales, 10 filas, 50 filas, tiempos de espera ni throttling (ver `../VALIDACION_TENANT_V1.md`).
+> **Estado: NO VALIDADO en el tenant.** La V1 (confirmación síncrona de hasta 50 filas) SÍ funcionó de punta a punta en el tenant (commit `82b279e`, ver `../VALIDACION_TENANT_V1.md`).
+> Estas fórmulas son la evolución para 1999 filas: se pegan sobre tus controles reales (`tenant_v1/P9_Confirmacion_Masiva.pa.yaml`, el export posterior a la V1) y pasan las pruebas
+> estáticas del repositorio (paréntesis, esquemas, **todas las ramas de cada `IfError` devuelven booleano**, **`ShowColumns` sin comillas**), pero **no se ejecutaron en Power Apps Studio**.
 > Se **generan** (`python proto_masiva/powerapps/generar_powerfx.py`) desde `P9_Confirmacion_Masiva.pa.yaml`: no las edites a mano aquí.
 >
-> **No pegues controles ni el YAML:** los controles ya existen en tu app con estos nombres. Solo se **reemplazan 18 propiedades** en 13 elementos (la pantalla y 12 controles; las de abajo).
-> Nada cambia de posición, tamaño ni estilo. Reglas que Studio ya impuso en tu tenant y que NO se deben deshacer a mano:
-> - **`IfError`:** todas las ramas terminan en `true` / `false` (si no, tipos incompatibles).
-> - **`ShowColumns`:** los nombres de columna van **SIN comillas** (`ShowColumns(tabla; fila_excel; deposito_id; …)`); con comillas Studio lo rechazó.
+> **Qué cambia:** 9 propiedades en 8 elementos + **1 control nuevo** (un Temporizador oculto). Nada cambia de posición, tamaño ni estilo.
+> Reglas que Studio ya impuso en tu tenant y que NO se deben deshacer a mano: `IfError` con ramas `true` / `false`; `ShowColumns(tabla; fila_excel; deposito_id; …)` **sin comillas**.
 
 Escritas con `;` entre argumentos y `;;` entre sentencias (tu configuración regional).
 
-## Antes de pegar: agregar el flujo a la app
+## Antes de pegar: los dos flujos en la app (el contrato de `P9_MASIVA_PROTO_CONFIRMAR` CAMBIÓ)
 
-Panel izquierdo → **Power Automate** (⚡) → **Agregar flujo** → `P9_MASIVA_PROTO_CONFIRMAR` (ver `flows/INSTRUCCIONES_CONFIRMAR.md`). Sin esto, `P9_MASIVA_PROTO_CONFIRMAR.Run` no se resuelve.
+`P9_MASIVA_PROTO_CONFIRMAR` ya no devuelve el resultado final: **responde enseguida** `resultado / codigo / mensaje / execution_uid / filas_recibidas` y sigue procesando.
+Power Apps guarda la forma de las salidas de un flujo al agregarlo, así que hay que **quitarlo y volver a agregarlo**:
+
+1. Panel izquierdo → **Power Automate** (⚡) → en `P9_MASIVA_PROTO_CONFIRMAR` → **⋯** → **Quitar de la aplicación** (los errores rojos de `.Run` que aparecen son esperados; se resuelven en el paso 3).
+2. **Agregar flujo** → `P9_MASIVA_PROTO_ESTADO` (nuevo).
+3. **Agregar flujo** → `P9_MASIVA_PROTO_CONFIRMAR` (el actualizado; el orden no importa).
+
+## Crear el Temporizador (`tmrProgresoP9`) — único control nuevo
+
+*Insertar → Entrada → Temporizador*; en la pantalla `P9_Confirmacion_Masiva`; renómbralo **`tmrProgresoP9`**. Propiedades (el resto déjalo por defecto):
+
+| Propiedad | Valor |
+|---|---|
+''' + "\n".join(f"| `{k}` | `{v}` |" for k, v in TIMER_PROPIEDADES) + '''
+
+`Duration = 15000` (15 s: el tope de los 10–15 s previstos; **no** consultar cada segundo — cada consulta ejecuta 12 acciones de Power Automate). Es invisible: no cambia el diseño. Su `OnTimerEnd` es la fórmula **B**.
 
 ## Variables y colecciones que usa (todas EN MEMORIA, ninguna se guarda)
 
 | Nombre | Qué es |
 |---|---|
 | `colPrevalidacionP9` | filas de la prevalidación (ya existe y está validada) |
-| `colConfirmacionP9` | resultado por fila de la confirmación (nuevo; se llena desde `detalle_json`) |
-| `varProcesandoConfirmacionP9` | `true` mientras corre la confirmación (bloquea CONFIRMAR y PREVALIDAR) |
-| `varConfirmacionMasivaFinalizadaP9` | `true` tras confirmar: el botón queda **Disabled** para ese mismo resultado de prevalidación; se reinicia al adjuntar otro archivo o al volver a PREVALIDAR |
-| `varResultadoConfirmacionP9` | la respuesta del flujo (8 textos) |
-| `varMsConfirmacionP9` | milisegundos de la confirmación (la pantalla los muestra como «8,9 segundos») |
+| `colConfirmacionP9` | SOLO las filas no confirmadas (se llena al terminar, desde el `detalle_json` del estado final) |
+| `varEjecucionMasivaP9` | respuesta rápida de `P9_MASIVA_PROTO_CONFIRMAR` (`execution_uid`, `filas_recibidas`…) |
+| `varProgresoMasivoP9` | última respuesta de `P9_MASIVA_PROTO_ESTADO` (estado, filas procesadas/confirmadas/no confirmadas, porcentaje, mensaje, detalle) |
+| `varMonitorearP9` | `true` mientras el Temporizador debe consultar (es su `Start`) |
+| `varFallosEstadoP9` | consultas seguidas que fallaron (a las 5, se detiene el seguimiento con un aviso) |
+| `varInicioConfirmacionP9` | hora del clic (para el tiempo mostrado) |
+| `varProcesandoConfirmacionP9` | `true` desde el clic hasta que termina: bloquea CONFIRMAR y PREVALIDAR (evita el doble clic) |
+| `varConfirmacionMasivaFinalizadaP9` | `true` tras el clic: el botón queda **Disabled** para ese mismo resultado de prevalidación; se reinicia al adjuntar otro archivo o al volver a PREVALIDAR |
+| `varResultadoConfirmacionP9` | resultado FINAL derivado del estado (`OK` / `PARCIAL` / `ERROR`); las fórmulas de la V1 siguen leyéndolo igual |
+| `varMsConfirmacionP9` | milisegundos totales, mostrados como «8,9 segundos» |
 | `varVerObservacionesP9` | VER / OCULTAR OBSERVACIONES (ya existe) |
 
-`varConfirmarMasivaVisible` **ya no se usa** (no hay segundo modal): el paso C la quita del `OnVisible`, y el paso A reemplaza el `OnSelect` que la ponía en `true`.
-Si tenías la variable en otro sitio, bórrala.
+`varConfirmarMasivaVisible` **no existe** (no hay segundo modal).
 
 ## Las fórmulas (en este orden)
 
-Para cada una: selecciona el control → elige la propiedad en la barra de fórmulas → **borra todo** → pega. **Pega primero la A:** define las variables y la colección que usan las demás.
+Para cada una: selecciona el control → elige la propiedad en la barra de fórmulas → **borra todo** → pega. **Pega primero la A:** define las variables que usan las demás.
 ''']
     for nombre, propiedad, titulo in CAMBIOS_CONFIRMACION:
         partes.append(f"### {titulo}\n\n```\n={regional(formula_de(nombre, propiedad))}\n```\n")
     partes.append("## Lo que NO cambia (déjalo como está en tu app)\n\n" + "\n".join(f"- {x}" for x in NO_CAMBIAN) + "\n")
     partes.append('''## Qué mirar tras pegar
 
-1. **Comprobador de aplicaciones** (estetoscopio): sin errores nuevos. Cualquier error en `P9_MASIVA_PROTO_CONFIRMAR.Run`, `JSON(ShowColumns(…))`, `ThisRecord.Value` o `With` dentro
-   de `ForAll`: copia el texto exacto; se ajusta solo esa línea.
-2. **Alto del titular:** el resultado de la confirmación ocupa dos líneas dentro del alto 50 del tenant (se vio correcto en la prueba real de 2 filas).
-3. Pruebas en el tenant: `flows/INSTRUCCIONES_CONFIRMAR.md`, Parte 3. Hecho: T1-equivalente con 2 filas. Pendiente: 10 y 50 filas, conflictos y tiempos.
+1. **Comprobador de aplicaciones** (estetoscopio): sin errores nuevos. Posibles puntos: `P9_MASIVA_PROTO_ESTADO.Run`, `P9_MASIVA_PROTO_CONFIRMAR.Run`, `JSON(ShowColumns(…))`, `With` dentro de `ForAll`.
+   Cualquier error: copia el texto exacto; se ajusta solo esa línea.
+2. **Al pulsar CONFIRMAR MASIVAMENTE (N)** debe verse en segundos «CONFIRMACIÓN EN PROCESO · 0 % / 0 de N procesados…», y cada ~15 s el avance. Al terminar: «CONFIRMACIÓN COMPLETADA» y, si hubo
+   fallidas, `VER OBSERVACIONES (K)` con solo esas filas.
+3. Si Power Apps se cierra durante el proceso, el backend sigue; esta versión NO recupera el seguimiento al volver (queda fuera de alcance): vuelve a PREVALIDAR para ver el estado real.
 ''')
     return "\n".join(partes)
 

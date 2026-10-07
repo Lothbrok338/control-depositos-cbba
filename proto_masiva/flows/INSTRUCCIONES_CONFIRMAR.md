@@ -1,106 +1,102 @@
-# Instalar y probar la CONFIRMACIÓN MASIVA en tu tenant — pasos exactos
+# Actualizar la CONFIRMACIÓN MASIVA a «hasta 1999 filas con UN clic» — pasos exactos
 
-> **Estado:** el flujo se importó y la V1 funcionó en el tenant con 2 filas (camino feliz). Lo validado y lo pendiente (10 y 50 filas, conflictos, tiempos) está en `../VALIDACION_TENANT_V1.md`. En Studio, `ShowColumns` lleva los nombres de columna **sin comillas** (ya está así en `CONFIRMACION_POWERFX.md`).
+> **Estado:** la **V1** (síncrona, 2 filas) funcionó de punta a punta en tu tenant (commit `82b279e`, `../VALIDACION_TENANT_V1.md`). **Esta versión (escala 1999) NO está validada en el tenant**: está probada con un SharePoint simulado.
+> Diseño, límites de Microsoft verificados y riesgos: **`../ESCALA_1999.md`**.
 
-> ## ⚠ Esta prueba ESCRIBE en `Depositos_Activos` REAL
-> `P9_MASIVA_PROTO_CONFIRMAR` cambia depósitos a `ASIGNADO` (como la confirmación individual). **No hay rollback automático** y no se revierte lo ya confirmado.
-> Haz las pruebas **solo con depósitos que de todos modos ibas a confirmar** (con su estudiante, solicitante y sede reales), o acuerda antes cómo se revertirán
-> (la reversión vigente es por solicitud y aprobación). Empieza con **1 sola fila**.
->
-> **No está validado en el tenant.** Trabaja en la copia `P9_PRUEBA_MASIVA`; no publiques sobre producción y no toques otros flujos. Todo esto lo haces tú a mano, acompañado: no se importó ni publicó nada desde el repositorio.
+> ## ⚠ Esta confirmación ESCRIBE en `Depositos_Activos` REAL
+> Cambia depósitos a `ASIGNADO` (como la confirmación individual). **No hay rollback automático**: lo ya confirmado no se revierte (la reversión vigente es por solicitud y aprobación).
+> Trabaja en la copia `P9_PRUEBA_MASIVA`; no publiques sobre producción y no toques otros flujos.
 
-Archivos (rama `experiment/p9-masiva-prototipo`, carpeta `proto_masiva/`):
+Se **actualizan los mismos artefactos** (no se crean copias con otro nombre): `P9_MASIVA_PROTO_CONFIRMAR` (evoluciona), `P9_PRUEBA_MASIVA` (misma pantalla) y se añade UN flujo de consulta: `P9_MASIVA_PROTO_ESTADO`.
 
-| Archivo | Para qué |
+| Archivo (rama `experiment/p9-masiva-prototipo`, carpeta `proto_masiva/`) | Para qué |
 |---|---|
-| `flows/P9_MASIVA_PROTO_CONFIRMAR.zip` | el flujo nuevo (opción A) |
-| `flows/GUIA_ACCIONES_CONFIRMACION.md` | las mismas acciones, una por una, por si el ZIP no se pudiera importar (opción B) |
-| `powerapps/CONFIRMACION_POWERFX.md` | las fórmulas A–Q de Power Apps (sobre tus controles reales), en tu sintaxis (`;` y `;;`) |
-| `CONFIRMACION_MASIVA.md` | reglas, contratos, análisis de escala y lo no validado |
+| `flows/P9_MASIVA_PROTO_CONFIRMAR.zip` | el flujo de confirmación actualizado (responde ACEPTADO y sigue procesando) |
+| `flows/P9_MASIVA_PROTO_ESTADO.zip` | el flujo NUEVO de consulta de avance (solo lectura) |
+| `powerapps/CONFIRMACION_POWERFX.md` | las fórmulas A–I (sobre tus controles reales) y cómo crear el Temporizador, en tu sintaxis (`;` y `;;`) |
+| `flows/GUIA_ACCIONES_CONFIRMACION.md`, `flows/GUIA_ACCIONES_ESTADO.md` | las mismas acciones, una por una, si un ZIP no se pudiera importar (opción B) |
+| `ESCALA_1999.md` | arquitectura, límites de Microsoft (DOCUMENTADO / INFERIDO), solicitudes estimadas y riesgos |
 
-## PARTE 1 · Power Automate: importar el flujo NUEVO
+**Qué cambió para ti:** (1) `P9_MASIVA_PROTO_CONFIRMAR` ya no devuelve el resultado final, devuelve `ACEPTADO` + `execution_uid` en segundos; (2) un Temporizador oculto consulta el avance cada 15 s con `P9_MASIVA_PROTO_ESTADO`;
+(3) el tope de 50 filas desapareció (ahora 1999); (4) **hay que quitar y volver a agregar el flujo en Power Apps** (su contrato cambió).
 
-El flujo es **nuevo** (no actualiza ninguno existente), así que no hace falta respaldar nada.
+## PARTE 1 · Power Automate
+
+### 1.1 · Actualizar `P9_MASIVA_PROTO_CONFIRMAR` (mismo nombre, un solo flujo al final)
+
+La V1 queda respaldada en Git (`git show 82b279e:proto_masiva/flows/P9_MASIVA_PROTO_CONFIRMAR.zip`); no necesitas exportar nada.
 
 1. `make.powerautomate.com` → **Mis flujos** → **Importar** → **Importar paquete (heredado)** → **Cargar** → `P9_MASIVA_PROTO_CONFIRMAR.zip`.
-2. En *Contenido del paquete*, fila **P9_MASIVA_PROTO_CONFIRMAR** (tipo *Flujo*) → **Acción de importación** → **Crear como nuevo**.
-3. En la **única conexión** que pide (**SharePoint**) → **Seleccionar durante la importación** → elige **tu conexión existente de SharePoint** (la misma de `P9_ASIGNAR_DEPOSITO`) → **Guardar**.
-4. **Importar** → espera «El paquete se importó correctamente».
-5. **Mis flujos** → `P9_MASIVA_PROTO_CONFIRMAR` → **Editar**.
+2. En *Contenido del paquete*, fila **P9_MASIVA_PROTO_CONFIRMAR** → **Acción de importación**:
+   - Si ofrece **Actualizar** → elígela (reemplaza la definición y mantiene el vínculo con la app).
+   - Si **solo** ofrece **Crear como nuevo**: cancela, ve a **Mis flujos** → `P9_MASIVA_PROTO_CONFIRMAR` → **⋯** → **Eliminar**, y repite la importación con **Crear como nuevo**. Quedará **un solo flujo con el mismo nombre**
+     (no lo renombres ni lo dejes «antiguo»: dos flujos con el mismo nombre confunden a Power Apps).
+3. Conexión **SharePoint** → **Seleccionar durante la importación** → tu conexión existente (la misma de `P9_ASIGNAR_DEPOSITO`) → **Guardar** → **Importar**.
+4. **Mis flujos** → `P9_MASIVA_PROTO_CONFIRMAR` → **Editar**.
 
-### Revisar 5 puntos antes de guardar (abre cada acción con un clic en su cabecera)
+### 1.2 · Importar `P9_MASIVA_PROTO_ESTADO` (flujo nuevo)
+
+Igual que arriba con `P9_MASIVA_PROTO_ESTADO.zip` y **Crear como nuevo** (es nuevo). Misma conexión de SharePoint. Luego **Editar**.
+
+### 1.3 · Revisar antes de guardar (abre cada acción con un clic en su cabecera)
+
+**`P9_MASIVA_PROTO_CONFIRMAR`**
 
 | # | Acción | Debe quedar así |
 |---|---|---|
 | 1 | Disparador **Power Apps (V2)** | **dos** entradas de tipo Texto, en este orden: `detalle_json` y `usuario_email` |
-| 2 | `PARAM_MAX_FILAS_POR_LLAMADA` (Redactar, arriba) | **50**. Es el tope por llamada: se sube después de medir (ver Parte 3) |
-| 3 | `Para_cada_fila` (dentro de `TRY` → … → `Lote_valido` → rama Sí) | ⋯ → **Configuración** → *Control de simultaneidad* **Activado** con *Grado de paralelismo* = **1** |
-| 4 | `Leer_deposito` (dentro de `TRY_FILA`) | Dirección del sitio `https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu` · Método `GET` · ⋯ → Configuración → *Directiva de reintentos*: **Intervalo fijo, 2 reintentos, PT5S** (5 s es el mínimo que acepta Power Automate) |
-| 5 | `Actualizar_deposito` (dentro de `TRY_FILA` → `Puede_confirmar` rama Sí) | Método `POST` · Encabezados `X-HTTP-Method: MERGE` e `IF-MATCH` = el ETag fresco (`@outputs('Revalidacion')?['etag']`) · ⋯ → Configuración → *Directiva de reintentos*: **Ninguna**. **No pongas nunca `*` en `IF-MATCH`.** |
+| 2 | `PARAM_MAX_FILAS_POR_LLAMADA` (Redactar, arriba) | **1999** (ya no 50). Junto a ella: `PARAM_INTERVALO_PROGRESO` = 25, `PARAM_MAX_DETALLE` = 300, `PARAM_CARPETA` = `/Documents/P9_MASIVA_TEMP` |
+| 3 | `RESPONDER` (Condición) | **dos** acciones «Responder a una aplicación de PowerApps o a un flujo»: `Responder_aceptado` (rama Sí) y `Responder_error` (rama No). **No las muevas ni las pongas dentro del bucle** |
+| 4 | `Para_cada_fila` (dentro de `PROCESAR` → rama Sí) | ⋯ → **Configuración** → *Control de simultaneidad* **Activado**, *Grado de paralelismo* = **1** |
+| 5 | `Leer_deposito` (dentro de `TRY_FILA`) | Sitio `https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu` · `GET` · ⋯ → Configuración → *Directiva de reintentos*: **Intervalo fijo, 2 reintentos, PT5S** |
+| 6 | `Actualizar_deposito` (dentro de `TRY_FILA` → `Puede_confirmar` rama Sí) | `POST` · `X-HTTP-Method: MERGE` · `IF-MATCH` = ETag fresco (`@outputs('Revalidacion')?['etag']`) · *Directiva de reintentos*: **Ninguna**. **Nunca `*`** |
+| 7 | `Crear_estado` · `Escribir_progreso` · `Escribir_final` · `Escribir_final_minimo` | acciones de **SharePoint** (*Crear archivo* / *Actualizar archivo*) con tu conexión; `Crear_estado`: reintentos **Ninguna**; las de *Actualizar archivo*: **Intervalo fijo, 2 reintentos, PT5S** |
 
-Si una acción muestra ⚠ o campos vacíos, **vuelve a elegir la conexión de SharePoint** en esa acción; no cambies ninguna expresión.
+**`P9_MASIVA_PROTO_ESTADO`**: disparador con **una** entrada de texto `execution_uid`; `Leer_estado` = *Obtener contenido del archivo con la ruta de acceso*, *Inferir tipo de contenido* **No**.
 
-6. **Guardar** («Su flujo está listo»). Si el *Comprobador de flujos* marca errores, **no sigas**: copia el texto exacto y pásamelo.
-7. Comprueba que el flujo esté **Activado**.
+Si una acción muestra ⚠ o campos vacíos, **vuelve a elegir la conexión de SharePoint** en esa acción; no cambies ninguna expresión. **Guardar** → «Su flujo está listo» en ambos. Si el *Comprobador de flujos* marca errores, **no sigas**: copia el texto exacto.
+Comprueba que los dos flujos estén **Activados**.
 
-**Opción B (solo si la importación fallara):** arma el flujo con `flows/GUIA_ACCIONES_CONFIRMACION.md`, que lista cada acción con su nombre, tipo y expresión.
+### 1.4 · La carpeta
+Los archivos de estado `confirmacion_<execution_uid>.json` se crean en `Documents/P9_MASIVA_TEMP`, **la misma carpeta técnica que ya usa la prevalidación** para sus `TMP_*.xlsx` (si ahí ves los `TMP_*`, ahí aparecerán los `confirmacion_*`).
+No son historial; no se limpian solos (puedes borrarlos a mano; retención sugerida 24 h).
 
 ## PARTE 2 · Power Apps (`P9_PRUEBA_MASIVA`, la COPIA)
 
-La pantalla `P9_Confirmacion_Masiva` **ya existe en tu app con todos los controles** (`btnConfirmarMasivamenteP9`, `btnVerObservacionesP9`, `galObservacionesP9`…). El repositorio ya se
-sincronizó con el **export real** de esa app (`powerapps/tenant/`, ver `SYNC_TENANT_UI.md`). **No pegues controles ni YAML**: solo se reemplazan **18 propiedades** (fórmulas) en 13 elementos.
-Nada cambia de posición, tamaño ni estilo.
+Los controles ya existen: **no pegues controles ni YAML**; solo fórmulas y **un** control nuevo (un Temporizador oculto). Detalle exacto en `powerapps/CONFIRMACION_POWERFX.md`.
 
 1. `make.powerapps.com` → **Aplicaciones** → `P9_PRUEBA_MASIVA` → **Editar**.
-2. **Agregar el flujo nuevo:** panel izquierdo → **Power Automate** (icono ⚡) → **Agregar flujo** → `P9_MASIVA_PROTO_CONFIRMAR`.
-3. **Pegar las fórmulas** de `powerapps/CONFIRMACION_POWERFX.md`, **de la A a la Q, en ese orden** (la **A primero**: define las variables y `colConfirmacionP9` que usan las demás): selecciona el control → elige
-   la propiedad en la barra de fórmulas → **borra todo** → pega.
-   - Los nombres del documento son los **reales de tu app** (p. ej. `Title1` es la etiqueta del título dentro de `galObservacionesP9`). Si alguno no existe, para y avísame; no lo recrees.
-   - **D** va en `attXlsxP9` (dentro de `frmArchivoP9` → `dcAdjuntosP9`): propiedades **OnAddFile** y **OnRemoveFile**, la misma fórmula en las dos.
-   - **C** quita `Set(varConfirmarMasivaVisible; false)` del `OnVisible` (el segundo modal está descartado).
-   - **No cambian:** `Text` de `btnConfirmarMasivamenteP9`, `OnSelect` de `btnVerObservacionesP9`, `Title1_1`, `lblResMensajeP9.Visible`, `lblResTiempoTituloP9`, `Main_Screen` (lista completa al final de `CONFIRMACION_POWERFX.md`).
-   - Todas las ramas de cada `IfError` terminan en `true`/`false` (la misma forma que Studio ya aceptó en la prevalidación): **no cambies eso a mano**.
-4. **Comprobador de aplicaciones** (icono del estetoscopio): sin errores. Si marca error en:
-   - `P9_MASIVA_PROTO_CONFIRMAR.Run(…)`: comprueba que IntelliSense pida **dos argumentos de texto** (`detalle_json`, `usuario_email`); si pide otra forma, avísame y se ajusta **solo esa línea**.
-   - `ThisRecord.Value`: prueba `ThisRecord.<campo>` solo en esa línea y avísame qué firma aceptó.
-   - `ShowColumns`/`JSON`/`OnAddFile`/`With` dentro de `ForAll`: copia el texto exacto del error.
-5. Mira que el titular de dos líneas («CONFIRMACIÓN COMPLETADA / 1 de 1 depósitos confirmados.») quepa en `lblTitularResultadoP9`; si se corta, sube su alto (único ajuste visual posible).
-6. **Guardar**. **No publiques sobre producción.** Reproduce con F5 desde la pantalla `P9_Confirmacion_Masiva`.
+2. Panel **Power Automate** (⚡): en `P9_MASIVA_PROTO_CONFIRMAR` → **⋯** → **Quitar de la aplicación** (saldrán errores rojos en `.Run`: son esperados). **Agregar flujo** → `P9_MASIVA_PROTO_ESTADO`. **Agregar flujo** → `P9_MASIVA_PROTO_CONFIRMAR`.
+3. *Insertar → Entrada → Temporizador*; renómbralo **`tmrProgresoP9`**; `Duration` = `15000`, `Repeat` = `true`, `AutoStart` = `false`, `Start` = `Coalesce(varMonitorearP9; false)`, `Visible` = `false`.
+4. Pega las fórmulas del documento **de la A a la I, en orden (la A primero: define las variables)**. La B va en `tmrProgresoP9` → `OnTimerEnd`; la D en `attXlsxP9` → `OnAddFile` **y** `OnRemoveFile`.
+5. **Comprobador de aplicaciones** (estetoscopio): sin errores. Si marca error en `P9_MASIVA_PROTO_ESTADO.Run` / `P9_MASIVA_PROTO_CONFIRMAR.Run`, comprueba que IntelliSense pida **argumentos de texto** (`execution_uid`; `detalle_json`, `usuario_email`); si no, avísame.
+6. **Guardar**. No publiques sobre producción.
 
-## PARTE 3 · Pruebas en el tenant (en este orden; no avances si una falla)
+Reglas de Studio de tu tenant que las fórmulas ya cumplen (no las deshagas a mano): `IfError` con ramas `true`/`false`; `ShowColumns` con los nombres de columna **sin comillas**.
 
-Prepara un Excel con filas **reales** de depósitos `DISPONIBLE` (los mismos que ya sabes que vas a confirmar). Pulsa **PREVALIDAR ARCHIVO** y comprueba que salen `VALIDO`.
+## PARTE 3 · Primer uso real (qué observar y qué copiarme)
 
-| # | Prueba | Esperado |
-|---|---|---|
-| **T1** | **1 fila** → CONFIRMAR MASIVAMENTE (1) | «CONFIRMACIÓN COMPLETADA · 1 de 1 depósitos confirmados». El botón queda **Disabled**. En la lista (o en la galería de la app individual) el depósito está `ASIGNADO` con: `ESTUDIANTE`, `SOLICITADO_POR`, `SEDE_ASIGNACION`, `OBSERVACION` (vacía = vacía, no «null»), `USUARIO_ASIGNACION` = tu correo, `FECHA_HORA_ASIGNACION`, `CODIGO_ESTUDIANTE` vacío. **Compáralo con otro depósito confirmado con la app individual: deben tener la misma forma.** |
-| **T2** | Con el mismo Excel, **PREVALIDAR de nuevo** | ese depósito sale `NO_DISPONIBLE` («ASIGNADO»); el botón queda en `(0)` y Disabled. Nada se duplica. |
-| **T3** | **3 filas.** Después de PREVALIDAR y **antes** de CONFIRMAR, confirma la fila 2 con la **app individual** (otra pestaña) | resultado «CONFIRMACIÓN PARCIAL · 2 de 3»: la fila 2 `NO_DISPONIBLE`, las otras `CONFIRMADO`. «VER OBSERVACIONES (1)» muestra solo la no confirmada. |
-| **T4** | **Doble clic rápido** en CONFIRMAR | el botón se bloquea tras el primer clic; en el *Historial de ejecuciones* hay **una sola** ejecución. |
-| **T5** | **10 filas** | todas `CONFIRMADO`. Anota «TIEMPO DE PROCESAMIENTO» y, en el historial del flujo, la duración total y por fila. |
-| **T6** | **50 filas** | si termina antes del timeout: `CONFIRMADO` en todas. **Si la app muestra «El flujo no respondió…»:** el flujo sigue ejecutándose (mira el historial); cuando termine, **PREVALIDAR de nuevo**: lo ya confirmado sale `NO_DISPONIBLE`, lo pendiente sigue `VALIDO`. No reintentes el clic sin PREVALIDAR. |
-| T7 | **Archivo > máximo por llamada** (p. ej. con `PARAM_MAX_FILAS_POR_LLAMADA` = 50, envía 51 `VALIDO`) | «LOTE_EXCEDE_LIMITE… no se confirmó ningún depósito». Nada cambia en la lista. |
+No hay un protocolo de «10, luego 50»: usa el flujo con un lote real. Lo que debe verse:
 
-**Qué copiarme después de cada prueba:** el resultado en pantalla, el JSON de `tiempos_ms` (`total`, `filas`, `ms_por_fila`; sale en la respuesta del flujo, visible en el historial → acción `Responder_a_PowerApps` → *Salidas*), y la duración de la ejecución.
+1. Al pulsar **CONFIRMAR MASIVAMENTE (N)** (N = 1…1999, **un solo clic**): en **segundos** el panel pasa a «CONFIRMACIÓN EN PROCESO · 0 % / 0 de N procesados», el botón queda **Disabled**.
+2. Cada ~15 s avanza: «CONFIRMACIÓN EN PROCESO · 27 % / 350 de 1284 procesados · 347 confirmados · 3 requieren revisión».
+3. Al terminar: «CONFIRMACIÓN COMPLETADA / 1278 de 1284 depósitos confirmados · 6 requieren revisión», `VER OBSERVACIONES (6)` con SOLO esas filas, tiempo total.
+4. En `Documents/P9_MASIVA_TEMP` aparece `confirmacion_<guid>.json` (puedes abrirlo: contadores, estado, y al final solo las no confirmadas).
+5. En `Depositos_Activos` los confirmados están `ASIGNADO`.
 
-### Comprobaciones en el historial del flujo (una ejecución cualquiera)
+**Qué copiarme después** (así se miden los tiempos reales, que NO se pueden suponer): N, el tiempo mostrado, y en el **Historial de ejecuciones** de `P9_MASIVA_PROTO_CONFIRMAR` la duración total, cuándo ejecutó `Responder_aceptado`
+y la duración de una iteración de `Para_cada_fila`; el campo `tiempos_ms` del archivo de estado (`total=…;filas=…;ms_por_fila=…`). Y cualquier mensaje rojo de Power Apps o de Power Automate.
 
-- Por fila hay **un** `Leer_deposito` (GET) y, solo si la fila seguía válida, **un** `Actualizar_deposito` (POST) con el encabezado `IF-MATCH` = un valor entre comillas (p. ej. `"3"`), **nunca `*`**, y estado **204**.
-- Si una fila falló, el bucle **siguió** con las demás (las demás `Para_cada_fila` en verde).
-- Si ves `ERROR_NO_CONTROLADO`, abre la ejecución, busca la primera acción **roja** (será una de `Filas_*` o `Detalle_*`) y copia su error.
+### Si algo no avanza
+- **Power Automate → `P9_MASIVA_PROTO_CONFIRMAR` → Historial de ejecuciones:** la ejecución debe seguir «En ejecución» después de haber respondido; `Responder_aceptado` en verde; dentro de `PROCESAR` → `Para_cada_fila` avanzando.
+- Si la app dice «ERROR_ESTADO»: no se pudo crear el archivo de estado (revisa `Crear_estado` y la carpeta); **no se confirmó nada**.
+- Si la app dice «No se pudo consultar el progreso…»: el flujo puede seguir; vuelve a PREVALIDAR (lo ya confirmado sale `NO_DISPONIBLE`).
+- Si el input es demasiado grande y Power Apps muestra «El flujo no respondió…» al pulsar: no se confirmó nada; avísame con el N (ver riesgo 1 de `ESCALA_1999.md`).
 
-### Cómo decidir el máximo por llamada (sin inventar números)
-
-1. Con T5 y T6 obtén `ms_por_fila` (y comprueba si el 50 terminó dentro del tiempo de espera de Power Apps).
-2. Máximo seguro ≈ **(tiempo de espera de la app × 0,6) ÷ `ms_por_fila`**. Cámbialo en `PARAM_MAX_FILAS_POR_LLAMADA` (Redactar, arriba del flujo) → **Guardar**.
-3. Si el máximo seguro resulta mucho menor que lo que necesitas, aplica la alternativa mínima de `CONFIRMACION_MASIVA.md` §7 (partir en trozos desde Power Apps): **no se crea hasta que las mediciones lo demuestren**.
-
-## OPCIONAL · mensaje nuevo del límite de 1999 filas en la prevalidación
-
-Cambió solo el **texto** del error para archivos de 2000 filas o más; el comportamiento ya existía. Si quieres verlo en el tenant: sigue `flows/ACTUALIZAR_FLUJO_PREVALIDACION.md` (opción A) con el **`P9_MASIVA_PROTO_PREVALIDAR.zip` regenerado** de esta rama. No es necesario para probar la confirmación.
+### Cuota de solicitudes
+Una confirmación de 1999 filas ≈ 22.200 acciones + ≈ 2.900 por hora de seguimiento. Con licencia de Microsoft 365 (6.000/día por usuario) excede la asignación; con Power Automate Premium (40.000) cabe una por día. Superarlo **ralentiza** los flujos (documentado), no los bloquea hoy. Mira tu licencia antes de volúmenes grandes (`ESCALA_1999.md` §5).
 
 ## Si algo falla — volver atrás
-
-- **Flujo:** Mis flujos → `P9_MASIVA_PROTO_CONFIRMAR` → **⋯ → Desactivar** (y **Eliminar** si quieres). No afecta a ningún otro flujo.
-- **Power Apps:** restaura las fórmulas anteriores desde el historial de versiones de la app (**Configuración → Versiones**) o, propiedad por propiedad, desde `powerapps/tenant/P9_Confirmacion_Masiva.pa.yaml` (el export de tu app ANTES de integrar la confirmación).
-- **Datos:** lo ya confirmado **no se revierte solo**. Para devolver un depósito a `DISPONIBLE` usa la reversión vigente (solicitud y aprobación).
+- **Power Apps:** *Configuración → Versiones* → restaura la versión anterior de `P9_PRUEBA_MASIVA` (la V1 publicada); o propiedad por propiedad desde `powerapps/tenant_v1/P9_Confirmacion_Masiva.pa.yaml`.
+- **Flujo:** importa el ZIP de la V1 (`git show 82b279e:proto_masiva/flows/P9_MASIVA_PROTO_CONFIRMAR.zip`) y quita/vuelve a agregar el flujo en la app; desactiva `P9_MASIVA_PROTO_ESTADO` (no afecta a otros flujos).
+- **Datos:** lo ya confirmado **no se revierte solo**; usa la reversión vigente (solicitud y aprobación).

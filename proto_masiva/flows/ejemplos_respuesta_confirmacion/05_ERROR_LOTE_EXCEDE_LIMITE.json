@@ -1,14 +1,10 @@
 {
   "escenario": "7 filas con un máximo por llamada de 5: se rechaza la llamada completa, sin confirmar nada",
-  "respuesta": {
+  "respuesta_temprana": {
     "resultado": "ERROR",
     "codigo": "LOTE_EXCEDE_LIMITE",
-    "mensaje": "Se enviaron 7 filas y el máximo por confirmación es 5. No se confirmó ningún depósito: divida la confirmación en partes más pequeñas.",
-    "filas_recibidas": "7",
-    "filas_confirmadas": "0",
-    "filas_no_confirmadas": "7",
-    "detalle_json": "[]",
-    "tiempos_ms": "total=7;filas=7;ms_por_fila=2"
-  },
-  "detalle_json_expandido": []
+    "mensaje": "Se enviaron 7 filas y el máximo por confirmación es 5. No se confirmó ningún depósito.",
+    "execution_uid": "",
+    "filas_recibidas": "7"
+  }
 }

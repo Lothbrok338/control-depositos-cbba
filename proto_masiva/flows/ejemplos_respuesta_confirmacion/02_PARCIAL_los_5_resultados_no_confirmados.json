@@ -1,0 +1,97 @@
+{
+  "escenario": "6 filas: 1 CONFIRMADO + NO_DISPONIBLE + CONFLICTO (412) + CONFLICTO_DATOS + NO_ENCONTRADO + ERROR_FILA. Lo confirmado NO se revierte y NO se lista: solo las 5 no confirmadas",
+  "respuesta_temprana": {
+    "resultado": "ACEPTADO",
+    "codigo": "PROCESAMIENTO_INICIADO",
+    "mensaje": "Confirmación iniciada: 6 depósitos en proceso.",
+    "execution_uid": "00000000-0000-4000-8000-000000000001",
+    "filas_recibidas": "6"
+  },
+  "estado_final": {
+    "execution_uid": "00000000-0000-4000-8000-000000000001",
+    "estado": "TERMINADO",
+    "codigo": "CONFIRMACION_PARCIAL",
+    "filas_totales": 6,
+    "filas_procesadas": 6,
+    "filas_confirmadas": 1,
+    "filas_no_confirmadas": 5,
+    "porcentaje": 100,
+    "mensaje": "1 de 6 depósitos confirmados; 5 requieren revisión.",
+    "detalle_json": [
+      {
+        "fila_excel": 11,
+        "deposito_id": 6,
+        "resultado": "ERROR_FILA",
+        "mensaje": "Fila inválida en los datos enviados (CAMPOS_OBLIGATORIOS). No se aplicó ningún cambio.",
+        "estado_final": "",
+        "banco": "BNB",
+        "cuenta_bancaria": "3000100152",
+        "codigo_asignacion": "F",
+        "importe": 100.0,
+        "moneda": "BOB"
+      },
+      {
+        "fila_excel": 7,
+        "deposito_id": 2,
+        "resultado": "NO_DISPONIBLE",
+        "mensaje": "El depósito ya no está DISPONIBLE (estado actual: ASIGNADO). No se aplicó ningún cambio.",
+        "estado_final": "ASIGNADO",
+        "banco": "BNB",
+        "cuenta_bancaria": "3000100152",
+        "codigo_asignacion": "B",
+        "importe": 100.0,
+        "moneda": "BOB"
+      },
+      {
+        "fila_excel": 8,
+        "deposito_id": 3,
+        "resultado": "CONFLICTO",
+        "mensaje": "Otro usuario modificó el depósito mientras se confirmaba. No se aplicó tu confirmación.",
+        "estado_final": "",
+        "banco": "BNB",
+        "cuenta_bancaria": "3000100152",
+        "codigo_asignacion": "C",
+        "importe": 100.0,
+        "moneda": "BOB"
+      },
+      {
+        "fila_excel": 9,
+        "deposito_id": 4,
+        "resultado": "CONFLICTO_DATOS",
+        "mensaje": "El depósito cambió desde la prevalidación (IMPORTE). No se aplicó ningún cambio.",
+        "estado_final": "DISPONIBLE",
+        "banco": "BNB",
+        "cuenta_bancaria": "3000100152",
+        "codigo_asignacion": "D",
+        "importe": 5.0,
+        "moneda": "BOB"
+      },
+      {
+        "fila_excel": 104,
+        "deposito_id": 99,
+        "resultado": "NO_ENCONTRADO",
+        "mensaje": "El depósito ya no existe en SharePoint. No se aplicó ningún cambio.",
+        "estado_final": "",
+        "banco": "BNB",
+        "cuenta_bancaria": "3000100152",
+        "codigo_asignacion": "Z",
+        "importe": 100.0,
+        "moneda": "BOB"
+      }
+    ],
+    "detalle_truncado": false,
+    "actualizado_utc": "2026-10-05T12:00:00.056000Z",
+    "tiempos_ms": "total=56;filas=6;ms_por_fila=10"
+  },
+  "consulta_estado": {
+    "estado": "TERMINADO",
+    "filas_totales": "6",
+    "filas_procesadas": "6",
+    "filas_confirmadas": "1",
+    "filas_no_confirmadas": "5",
+    "porcentaje": "100",
+    "mensaje": "1 de 6 depósitos confirmados; 5 requieren revisión.",
+    "detalle_json": "[{\"fila_excel\":11,\"deposito_id\":6,\"resultado\":\"ERROR_FILA\",\"mensaje\":\"Fila inválida en los datos enviados (CAMPOS_OBLIGATORIOS). No se aplicó ningún cambio.\",\"estado_final\":\"\",\"banco\":\"BNB\",\"cuenta_bancaria\":\"3000100152\",\"codigo_asignacion\":\"F\",\"importe\":100.0,\"moneda\":\"BOB\"},{\"fila_excel\":7,\"deposito_id\":2,\"resultado\":\"NO_DISPONIBLE\",\"mensaje\":\"El depósito ya no está DISPONIBLE (estado actual: ASIGNADO). No se aplicó ningún cambio.\",\"estado_final\":\"ASIGNADO\",\"banco\":\"BNB\",\"cuenta_bancaria\":\"3000100152\",\"codigo_asignacion\":\"B\",\"importe\":100.0,\"moneda\":\"BOB\"},{\"fila_excel\":8,\"deposito_id\":3,\"resultado\":\"CONFLICTO\",\"mensaje\":\"Otro usuario modificó el depósito mientras se confirmaba. No se aplicó tu confirmación.\",\"estado_final\":\"\",\"banco\":\"BNB\",\"cuenta_bancaria\":\"3000100152\",\"codigo_asignacion\":\"C\",\"importe\":100.0,\"moneda\":\"BOB\"},{\"fila_excel\":9,\"deposito_id\":4,\"resultado\":\"CONFLICTO_DATOS\",\"mensaje\":\"El depósito cambió desde la prevalidación (IMPORTE). No se aplicó ningún cambio.\",\"estado_final\":\"DISPONIBLE\",\"banco\":\"BNB\",\"cuenta_bancaria\":\"3000100152\",\"codigo_asignacion\":\"D\",\"importe\":5.0,\"moneda\":\"BOB\"},{\"fila_excel\":104,\"deposito_id\":99,\"resultado\":\"NO_ENCONTRADO\",\"mensaje\":\"El depósito ya no existe en SharePoint. No se aplicó ningún cambio.\",\"estado_final\":\"\",\"banco\":\"BNB\",\"cuenta_bancaria\":\"3000100152\",\"codigo_asignacion\":\"Z\",\"importe\":100.0,\"moneda\":\"BOB\"}]",
+    "tiempos_ms": "total=56;filas=6;ms_por_fila=10"
+  }
+}

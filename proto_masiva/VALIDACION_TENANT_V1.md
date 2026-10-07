@@ -1,5 +1,7 @@
 # P9 CONFIRMACIÓN MASIVA V1 — Evidencia real de tenant y matriz de validación
 
+> **Nota:** esto describe la **V1 síncrona** (checkpoint `82b279e`). La evolución a 1999 filas (`ESCALA_1999.md`) cambia el contrato del flujo y NO está validada en el tenant: nada de lo de aquí abajo se aplica a ella salvo la lógica por fila, que no cambió.
+
 Rama `experiment/p9-masiva-prototipo`. Alcance: **checkpoint** de lo que funcionó de punta a punta en el tenant de prueba (`P9_PRUEBA_MASIVA`, 2026-10-07). No añade funcionalidad.
 Fuente de la UI: export `.msapp` posterior a la integración (sha256 `3a90a83cb31bf20a218893b7bd96c7050c3de98cd1c4e5ded75c6195f8400645`), copiado verbatim en `powerapps/tenant_v1/`.
 

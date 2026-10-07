@@ -89,3 +89,11 @@ Frente al YAML de trabajo de `d180db0` el export final difiere en **3 propiedade
 y `lblAvisoPrototipoP9.Text` = «Relee cada depósito antes de escribir y solo confirma lo que sigue válido · sin lotes ni historial.» (sin el prefijo «PROTOTIPO · CONFIRMAR MASIVAMENTE»). Mismos 44 controles; geometría y estilo idénticos;
 `Main_Screen`, `App` y `COMPROBANTE PDF` idénticos al export anterior. `P9_Confirmacion_Masiva.pa.yaml` pasó a ser copia idéntica de `tenant_v1`. Evidencia y matriz: `VALIDACION_TENANT_V1.md`.
 `auditar_iferror.py` ahora también audita `ShowColumns` sin comillas (detecta las 2 fórmulas del estado anterior del repo; 0 en el export final).
+
+## Fase 4 · Escala 1999 (versión de trabajo, NO validada en el tenant)
+
+Punto de partida: checkpoint V1 `82b279e` (`tenant_v1/` = su export real, con hashes fijados por `test_51`). La versión de trabajo `powerapps/P9_Confirmacion_Masiva.pa.yaml` = ese export + **9 propiedades de fórmula** y **1 control nuevo**
+(`tmrProgresoP9`, Temporizador oculto: `Duration 15000`, `Repeat true`, `AutoStart false`, `Start = Coalesce(varMonitorearP9, false)`). Geometría y estilo de los 44 controles existentes idénticos (lo prueba `test_44b`).
+Propiedades que cambian: `btnConfirmarMasivamenteP9.OnSelect` (respuesta rápida + arranque del seguimiento), `OnVisible`, `attXlsxP9.OnAddFile/OnRemoveFile` (no reinician durante una confirmación), `btnPrevalidarP9.OnSelect`, `lblTitularResultadoP9.Text`
+(avance y resultado final en dos líneas), `lblResMensajeP9.Text`, `lblResTiempoP9.Text`, `lblAvisoPrototipoP9.Text`. `ShowColumns` sigue sin comillas; `IfError` 5 auditados, 0 incompatibles. Detalle: `ESCALA_1999.md` y `powerapps/CONFIRMACION_POWERFX.md`.
+La versión del tipo del control Temporizador en el YAML (`Classic/Timer@2.1.0`) es de referencia: Studio la normalizará al exportar (por eso el Temporizador se **inserta a mano**, no se pega).

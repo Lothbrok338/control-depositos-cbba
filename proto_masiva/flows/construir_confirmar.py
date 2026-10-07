@@ -1,21 +1,27 @@
-"""Generador del flujo PROTOTIPO `P9_MASIVA_PROTO_CONFIRMAR` (confirmación masiva) y de su ZIP importable.
+"""Generador del flujo PROTOTIPO `P9_MASIVA_PROTO_CONFIRMAR` (confirmación masiva, hasta 1999 filas con UN clic) y de su ZIP importable.
 
     python -m proto_masiva.flows.construir_confirmar
 
-Confirma SOLO las filas que Power Apps envía (las que la prevalidación dejó en VALIDO), UNA DETRÁS DE OTRA, con la MISMA semántica que la
+Confirma SOLO las filas que Power Apps envía (las que la prevalidación dejó en VALIDO), UNA DETRÁS DE OTRA, con la MISMA semántica por fila que la
 confirmación individual `P9_ASIGNAR_DEPOSITO` V4.2 (fuente de verdad: p9/asignar/flujo_asignar_powerapps_v4_2_definition.json):
 
   por fila:  releer el depósito por ID (GET, `$select`) → comprobar que NADA relevante cambió desde la prevalidación → tomar el ETag
              FRESCO de esa lectura → `POST` + `X-HTTP-Method: MERGE` + `IF-MATCH: <ETag>` (nunca `*`), sin reintentos, con los
-             MISMOS 8 campos que V4.2 → 412 = CONFLICTO.
+             MISMOS 8 campos que V4.2 → 412 = CONFLICTO.   (Esta lógica NO cambió respecto de la V1 validada en el tenant.)
 
-  La prevalidación NO reserva nada: este flujo no confía en ella ni reutiliza ningún ETag viejo.
-  Sin rollback global: lo confirmado queda confirmado. Un error en una fila NO detiene a las demás. Secuencial (concurrencia 1).
-  Sin lotes, sin historial, sin listas nuevas, sin sondeo: la respuesta devuelve el resultado de cada fila a Power Apps, que lo guarda
-  solo en memoria.
+ARQUITECTURA (escala hasta 1999 con un solo clic, sin timeout de Power Apps):
+  1. PREPARAR   valida la entrada, cuenta las filas y crea el estado temporal `confirmacion_<execution_uid>.json` (PROCESANDO) en P9_MASIVA_TEMP.
+  2. RESPONDER  «Responder a Power Apps» con ACEPTADO + execution_uid: Power Apps recibe la respuesta en segundos (límite entrante de 120 s).
+  3. PROCESAR   DESPUÉS de responder el flujo SIGUE ejecutándose (documentado por Microsoft: las acciones posteriores a la respuesta continúan más
+                allá de ese límite; la duración máxima de una ejecución es de 30 días) y recorre las filas válidas, secuencial (concurrencia 1).
+                Cada 25 filas actualiza el estado (solo contadores). Al terminar escribe TERMINADO con SOLO las filas no confirmadas.
+  Power Apps consulta el avance con el flujo `P9_MASIVA_PROTO_ESTADO` (construir_estado.py). Si Power Apps se cierra, el backend continúa.
 
-ESCALA: es un flujo SÍNCRONO (la app espera la respuesta). No se afirma que 1999 filas quepan: `PARAM_MAX_FILAS_POR_LLAMADA` limita cada
-llamada y se sube solo después de medir en el tenant (ver ../CONFIRMACION_MASIVA.md §7).
+Sin rollback global: lo confirmado queda confirmado. Un error en una fila NO detiene a las demás. Sin listas ni historial de lotes: el estado es un
+archivo JSON temporal por ejecución (no es historial; no se limpia automáticamente).
+
+LÍMITE DE 131.072 CARACTERES: Microsoft limita `string()`, `concat()` y `base64()` a 131.072 caracteres. Por eso el estado NUNCA serializa la lista
+de filas confirmadas: solo se guardan las no confirmadas, con un máximo de `MAX_DETALLE` entradas (el resto se cuenta, no se detalla).
 """
 from __future__ import annotations
 
@@ -34,18 +40,32 @@ NOMBRE_FLUJO = "P9_MASIVA_PROTO_CONFIRMAR"
 API_SP = "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
 SITIO = C.SITIO_SHAREPOINT
 LISTA_ID = C.LISTA_DEPOSITOS_ACTIVOS_ID
+CARPETA_ESTADO = BASE.CARPETA_TEMP              # "/Documents/P9_MASIVA_TEMP": la MISMA carpeta técnica que ya usa la prevalidación (validada en el tenant)
+PREFIJO_ESTADO = "confirmacion_"                # confirmacion_<execution_uid>.json
 
-MAX_FILAS_POR_LLAMADA = 50     # tope por llamada síncrona: se sube SOLO después de medir (1, 3, 10, 50 filas en el tenant)
 MAX_FILAS_ARCHIVO = 1999       # límite de negocio del archivo (la prevalidación rechaza 2000 o más)
+MAX_FILAS_POR_LLAMADA = 1999   # antes 50 (síncrono). Ahora el flujo responde antes de procesar, así que el tope es el del archivo
+INTERVALO_PROGRESO = 25        # filas entre actualizaciones del estado (no cada fila: cada actualización es una llamada a SharePoint)
+MAX_DETALLE = 300              # entradas máximas de filas no confirmadas dentro del estado (límite de 131.072 caracteres de string())
+LIMITE_STRING = 131072         # límite documentado de string()/concat()/base64() en Power Automate
 
 ENTRADAS = (("text", "detalle_json", "Filas VALIDO de la prevalidación, como arreglo JSON (JSON(..., JSONFormat.Compact))"),
             ("text_1", "usuario_email", "Correo del usuario que confirma (User().Email), como en la confirmación individual"))
 RESULTADOS_FILA = ("CONFIRMADO", "NO_ENCONTRADO", "NO_DISPONIBLE", "CONFLICTO", "CONFLICTO_DATOS", "ERROR_FILA")
-RESULTADOS_GLOBALES = ("OK", "PARCIAL", "ERROR")
+# Respuesta TEMPRANA a Power Apps (5 textos)
+SALIDAS = ("resultado", "codigo", "mensaje", "execution_uid", "filas_recibidas")
+RESULTADOS_ACEPTACION = ("ACEPTADO", "ERROR")
+CODIGO_ACEPTADO = "PROCESAMIENTO_INICIADO"
+CODIGOS_ERROR = ("ENTRADA_INVALIDA", "SIN_FILAS", "LOTE_EXCEDE_LIMITE", "ERROR_ESTADO")
+# Estado final del archivo (lo devuelve P9_MASIVA_PROTO_ESTADO)
+ESTADOS = ("PROCESANDO", "TERMINADO", "ERROR")
+RESULTADOS_GLOBALES = ("OK", "PARCIAL", "ERROR")   # lo deriva Power Apps del estado final (OK = todas; PARCIAL = alguna no; ERROR = interrumpido)
 CODIGO_OK, CODIGO_PARCIAL, CODIGO_NINGUNA = "CONFIRMACION_OK", "CONFIRMACION_PARCIAL", "NINGUNA_CONFIRMADA"
-CODIGOS_ERROR = ("ENTRADA_INVALIDA", "SIN_FILAS", "LOTE_EXCEDE_LIMITE", "ERROR_NO_CONTROLADO")
-CODIGOS = (CODIGO_OK, CODIGO_PARCIAL, CODIGO_NINGUNA) + CODIGOS_ERROR
-SALIDAS = ("resultado", "codigo", "mensaje", "filas_recibidas", "filas_confirmadas", "filas_no_confirmadas", "detalle_json", "tiempos_ms")
+CODIGO_INTERRUMPIDA = "ERROR_NO_CONTROLADO"
+CODIGOS_ESTADO = (CODIGO_ACEPTADO, CODIGO_OK, CODIGO_PARCIAL, CODIGO_NINGUNA, CODIGO_INTERRUMPIDA)
+CODIGOS = (CODIGO_ACEPTADO,) + CODIGOS_ERROR + (CODIGO_OK, CODIGO_PARCIAL, CODIGO_NINGUNA, CODIGO_INTERRUMPIDA)
+CAMPOS_ESTADO = ("execution_uid", "estado", "codigo", "filas_totales", "filas_procesadas", "filas_confirmadas", "filas_no_confirmadas", "porcentaje",
+                 "mensaje", "detalle_json", "detalle_truncado", "actualizado_utc", "tiempos_ms")
 DETALLE_CAMPOS = ("fila_excel", "deposito_id", "resultado", "mensaje", "estado_final", "banco", "cuenta_bancaria", "codigo_asignacion",
                   "importe", "moneda")
 # Campos de cada fila que Power Apps envía en detalle_json (los 12 de colPrevalidacionP9 que hacen falta)
@@ -209,7 +229,12 @@ def detalle(resultado, mensaje, estado_final):
 
 
 def agregar(valor):
-    return {"type": "AppendToArrayVariable", "inputs": {"name": "varResultados", "value": valor}}
+    """Anota una fila NO confirmada (solo las no confirmadas se guardan: las confirmadas se cuentan)."""
+    return {"type": "AppendToArrayVariable", "inputs": {"name": "varFallidas", "value": valor}}
+
+
+def incrementar(variable_):
+    return {"type": "IncrementVariable", "inputs": {"name": variable_, "value": 1}}
 
 
 def actualizar_deposito():
@@ -248,16 +273,18 @@ def captura_error_fila():
         "'Error inesperado al procesar la fila. Verifique el depósito con PREVALIDAR antes de reintentar.'")
     # tras un intento de escritura que falló y NO fue 412 no se sabe si SharePoint la aplicó: estado_final = DESCONOCIDO
     estado = f"if(and({fallo_escritura},not(equals({http_e},412))),'DESCONOCIDO','')"
-    return secuencia(Agregar_error_fila=agregar(detalle("@" + resultado, "@" + mensaje, "@" + estado)))
+    return secuencia(Agregar_error_fila=agregar(detalle("@" + resultado, "@" + mensaje, "@" + estado)),
+                     Sumar_error_fila=incrementar("varNoConfirmadas"))
 
 
 def fila_scope():
     confirmar = secuencia(
         Cuerpo_actualizacion=cuerpo_actualizacion(),
         Actualizar_deposito=actualizar_deposito(),
-        Agregar_confirmado=agregar(detalle("CONFIRMADO", "Depósito confirmado correctamente.", "ASIGNADO")))
-    no_confirmar = secuencia(Agregar_no_confirmado=agregar(detalle(
-        "@outputs('Revalidacion')?['codigo']", mensaje_no_confirmada(), "@outputs('Revalidacion')?['estado']")))
+        Sumar_confirmada=incrementar("varConfirmadas"))
+    no_confirmar = secuencia(
+        Agregar_no_confirmado=agregar(detalle("@outputs('Revalidacion')?['codigo']", mensaje_no_confirmada(), "@outputs('Revalidacion')?['estado']")),
+        Sumar_no_confirmada=incrementar("varNoConfirmadas"))
     return secuencia(
         Leer_deposito=leer_deposito(),
         Cambio=compose("@" + cambio()),
@@ -265,11 +292,48 @@ def fila_scope():
         Puede_confirmar=si("@equals(outputs('Revalidacion')?['codigo'],'OK')", confirmar, no_confirmar))
 
 
+# ---------------------------------------------------------------------------------------------- estado temporal (archivo JSON por ejecución)
+UID, TOTAL, PROC, CONF, NOCONF = ("variables('varUid')", "variables('varTotal')", "variables('varProcesadas')", "variables('varConfirmadas')",
+                                  "variables('varNoConfirmadas')")
+MS = "div(sub(ticks(utcNow()),variables('varT0')),10000)"
+RETRY_ESTADO = {"type": "fixed", "count": 2, "interval": "PT5S"}   # escribir el estado es idempotente: se puede reintentar (el MERGE NO)
+
+
+def tiempos():
+    return f"@concat('total=',string({MS}),';filas=',string({TOTAL}),';ms_por_fila=',string(div({MS},max(1,{TOTAL}))))"
+
+
+def estado_json(estado, codigo, mensaje, detalle=None, truncado=False):
+    """Contenido del archivo de estado. Solo contadores y, al terminar, las filas NO confirmadas (como máximo MAX_DETALLE)."""
+    cuerpo = {
+        "execution_uid": "@" + UID, "estado": estado, "codigo": codigo, "filas_totales": "@" + TOTAL, "filas_procesadas": "@" + PROC,
+        "filas_confirmadas": "@" + CONF, "filas_no_confirmadas": "@" + NOCONF,
+        "porcentaje": f"@div(mul(100,{PROC}),max(1,{TOTAL}))", "mensaje": mensaje,
+        "detalle_json": [] if detalle is None else detalle, "detalle_truncado": truncado, "actualizado_utc": "@utcNow()", "tiempos_ms": tiempos()}
+    assert tuple(cuerpo) == CAMPOS_ESTADO
+    return compose(cuerpo)
+
+
+def _sp_estado(operacion, parametros, **extra):
+    return BASE._sp(operacion, {"dataset": "@outputs('PARAM_SITIO')", **parametros}, **extra)
+
+
+def escribir_estado(origen):
+    return _sp_estado("UpdateFile", {"id": "@variables('varEstadoId')", "body": f"@string(outputs('{origen}'))"}, retryPolicy=RETRY_ESTADO)
+
+
+# ---------------------------------------------------------------------------------------------- bucle por fila
 def bucle():
+    progreso = si(f"@equals(mod({PROC},outputs('PARAM_INTERVALO_PROGRESO')),0)", secuencia(
+        Estado_progreso=estado_json("PROCESANDO", CODIGO_ACEPTADO,
+                                    f"@concat(string({PROC}),' de ',string({TOTAL}),' procesados.')"),
+        Escribir_progreso=escribir_estado("Estado_progreso")))
     return {"type": "Foreach", "foreach": "@body('Filas_a_procesar')", "runtimeConfiguration": {"concurrency": {"repetitions": 1}},
             "actions": {
                 "TRY_FILA": {**ambito(fila_scope()), "runAfter": {}},
-                "CATCH_FILA": ambito(captura_error_fila(), {"TRY_FILA": FALLOS})}}
+                "CATCH_FILA": ambito(captura_error_fila(), {"TRY_FILA": FALLOS}),
+                "Contar_procesada": {**incrementar("varProcesadas"), "runAfter": {"TRY_FILA": TODOS, "CATCH_FILA": TODOS}},
+                "Progreso": {**progreso, "runAfter": {"Contar_procesada": ["Succeeded"]}}}}
 
 
 # ---------------------------------------------------------------------------------------------- flujo completo
@@ -277,7 +341,61 @@ def error_global(codigo, mensaje, nombre):
     return secuencia(**{f"{nombre}_codigo": asignar("varErrorCodigo", codigo), f"{nombre}_mensaje": asignar("varErrorMensaje", mensaje)})
 
 
-def ejecutar_lote():
+def preparar():
+    """ANTES de responder: valida, cuenta, crea el estado. Trabajo mínimo (rápido): el procesamiento pesado va DESPUÉS de la respuesta."""
+    con_estado = secuencia(
+        Etapa_estado=asignar("varEtapa", "ESTADO"),
+        Generar_uid=compose("@guid()"),
+        Guardar_uid=asignar("varUid", "@string(outputs('Generar_uid'))"),
+        Nombre_estado=compose(f"@concat({lit(PREFIJO_ESTADO)},variables('varUid'),'.json')"),
+        Estado_inicial=estado_json("PROCESANDO", CODIGO_ACEPTADO, "Confirmación iniciada. Procesando los depósitos válidos."),
+        Crear_estado=_sp_estado("CreateFile", {"folderPath": "@outputs('PARAM_CARPETA')", "name": "@outputs('Nombre_estado')",
+                                               "body": "@string(outputs('Estado_inicial'))"}, retryPolicy={"type": "none"}),
+        Guardar_id_estado=asignar("varEstadoId", "@string(body('Crear_estado')?['Id'])"))
+    limite = "min(outputs('PARAM_MAX_FILAS_POR_LLAMADA'),outputs('PARAM_MAX_FILAS_ARCHIVO'))"
+    return secuencia(Entrada_valida=si(
+        "@empty(outputs('Validar_entrada'))",
+        secuencia(
+            Filas=compose("@json(outputs('Entrada')?['texto'])"),
+            Total=compose("@length(outputs('Filas'))"),
+            Guardar_total=asignar("varTotal", "@outputs('Total')"),
+            Validar_lote=compose(f"@if(equals(outputs('Total'),0),'SIN_FILAS',if(greater(outputs('Total'),{limite}),'LOTE_EXCEDE_LIMITE',''))"),
+            Lote_valido=si("@empty(outputs('Validar_lote'))", con_estado, secuencia(
+                Error_de_lote=si(
+                    "@equals(outputs('Validar_lote'),'SIN_FILAS')",
+                    error_global("SIN_FILAS", "No hay filas VALIDO para confirmar. No se confirmó ningún depósito.", "Sin_filas"),
+                    error_global("LOTE_EXCEDE_LIMITE",
+                                 f"@concat('Se enviaron ',string(outputs('Total')),' filas y el máximo por confirmación es ',string({limite}),"
+                                 "'. No se confirmó ningún depósito.')", "Lote_excede"))))),
+        error_global("ENTRADA_INVALIDA", "Faltan detalle_json o usuario_email, o detalle_json no es un arreglo JSON. "
+                                         "No se confirmó ningún depósito.", "Entrada_invalida")))
+
+
+def captura_preparar():
+    return secuencia(Clasificar_fallo=si(
+        "@equals(variables('varEtapa'),'ESTADO')",
+        error_global("ERROR_ESTADO", "No se pudo crear el registro de progreso en P9_MASIVA_TEMP. No se confirmó ningún depósito: "
+                                     "vuelva a intentar.", "Fallo_estado"),
+        error_global("ENTRADA_INVALIDA", "detalle_json no es un arreglo JSON válido. No se confirmó ningún depósito.", "Fallo_entrada")))
+
+
+def responder():
+    """UNA sola respuesta por ejecución, ANTES del procesamiento. ACEPTADO (+execution_uid) o ERROR (nada se confirmó)."""
+    esquema = {"type": "object", "properties": {k: {"title": k, "type": "string", "x-ms-dynamically-added": True} for k in SALIDAS}}
+    aceptado = {"resultado": "ACEPTADO", "codigo": CODIGO_ACEPTADO,
+                "mensaje": f"@concat('Confirmación iniciada: ',string({TOTAL}),' depósitos en proceso.')",
+                "execution_uid": "@" + UID, "filas_recibidas": f"@string({TOTAL})"}
+    error = {"resultado": "ERROR", "codigo": "@variables('varErrorCodigo')", "mensaje": "@variables('varErrorMensaje')",
+             "execution_uid": "", "filas_recibidas": f"@string({TOTAL})"}
+    assert tuple(aceptado) == tuple(error) == SALIDAS
+
+    def respuesta(cuerpo):
+        return {"type": "Response", "kind": "PowerApp", "inputs": {"statusCode": 200, "body": cuerpo, "schema": esquema}}
+    return si("@empty(variables('varErrorCodigo'))", {"Responder_aceptado": {**respuesta(aceptado), "runAfter": {}}},
+              {"Responder_error": {**respuesta(error), "runAfter": {}}})
+
+
+def preparar_procesamiento():
     return secuencia(
         Etapa_preparar=asignar("varEtapa", "PREPARAR"),
         Hoy_local=compose(f"@convertTimeZone(utcNow(),'UTC',{lit(PV.ZONA_HORARIA)},'yyyy-MM-dd')"),
@@ -288,88 +406,86 @@ def ejecutar_lote():
         Filas_a_procesar={"type": "Query", "inputs": {"from": "@body('Filas_validadas')", "where": "@empty(item()?['invalida'])"}},
         Filas_invalidas={"type": "Query", "inputs": {"from": "@body('Filas_validadas')", "where": "@not(empty(item()?['invalida']))"}},
         Resultados_invalidas=detalle_invalidas(),
-        Cargar_invalidas=asignar("varResultados", "@body('Resultados_invalidas')"),
-        Etapa_confirmar=asignar("varEtapa", "CONFIRMAR"),
-        Para_cada_fila=bucle())
+        Cargar_invalidas=asignar("varFallidas", "@body('Resultados_invalidas')"),
+        Contar_invalidas_no_confirmadas=asignar("varNoConfirmadas", "@length(body('Resultados_invalidas'))"),
+        Contar_invalidas_procesadas=asignar("varProcesadas", "@length(body('Resultados_invalidas'))"),
+        Etapa_confirmar=asignar("varEtapa", "CONFIRMAR"))
+
+
+def captura_procesamiento():
+    return secuencia(
+        Fallo_global_codigo=asignar("varErrorCodigo", CODIGO_INTERRUMPIDA),
+        Fallo_global_mensaje=asignar("varErrorMensaje", "El proceso se interrumpió antes de terminar: algunos depósitos pueden haberse confirmado. "
+                                                         "Vuelva a PREVALIDAR para ver el estado real de cada uno antes de reintentar."))
+
+
+def finalizar():
+    """Escribe el estado FINAL (TERMINADO o ERROR) con SOLO las filas no confirmadas (máximo MAX_DETALLE). Si string() no cupiera, respaldo mínimo."""
+    hay_error = "not(empty(variables('varErrorCodigo')))"
+    resumen = (f"concat(string({CONF}),' de ',string({TOTAL}),' depósitos confirmados',"
+               f"if(equals({NOCONF},0),'.',concat('; ',string({NOCONF}),' requieren revisión.')))")
+    codigo = (f"if({hay_error},variables('varErrorCodigo'),if(equals({NOCONF},0),'{CODIGO_OK}',if(equals({CONF},0),'{CODIGO_NINGUNA}','{CODIGO_PARCIAL}')))")
+    final = estado_json("__ESTADO__", "@" + codigo, "@" + f"if({hay_error},variables('varErrorMensaje'),{resumen})",
+                        detalle="@take(variables('varFallidas'),outputs('PARAM_MAX_DETALLE'))",
+                        truncado="@greater(length(variables('varFallidas')),outputs('PARAM_MAX_DETALLE'))")
+    final["inputs"]["estado"] = f"@if({hay_error},'ERROR','TERMINADO')"
+    final["inputs"]["porcentaje"] = f"@if({hay_error},div(mul(100,{PROC}),max(1,{TOTAL})),100)"
+    minimo = estado_json("__ESTADO__", "@" + codigo,
+                         "@" + f"concat({resumen},' El detalle de las filas no confirmadas no se pudo guardar: vuelva a PREVALIDAR para verlas.')",
+                         detalle=[], truncado=True)
+    minimo["inputs"]["estado"] = final["inputs"]["estado"]
+    minimo["inputs"]["porcentaje"] = final["inputs"]["porcentaje"]
+    return secuencia(
+        Estado_final=final,
+        ESCRIBIR_FINAL=ambito(secuencia(Escribir_final=escribir_estado("Estado_final"))),
+        ESCRIBIR_FINAL_RESPALDO=ambito(secuencia(Estado_final_minimo=minimo, Escribir_final_minimo=escribir_estado("Estado_final_minimo")),
+                                       {"ESCRIBIR_FINAL": FALLOS}))
 
 
 def procesar():
-    return secuencia(
-        Filas=compose("@json(outputs('Entrada')?['texto'])"),
-        Total=compose("@length(outputs('Filas'))"),
-        Guardar_recibidas=asignar("varRecibidas", "@string(outputs('Total'))"),
-        Validar_lote=compose("@if(equals(outputs('Total'),0),'SIN_FILAS',if(greater(outputs('Total'),min(outputs('PARAM_MAX_FILAS_POR_LLAMADA'),"
-                             "outputs('PARAM_MAX_FILAS_ARCHIVO'))),'LOTE_EXCEDE_LIMITE',''))"),
-        Lote_valido=si("@empty(outputs('Validar_lote'))", ejecutar_lote(), secuencia(
-            Error_de_lote=si(
-                "@equals(outputs('Validar_lote'),'SIN_FILAS')",
-                error_global("SIN_FILAS", "No hay filas VALIDO para confirmar. No se confirmó ningún depósito.", "Sin_filas"),
-                error_global("LOTE_EXCEDE_LIMITE",
-                             "@concat('Se enviaron ',string(outputs('Total')),' filas y el máximo por confirmación es ',"
-                             "string(min(outputs('PARAM_MAX_FILAS_POR_LLAMADA'),outputs('PARAM_MAX_FILAS_ARCHIVO'))),"
-                             "'. No se confirmó ningún depósito: divida la confirmación en partes más pequeñas.')", "Lote_excede")))))
+    return {
+        "PROCESAR_PREPARACION": {**ambito(preparar_procesamiento()), "runAfter": {}},
+        "PROCESAR_PREPARACION_CATCH": ambito(captura_procesamiento(), {"PROCESAR_PREPARACION": FALLOS}),
+        "Para_cada_fila": {**bucle(), "runAfter": {"PROCESAR_PREPARACION": ["Succeeded"]}},
+        "FINALIZAR": ambito(finalizar(), {"Para_cada_fila": TODOS, "PROCESAR_PREPARACION_CATCH": TODOS})}
 
 
-def captura_global():
-    return secuencia(Clasificar_fallo=si(
-        "@equals(variables('varEtapa'),'ENTRADA')",
-        error_global("ENTRADA_INVALIDA", "detalle_json no es un arreglo JSON válido. No se confirmó ningún depósito.", "Fallo_entrada"),
-        error_global("ERROR_NO_CONTROLADO",
-                     "El proceso se interrumpió antes de terminar: algunos depósitos pueden haberse confirmado. "
-                     "Vuelva a PREVALIDAR para ver el estado real de cada uno antes de reintentar.", "Fallo_global")))
-
-
-def construir_definicion(max_por_llamada=MAX_FILAS_POR_LLAMADA):
+def construir_definicion(max_por_llamada=MAX_FILAS_POR_LLAMADA, intervalo_progreso=INTERVALO_PROGRESO, max_detalle=MAX_DETALLE):
     acciones = secuencia(
         PARAM_SITIO=compose(SITIO),
         PARAM_LISTA_DEPOSITOS_ACTIVOS=compose(LISTA_ID),
+        PARAM_CARPETA=compose(CARPETA_ESTADO),
         PARAM_MAX_FILAS_POR_LLAMADA=compose(max_por_llamada),
         PARAM_MAX_FILAS_ARCHIVO=compose(MAX_FILAS_ARCHIVO),
+        PARAM_INTERVALO_PROGRESO=compose(intervalo_progreso),
+        PARAM_MAX_DETALLE=compose(max_detalle),
         Entrada=compose({"texto": "@trim(coalesce(triggerBody()?['text'],''))", "usuario": "@trim(coalesce(triggerBody()?['text_1'],''))"}),
         Inicializar_varT0=variable("varT0", "integer", "@ticks(utcNow())"),
         Inicializar_varEtapa=variable("varEtapa", "string", "ENTRADA"),
-        Inicializar_varResultados=variable("varResultados", "array", []),
-        Inicializar_varRecibidas=variable("varRecibidas", "string", "0"),
+        Inicializar_varFallidas=variable("varFallidas", "array", []),
+        Inicializar_varTotal=variable("varTotal", "integer", 0),
+        Inicializar_varProcesadas=variable("varProcesadas", "integer", 0),
+        Inicializar_varConfirmadas=variable("varConfirmadas", "integer", 0),
+        Inicializar_varNoConfirmadas=variable("varNoConfirmadas", "integer", 0),
+        Inicializar_varUid=variable("varUid", "string", ""),
+        Inicializar_varEstadoId=variable("varEstadoId", "string", ""),
         Inicializar_varErrorCodigo=variable("varErrorCodigo", "string", ""),
         Inicializar_varErrorMensaje=variable("varErrorMensaje", "string", ""),
         Validar_entrada=compose("@if(or(empty(outputs('Entrada')?['texto']),empty(outputs('Entrada')?['usuario']),"
                                 "greater(length(outputs('Entrada')?['usuario']),255),not(startsWith(outputs('Entrada')?['texto'],'['))),"
                                 "'ENTRADA_INVALIDA','')"),
-        TRY=ambito(secuencia(Entrada_valida=si(
-            "@empty(outputs('Validar_entrada'))", procesar(),
-            error_global("ENTRADA_INVALIDA", "Faltan detalle_json o usuario_email, o detalle_json no es un arreglo JSON. "
-                                             "No se confirmó ningún depósito.", "Entrada_invalida")))))
-    acciones["CATCH"] = ambito(captura_global(), {"TRY": FALLOS})
-    # Resumen: SIEMPRE se calcula (éxito, error o interrupción), a partir de lo realmente anotado fila a fila
-    acciones["Confirmadas"] = {"type": "Query", "inputs": {"from": "@variables('varResultados')", "where": "@equals(item()?['resultado'],'CONFIRMADO')"},
-                               "runAfter": {"TRY": TODOS, "CATCH": TODOS}}
-    acciones["Cuenta_confirmadas"] = {**compose("@length(body('Confirmadas'))"), "runAfter": {"Confirmadas": ["Succeeded"]}}
-    acciones["Cuenta_recibidas"] = {**compose("@int(variables('varRecibidas'))"), "runAfter": {"Cuenta_confirmadas": ["Succeeded"]}}
-    acciones["Tiempos"] = {**compose(
-        "@concat('total=',string(div(sub(ticks(utcNow()),variables('varT0')),10000)),';filas=',variables('varRecibidas'),"
-        "';ms_por_fila=',string(div(div(sub(ticks(utcNow()),variables('varT0')),10000),max(1,outputs('Cuenta_recibidas')))))"),
-        "runAfter": {"Cuenta_recibidas": ["Succeeded"]}}
-    conf, recib = "outputs('Cuenta_confirmadas')", "outputs('Cuenta_recibidas')"
-    hay_error = "not(empty(variables('varErrorCodigo')))"
-    todas = f"equals({conf},{recib})"
-    cuerpo = {
-        "resultado": f"@if({hay_error},'ERROR',if({todas},'OK','PARCIAL'))",
-        "codigo": f"@if({hay_error},variables('varErrorCodigo'),if({todas},'{CODIGO_OK}',if(equals({conf},0),'{CODIGO_NINGUNA}','{CODIGO_PARCIAL}')))",
-        "mensaje": (f"@if({hay_error},variables('varErrorMensaje'),concat(string({conf}),' de ',string({recib}),' depósitos confirmados',"
-                    f"if({todas},'.',concat('; ',string(sub({recib},{conf})),' requieren revisión.'))))"),
-        "filas_recibidas": "@variables('varRecibidas')", "filas_confirmadas": f"@string({conf})",
-        "filas_no_confirmadas": f"@string(sub({recib},{conf}))", "detalle_json": "@string(variables('varResultados'))",
-        "tiempos_ms": "@outputs('Tiempos')"}
-    assert tuple(cuerpo) == SALIDAS
-    esquema = {"type": "object", "properties": {k: {"title": k, "type": "string", "x-ms-dynamically-added": True} for k in SALIDAS}}
-    acciones["Responder_a_PowerApps"] = {"type": "Response", "kind": "PowerApp", "runAfter": {"Tiempos": TODOS},
-                                         "inputs": {"statusCode": 200, "body": cuerpo, "schema": esquema}}
+        PREPARAR=ambito(preparar()))
+    acciones["PREPARAR_CATCH"] = ambito(captura_preparar(), {"PREPARAR": FALLOS})
+    acciones["RESPONDER"] = {**responder(), "runAfter": {"PREPARAR": TODOS, "PREPARAR_CATCH": TODOS}}
+    # DESPUÉS de la respuesta el flujo SIGUE: solo si se aceptó (si hubo error de entrada, nada que procesar)
+    acciones["PROCESAR"] = {**si("@empty(variables('varErrorCodigo'))", procesar()), "runAfter": {"RESPONDER": TODOS}}
     return definicion(disparador(), acciones)
 
 
 # ---------------------------------------------------------------------------------------------- paquete ZIP
 CONEXIONES = {"shared_sharepointonline": ("SharePoint", "sharepointonline")}
-DESCRIPCION = ("PROTOTIPO: confirma, una por una y releyendo cada depósito (ETag fresco, If-Match), las filas VALIDO enviadas por Power Apps. "
+DESCRIPCION = ("PROTOTIPO: confirma, una por una y releyendo cada depósito (ETag fresco, If-Match), hasta 1999 filas VALIDO enviadas por Power Apps. "
+               "Responde ACEPTADO enseguida y sigue procesando; el avance se consulta con P9_MASIVA_PROTO_ESTADO. "
                "Misma escritura que P9_ASIGNAR_DEPOSITO V4.2. Sin lotes persistentes ni rollback global.")
 
 

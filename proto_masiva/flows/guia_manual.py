@@ -23,6 +23,16 @@ def politica_reintentos(rp):
     return f"Intervalo fijo, {rp['count']} reintentos, {rp['interval']}"
 
 
+ETIQUETAS_SP = {
+    "CreateFile": ("Crear archivo (Create file)", [("dataset", "Dirección del sitio"), ("folderPath", "Ruta de acceso a la carpeta"),
+                                                    ("name", "Nombre del archivo"), ("body", "Contenido del archivo (expresión)")]),
+    "UpdateFile": ("Actualizar archivo (Update file)", [("dataset", "Dirección del sitio"), ("id", "Identificador del archivo"),
+                                                         ("body", "Contenido del archivo (expresión)")]),
+    "GetFileContentByPath": ("Obtener contenido del archivo con la ruta de acceso (Get file content using path)",
+                             [("dataset", "Dirección del sitio"), ("path", "Ruta de acceso del archivo (expresión)"),
+                              ("inferContentType", "Inferir tipo de contenido")])}
+
+
 def mostrar(valor, nivel=0):
     if isinstance(valor, str) and valor.startswith("@"):
         return valor[1:]
@@ -55,6 +65,12 @@ def describir(nombre, accion, numero, sangria=""):
     elif tipo == "Query":
         sal += [f"{sangria}**Filtrar matriz (Filter array)** · De (From):", bloque_codigo(mostrar(i["from"])),
                 f"{sangria}Condición (modo avanzado, expresión):", bloque_codigo(mostrar(i["where"]))]
+    elif tipo == "OpenApiConnection" and i["host"]["operationId"] != "HttpRequest":
+        p, op = i["parameters"], i["host"]["operationId"]
+        etiqueta, campos = ETIQUETAS_SP[op]
+        sal += [f"{sangria}**{etiqueta}** · conector **SharePoint** · Configuración → Directiva de reintentos: **{politica_reintentos(i['retryPolicy'])}**. Campos:"]
+        for parametro, titulo in campos:
+            sal += [f"{sangria}- {titulo}:", bloque_codigo(mostrar(p[parametro]) if parametro != "inferContentType" else "No (desactivado)")]
     elif tipo == "OpenApiConnection":
         p = i["parameters"]
         sal += [f"{sangria}**Enviar una solicitud HTTP a SharePoint** · Dirección del sitio: `{p['dataset']}` (la misma de `PARAM_SITIO`) · "
@@ -62,6 +78,8 @@ def describir(nombre, accion, numero, sangria=""):
                 f"Configuración → Directiva de reintentos: **{politica_reintentos(i['retryPolicy'])}**. Uri (expresión):", bloque_codigo(mostrar(p["parameters/uri"]))]
     elif tipo == "If":
         sal += [f"{sangria}**Condición (Condition)** · modo avanzado, expresión:", bloque_codigo(mostrar(accion["expression"]))]
+    elif tipo == "IncrementVariable":
+        sal += [f"{sangria}**Incrementar variable (Increment variable)** · Nombre: `{i['name']}` · Valor: `{i['value']}`"]
     elif tipo == "InitializeVariable":
         v = i["variables"][0]
         sal += [f"{sangria}**Inicializar variable** · Nombre: `{v['name']}` · Tipo: `{v['type']}` · Valor: `{json.dumps(v['value'], ensure_ascii=False)}`"]
@@ -180,7 +198,7 @@ def documento_confirmar() -> str:
     encabezado = f'''# Guía de acciones de `P9_MASIVA_PROTO_CONFIRMAR` (opción B: armarlo a mano)
 
 > **Úsala solo si no puedes importar el ZIP** (`INSTRUCCIONES_CONFIRMAR.md`, opción A). Se **genera** desde la misma definición que el ZIP
-> (`python proto_masiva/flows/guia_manual.py`): las expresiones son idénticas. **No está validada en el tenant.**
+> (`python proto_masiva/flows/guia_manual.py`): las expresiones son idénticas. **No está validada en el tenant** (la V1 síncrona sí; esta es la de escala hasta 1999).
 > Cada expresión se pega en la pestaña **Expresión** (sin el `@` inicial). Respeta los nombres de las acciones: se refieren unas a otras por nombre.
 
 ## Disparador
@@ -189,18 +207,52 @@ def documento_confirmar() -> str:
 
 {entradas}
 
-## Acciones, de arriba abajo (todas en una sola cadena; lo indentado va dentro del bloque que lo contiene)
+## Cómo funciona (léelo antes de armarlo)
 
-Cada acción se ejecuta **después de la anterior** salvo que se indique otra cosa. Las acciones `CATCH`, `CATCH_FILA`, `Confirmadas` y `Responder_a_PowerApps` se configuran
-con **«Configurar ejecución posterior»** (⋯ → Configurar la ejecución posterior): marca las casillas indicadas en `runAfter` de la definición
-(`CATCH`/`CATCH_FILA`: *ha error* y *superó el tiempo de espera*; `Confirmadas`, `Responder_a_PowerApps` y `Tiempos`: **todas** las casillas).
+1. `PREPARAR` valida la entrada, cuenta las filas y crea el archivo de estado `confirmacion_<execution_uid>.json` en `Documents/P9_MASIVA_TEMP` (estado PROCESANDO).
+2. `RESPONDER` contiene **dos** acciones *Responder a una aplicación de PowerApps o a un flujo*, una en cada rama de la condición: **solo una se ejecuta**. Responde ACEPTADO (con `execution_uid`) o ERROR.
+3. `PROCESAR` va **después** de responder: el flujo SIGUE ejecutándose (documentado por Microsoft: las acciones posteriores a la respuesta continúan más allá del límite de 120 s; una ejecución puede durar hasta 30 días).
+   Recorre las filas válidas en secuencia (**Control de simultaneidad: Activado, paralelismo 1**) y cada 25 filas actualiza el estado. Al terminar escribe TERMINADO con SOLO las filas no confirmadas.
+4. Las variables (`Inicializar_*`) se crean **al principio del flujo, fuera de cualquier condición o ámbito** (requisito de Power Automate).
+
+## Acciones, de arriba abajo (lo indentado va dentro del bloque que lo contiene)
+
+Cada acción se ejecuta **después de la anterior** salvo que se indique otra cosa. Las acciones con **«Configurar ejecución posterior»** (⋯ → Configurar la ejecución posterior) marcan las casillas de su `runAfter`:
+`*_CATCH` y `CATCH_FILA`: *ha error* y *superó el tiempo de espera*; `RESPONDER`, `FINALIZAR`, `Contar_procesada` y los de `runAfter` con las cuatro casillas: **todas**.
 '''
     contador = [0]
     cuerpo = aplanar(d["actions"], contador)
     return encabezado + "\n" + cuerpo + "\n"
 
 
+def documento_estado() -> str:
+    from proto_masiva.flows import construir_estado as E
+    d = E.construir_definicion()
+    (nombre, disparo), = d["triggers"].items()
+    entradas = "\n".join(f"{n}. Entrada de tipo **Texto** · Título: `{p['title']}` · Descripción: {p['description']}"
+                         for n, (c, p) in enumerate(disparo["inputs"]["schema"]["properties"].items(), 1))
+    encabezado = f'''# Guía de acciones de `P9_MASIVA_PROTO_ESTADO` (opción B: armarlo a mano)
+
+> **Úsala solo si no puedes importar el ZIP.** Se **genera** desde la misma definición que el ZIP (`python proto_masiva/flows/guia_manual.py`). **No está validada en el tenant.**
+> Es de **solo lectura**: lee `confirmacion_<execution_uid>.json` de `Documents/P9_MASIVA_TEMP` y lo devuelve a Power Apps. Cada expresión va en la pestaña **Expresión** (sin el `@` inicial).
+
+## Disparador
+
+**Desencadenador:** *Power Apps (V2)* con **una** entrada:
+
+{entradas}
+
+## Acciones, de arriba abajo
+
+Las acciones `CATCH` y `Responder_a_PowerApps` usan **«Configurar ejecución posterior»**: `CATCH` = *ha error* y *superó el tiempo de espera* de `TRY`; `Responder_a_PowerApps` = **todas** las casillas de `TRY` y `CATCH`.
+'''
+    contador = [0]
+    return encabezado + "\n" + aplanar(d["actions"], contador) + "\n"
+
+
 if __name__ == "__main__":
+    (CARPETA / "GUIA_ACCIONES_ESTADO.md").write_text(documento_estado(), encoding="utf-8")
+    print(CARPETA / "GUIA_ACCIONES_ESTADO.md")
     (CARPETA / "GUIA_ACCIONES_PREVALIDACION.md").write_text(documento(), encoding="utf-8")
     (CARPETA / "GUIA_ACCIONES_CONFIRMACION.md").write_text(documento_confirmar(), encoding="utf-8")
     print(CARPETA / "GUIA_ACCIONES_PREVALIDACION.md")

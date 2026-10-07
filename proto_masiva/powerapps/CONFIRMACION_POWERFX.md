@@ -1,96 +1,245 @@
-# Power Fx de la CONFIRMACIÓN MASIVA (botón `btnConfirmarMasivamenteP9`)
+# Power Fx de la CONFIRMACIÓN MASIVA hasta 1999 filas (un clic, seguimiento por Temporizador)
 
-> **Estado: V1 FUNCIONAL VALIDADA EN EL TENANT (camino feliz).** Estas son las fórmulas tal como están en el export REAL de `P9_PRUEBA_MASIVA` posterior a la integración
-> (`tenant_v1/P9_Confirmacion_Masiva.pa.yaml`): con ellas se prevalidó un Excel de 3 filas (2 `VALIDO`, 1 `NO_ENCONTRADO`) y se confirmaron 2 de 2 depósitos, que cambiaron a `ASIGNADO`
-> en `Depositos_Activos`. **No está validado en el tenant:** conflictos/412, fallos parciales, 10 filas, 50 filas, tiempos de espera ni throttling (ver `../VALIDACION_TENANT_V1.md`).
+> **Estado: NO VALIDADO en el tenant.** La V1 (confirmación síncrona de hasta 50 filas) SÍ funcionó de punta a punta en el tenant (commit `82b279e`, ver `../VALIDACION_TENANT_V1.md`).
+> Estas fórmulas son la evolución para 1999 filas: se pegan sobre tus controles reales (`tenant_v1/P9_Confirmacion_Masiva.pa.yaml`, el export posterior a la V1) y pasan las pruebas
+> estáticas del repositorio (paréntesis, esquemas, **todas las ramas de cada `IfError` devuelven booleano**, **`ShowColumns` sin comillas**), pero **no se ejecutaron en Power Apps Studio**.
 > Se **generan** (`python proto_masiva/powerapps/generar_powerfx.py`) desde `P9_Confirmacion_Masiva.pa.yaml`: no las edites a mano aquí.
 >
-> **No pegues controles ni el YAML:** los controles ya existen en tu app con estos nombres. Solo se **reemplazan 18 propiedades** en 13 elementos (la pantalla y 12 controles; las de abajo).
-> Nada cambia de posición, tamaño ni estilo. Reglas que Studio ya impuso en tu tenant y que NO se deben deshacer a mano:
-> - **`IfError`:** todas las ramas terminan en `true` / `false` (si no, tipos incompatibles).
-> - **`ShowColumns`:** los nombres de columna van **SIN comillas** (`ShowColumns(tabla; fila_excel; deposito_id; …)`); con comillas Studio lo rechazó.
+> **Qué cambia:** 9 propiedades en 8 elementos + **1 control nuevo** (un Temporizador oculto). Nada cambia de posición, tamaño ni estilo.
+> Reglas que Studio ya impuso en tu tenant y que NO se deben deshacer a mano: `IfError` con ramas `true` / `false`; `ShowColumns(tabla; fila_excel; deposito_id; …)` **sin comillas**.
 
 Escritas con `;` entre argumentos y `;;` entre sentencias (tu configuración regional).
 
-## Antes de pegar: agregar el flujo a la app
+## Antes de pegar: los dos flujos en la app (el contrato de `P9_MASIVA_PROTO_CONFIRMAR` CAMBIÓ)
 
-Panel izquierdo → **Power Automate** (⚡) → **Agregar flujo** → `P9_MASIVA_PROTO_CONFIRMAR` (ver `flows/INSTRUCCIONES_CONFIRMAR.md`). Sin esto, `P9_MASIVA_PROTO_CONFIRMAR.Run` no se resuelve.
+`P9_MASIVA_PROTO_CONFIRMAR` ya no devuelve el resultado final: **responde enseguida** `resultado / codigo / mensaje / execution_uid / filas_recibidas` y sigue procesando.
+Power Apps guarda la forma de las salidas de un flujo al agregarlo, así que hay que **quitarlo y volver a agregarlo**:
+
+1. Panel izquierdo → **Power Automate** (⚡) → en `P9_MASIVA_PROTO_CONFIRMAR` → **⋯** → **Quitar de la aplicación** (los errores rojos de `.Run` que aparecen son esperados; se resuelven en el paso 3).
+2. **Agregar flujo** → `P9_MASIVA_PROTO_ESTADO` (nuevo).
+3. **Agregar flujo** → `P9_MASIVA_PROTO_CONFIRMAR` (el actualizado; el orden no importa).
+
+## Crear el Temporizador (`tmrProgresoP9`) — único control nuevo
+
+*Insertar → Entrada → Temporizador*; en la pantalla `P9_Confirmacion_Masiva`; renómbralo **`tmrProgresoP9`**. Propiedades (el resto déjalo por defecto):
+
+| Propiedad | Valor |
+|---|---|
+| `Duration` | `15000` |
+| `Repeat` | `true` |
+| `AutoStart` | `false` |
+| `Start` | `Coalesce(varMonitorearP9; false)` |
+| `Visible` | `false` |
+
+`Duration = 15000` (15 s: el tope de los 10–15 s previstos; **no** consultar cada segundo — cada consulta ejecuta 12 acciones de Power Automate). Es invisible: no cambia el diseño. Su `OnTimerEnd` es la fórmula **B**.
 
 ## Variables y colecciones que usa (todas EN MEMORIA, ninguna se guarda)
 
 | Nombre | Qué es |
 |---|---|
 | `colPrevalidacionP9` | filas de la prevalidación (ya existe y está validada) |
-| `colConfirmacionP9` | resultado por fila de la confirmación (nuevo; se llena desde `detalle_json`) |
-| `varProcesandoConfirmacionP9` | `true` mientras corre la confirmación (bloquea CONFIRMAR y PREVALIDAR) |
-| `varConfirmacionMasivaFinalizadaP9` | `true` tras confirmar: el botón queda **Disabled** para ese mismo resultado de prevalidación; se reinicia al adjuntar otro archivo o al volver a PREVALIDAR |
-| `varResultadoConfirmacionP9` | la respuesta del flujo (8 textos) |
-| `varMsConfirmacionP9` | milisegundos de la confirmación (la pantalla los muestra como «8,9 segundos») |
+| `colConfirmacionP9` | SOLO las filas no confirmadas (se llena al terminar, desde el `detalle_json` del estado final) |
+| `varEjecucionMasivaP9` | respuesta rápida de `P9_MASIVA_PROTO_CONFIRMAR` (`execution_uid`, `filas_recibidas`…) |
+| `varProgresoMasivoP9` | última respuesta de `P9_MASIVA_PROTO_ESTADO` (estado, filas procesadas/confirmadas/no confirmadas, porcentaje, mensaje, detalle) |
+| `varMonitorearP9` | `true` mientras el Temporizador debe consultar (es su `Start`) |
+| `varFallosEstadoP9` | consultas seguidas que fallaron (a las 5, se detiene el seguimiento con un aviso) |
+| `varInicioConfirmacionP9` | hora del clic (para el tiempo mostrado) |
+| `varProcesandoConfirmacionP9` | `true` desde el clic hasta que termina: bloquea CONFIRMAR y PREVALIDAR (evita el doble clic) |
+| `varConfirmacionMasivaFinalizadaP9` | `true` tras el clic: el botón queda **Disabled** para ese mismo resultado de prevalidación; se reinicia al adjuntar otro archivo o al volver a PREVALIDAR |
+| `varResultadoConfirmacionP9` | resultado FINAL derivado del estado (`OK` / `PARCIAL` / `ERROR`); las fórmulas de la V1 siguen leyéndolo igual |
+| `varMsConfirmacionP9` | milisegundos totales, mostrados como «8,9 segundos» |
 | `varVerObservacionesP9` | VER / OCULTAR OBSERVACIONES (ya existe) |
 
-`varConfirmarMasivaVisible` **ya no se usa** (no hay segundo modal): el paso C la quita del `OnVisible`, y el paso A reemplaza el `OnSelect` que la ponía en `true`.
-Si tenías la variable en otro sitio, bórrala.
+`varConfirmarMasivaVisible` **no existe** (no hay segundo modal).
 
 ## Las fórmulas (en este orden)
 
-Para cada una: selecciona el control → elige la propiedad en la barra de fórmulas → **borra todo** → pega. **Pega primero la A:** define las variables y la colección que usan las demás.
+Para cada una: selecciona el control → elige la propiedad en la barra de fórmulas → **borra todo** → pega. **Pega primero la A:** define las variables que usan las demás.
 
-### A · `btnConfirmarMasivamenteP9` → **OnSelect** (UN clic, sin segundo modal; PEGA ESTA PRIMERO: define las variables y `colConfirmacionP9`)
+### A · `btnConfirmarMasivamenteP9` → **OnSelect** (UN clic: responde enseguida y arranca el seguimiento; PEGA ESTA PRIMERO: define las variables nuevas)
 
 ```
 =Set(varProcesandoConfirmacionP9; true);;
 Set(varResultadoConfirmacionP9; Blank());;
 Set(varMsConfirmacionP9; Blank());;
+Set(varEjecucionMasivaP9; Blank());;
+Set(varProgresoMasivoP9; Blank());;
+Set(varFallosEstadoP9; 0);;
+Set(varMonitorearP9; false);;
 Set(varVerObservacionesP9; false);;
 Clear(colConfirmacionP9);;
+Set(varInicioConfirmacionP9; Now());;
 
-With(
-    {inicioConfirmacionP9: Now()};
-    IfError(
-        Set(
-            varResultadoConfirmacionP9;
-            P9_MASIVA_PROTO_CONFIRMAR.Run(
-                JSON(
-                    ShowColumns(
-                        Filter(
-                            colPrevalidacionP9;
-                            resultado = "VALIDO"
-                        );
-                        fila_excel;
-                        deposito_id;
-                        clave_transaccion;
-                        banco;
-                        cuenta_bancaria;
-                        codigo_asignacion;
-                        importe;
-                        moneda;
-                        estudiante;
-                        solicitado_por;
-                        sede;
-                        observacion
+IfError(
+    Set(
+        varEjecucionMasivaP9;
+        P9_MASIVA_PROTO_CONFIRMAR.Run(
+            JSON(
+                ShowColumns(
+                    Filter(
+                        colPrevalidacionP9;
+                        resultado = "VALIDO"
                     );
-                    JSONFormat.Compact
+                    fila_excel;
+                    deposito_id;
+                    clave_transaccion;
+                    banco;
+                    cuenta_bancaria;
+                    codigo_asignacion;
+                    importe;
+                    moneda;
+                    estudiante;
+                    solicitado_por;
+                    sede;
+                    observacion
                 );
-                User().Email
-            )
-        );;
-        Set(
-            varMsConfirmacionP9;
-            DateDiff(
-                inicioConfirmacionP9;
-                Now();
-                TimeUnit.Milliseconds
-            )
-        );;
-        IfError(
-            ClearCollect(
-                colConfirmacionP9;
-                ForAll(
-                    Table(
-                        ParseJSON(
-                            varResultadoConfirmacionP9.detalle_json
-                        )
-                    );
+                JSONFormat.Compact
+            );
+            User().Email
+        )
+    );;
+    true;
+    Set(
+        varEjecucionMasivaP9;
+        {
+            resultado: "ERROR";
+            codigo: "FLUJO_SIN_RESPUESTA";
+            mensaje: "El flujo no respondió: " & FirstError.Message & ". Es posible que haya empezado a confirmar depósitos: vuelva a PREVALIDAR para ver el estado real antes de reintentar.";
+            execution_uid: "";
+            filas_recibidas: "0"
+        }
+    );;
+    false
+);;
+
+Set(varConfirmacionMasivaFinalizadaP9; true);;
+
+If(
+    varEjecucionMasivaP9.resultado = "ACEPTADO";
+    Set(
+        varProgresoMasivoP9;
+        {
+            estado: "PROCESANDO";
+            filas_totales: varEjecucionMasivaP9.filas_recibidas;
+            filas_procesadas: "0";
+            filas_confirmadas: "0";
+            filas_no_confirmadas: "0";
+            porcentaje: "0";
+            mensaje: varEjecucionMasivaP9.mensaje;
+            detalle_json: "[]";
+            tiempos_ms: ""
+        }
+    );;
+    Set(varMonitorearP9; true);
+    Set(
+        varResultadoConfirmacionP9;
+        {
+            resultado: "ERROR";
+            codigo: varEjecucionMasivaP9.codigo;
+            mensaje: varEjecucionMasivaP9.mensaje;
+            filas_recibidas: varEjecucionMasivaP9.filas_recibidas;
+            filas_confirmadas: "0";
+            filas_no_confirmadas: "0";
+            detalle_json: "[]";
+            tiempos_ms: ""
+        }
+    );;
+    Set(
+        varMsConfirmacionP9;
+        DateDiff(
+            varInicioConfirmacionP9;
+            Now();
+            TimeUnit.Milliseconds
+        )
+    );;
+    Set(varProcesandoConfirmacionP9; false)
+)
+```
+
+### B · `tmrProgresoP9` (Temporizador NUEVO, ver «Crear el Temporizador») → **OnTimerEnd**
+
+```
+=IfError(
+    Set(
+        varProgresoMasivoP9;
+        P9_MASIVA_PROTO_ESTADO.Run(varEjecucionMasivaP9.execution_uid)
+    );;
+    Set(
+        varFallosEstadoP9;
+        If(
+            varProgresoMasivoP9.estado = "NO_ENCONTRADO";
+            varFallosEstadoP9 + 1;
+            0
+        )
+    );;
+    true;
+    Set(varFallosEstadoP9; varFallosEstadoP9 + 1);;
+    false
+);;
+
+If(
+    varFallosEstadoP9 >= 5 && varProgresoMasivoP9.estado <> "TERMINADO" && varProgresoMasivoP9.estado <> "ERROR";
+    Set(
+        varProgresoMasivoP9;
+        {
+            estado: "ERROR";
+            filas_totales: Coalesce(varProgresoMasivoP9.filas_totales; varEjecucionMasivaP9.filas_recibidas);
+            filas_procesadas: Coalesce(varProgresoMasivoP9.filas_procesadas; "0");
+            filas_confirmadas: Coalesce(varProgresoMasivoP9.filas_confirmadas; "0");
+            filas_no_confirmadas: Coalesce(varProgresoMasivoP9.filas_no_confirmadas; "0");
+            porcentaje: Coalesce(varProgresoMasivoP9.porcentaje; "0");
+            mensaje: "No se pudo consultar el progreso de la confirmación. Puede seguir ejecutándose en segundo plano: vuelva a PREVALIDAR para ver el estado real antes de reintentar.";
+            detalle_json: "[]";
+            tiempos_ms: ""
+        }
+    )
+);;
+
+If(
+    varProgresoMasivoP9.estado = "TERMINADO" || varProgresoMasivoP9.estado = "ERROR";
+    Set(varMonitorearP9; false);;
+    Set(
+        varMsConfirmacionP9;
+        DateDiff(
+            varInicioConfirmacionP9;
+            Now();
+            TimeUnit.Milliseconds
+        )
+    );;
+    Set(
+        varResultadoConfirmacionP9;
+        {
+            resultado: If(
+                varProgresoMasivoP9.estado = "ERROR";
+                "ERROR";
+                If(
+                    Value(varProgresoMasivoP9.filas_no_confirmadas) = 0;
+                    "OK";
+                    "PARCIAL"
+                )
+            );
+            codigo: If(
+                varProgresoMasivoP9.estado = "ERROR";
+                "ERROR_NO_CONTROLADO";
+                If(
+                    Value(varProgresoMasivoP9.filas_no_confirmadas) = 0;
+                    "CONFIRMACION_OK";
+                    "CONFIRMACION_PARCIAL"
+                )
+            );
+            mensaje: varProgresoMasivoP9.mensaje;
+            filas_recibidas: varProgresoMasivoP9.filas_totales;
+            filas_confirmadas: varProgresoMasivoP9.filas_confirmadas;
+            filas_no_confirmadas: varProgresoMasivoP9.filas_no_confirmadas;
+            detalle_json: varProgresoMasivoP9.detalle_json;
+            tiempos_ms: varProgresoMasivoP9.tiempos_ms
+        }
+    );;
+    IfError(
+        ClearCollect(
+            colConfirmacionP9;
+            ForAll(
+                Table(ParseJSON(varProgresoMasivoP9.detalle_json));
                     {
                         fila_excel: Value(ThisRecord.Value.fila_excel);
                         deposito_id: Value(ThisRecord.Value.deposito_id);
@@ -103,66 +252,20 @@ With(
                         importe: Value(ThisRecord.Value.importe);
                         moneda: Text(ThisRecord.Value.moneda)
                     }
-                )
-            );;
-            true;
-            Notify(
-                "No se pudo leer el detalle de la confirmación: " & FirstError.Message;
-                NotificationType.Warning
-            );;
-            false
-        );;
-        true;
-        Set(
-            varResultadoConfirmacionP9;
-            {
-                resultado: "ERROR";
-                codigo: "FLUJO_SIN_RESPUESTA";
-                mensaje: "El flujo no respondió: " &
-                         FirstError.Message &
-                         ". Es posible que haya seguido confirmando depósitos: vuelva a PREVALIDAR para ver el estado real antes de reintentar.";
-                filas_recibidas: "0";
-                filas_confirmadas: "0";
-                filas_no_confirmadas: "0";
-                detalle_json: "[]";
-                tiempos_ms: ""
-            }
-        );;
-        Set(
-            varMsConfirmacionP9;
-            DateDiff(
-                inicioConfirmacionP9;
-                Now();
-                TimeUnit.Milliseconds
             )
         );;
+        true;
+        Notify(
+            "No se pudo leer el detalle de la confirmación: " & FirstError.Message;
+            NotificationType.Warning
+        );;
         false
-    )
-);;
-
-Set(varConfirmacionMasivaFinalizadaP9; true);;
-Set(varProcesandoConfirmacionP9; false)
-```
-
-### B · `btnConfirmarMasivamenteP9` → **DisplayMode** (Disabled mientras corre y después de confirmar ese mismo resultado)
-
-```
-=If(
-    !Coalesce(varProcesandoP9; false) &&
-    !Coalesce(varProcesandoConfirmacionP9; false) &&
-    !Coalesce(varConfirmacionMasivaFinalizadaP9; false) &&
-    CountRows(
-        Filter(
-            colPrevalidacionP9;
-            resultado = "VALIDO"
-        )
-    ) > 0;
-    DisplayMode.Edit;
-    DisplayMode.Disabled
+    );;
+    Set(varProcesandoConfirmacionP9; false)
 )
 ```
 
-### C · Pantalla `P9_Confirmacion_Masiva` → propiedad **OnVisible** (reemplaza todo; retira `varConfirmarMasivaVisible`)
+### C · Pantalla `P9_Confirmacion_Masiva` → propiedad **OnVisible** (reemplaza todo)
 
 ```
 =Set(varProcesandoP9; false);;
@@ -172,6 +275,10 @@ Set(varProcesandoConfirmacionP9; false);;
 Set(varConfirmacionMasivaFinalizadaP9; false);;
 Set(varResultadoConfirmacionP9; Blank());;
 Set(varMsConfirmacionP9; Blank());;
+Set(varEjecucionMasivaP9; Blank());;
+Set(varProgresoMasivoP9; Blank());;
+Set(varFallosEstadoP9; 0);;
+Set(varMonitorearP9; false);;
 Clear(colPrevalidacionP9);;
 Clear(colConfirmacionP9);;
 Set(varVerObservacionesP9; false);;
@@ -181,33 +288,24 @@ ResetForm(frmArchivoP9)
 ### D · Control de adjuntos `attXlsxP9` → propiedades **OnAddFile** y **OnRemoveFile** (la misma fórmula en las dos)
 
 ```
-=Set(varResultadoP9; Blank());;
-Set(varMsAppP9; Blank());;
-Set(varResultadoConfirmacionP9; Blank());;
-Set(varMsConfirmacionP9; Blank());;
-Set(varConfirmacionMasivaFinalizadaP9; false);;
-Set(varVerObservacionesP9; false);;
-Clear(colPrevalidacionP9);;
-Clear(colConfirmacionP9)
-```
-
-### E · `btnPrevalidarP9` → **DisplayMode**
-
-```
 =If(
-    Coalesce(varProcesandoP9; false) ||
-    Coalesce(varProcesandoConfirmacionP9; false) ||
-    IsEmpty(attXlsxP9.Attachments) ||
-    !EndsWith(
-        Lower(First(attXlsxP9.Attachments).Name);
-        ".xlsx"
-    );
-    DisplayMode.Disabled;
-    DisplayMode.Edit
+    !Coalesce(varProcesandoConfirmacionP9; false);
+    Set(varResultadoP9; Blank());;
+    Set(varMsAppP9; Blank());;
+    Set(varResultadoConfirmacionP9; Blank());;
+    Set(varMsConfirmacionP9; Blank());;
+    Set(varEjecucionMasivaP9; Blank());;
+    Set(varProgresoMasivoP9; Blank());;
+    Set(varFallosEstadoP9; 0);;
+    Set(varMonitorearP9; false);;
+    Set(varConfirmacionMasivaFinalizadaP9; false);;
+    Set(varVerObservacionesP9; false);;
+    Clear(colPrevalidacionP9);;
+    Clear(colConfirmacionP9)
 )
 ```
 
-### F · `btnPrevalidarP9` → **OnSelect** (tu fórmula real con `IfError … true / false`, más el reinicio de la confirmación)
+### E · `btnPrevalidarP9` → **OnSelect** (tu fórmula real con `IfError … true / false`, más 4 reinicios)
 
 ```
 =Set(varProcesandoP9; true);;
@@ -215,6 +313,10 @@ Set(varResultadoP9; Blank());;
 Set(varMsAppP9; Blank());;
 Set(varResultadoConfirmacionP9; Blank());;
 Set(varMsConfirmacionP9; Blank());;
+Set(varEjecucionMasivaP9; Blank());;
+Set(varProgresoMasivoP9; Blank());;
+Set(varFallosEstadoP9; 0);;
+Set(varMonitorearP9; false);;
 Set(varConfirmacionMasivaFinalizadaP9; false);;
 Set(varVerObservacionesP9; false);;
 Clear(colPrevalidacionP9);;
@@ -311,187 +413,30 @@ With(
 Set(varProcesandoP9; false)
 ```
 
-### G · `btnVerObservacionesP9` → **Text**
+### F · `lblTitularResultadoP9` → **Text** (avance en dos líneas mientras corre; resultado final en dos líneas; conserva el alto 50)
 
 ```
 =If(
-    Coalesce(varVerObservacionesP9; false);
-    "OCULTAR OBSERVACIONES";
-    "VER OBSERVACIONES (" &
+    Coalesce(varProcesandoConfirmacionP9; false);
+    "CONFIRMACIÓN EN PROCESO" &
     If(
-        !IsBlank(varResultadoConfirmacionP9);
-        CountRows(
-            Filter(
-                colConfirmacionP9;
-                resultado <> "CONFIRMADO"
-            )
-        );
-        CountRows(
-            Filter(
-                colPrevalidacionP9;
-                resultado <> "VALIDO"
-            )
-        )
+        IsBlank(varProgresoMasivoP9);
+        "";
+        " · " & varProgresoMasivoP9.porcentaje & " %"
     ) &
-    ")"
-)
-```
-
-### H · `btnVerObservacionesP9` → **Visible**
-
-```
-=If(
-    !IsBlank(varResultadoConfirmacionP9);
-    CountRows(
-        Filter(
-            colConfirmacionP9;
-            resultado <> "CONFIRMADO"
-        )
-    );
-    CountRows(
-        Filter(
-            colPrevalidacionP9;
-            resultado <> "VALIDO"
-        )
-    )
-) > 0
-```
-
-### I · `galObservacionesP9` → **Items** (antes de confirmar: observaciones de la prevalidación; después: filas no confirmadas)
-
-```
-=If(
-    !IsBlank(varResultadoConfirmacionP9);
-    ForAll(
-        Filter(
-            colConfirmacionP9;
-            resultado <> "CONFIRMADO"
-        );
-        {
-            fila_excel: fila_excel;
-            resultado: resultado;
-            mensaje: mensaje;
-            clave_transaccion: With(
-                {filaP9: ThisRecord.fila_excel};
-                Coalesce(
-                    LookUp(
-                        colPrevalidacionP9;
-                        fila_excel = filaP9
-                    ).clave_transaccion;
-                    ""
-                )
-            )
-        }
-    );
-    ShowColumns(
-        Filter(
-            colPrevalidacionP9;
-            resultado <> "VALIDO"
-        );
-        fila_excel;
-        resultado;
-        mensaje;
-        clave_transaccion
-    )
-)
-```
-
-### J · `Title1` (etiqueta de título DENTRO de `galObservacionesP9`) → **Text** (añade los resultados de la confirmación)
-
-```
-="Fila " & Text(ThisItem.fila_excel) &
-" · " &
-Switch(
-    ThisItem.resultado;
-    "NO_DISPONIBLE"; "DEPÓSITO NO DISPONIBLE";
-    "NO_ENCONTRADO"; "DEPÓSITO NO ENCONTRADO";
-    "MONEDA_NO_COINCIDE"; "MONEDA NO COINCIDE";
-    "ASIGNACION_AMBIGUA"; "COINCIDENCIA AMBIGUA";
-    "DUPLICADO_ARCHIVO"; "DUPLICADO EN EL EXCEL";
-    "FILA_INCOMPLETA"; "FALTAN DATOS";
-    "IMPORTE_INVALIDO"; "IMPORTE INVÁLIDO";
-    "MONEDA_INVALIDA"; "MONEDA INVÁLIDA";
-    "CONFLICTO"; "CONFLICTO CON OTRO USUARIO";
-    "CONFLICTO_DATOS"; "EL DEPÓSITO CAMBIÓ";
-    "ERROR_FILA"; "ERROR AL PROCESAR LA FILA";
-    ThisItem.resultado
-)
-```
-
-### K · `lblEstadoP9` → **Text**
-
-```
-=If(
-    Coalesce(varProcesandoConfirmacionP9; false);
-    "CONFIRMANDO";
+    Char(10) &
     If(
-        Coalesce(varProcesandoP9; false);
-        "PROCESANDO";
-        If(
-            !IsBlank(varResultadoConfirmacionP9);
-            varResultadoConfirmacionP9.resultado;
-            If(
-                !IsBlank(varResultadoP9);
-                varResultadoP9.resultado;
-                If(
-                    IsEmpty(attXlsxP9.Attachments);
-                    "SIN ARCHIVO";
-                    "CARGADO"
-                )
-            )
-        )
-    )
-)
-```
-
-### L · `lblEstadoP9` → **Fill**
-
-```
-=With(
-    {
-        estadoP9:
-            If(
-                Coalesce(varProcesandoConfirmacionP9; false);
-                "CONFIRMANDO";
-                If(
-                    Coalesce(varProcesandoP9; false);
-                    "PROCESANDO";
-                    If(
-                        !IsBlank(varResultadoConfirmacionP9);
-                        varResultadoConfirmacionP9.resultado;
-                        If(
-                            !IsBlank(varResultadoP9);
-                            varResultadoP9.resultado;
-                            If(
-                                IsEmpty(attXlsxP9.Attachments);
-                                "SIN ARCHIVO";
-                                "CARGADO"
-                            )
-                        )
-                    )
-                )
-            )
-    };
-    Switch(
-        estadoP9;
-        "OK"; RGBA(46; 125; 50; 1);
-        "OBSERVADO"; RGBA(198; 125; 0; 1);
-        "PARCIAL"; RGBA(198; 125; 0; 1);
-        "ERROR"; RGBA(183; 28; 28; 1);
-        "PROCESANDO"; RGBA(230; 126; 34; 1);
-        "CONFIRMANDO"; RGBA(230; 126; 34; 1);
-        "CARGADO"; RGBA(0; 120; 212; 1);
-        RGBA(98; 102; 106; 1)
-    )
-)
-```
-
-### M · `lblTitularResultadoP9` → **Text** (resultado de la confirmación en dos líneas; conserva el alto 50 del tenant)
-
-```
-=If(
-    Coalesce(varProcesandoConfirmacionP9; false);
-    "Confirmando los depósitos válidos (puede tardar)...";
+        IsBlank(varProgresoMasivoP9);
+        "Iniciando...";
+        varProgresoMasivoP9.filas_procesadas &
+        " de " &
+        varProgresoMasivoP9.filas_totales &
+        " procesados · " &
+        varProgresoMasivoP9.filas_confirmadas &
+        " confirmados · " &
+        varProgresoMasivoP9.filas_no_confirmadas &
+        " requieren revisión"
+    );
     If(
         Coalesce(varProcesandoP9; false);
         "Procesando el archivo (puede tardar unos segundos)...";
@@ -509,7 +454,7 @@ Switch(
                 If(
                     Value(varResultadoConfirmacionP9.filas_confirmadas) = 0;
                     "NO SE CONFIRMÓ NINGÚN DEPÓSITO";
-                    "CONFIRMACIÓN PARCIAL"
+                    "CONFIRMACIÓN COMPLETADA"
                 ) & Char(10) &
                 varResultadoConfirmacionP9.filas_confirmadas &
                 " de " &
@@ -548,86 +493,88 @@ Switch(
 )
 ```
 
-### N · `lblResMensajeP9` → **Text**
+### G · `lblResMensajeP9` → **Text**
 
 ```
 =If(
-    !IsBlank(varResultadoConfirmacionP9);
-    varResultadoConfirmacionP9.mensaje;
+    Coalesce(varProcesandoConfirmacionP9; false) && !IsBlank(varProgresoMasivoP9);
+    varProgresoMasivoP9.mensaje & " La confirmación continúa en segundo plano.";
     If(
-        IsBlank(varResultadoP9);
-        "—";
+        !IsBlank(varResultadoConfirmacionP9);
+        varResultadoConfirmacionP9.mensaje;
         If(
-            varResultadoP9.resultado = "OK";
-            "Todas las filas están listas para confirmar.";
-            Concat(
-                Filter(
-                    colPrevalidacionP9;
-                    resultado <> "VALIDO"
-                );
-                "Fila " & Text(fila_excel) & " · " &
-                Switch(
-                    resultado;
-                    "NO_DISPONIBLE"; "DEPÓSITO NO DISPONIBLE";
-                    "NO_ENCONTRADO"; "DEPÓSITO NO ENCONTRADO";
-                    "MONEDA_NO_COINCIDE"; "MONEDA NO COINCIDE";
-                    "ASIGNACION_AMBIGUA"; "COINCIDENCIA AMBIGUA";
-                    "DUPLICADO_ARCHIVO"; "DUPLICADO EN EL EXCEL";
-                    "FILA_INCOMPLETA"; "FALTAN DATOS";
-                    "IMPORTE_INVALIDO"; "IMPORTE INVÁLIDO";
-                    "MONEDA_INVALIDA"; "MONEDA INVÁLIDA";
-                    resultado
-                ) &
-                ": " &
-                mensaje;
-                Char(10)
+            IsBlank(varResultadoP9);
+            "—";
+            If(
+                varResultadoP9.resultado = "OK";
+                "Todas las filas están listas para confirmar.";
+                Concat(
+                    Filter(
+                        colPrevalidacionP9;
+                        resultado <> "VALIDO"
+                    );
+                    "Fila " & Text(fila_excel) & " · " &
+                    Switch(
+                        resultado;
+                        "NO_DISPONIBLE"; "DEPÓSITO NO DISPONIBLE";
+                        "NO_ENCONTRADO"; "DEPÓSITO NO ENCONTRADO";
+                        "MONEDA_NO_COINCIDE"; "MONEDA NO COINCIDE";
+                        "ASIGNACION_AMBIGUA"; "COINCIDENCIA AMBIGUA";
+                        "DUPLICADO_ARCHIVO"; "DUPLICADO EN EL EXCEL";
+                        "FILA_INCOMPLETA"; "FALTAN DATOS";
+                        "IMPORTE_INVALIDO"; "IMPORTE INVÁLIDO";
+                        "MONEDA_INVALIDA"; "MONEDA INVÁLIDA";
+                        resultado
+                    ) &
+                    ": " &
+                    mensaje;
+                    Char(10)
+                )
             )
         )
     )
 )
 ```
 
-### O · `lblResTiempoP9` → **Text** (tiempo humanizado, mismo formato «8,9 segundos»)
+### H · `lblResTiempoP9` → **Text** (muestra «En curso» mientras corre)
 
 ```
 =If(
-    IsBlank(Coalesce(varMsConfirmacionP9; varMsAppP9));
-    "—";
-    Text(
-        Round(
-            Coalesce(varMsConfirmacionP9; varMsAppP9) / 1000;
-            1
-        );
-        "0,0"
-    ) &
-    " segundos"
+    Coalesce(varProcesandoConfirmacionP9; false);
+    "En curso";
+    If(
+        IsBlank(Coalesce(varMsConfirmacionP9; varMsAppP9));
+        "—";
+        Text(
+            Round(
+                Coalesce(varMsConfirmacionP9; varMsAppP9) / 1000;
+                1
+            );
+            "0,0"
+        ) &
+        " segundos"
+    )
 )
 ```
 
-### P · `lblSubtituloMasivaP9` → **Text**
+### I · `lblAvisoPrototipoP9` → **Text**
 
 ```
-="Prototipo directo · prevalida un archivo Excel y confirma solo las filas que siguen siendo válidas."
-```
-
-### Q · `lblAvisoPrototipoP9` → **Text**
-
-```
-="Relee cada depósito antes de escribir y solo confirma lo que sigue válido · sin lotes ni historial."
+="Relee cada depósito antes de escribir y solo confirma lo que sigue válido · hasta 1999 filas con un clic · sin lotes ni historial."
 ```
 
 ## Lo que NO cambia (déjalo como está en tu app)
 
-- `btnConfirmarMasivamenteP9` → **Text** (ya cuenta las filas `VALIDO`) y toda su geometría/estilo
-- `btnVerObservacionesP9` → **OnSelect** (ya alterna `varVerObservacionesP9`) y su aspecto
-- `Title1_1` (etiqueta del mensaje dentro de la galería) → `=ThisItem.mensaje`, y `Subtitle1`, `Separator1`, `Rectangle1`
-- `lblResMensajeP9` → **Visible** (`=!varVerObservacionesP9`) y `lblResTiempoTituloP9` («Tiempo de Procesamiento»)
-- `btnDescargarPlantillaP9`, `btnVolverMasivaP9`, `frmArchivoP9`, `dcAdjuntosP9`, el panel y los demás rótulos del resumen
+- `btnConfirmarMasivamenteP9` → **Text** y **DisplayMode** (ya bloquean mientras corre y después de confirmar) y toda su geometría/estilo
+- `btnVerObservacionesP9`, `galObservacionesP9`, `Title1`, `Title1_1`, `Subtitle1`: tras terminar muestran SOLO las filas no confirmadas, igual que en la V1 (`colConfirmacionP9` ahora trae solo esas)
+- `lblEstadoP9` (Text y Fill): ya muestran `CONFIRMANDO` mientras corre y `OK` / `PARCIAL` / `ERROR` al terminar
+- `btnPrevalidarP9` → **DisplayMode**, `btnVolverMasivaP9`, `btnDescargarPlantillaP9`, `frmArchivoP9`, `dcAdjuntosP9` y los demás rótulos del resumen
 - `Main_Screen`: `btnImportacionMasivaP9`, `cmbCuentaP9_1` y sus `Visible` con `mostrarConfirmacion`
 
 ## Qué mirar tras pegar
 
-1. **Comprobador de aplicaciones** (estetoscopio): sin errores nuevos. Cualquier error en `P9_MASIVA_PROTO_CONFIRMAR.Run`, `JSON(ShowColumns(…))`, `ThisRecord.Value` o `With` dentro
-   de `ForAll`: copia el texto exacto; se ajusta solo esa línea.
-2. **Alto del titular:** el resultado de la confirmación ocupa dos líneas dentro del alto 50 del tenant (se vio correcto en la prueba real de 2 filas).
-3. Pruebas en el tenant: `flows/INSTRUCCIONES_CONFIRMAR.md`, Parte 3. Hecho: T1-equivalente con 2 filas. Pendiente: 10 y 50 filas, conflictos y tiempos.
+1. **Comprobador de aplicaciones** (estetoscopio): sin errores nuevos. Posibles puntos: `P9_MASIVA_PROTO_ESTADO.Run`, `P9_MASIVA_PROTO_CONFIRMAR.Run`, `JSON(ShowColumns(…))`, `With` dentro de `ForAll`.
+   Cualquier error: copia el texto exacto; se ajusta solo esa línea.
+2. **Al pulsar CONFIRMAR MASIVAMENTE (N)** debe verse en segundos «CONFIRMACIÓN EN PROCESO · 0 % / 0 de N procesados…», y cada ~15 s el avance. Al terminar: «CONFIRMACIÓN COMPLETADA» y, si hubo
+   fallidas, `VER OBSERVACIONES (K)` con solo esas filas.
+3. Si Power Apps se cierra durante el proceso, el backend sigue; esta versión NO recupera el seguimiento al volver (queda fuera de alcance): vuelve a PREVALIDAR para ver el estado real.

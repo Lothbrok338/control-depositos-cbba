@@ -1,0 +1,330 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "$authentication": {
+      "defaultValue": {},
+      "type": "SecureObject"
+    },
+    "$connections": {
+      "defaultValue": {},
+      "type": "Object"
+    }
+  },
+  "triggers": {
+    "manual": {
+      "type": "Request",
+      "kind": "PowerAppV2",
+      "inputs": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "title": "execution_uid",
+              "type": "string",
+              "x-ms-dynamically-added": true,
+              "description": "Identificador devuelto por P9_MASIVA_PROTO_CONFIRMAR (execution_uid)",
+              "x-ms-content-hint": "TEXT"
+            }
+          },
+          "required": [
+            "text"
+          ]
+        }
+      }
+    }
+  },
+  "actions": {
+    "PARAM_SITIO": {
+      "type": "Compose",
+      "inputs": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
+      "runAfter": {}
+    },
+    "PARAM_CARPETA": {
+      "type": "Compose",
+      "inputs": "/Documents/P9_MASIVA_TEMP",
+      "runAfter": {
+        "PARAM_SITIO": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Entrada": {
+      "type": "Compose",
+      "inputs": {
+        "uid": "@trim(coalesce(triggerBody()?['text'],''))"
+      },
+      "runAfter": {
+        "PARAM_CARPETA": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varEstado": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varEstado",
+            "type": "object",
+            "value": {}
+          }
+        ]
+      },
+      "runAfter": {
+        "Entrada": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varFalloEstado": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varFalloEstado",
+            "type": "string",
+            "value": "ERROR"
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varEstado": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varFalloMensaje": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varFalloMensaje",
+            "type": "string",
+            "value": "No se pudo leer el progreso de la confirmación."
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varFalloEstado": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Validar_uid": {
+      "type": "Compose",
+      "inputs": "@if(or(not(equals(length(outputs('Entrada')?['uid']),36)),not(empty(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(toLower(outputs('Entrada')?['uid']),'0',''),'1',''),'2',''),'3',''),'4',''),'5',''),'6',''),'7',''),'8',''),'9',''),'a',''),'b',''),'c',''),'d',''),'e',''),'f',''),'-','')))),'UID_INVALIDO','')",
+      "runAfter": {
+        "Inicializar_varFalloMensaje": [
+          "Succeeded"
+        ]
+      }
+    },
+    "TRY": {
+      "type": "Scope",
+      "actions": {
+        "Uid_valido": {
+          "type": "If",
+          "expression": "@empty(outputs('Validar_uid'))",
+          "actions": {
+            "Leer_estado": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetFileContentByPath"
+                },
+                "parameters": {
+                  "dataset": "@outputs('PARAM_SITIO')",
+                  "path": "@concat(outputs('PARAM_CARPETA'),'/','confirmacion_',outputs('Entrada')?['uid'],'.json')",
+                  "inferContentType": false
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              },
+              "runAfter": {}
+            },
+            "Guardar_estado": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varEstado",
+                "value": "@if(empty(body('Leer_estado')?['$content']),body('Leer_estado'),json(base64ToString(body('Leer_estado')?['$content'])))"
+              },
+              "runAfter": {
+                "Leer_estado": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {
+              "Uid_invalido": {
+                "type": "SetVariable",
+                "inputs": {
+                  "name": "varFalloMensaje",
+                  "value": "execution_uid inválido."
+                },
+                "runAfter": {}
+              }
+            }
+          },
+          "runAfter": {}
+        }
+      },
+      "runAfter": {
+        "Validar_uid": [
+          "Succeeded"
+        ]
+      }
+    },
+    "CATCH": {
+      "type": "Scope",
+      "actions": {
+        "Clasificar": {
+          "type": "If",
+          "expression": "@equals(outputs('Leer_estado')?['statusCode'],404)",
+          "actions": {
+            "No_encontrado_estado": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varFalloEstado",
+                "value": "NO_ENCONTRADO"
+              },
+              "runAfter": {}
+            },
+            "No_encontrado_mensaje": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varFalloMensaje",
+                "value": "Todavía no existe el registro de progreso de esta ejecución."
+              },
+              "runAfter": {
+                "No_encontrado_estado": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {
+              "Error_estado": {
+                "type": "SetVariable",
+                "inputs": {
+                  "name": "varFalloEstado",
+                  "value": "ERROR"
+                },
+                "runAfter": {}
+              },
+              "Error_mensaje": {
+                "type": "SetVariable",
+                "inputs": {
+                  "name": "varFalloMensaje",
+                  "value": "No se pudo leer el progreso de la confirmación. Puede seguir ejecutándose en segundo plano."
+                },
+                "runAfter": {
+                  "Error_estado": [
+                    "Succeeded"
+                  ]
+                }
+              }
+            }
+          },
+          "runAfter": {}
+        }
+      },
+      "runAfter": {
+        "TRY": [
+          "Failed",
+          "TimedOut"
+        ]
+      }
+    },
+    "Responder_a_PowerApps": {
+      "type": "Response",
+      "kind": "PowerApp",
+      "runAfter": {
+        "TRY": [
+          "Succeeded",
+          "Failed",
+          "Skipped",
+          "TimedOut"
+        ],
+        "CATCH": [
+          "Succeeded",
+          "Failed",
+          "Skipped",
+          "TimedOut"
+        ]
+      },
+      "inputs": {
+        "statusCode": 200,
+        "body": {
+          "estado": "@coalesce(variables('varEstado')?['estado'],variables('varFalloEstado'))",
+          "filas_totales": "@string(coalesce(variables('varEstado')?['filas_totales'],0))",
+          "filas_procesadas": "@string(coalesce(variables('varEstado')?['filas_procesadas'],0))",
+          "filas_confirmadas": "@string(coalesce(variables('varEstado')?['filas_confirmadas'],0))",
+          "filas_no_confirmadas": "@string(coalesce(variables('varEstado')?['filas_no_confirmadas'],0))",
+          "porcentaje": "@string(coalesce(variables('varEstado')?['porcentaje'],0))",
+          "mensaje": "@coalesce(variables('varEstado')?['mensaje'],variables('varFalloMensaje'))",
+          "detalle_json": "@string(coalesce(variables('varEstado')?['detalle_json'],createArray()))",
+          "tiempos_ms": "@coalesce(variables('varEstado')?['tiempos_ms'],'')"
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "estado": {
+              "title": "estado",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "filas_totales": {
+              "title": "filas_totales",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "filas_procesadas": {
+              "title": "filas_procesadas",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "filas_confirmadas": {
+              "title": "filas_confirmadas",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "filas_no_confirmadas": {
+              "title": "filas_no_confirmadas",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "porcentaje": {
+              "title": "porcentaje",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "mensaje": {
+              "title": "mensaje",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "detalle_json": {
+              "title": "detalle_json",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            },
+            "tiempos_ms": {
+              "title": "tiempos_ms",
+              "type": "string",
+              "x-ms-dynamically-added": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "outputs": {}
+}

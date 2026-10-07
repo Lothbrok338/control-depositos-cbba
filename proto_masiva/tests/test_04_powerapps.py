@@ -28,7 +28,8 @@ import derivar_pegar  # noqa: E402
 PANTALLA = yaml.safe_load((PA / "P9_Confirmacion_Masiva.pa.yaml").read_text(encoding="utf-8"))["Screens"]["P9_Confirmacion_Masiva"]
 MANUALES = {"frmArchivoP9", "attXlsxP9"}  # se crearon a mano en Studio; el export real del tenant ya los incluye
 TIPOS_USADOS_EN_P9 = {"GroupContainer@1.5.0", "Rectangle@2.3.0", "Label@2.5.1", "Classic/Button@2.2.0", "Gallery@2.15.0",
-                      "Form@2.4.4", "TypedDataCard@1.0.7", "Attachments@2.3.0"}
+                      "Form@2.4.4", "TypedDataCard@1.0.7", "Attachments@2.3.0",
+                      "Classic/Timer@2.1.0"}   # el Temporizador oculto del seguimiento de la confirmación (control NUEVO de la escala 1999; versión del tipo a confirmar al exportar)
 CODIGOS_APP = set(F.CODIGOS) | {"FLUJO_SIN_RESPUESTA"}  # este último lo fabrica la app si el flujo no responde
 ESTADOS_UI = {"SIN ARCHIVO", "CARGADO", "PROCESANDO", "CONFIRMANDO", "OK", "OBSERVADO", "PARCIAL", "ERROR"}
 # VALIDADO EN TENANT (URL pegada en el navegador → se descarga el XLSX): descarga por UniqueId del archivo real. Si el archivo se borra y se
@@ -48,6 +49,8 @@ CONTROLES = dict(controles(PANTALLA["Children"]))
 # EXPORT REAL del tenant (solo lectura): las pruebas «del tenant» fijan lo VALIDADO/PUBLICADO; PANTALLA/CONTROLES son el tenant + la integración de la confirmación.
 PANTALLA_TENANT = yaml.safe_load((PA / "tenant" / "P9_Confirmacion_Masiva.pa.yaml").read_text(encoding="utf-8"))["Screens"]["P9_Confirmacion_Masiva"]
 TENANT = dict(controles(PANTALLA_TENANT["Children"]))
+TENANT_V1_AVISO = dict(controles(yaml.safe_load((PA / "tenant_v1" / "P9_Confirmacion_Masiva.pa.yaml").read_text(encoding="utf-8"))["Screens"]
+                                 ["P9_Confirmacion_Masiva"]["Children"]))["lblAvisoPrototipoP9"]["Properties"]["Text"]
 
 
 def formulas():
@@ -79,7 +82,8 @@ def test_yaml_valido_con_nombres_unicos_y_tipos_conocidos():
     nombres = [n for n, _ in controles(PANTALLA["Children"])]
     # 44 controles REALES del tenant: contenedor + 30 controles originales + btnConfirmarMasivamenteP9 + btnVerObservacionesP9 + galObservacionesP9
     # (con Title1, Subtitle1, Separator1, Rectangle1, Title1_1) + frmArchivoP9 (con dcAdjuntosP9, DataCardKey1, attXlsxP9, ErrorMessage1, StarVisible1)
-    assert len(nombres) == len(set(nombres)) == 44
+    # + tmrProgresoP9 (Temporizador oculto del seguimiento de la confirmación masiva hasta 1999): 45 en la versión de escala; el export V1 real tiene 44
+    assert len(nombres) == len(set(nombres)) == 45 and len(TENANT) == 44 and set(CONTROLES) - set(TENANT) == {"tmrProgresoP9"}
     assert {c["Control"] for c in CONTROLES.values()} <= TIPOS_USADOS_EN_P9
 
 
@@ -122,7 +126,7 @@ def test_los_labels_de_copia_temporal_estan_ocultos_pero_siguen_existiendo():
     # DeleteFile devuelve 423 (Excel retiene la copia): el usuario no necesita ver «Copia temporal / NO se pudo eliminar»
     for nombre in ("lblResCopiaTituloP9", "lblResCopiaP9"):
         assert CONTROLES[nombre]["Properties"]["Visible"] == "=false", nombre
-    assert len(CONTROLES) == 44
+    assert len(CONTROLES) == 45
 
 
 def test_prevalidar_llama_al_flujo_con_el_archivo_y_maneja_el_error_de_llamada():
@@ -137,11 +141,14 @@ def test_prevalidar_llama_al_flujo_con_el_archivo_y_maneja_el_error_de_llamada()
     assert "Collect(" not in f.replace("ClearCollect(", "")
 
 
-def test_la_app_es_directa_no_hay_temporizador_sondeo_lotes_ni_estados_persistentes():
+def test_la_app_no_tiene_lotes_ni_historial_ni_escrituras_y_el_UNICO_temporizador_es_el_de_progreso():
     texto = (PA / "P9_Confirmacion_Masiva.pa.yaml").read_text(encoding="utf-8")
-    for prohibido in ("Timer", "tmrSondeo", "Sondeo", "OnTimerEnd", "Refresh(", "LOTES", "LOTE", "varLote", "PENDIENTE", "SubmitForm",
-                      "Patch(", "TIPO_CAMBIO", "FECHA_ESTADO"):
+    for prohibido in ("tmrSondeo", "Sondeo", "Refresh(", "LOTES", "LOTE", "varLote", "PENDIENTE", "SubmitForm", "Patch(", "TIPO_CAMBIO", "FECHA_ESTADO"):
         assert prohibido not in texto, prohibido
+    # la V1 NO tenía temporizador (export real tenant_v1); la escala 1999 añade exactamente UNO, oculto
+    assert "Timer" not in (PA / "tenant_v1" / "P9_Confirmacion_Masiva.pa.yaml").read_text(encoding="utf-8")
+    timers = [n for n, c in CONTROLES.items() if "Timer" in c["Control"]]
+    assert timers == ["tmrProgresoP9"] and texto.count("OnTimerEnd:") == 1
 
 
 def test_el_boton_se_bloquea_mientras_procesa_y_sin_archivo_xlsx():
@@ -339,8 +346,9 @@ def test_la_pantalla_ya_no_dice_que_no_consulta_Depositos_Activos_ni_usa_estados
     assert TENANT["lblAvisoPrototipoP9"]["Properties"]["Text"] == '="Prevalidación de SOLO LECTURA"'
     assert "No confirma ningún depósito" in TENANT["lblSubtituloMasivaP9"]["Properties"]["Text"]
     aviso = CONTROLES["lblAvisoPrototipoP9"]["Properties"]["Text"]
-    # texto FINAL del tenant (export posterior a la integración): sin el prefijo «PROTOTIPO · CONFIRMAR MASIVAMENTE»
-    assert aviso == '="Relee cada depósito antes de escribir y solo confirma lo que sigue válido · sin lotes ni historial."'
+    # V1 (export real tenant_v1): sin el prefijo «PROTOTIPO · CONFIRMAR MASIVAMENTE»; la escala 1999 añade «hasta 1999 filas con un clic»
+    assert TENANT_V1_AVISO == '="Relee cada depósito antes de escribir y solo confirma lo que sigue válido · sin lotes ni historial."'
+    assert aviso == '="Relee cada depósito antes de escribir y solo confirma lo que sigue válido · hasta 1999 filas con un clic · sin lotes ni historial."'
     assert "No confirma" not in CONTROLES["lblSubtituloMasivaP9"]["Properties"]["Text"]
     for estado in ("OK", "OBSERVADO", "PARCIAL", "ERROR", "PROCESANDO", "CONFIRMANDO", "CARGADO"):
         assert f'"{estado}"' in CONTROLES["lblEstadoP9"]["Properties"]["Fill"], estado

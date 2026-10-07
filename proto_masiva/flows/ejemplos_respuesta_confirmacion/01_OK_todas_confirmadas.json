@@ -1,51 +1,36 @@
 {
-  "escenario": "3 filas VALIDO que siguen siendo válidas: las 3 se confirman",
-  "respuesta": {
-    "resultado": "OK",
+  "escenario": "3 filas VALIDO que siguen siendo válidas: las 3 se confirman; el detalle final queda vacío",
+  "respuesta_temprana": {
+    "resultado": "ACEPTADO",
+    "codigo": "PROCESAMIENTO_INICIADO",
+    "mensaje": "Confirmación iniciada: 3 depósitos en proceso.",
+    "execution_uid": "00000000-0000-4000-8000-000000000001",
+    "filas_recibidas": "3"
+  },
+  "estado_final": {
+    "execution_uid": "00000000-0000-4000-8000-000000000001",
+    "estado": "TERMINADO",
     "codigo": "CONFIRMACION_OK",
+    "filas_totales": 3,
+    "filas_procesadas": 3,
+    "filas_confirmadas": 3,
+    "filas_no_confirmadas": 0,
+    "porcentaje": 100,
     "mensaje": "3 de 3 depósitos confirmados.",
-    "filas_recibidas": "3",
+    "detalle_json": [],
+    "detalle_truncado": false,
+    "actualizado_utc": "2026-10-05T12:00:00.063000Z",
+    "tiempos_ms": "total=63;filas=3;ms_por_fila=23"
+  },
+  "consulta_estado": {
+    "estado": "TERMINADO",
+    "filas_totales": "3",
+    "filas_procesadas": "3",
     "filas_confirmadas": "3",
     "filas_no_confirmadas": "0",
-    "detalle_json": "[{\"fila_excel\":6,\"deposito_id\":1,\"resultado\":\"CONFIRMADO\",\"mensaje\":\"Depósito confirmado correctamente.\",\"estado_final\":\"ASIGNADO\",\"banco\":\"BNB\",\"cuenta_bancaria\":\"3000100152\",\"codigo_asignacion\":\"C1\",\"importe\":101.0,\"moneda\":\"BOB\"},{\"fila_excel\":7,\"deposito_id\":2,\"resultado\":\"CONFIRMADO\",\"mensaje\":\"Depósito confirmado correctamente.\",\"estado_final\":\"ASIGNADO\",\"banco\":\"BNB\",\"cuenta_bancaria\":\"3000100152\",\"codigo_asignacion\":\"C2\",\"importe\":102.0,\"moneda\":\"BOB\"},{\"fila_excel\":8,\"deposito_id\":3,\"resultado\":\"CONFIRMADO\",\"mensaje\":\"Depósito confirmado correctamente.\",\"estado_final\":\"ASIGNADO\",\"banco\":\"BNB\",\"cuenta_bancaria\":\"3000100152\",\"codigo_asignacion\":\"C3\",\"importe\":103.0,\"moneda\":\"BOB\"}]",
-    "tiempos_ms": "total=34;filas=3;ms_por_fila=13"
-  },
-  "detalle_json_expandido": [
-    {
-      "fila_excel": 6,
-      "deposito_id": 1,
-      "resultado": "CONFIRMADO",
-      "mensaje": "Depósito confirmado correctamente.",
-      "estado_final": "ASIGNADO",
-      "banco": "BNB",
-      "cuenta_bancaria": "3000100152",
-      "codigo_asignacion": "C1",
-      "importe": 101.0,
-      "moneda": "BOB"
-    },
-    {
-      "fila_excel": 7,
-      "deposito_id": 2,
-      "resultado": "CONFIRMADO",
-      "mensaje": "Depósito confirmado correctamente.",
-      "estado_final": "ASIGNADO",
-      "banco": "BNB",
-      "cuenta_bancaria": "3000100152",
-      "codigo_asignacion": "C2",
-      "importe": 102.0,
-      "moneda": "BOB"
-    },
-    {
-      "fila_excel": 8,
-      "deposito_id": 3,
-      "resultado": "CONFIRMADO",
-      "mensaje": "Depósito confirmado correctamente.",
-      "estado_final": "ASIGNADO",
-      "banco": "BNB",
-      "cuenta_bancaria": "3000100152",
-      "codigo_asignacion": "C3",
-      "importe": 103.0,
-      "moneda": "BOB"
-    }
-  ]
+    "porcentaje": "100",
+    "mensaje": "3 de 3 depósitos confirmados.",
+    "detalle_json": "[]",
+    "tiempos_ms": "total=63;filas=3;ms_por_fila=23"
+  }
 }

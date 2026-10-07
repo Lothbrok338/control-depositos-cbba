@@ -1,7 +1,10 @@
-"""CONFIRMACIÓN MASIVA (P9_MASIVA_PROTO_CONFIRMAR) contra una lista Depositos_Activos SIMULADA con ETags reales.
+"""CONFIRMACIÓN MASIVA (P9_MASIVA_PROTO_CONFIRMAR + P9_MASIVA_PROTO_ESTADO) contra una lista Depositos_Activos SIMULADA con ETags reales.
 
 [VALIDADO LOCALMENTE] = el flujo generado, interpretado por el intérprete WDL local, produce este resultado y estas llamadas con un SharePoint
-falso. NO prueba el runtime de Power Automate ni el comportamiento real de SharePoint (412, ETag, límites): ver CONFIRMACION_MASIVA.md §9.
+falso. NO prueba el runtime de Power Automate ni el comportamiento real de SharePoint (412, ETag, límites): ver CONFIRMACION_MASIVA.md §9 y ESCALA_1999.md.
+
+Desde la arquitectura de escala el flujo RESPONDE ENSEGUIDA (ACEPTADO + execution_uid) y sigue procesando; el resultado final queda en el archivo
+temporal `confirmacion_<execution_uid>.json` (SOLO las filas no confirmadas). `confirmar()` devuelve una `Ejecucion` con ambas cosas.
 """
 import json
 import re
@@ -12,7 +15,7 @@ import pytest
 import simulador_confirmacion as SC
 from proto_masiva.flows import construir_confirmar as K
 from proto_masiva.flows import prevalidacion as PV
-from simulador_confirmacion import TenantConfirmacion, confirmar, deposito, detalle, fila_validada
+from simulador_confirmacion import TenantConfirmacion, confirmar, deposito, fila_validada
 
 REPO = Path(__file__).resolve().parents[2]
 
@@ -23,7 +26,11 @@ def con(depositos):
 
 
 def resultados(r):
-    return [d["resultado"] for d in detalle(r)]
+    return r.resultados()
+
+
+def detalle(r):
+    return r.fallidas
 
 
 def una_fila_con_cambio(**cambio_en_deposito):
@@ -31,18 +38,22 @@ def una_fila_con_cambio(**cambio_en_deposito):
     original = deposito(1)
     t = TenantConfirmacion([{**original, **cambio_en_deposito}])
     r = confirmar([fila_validada(original)], t)
-    return t, r, detalle(r)[0]
+    return t, r, r.fila(0)
+
+
+def contadores(r):
+    e = r.estado
+    return (e["estado"], e["codigo"], e["filas_totales"], e["filas_confirmadas"], e["filas_no_confirmadas"])
 
 
 # ====================================================================== 1-2 · confirmar
 def test_01_una_fila_valida_se_confirma_con_los_8_campos_de_V42():
     t, filas = con([deposito(1)])
     r = confirmar([{**filas[0], "observacion": "NOTA"}], t)
-    assert (r["resultado"], r["codigo"], r["filas_recibidas"], r["filas_confirmadas"], r["filas_no_confirmadas"]) == \
-        ("OK", "CONFIRMACION_OK", "1", "1", "0")
-    assert r["mensaje"] == "1 de 1 depósitos confirmados."
-    d = detalle(r)[0]
-    assert (d["fila_excel"], d["deposito_id"], d["resultado"], d["estado_final"]) == (6, 1, "CONFIRMADO", "ASIGNADO")
+    assert (r["resultado"], r["codigo"], r["filas_recibidas"]) == ("ACEPTADO", "PROCESAMIENTO_INICIADO", "1")
+    assert re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", r["execution_uid"])
+    assert contadores(r) == ("TERMINADO", "CONFIRMACION_OK", 1, 1, 0) and r.estado["porcentaje"] == 100
+    assert r.estado["mensaje"] == "1 de 1 depósitos confirmados." and r.fallidas == [] and r.resultados() == ["CONFIRMADO"]
     fila = t.filas[1]
     assert (fila["ESTADO_ASIGNACION"], fila["ESTUDIANTE"], fila["SOLICITADO_POR"], fila["SEDE_ASIGNACION"], fila["OBSERVACION"],
             fila["USUARIO_ASIGNACION"]) == ("ASIGNADO", "ESTUDIANTE 1", "SOLICITANTE", "COCHABAMBA", "NOTA", SC.USUARIO)
@@ -52,7 +63,7 @@ def test_01_una_fila_valida_se_confirma_con_los_8_campos_de_V42():
 def test_02_varias_validas_se_confirman_todas_una_detras_de_otra():
     t, filas = con([deposito(i, codigo=f"C{i}", importe=10.0 * i) for i in range(1, 8)])
     r = confirmar(filas, t)
-    assert (r["resultado"], r["filas_confirmadas"]) == ("OK", "7") and resultados(r) == ["CONFIRMADO"] * 7
+    assert contadores(r) == ("TERMINADO", "CONFIRMACION_OK", 7, 7, 0) and resultados(r) == ["CONFIRMADO"] * 7
     assert all(t.filas[i]["ESTADO_ASIGNACION"] == "ASIGNADO" for i in range(1, 8))
     # secuencial: GET, POST, GET, POST... (nunca dos lecturas seguidas ni un POST sin su propia lectura inmediata)
     assert [m for m, _, _ in t.llamadas] == ["GET", "POST"] * 7 and [i for _, i, _ in t.llamadas] == [x for i in range(1, 8) for x in (i, i)]
@@ -63,7 +74,7 @@ def test_03_si_el_deposito_paso_a_ASIGNADO_es_NO_DISPONIBLE_y_no_se_escribe():
     t, r, d = una_fila_con_cambio(ESTADO_ASIGNACION="ASIGNADO", USUARIO_ASIGNACION="otro@univalle.edu")
     assert (d["resultado"], d["estado_final"]) == ("NO_DISPONIBLE", "ASIGNADO") and "ASIGNADO" in d["mensaje"]
     assert t.escrituras == [] and t.campos_cambiados(1) == set()
-    assert (r["resultado"], r["codigo"], r["filas_confirmadas"]) == ("PARCIAL", "NINGUNA_CONFIRMADA", "0")
+    assert contadores(r) == ("TERMINADO", "NINGUNA_CONFIRMADA", 1, 0, 1)
 
 
 @pytest.mark.parametrize("estado", ["EN_REVISION", "", "CONFIRMADO"])
@@ -105,7 +116,7 @@ def test_09d_el_orden_clave_estado_resto():
 def test_10_si_el_deposito_ya_no_existe_es_NO_ENCONTRADO():
     t = TenantConfirmacion([deposito(1)])
     r = confirmar([fila_validada(deposito(1)), fila_validada(deposito(99))], t)
-    assert resultados(r) == ["CONFIRMADO", "NO_ENCONTRADO"] and "ya no existe" in detalle(r)[1]["mensaje"]
+    assert resultados(r) == ["CONFIRMADO", "NO_ENCONTRADO"] and "ya no existe" in r.fila(1)["mensaje"]
     assert [e["id"] for e in t.escrituras] == [1]  # y la fila 1 sí se confirmó
 
 
@@ -114,7 +125,7 @@ def test_11_si_otro_usuario_modifica_el_deposito_entre_la_lectura_y_el_MERGE_el_
     t, filas = con([deposito(1)])
     t.carreras[1] = {"DESCRIPCION": "editado por otro usuario"}  # cualquier cambio sube el ETag justo antes de nuestro MERGE
     r = confirmar(filas, t)
-    d = detalle(r)[0]
+    d = r.fila(0)
     assert d["resultado"] == "CONFLICTO" and "Otro usuario modificó" in d["mensaje"] and d["estado_final"] == ""
     assert len(t.escrituras) == 1                                   # UN solo intento: sin reintentos
     assert t.escrituras[0]["etag_enviado"] != t.escrituras[0]["etag_vigente"]
@@ -132,7 +143,7 @@ def test_11b_el_ETag_es_el_de_ESTA_lectura_no_uno_viejo_ni_el_de_la_prevalidacio
 def test_11c_un_412_inyectado_tambien_es_CONFLICTO():
     t, filas = con([deposito(1)])
     t.fallos_escritura[1] = ("Failed", 412)
-    assert detalle(confirmar(filas, t))[0]["resultado"] == "CONFLICTO"
+    assert confirmar(filas, t).fila(0)["resultado"] == "CONFLICTO"
 
 
 # ====================================================================== 12 · errores técnicos por fila
@@ -146,10 +157,10 @@ def test_12_un_error_tecnico_en_una_fila_es_ERROR_FILA_y_el_flujo_continua_con_l
     getattr(t, donde)[2] = ("Failed", http)
     r = confirmar(filas, t)
     assert resultados(r) == ["CONFIRMADO", "ERROR_FILA", "CONFIRMADO"]
-    assert mensaje in detalle(r)[1]["mensaje"]
+    assert mensaje in r.fila(1)["mensaje"]
     # tras un intento de escritura fallido no se sabe si SharePoint la aplicó: se dice, no se supone
-    assert detalle(r)[1]["estado_final"] == ("DESCONOCIDO" if donde == "fallos_escritura" else "")
-    assert (r["resultado"], r["codigo"], r["filas_confirmadas"], r["filas_no_confirmadas"]) == ("PARCIAL", "CONFIRMACION_PARCIAL", "2", "1")
+    assert r.fila(1)["estado_final"] == ("DESCONOCIDO" if donde == "fallos_escritura" else "")
+    assert contadores(r) == ("TERMINADO", "CONFIRMACION_PARCIAL", 3, 2, 1)
     assert t.filas[1]["ESTADO_ASIGNACION"] == t.filas[3]["ESTADO_ASIGNACION"] == "ASIGNADO"   # las demás siguieron y NO se revirtieron
 
 
@@ -162,9 +173,9 @@ def test_13_lote_mixto_confirmado_no_disponible_y_conflicto():
     t.carreras[3] = {"DESCRIPCION": "otro usuario"}
     r = confirmar(filas, t)
     assert resultados(r) == ["CONFIRMADO", "NO_DISPONIBLE", "CONFLICTO", "CONFLICTO_DATOS"]
-    assert (r["resultado"], r["codigo"], r["filas_recibidas"], r["filas_confirmadas"], r["filas_no_confirmadas"]) == \
-        ("PARCIAL", "CONFIRMACION_PARCIAL", "4", "1", "3")
-    assert r["mensaje"] == "1 de 4 depósitos confirmados; 3 requieren revisión."
+    assert (r["filas_recibidas"], contadores(r)) == ("4", ("TERMINADO", "CONFIRMACION_PARCIAL", 4, 1, 3))
+    assert r.estado["mensaje"] == "1 de 4 depósitos confirmados; 3 requieren revisión."
+    assert len(r.fallidas) == 3                                     # el detalle final trae SOLO las no confirmadas
 
 
 def test_20_sin_rollback_global_47_confirmadas_2_conflictos_1_no_disponible():
@@ -175,9 +186,10 @@ def test_20_sin_rollback_global_47_confirmadas_2_conflictos_1_no_disponible():
     t.carreras[20] = {"DESCRIPCION": "x"}                          # dos conflictos de concurrencia
     t.carreras[30] = {"DESCRIPCION": "y"}
     r = confirmar(filas, t)
-    assert (r["resultado"], r["filas_recibidas"], r["filas_confirmadas"], r["filas_no_confirmadas"]) == ("PARCIAL", "50", "47", "3")
+    assert (r["filas_recibidas"], contadores(r)) == ("50", ("TERMINADO", "CONFIRMACION_PARCIAL", 50, 47, 3))
     assert sorted(set(resultados(r))) == ["CONFIRMADO", "CONFLICTO", "NO_DISPONIBLE"]
     assert resultados(r).count("CONFIRMADO") == 47 and resultados(r).count("CONFLICTO") == 2 and resultados(r).count("NO_DISPONIBLE") == 1
+    assert len(r.fallidas) == 3                                    # solo las 3 no confirmadas; las 47 se cuentan pero no se listan
     confirmadas = [i for i in range(1, 51) if t.filas[i]["ESTADO_ASIGNACION"] == "ASIGNADO" and t.filas[i]["USUARIO_ASIGNACION"] == SC.USUARIO]
     assert len(confirmadas) == 47                                  # las 47 PERMANECEN confirmadas
     assert not [e for e in t.escrituras if e["body"].get("ESTADO_ASIGNACION") != "ASIGNADO"]  # ninguna escritura de reversión (volver a DISPONIBLE)
@@ -213,6 +225,7 @@ def test_16_escribe_exactamente_los_mismos_8_campos_que_V42_en_el_mismo_orden():
 
 def test_16b_la_llamada_es_la_de_V42_mismo_metodo_cabeceras_y_URI():
     esc = v42()["Actualizar_deposito"]["inputs"]
+
     def accion_de(nombre):
         from p9.wdl import recorrer
         return dict(recorrer(K.construir_definicion()["actions"]))[nombre]
@@ -261,22 +274,23 @@ def test_19_nunca_If_Match_asterisco_ni_etag_vacio():
     orig = t2._leer
     t2._leer = lambda *a, **k: (lambda r: {**r, "headers": {}, "body": {"d": {k_: v for k_, v in r["body"]["d"].items() if k_ != "__metadata"}}})(orig(*a, **k))
     r = confirmar(filas2, t2)
-    assert detalle(r)[0]["resultado"] == "ERROR_FILA" and "ETag" in detalle(r)[0]["mensaje"] and t2.escrituras == []
+    assert r.fila(0)["resultado"] == "ERROR_FILA" and "ETag" in r.fila(0)["mensaje"] and t2.escrituras == []
 
 
 # ====================================================================== entrada, límites y filas inválidas
-def test_21_entrada_invalida_no_toca_SharePoint():
+def test_21_entrada_invalida_no_toca_SharePoint_ni_crea_estado():
     t = TenantConfirmacion([deposito(1)])
     for texto, usuario in (("", SC.USUARIO), ("[]x", SC.USUARIO), ("{}", SC.USUARIO), ('[{"a":1}]', ""), ("no es json", SC.USUARIO)):
         r = confirmar(None, t, usuario=usuario, texto=texto)
-        assert (r["resultado"], r["codigo"]) == ("ERROR", "ENTRADA_INVALIDA") and r["detalle_json"] == "[]" and r["filas_confirmadas"] == "0", texto
-    assert t.llamadas == []
+        assert (r["resultado"], r["codigo"], r["execution_uid"], r["filas_recibidas"]) == ("ERROR", "ENTRADA_INVALIDA", "", "0"), texto
+        assert not r.aceptada
+    assert t.llamadas == [] and t.archivos == {} and t.llamadas_archivo == []
 
 
 def test_21b_json_roto_con_formato_de_arreglo_tambien_es_ENTRADA_INVALIDA():
     t = TenantConfirmacion([deposito(1)])
     r = confirmar(None, t, texto='[{"deposito_id": 1,')
-    assert (r["resultado"], r["codigo"]) == ("ERROR", "ENTRADA_INVALIDA") and t.llamadas == []
+    assert (r["resultado"], r["codigo"]) == ("ERROR", "ENTRADA_INVALIDA") and t.llamadas == [] and t.archivos == {}
 
 
 def test_22_sin_filas_y_lote_mayor_al_maximo_por_llamada_se_rechazan_enteros_sin_confirmar_nada():
@@ -286,18 +300,19 @@ def test_22_sin_filas_y_lote_mayor_al_maximo_por_llamada_se_rechazan_enteros_sin
     assert (r["resultado"], r["codigo"], r["filas_recibidas"]) == ("ERROR", "SIN_FILAS", "0")
     d = K.construir_definicion(max_por_llamada=5)
     r = confirmar([fila_validada(x) for x in deps], t, definicion=d)
-    assert (r["resultado"], r["codigo"], r["filas_recibidas"], r["filas_confirmadas"]) == ("ERROR", "LOTE_EXCEDE_LIMITE", "7", "0")
-    assert "máximo por confirmación es 5" in r["mensaje"] and t.llamadas == [] and t.escrituras == []
-    assert confirmar([fila_validada(x) for x in deps[:5]], t, definicion=d)["resultado"] == "OK"   # justo en el límite
+    assert (r["resultado"], r["codigo"], r["filas_recibidas"], r["execution_uid"]) == ("ERROR", "LOTE_EXCEDE_LIMITE", "7", "")
+    assert "máximo por confirmación es 5" in r["mensaje"] and t.llamadas == [] and t.escrituras == [] and t.archivos == {}
+    assert confirmar([fila_validada(x) for x in deps[:5]], t, definicion=d).estado["estado"] == "TERMINADO"   # justo en el límite
 
 
-def test_22b_el_limite_de_negocio_1999_prevalece_aunque_se_suba_el_de_la_llamada():
-    assert K.MAX_FILAS_ARCHIVO == 1999 and K.MAX_FILAS_POR_LLAMADA == 50
-    d = K.construir_definicion(max_por_llamada=5000)
+def test_22b_el_limite_de_negocio_es_1999_y_ya_no_hay_tope_de_50():
+    assert K.MAX_FILAS_ARCHIVO == 1999 and K.MAX_FILAS_POR_LLAMADA == 1999        # antes: 50 (síncrono)
+    d = K.construir_definicion(max_por_llamada=5000)                             # aunque se suba el de la llamada, manda el del archivo
     t = TenantConfirmacion([])
     filas = [fila_validada(deposito(i)) for i in range(1, 2001)]
     r = confirmar(filas, t, definicion=d)
-    assert (r["codigo"], r["filas_recibidas"]) == ("LOTE_EXCEDE_LIMITE", "2000") and "máximo por confirmación es 1999" in r["mensaje"] and t.llamadas == []
+    assert (r["codigo"], r["filas_recibidas"]) == ("LOTE_EXCEDE_LIMITE", "2000") and "máximo por confirmación es 1999" in r["mensaje"]
+    assert t.llamadas == [] and t.archivos == {}
 
 
 @pytest.mark.parametrize("cambio,motivo", [({"deposito_id": 0}, "ID_INVALIDO"), ({"deposito_id": "abc"}, "ID_INVALIDO"), ({"deposito_id": None}, "ID_INVALIDO"),
@@ -309,10 +324,9 @@ def test_22b_el_limite_de_negocio_1999_prevalece_aunque_se_suba_el_de_la_llamada
 def test_23_una_fila_mal_formada_es_ERROR_FILA_sin_tocar_SharePoint_y_las_demas_siguen(cambio, motivo):
     t = TenantConfirmacion([deposito(1), deposito(2, codigo="B")])
     r = confirmar([fila_validada(deposito(1), **cambio), fila_validada(deposito(2, codigo="B"))], t)
-    por_fila = {d["fila_excel"]: d for d in detalle(r)}
-    assert por_fila[6]["resultado"] == "ERROR_FILA" and motivo in por_fila[6]["mensaje"] and por_fila[7]["resultado"] == "CONFIRMADO"
+    assert r.fila(0)["resultado"] == "ERROR_FILA" and motivo in r.fila(0)["mensaje"] and r.fila(1)["resultado"] == "CONFIRMADO"
     assert t.lecturas == [2] and t.campos_cambiados(1) == set()    # la fila mala no generó ni una llamada
-    assert (r["resultado"], r["filas_recibidas"], r["filas_confirmadas"]) == ("PARCIAL", "2", "1")
+    assert (r["filas_recibidas"], contadores(r)) == ("2", ("TERMINADO", "CONFIRMACION_PARCIAL", 2, 1, 1))
 
 
 def test_24_el_mismo_deposito_dos_veces_en_el_envio_no_se_confirma_dos_veces():
@@ -325,20 +339,31 @@ def test_25_reenviar_el_mismo_lote_no_vuelve_a_escribir_idempotente_por_estado_y
     deps = [deposito(i, codigo=f"C{i}") for i in range(1, 4)]
     t = TenantConfirmacion(deps)
     filas = [fila_validada(d) for d in deps]
-    assert confirmar(filas, t)["resultado"] == "OK"
+    assert confirmar(filas, t).estado["codigo"] == "CONFIRMACION_OK"
     escritas = len(t.escrituras)
-    r2 = confirmar(filas, t)                                        # p. ej. tras un tiempo de espera de la app que el usuario reintenta
-    assert resultados(r2) == ["NO_DISPONIBLE"] * 3 and len(t.escrituras) == escritas and r2["resultado"] == "PARCIAL"
+    r2 = confirmar(filas, t)                                        # p. ej. un doble clic que llegó al servidor, o un reintento tras un corte
+    assert resultados(r2) == ["NO_DISPONIBLE"] * 3 and len(t.escrituras) == escritas and r2.estado["codigo"] == "NINGUNA_CONFIRMADA"
+    assert len(t.archivos) == 2                                     # dos ejecuciones = dos execution_uid distintos, nunca se pisan
 
 
-def test_26_un_fallo_global_no_deshace_nada_y_el_resumen_cuenta_lo_ya_confirmado():
+def test_26_un_fallo_fuera_de_las_filas_deja_el_estado_en_ERROR_y_no_deshace_nada():
     t, filas = con([deposito(1)])
-    r = confirmar(None, t, texto=json.dumps([1, 2]))               # elementos que no son objetos: falla fuera de las filas
-    assert r["resultado"] == "ERROR" and r["codigo"] == "ERROR_NO_CONTROLADO" and "algunos depósitos pueden haberse confirmado" in r["mensaje"]
-    assert (r["filas_recibidas"], r["filas_confirmadas"], r["filas_no_confirmadas"]) == ("2", "0", "2") and t.escrituras == []
+    r = confirmar(None, t, texto=json.dumps([1, 2]))               # elementos que no son objetos: pasa la validación inicial y falla al procesar
+    assert r.aceptada and r["filas_recibidas"] == "2"
+    e = r.estado
+    assert (e["estado"], e["codigo"]) == ("ERROR", "ERROR_NO_CONTROLADO") and "algunos depósitos pueden haberse confirmado" in e["mensaje"]
+    assert (e["filas_totales"], e["filas_confirmadas"], e["filas_no_confirmadas"]) == (2, 0, 0) and t.escrituras == []
 
 
-# ====================================================================== contrato de respuesta
+def test_26b_si_no_se_puede_crear_el_estado_no_se_confirma_nada():
+    t, filas = con([deposito(1)])
+    t.fallo_crear_estado = ("Failed", 500)
+    r = confirmar(filas, t)
+    assert (r["resultado"], r["codigo"], r["execution_uid"]) == ("ERROR", "ERROR_ESTADO", "") and "No se confirmó ningún depósito" in r["mensaje"]
+    assert t.llamadas == [] and t.escrituras == [] and t.filas[1]["ESTADO_ASIGNACION"] == "DISPONIBLE"
+
+
+# ====================================================================== contrato de respuesta y de estado
 def esquema():
     return json.loads((Path(K.__file__).parent / "esquema_detalle_confirmacion_json.json").read_text(encoding="utf-8"))
 
@@ -368,40 +393,48 @@ def escenario_mixto():
     return t, filas
 
 
-def test_27_respuesta_8_salidas_en_texto_sin_ETag_y_detalle_conforme_al_esquema():
+def test_27_respuesta_temprana_de_5_textos_y_estado_final_conforme_al_esquema_sin_ETag():
     t, filas = escenario_mixto()
     r = confirmar(filas, t)
-    assert list(r) == list(K.SALIDAS) and all(isinstance(v, str) for v in r.values())
-    datos = detalle(r)
+    assert list(r.aceptacion) == list(K.SALIDAS) and all(isinstance(v, str) for v in r.aceptacion.values())
+    e = r.estado
+    assert tuple(e) == K.CAMPOS_ESTADO
+    datos = r.fallidas
     valida(datos, esquema())
-    assert {d["resultado"] for d in datos} == set(K.RESULTADOS_FILA) and list(datos[0]) == list(K.DETALLE_CAMPOS)
-    assert "etag" not in json.dumps(r).lower()                                      # el ETag nunca viaja al cliente
-    assert re.fullmatch(r"total=\d+;filas=6;ms_por_fila=\d+", r["tiempos_ms"])
+    assert {d["resultado"] for d in datos} == set(K.RESULTADOS_FILA) - {"CONFIRMADO"} and list(datos[0]) == list(K.DETALLE_CAMPOS)
+    assert "etag" not in (json.dumps(r.aceptacion) + json.dumps(e)).lower()           # el ETag nunca viaja al cliente ni al archivo
+    assert re.fullmatch(r"total=\d+;filas=6;ms_por_fila=\d+", e["tiempos_ms"])
 
 
-def test_28_resultado_global_OK_PARCIAL_o_ERROR():
+def test_28_estado_global_TERMINADO_o_ERROR_y_codigos_de_la_respuesta():
     t, filas = con([deposito(1)])
-    assert confirmar(filas, t)["resultado"] == "OK"
+    assert confirmar(filas, t).estado["codigo"] == "CONFIRMACION_OK"
     t2, filas2 = escenario_mixto()
-    assert confirmar(filas2, t2)["resultado"] == "PARCIAL"
+    assert confirmar(filas2, t2).estado["codigo"] == "CONFIRMACION_PARCIAL"
     assert confirmar([], t)["resultado"] == "ERROR"
-    assert K.RESULTADOS_GLOBALES == ("OK", "PARCIAL", "ERROR")
+    assert K.RESULTADOS_GLOBALES == ("OK", "PARCIAL", "ERROR") and K.ESTADOS == ("PROCESANDO", "TERMINADO", "ERROR")
+    assert set(K.CODIGOS_ESTADO) <= set(K.CODIGOS)
 
 
 # ====================================================================== estructura del flujo
-def test_29_el_flujo_es_solo_HttpRequest_secuencial_sin_otras_escrituras_ni_infraestructura():
+def test_29_el_flujo_solo_lee_y_escribe_depositos_por_HttpRequest_y_su_estado_por_CreateFile_UpdateFile():
     from p9.wdl import recorrer
     d = K.construir_definicion()
     acciones = dict(recorrer(d["actions"]))
-    http = [(n, a["inputs"]["parameters"]["parameters/method"]) for n, a in acciones.items() if a["type"] == "OpenApiConnection"]
-    assert sorted(http) == [("Actualizar_deposito", "POST"), ("Leer_deposito", "GET")]    # UNA lectura y UNA escritura por fila
-    assert {a["inputs"]["host"]["operationId"] for a in acciones.values() if a["type"] == "OpenApiConnection"} == {"HttpRequest"}
+    http = [(n, a["inputs"]["parameters"]["parameters/method"]) for n, a in acciones.items()
+            if a["type"] == "OpenApiConnection" and a["inputs"]["host"]["operationId"] == "HttpRequest"]
+    assert sorted(http) == [("Actualizar_deposito", "POST"), ("Leer_deposito", "GET")]    # UNA lectura y UNA escritura de depósitos por fila
+    archivos = {n: a["inputs"]["host"]["operationId"] for n, a in acciones.items()
+                if a["type"] == "OpenApiConnection" and a["inputs"]["host"]["operationId"] != "HttpRequest"}
+    assert archivos == {"Crear_estado": "CreateFile", "Escribir_progreso": "UpdateFile", "Escribir_final": "UpdateFile", "Escribir_final_minimo": "UpdateFile"}
     bucles = [(n, a["runtimeConfiguration"]["concurrency"]["repetitions"]) for n, a in acciones.items() if a["type"] == "Foreach"]
     assert bucles == [("Para_cada_fila", 1)]                                             # secuencial, sin concurrencia
     assert not [n for n, a in acciones.items() if a["type"] in ("Until", "Terminate", "Wait", "Delay")]
+    responses = [n for n, a in acciones.items() if a["type"] == "Response"]
+    assert responses == ["Responder_aceptado", "Responder_error"]                       # nunca dentro del bucle, una sola ejecutada
     texto = json.dumps(d, ensure_ascii=False)
-    for prohibido in ("LOTE_ID", "LOTE_UID", "Lotes", "P9_MASIVA_PROTO_LOTES", "Confirmaciones_Masivas", "Depositos_Reversiones", "TIPO_CAMBIO", "CreateItem", "PostItem", "DeleteItem", "'DELETE'", "'PUT'", "'PATCH'",
-                      "GetOnUpdatedItems", "Revertir", "rollback", "ROLLBACK"):
+    for prohibido in ("LOTE_ID", "LOTE_UID", "Lotes", "P9_MASIVA_PROTO_LOTES", "Confirmaciones_Masivas", "Depositos_Reversiones", "TIPO_CAMBIO", "CreateItem", "PostItem", "DeleteItem",
+                      "DeleteFile", "'DELETE'", "'PUT'", "'PATCH'", "GetOnUpdatedItems", "Revertir", "rollback", "ROLLBACK"):
         assert prohibido not in texto, prohibido
 
 
@@ -410,7 +443,7 @@ def test_30_los_artefactos_versionados_son_la_salida_actual_del_generador():
     assert json.loads((Path(K.__file__).parent / f"{K.NOMBRE_FLUJO}_definition.json").read_text(encoding="utf-8")) == d
     assert (Path(K.__file__).parent / f"{K.NOMBRE_FLUJO}.zip").read_bytes() == K.zip_bytes(d)
     from p9.wdl import contar_acciones
-    assert contar_acciones(d["actions"]) == 61
+    assert contar_acciones(d["actions"]) == 94 and contar_acciones(d["actions"]) <= 500   # 500 = límite documentado de acciones por flujo
 
 
 def test_31_disparador_power_apps_v2_con_dos_entradas_de_texto_todas_requeridas():
@@ -448,13 +481,14 @@ def test_34_los_ejemplos_de_respuesta_versionados_son_la_salida_actual_del_flujo
     assert {r.name for r in E.DESTINO.glob("*.json")} == set(esperados)
     for nombre, contenido in esperados.items():
         assert json.loads((E.DESTINO / nombre).read_text(encoding="utf-8")) == contenido, nombre
-        valida(json.loads(contenido["respuesta"]["detalle_json"]), esquema())
+        if contenido.get("estado_final"):
+            valida(contenido["estado_final"]["detalle_json"], esquema())
 
 
 def test_35_el_esquema_declara_exactamente_los_campos_del_contrato():
     sch = esquema()
     assert list(sch["items"]["properties"]) == list(K.DETALLE_CAMPOS) == sch["items"]["required"]
-    assert sch["items"]["properties"]["resultado"]["enum"] == list(K.RESULTADOS_FILA)
+    assert sch["items"]["properties"]["resultado"]["enum"] == [r for r in K.RESULTADOS_FILA if r != "CONFIRMADO"]   # solo las NO confirmadas se listan
 
 
 # ====================================================================== Power Fx: botón, resultado y reinicios (estáticos)
@@ -501,10 +535,13 @@ def test_36_el_boton_llama_al_flujo_con_el_JSON_compacto_de_SOLO_las_filas_VALID
 
 def test_37_no_hay_segundo_modal_ni_doble_confirmacion_ni_escrituras_desde_la_app():
     texto = (REPO / "proto_masiva/powerapps/P9_Confirmacion_Masiva.pa.yaml").read_text(encoding="utf-8")
-    for prohibido in ("varConfirmarMasivaVisible", "mostrarConfirmacion", "SubmitForm", "Patch(", "Collect(Depositos", "Refresh(", "Timer"):
+    for prohibido in ("varConfirmarMasivaVisible", "mostrarConfirmacion", "SubmitForm", "Patch(", "Collect(Depositos", "Refresh("):
         assert prohibido not in texto, prohibido
     f = fx("btnConfirmarMasivamenteP9", "OnSelect")
-    assert re.findall(r"\w*Collect\(", f) == ["ClearCollect("] and f.count(".Run(") == 1  # UNA llamada al flujo por clic
+    assert f.count(".Run(") == 1 and f.count("P9_MASIVA_PROTO_CONFIRMAR.Run(") == 1       # UNA llamada al flujo por clic
+    assert re.findall(r"\w*Collect\(", f) == [] and "P9_MASIVA_PROTO_ESTADO" not in f      # el clic NO consulta ni llena colecciones: eso lo hace el Temporizador
+    t = fx("tmrProgresoP9", "OnTimerEnd")
+    assert re.findall(r"\w*Collect\(", t) == ["ClearCollect("] and t.count(".Run(") == 1 and t.count("P9_MASIVA_PROTO_ESTADO.Run(varEjecucionMasivaP9.execution_uid)") == 1
 
 
 def test_38_el_boton_queda_Disabled_mientras_corre_y_despues_de_confirmar_ese_resultado():
@@ -533,24 +570,44 @@ def test_39_se_reinicia_al_prevalidar_de_nuevo_y_al_cambiar_de_archivo():
         assert necesario in nuevo, necesario
 
 
-def test_40_la_coleccion_de_confirmacion_usa_las_columnas_del_esquema_con_conversion_explicita():
-    f = fx_crudo("btnConfirmarMasivamenteP9", "OnSelect")
-    assert "ParseJSON(varResultadoConfirmacionP9.detalle_json)" in plano(f)
-    cols = re.findall(r"^\s+(\w+): (Value|Text)\(ThisRecord\.Value\.(\w+)\)", f, re.M)
+def test_40_las_colecciones_y_registros_de_la_app_tienen_la_forma_de_los_esquemas_con_conversion_explicita():
+    from proto_masiva.flows import construir_estado as E
+    timer = fx_crudo("tmrProgresoP9", "OnTimerEnd")
+    assert "ParseJSON(varProgresoMasivoP9.detalle_json)" in plano(timer)
+    cols = re.findall(r"^\s+(\w+): (Value|Text)\(ThisRecord\.Value\.(\w+)\)", timer, re.M)
     assert [c for c, _, _ in cols] == [c for _, _, c in cols] == list(K.DETALLE_CAMPOS)
     for campo, conv, _ in cols:
         tipos = esquema()["items"]["properties"][campo]["type"]
         tipos = tipos if isinstance(tipos, list) else [tipos]
         assert conv == ("Value" if set(tipos) & {"integer", "number"} else "Text"), campo
-    registro = re.search(r"Set\(\s*varResultadoConfirmacionP9,\s*\{(.*?)\}\s*\)", f, re.S)[1]
-    assert re.findall(r"(\w+):", sin_cadenas(registro)) == list(K.SALIDAS)       # el resultado fabricado por la app tiene la forma de la respuesta del flujo
+    click = fx_crudo("btnConfirmarMasivamenteP9", "OnSelect")
+
+    def registros(texto, variable):
+        """Las claves de cada `Set(variable, { ... })` (registro literal) de la fórmula."""
+        salida = []
+        for m in re.finditer(r"Set\(\s*" + variable + r",\s*\{", texto):
+            nivel, j = 1, m.end()
+            while nivel:
+                nivel += {"{": 1, "}": -1}.get(texto[j], 0)
+                j += 1
+            salida.append(re.findall(r"^\s{0,12}(\w+):", sin_cadenas(texto[m.end():j - 1]), re.M) if False else
+                          re.findall(r"(?:^|\n)\s*(\w+):", sin_cadenas(texto[m.end():j - 1])))
+        return salida
+    legado = ["resultado", "codigo", "mensaje", "filas_recibidas", "filas_confirmadas", "filas_no_confirmadas", "detalle_json", "tiempos_ms"]
+    assert all(r == list(K.SALIDAS) for r in registros(click, "varEjecucionMasivaP9")) and registros(click, "varEjecucionMasivaP9")   # = respuesta temprana de 5 textos
+    assert all(r == list(E.SALIDAS) for r in registros(click, "varProgresoMasivoP9") + registros(timer, "varProgresoMasivoP9"))        # = las 9 salidas de P9_MASIVA_PROTO_ESTADO
+    assert len(registros(click, "varProgresoMasivoP9")) == 1 and len(registros(timer, "varProgresoMasivoP9")) == 1
+    assert all(r == legado for r in registros(click, "varResultadoConfirmacionP9") + registros(timer, "varResultadoConfirmacionP9"))   # la forma que ya leen las fórmulas validadas de la V1
+    assert len(registros(timer, "varResultadoConfirmacionP9")) == 1 and len(registros(click, "varResultadoConfirmacionP9")) == 1
 
 
 def test_41_el_panel_muestra_el_resultado_pedido_sin_otro_modal():
     titular = fx("lblTitularResultadoP9", "Text")
-    for texto in ("CONFIRMACIÓN COMPLETADA", "CONFIRMACIÓN PARCIAL", "NO SE CONFIRMÓ NINGÚN DEPÓSITO", "depósitos confirmados.", "requieren revisión."):
+    for texto in ("CONFIRMACIÓN EN PROCESO", "CONFIRMACIÓN COMPLETADA", "NO SE CONFIRMÓ NINGÚN DEPÓSITO", "depósitos confirmados", "requieren revisión", "procesados"):
         assert texto in titular, texto
-    assert "filas_confirmadas" in titular and "filas_recibidas" in titular and "filas_no_confirmadas" in titular
+    assert "CONFIRMACIÓN PARCIAL" not in titular                    # terminó el proceso: «completada»; lo no confirmado se cuenta en la 2.ª línea y en el chip PARCIAL
+    for campo in ("filas_confirmadas", "filas_recibidas", "filas_no_confirmadas", "filas_procesadas", "filas_totales", "porcentaje"):
+        assert campo in titular, campo
     items = fx("galObservacionesP9", "Items")
     assert 'Filter(colConfirmacionP9, resultado <> "CONFIRMADO")' in items and 'Filter(colPrevalidacionP9, resultado <> "VALIDO")' in items  # solo las NO confirmadas
     tiempo = fx("lblResTiempoP9", "Text")
@@ -598,7 +655,7 @@ def _props_del_yaml(ruta):
 
 
 # Las ÚNICAS propiedades que la integración de la confirmación cambia respecto del export del tenant (18, en 13 elementos)
-CAMBIOS_ESPERADOS = {
+CAMBIOS_V1 = {
     ("__pantalla__", "OnVisible"), ("attXlsxP9", "OnAddFile"), ("attXlsxP9", "OnRemoveFile"),
     ("btnPrevalidarP9", "DisplayMode"), ("btnPrevalidarP9", "OnSelect"),
     ("btnConfirmarMasivamenteP9", "DisplayMode"), ("btnConfirmarMasivamenteP9", "OnSelect"),
@@ -606,35 +663,79 @@ CAMBIOS_ESPERADOS = {
     ("galObservacionesP9", "Items"), ("Title1", "Text"),
     ("lblEstadoP9", "Text"), ("lblEstadoP9", "Fill"), ("lblTitularResultadoP9", "Text"), ("lblResMensajeP9", "Text"),
     ("lblResTiempoP9", "Text"), ("lblSubtituloMasivaP9", "Text"), ("lblAvisoPrototipoP9", "Text")}
+# Escala 1999: lo que cambia el export REAL V1 (tenant_v1) -> versión de trabajo (9 propiedades) + el Temporizador oculto (control nuevo)
+CAMBIOS_V2 = {("__pantalla__", "OnVisible"), ("attXlsxP9", "OnAddFile"), ("attXlsxP9", "OnRemoveFile"), ("btnPrevalidarP9", "OnSelect"),
+              ("btnConfirmarMasivamenteP9", "OnSelect"), ("lblTitularResultadoP9", "Text"), ("lblResMensajeP9", "Text"), ("lblResTiempoP9", "Text"),
+              ("lblAvisoPrototipoP9", "Text")}
+PROPIEDADES_TEMPORIZADOR = {"AutoStart", "Duration", "OnTimerEnd", "Repeat", "Start", "Visible"}
 GEOMETRIA_Y_ESTILO = {"X", "Y", "Width", "Height", "Fill", "Color", "Size", "Font", "FontWeight", "BorderColor", "BorderStyle", "BorderThickness", "Align",
                       "TemplateSize", "TemplateFill", "VerticalAlign", "AutoHeight"}
 
 
-def test_44_la_integracion_solo_cambia_formulas_previstas_y_nunca_geometria_ni_estilo_del_tenant():
-    tenant, integrado = _props_del_yaml(PA / "tenant/P9_Confirmacion_Masiva.pa.yaml"), _props_del_yaml(PA / "P9_Confirmacion_Masiva.pa.yaml")
+def test_44_la_V1_real_cambio_solo_formulas_previstas_y_nunca_geometria_ni_estilo_del_tenant():
+    """Evidencia del checkpoint V1: tenant_v1 = tenant/ + 18 fórmulas previstas (nada de geometría ni estilo)."""
+    tenant, integrado = _props_del_yaml(PA / "tenant/P9_Confirmacion_Masiva.pa.yaml"), _props_del_yaml(PA / "tenant_v1/P9_Confirmacion_Masiva.pa.yaml")
     assert {k for k in tenant if k[1] == "__Control__"} == {k for k in integrado if k[1] == "__Control__"}      # mismos 44 controles, mismos tipos
     cambiadas = {k for k in set(tenant) | set(integrado) if plano(str(tenant.get(k))) != plano(str(integrado.get(k)))}
-    assert cambiadas == CAMBIOS_ESPERADOS, sorted(cambiadas ^ CAMBIOS_ESPERADOS)
-    # lblEstadoP9.Fill cambia por sus NUEVOS colores de estado, pero la geometría/estilo de todos los controles queda idéntica al tenant
+    assert cambiadas == CAMBIOS_V1, sorted(cambiadas ^ CAMBIOS_V1)
     assert not [k for k in cambiadas if k[1] in GEOMETRIA_Y_ESTILO and k != ("lblEstadoP9", "Fill")]
-    assert plano(str(tenant[("lblEstadoP9", "Fill")])).count('"OK", RGBA(46, 125, 50, 1)') == 1
 
 
-def test_45_ningun_IfError_de_la_pantalla_mezcla_tabla_y_booleano_y_el_de_la_confirmacion_tiene_la_forma_validada_en_el_tenant():
-    sys_path = str(PA)
+def test_44b_la_escala_1999_cambia_9_formulas_y_anade_un_temporizador_oculto_sin_tocar_geometria_ni_estilo():
+    v1, v2 = _props_del_yaml(PA / "tenant_v1/P9_Confirmacion_Masiva.pa.yaml"), _props_del_yaml(PA / "P9_Confirmacion_Masiva.pa.yaml")
+    nuevos = {k[0] for k in v2 if k[1] == "__Control__"} - {k[0] for k in v1 if k[1] == "__Control__"}
+    assert nuevos == {"tmrProgresoP9"} and not ({k[0] for k in v1 if k[1] == "__Control__"} - {k[0] for k in v2 if k[1] == "__Control__"})
+    cambiadas = {k for k in set(v1) | set(v2) if k[0] != "tmrProgresoP9" and plano(str(v1.get(k))) != plano(str(v2.get(k)))}
+    assert cambiadas == CAMBIOS_V2, sorted(cambiadas ^ CAMBIOS_V2)
+    assert not [k for k in cambiadas if k[1] in GEOMETRIA_Y_ESTILO]                      # ni una sola propiedad de posición, tamaño, color o estilo
+    timer = {k[1] for k in v2 if k[0] == "tmrProgresoP9"} - {"__Control__"}
+    assert timer == PROPIEDADES_TEMPORIZADOR
+    t = {k[1]: v for k, v in v2.items() if k[0] == "tmrProgresoP9"}
+    assert t["Duration"] == "=15000" and t["Repeat"] == "=true" and t["AutoStart"] == "=false" and t["Visible"] == "=false"   # 15 s (rango 10-15 s), oculto, no se inicia solo
+    assert t["Start"] == "=Coalesce(varMonitorearP9, false)"
+
+
+def test_44c_el_temporizador_no_consulta_cada_segundo():
+    t = {k[1]: v for k, v in _props_del_yaml(PA / "P9_Confirmacion_Masiva.pa.yaml").items() if k[0] == "tmrProgresoP9"}
+    duracion = int(t["Duration"][1:])
+    assert 10_000 <= duracion <= 15_000
+
+
+def test_44d_el_temporizador_se_detiene_cuando_el_estado_es_TERMINADO_o_ERROR_o_tras_5_fallos_seguidos():
+    f = fx("tmrProgresoP9", "OnTimerEnd")
+    fin = f[f.index('If(varProgresoMasivoP9.estado = "TERMINADO" || varProgresoMasivoP9.estado = "ERROR",'):]
+    assert "Set(varMonitorearP9, false)" in fin and fin.index("Set(varMonitorearP9, false)") < fin.index("ClearCollect(") < fin.index("Set(varProcesandoConfirmacionP9, false)")
+    assert "varFallosEstadoP9 >= 5" in f and "NO_ENCONTRADO" in f
+    assert f.index("varFallosEstadoP9 >= 5") < f.index('If(varProgresoMasivoP9.estado = "TERMINADO"')    # primero se cierra el seguimiento por fallos, luego se finaliza
+    assert "Start" not in f and fx("tmrProgresoP9", "Start") == "Coalesce(varMonitorearP9, false)"
+
+
+def test_44e_el_doble_clic_queda_bloqueado_desde_la_primera_sentencia_del_OnSelect():
+    on = fx("btnConfirmarMasivamenteP9", "OnSelect")
+    assert on.startswith("Set(varProcesandoConfirmacionP9, true);")                      # antes de llamar al flujo, para que el segundo clic ya vea el botón Disabled
+    assert on.index("Set(varProcesandoConfirmacionP9, true)") < on.index(".Run(") < on.index("Set(varConfirmacionMasivaFinalizadaP9, true)")
+    dm = fx("btnConfirmarMasivamenteP9", "DisplayMode")
+    assert "!Coalesce(varProcesandoConfirmacionP9, false)" in dm and "!Coalesce(varConfirmacionMasivaFinalizadaP9, false)" in dm
+    # el estado final deja el botón Disabled para ese resultado: solo se reinicia al adjuntar otro archivo o volver a PREVALIDAR
+    assert "varConfirmacionMasivaFinalizadaP9, false" not in on and "varConfirmacionMasivaFinalizadaP9, false" not in fx("tmrProgresoP9", "OnTimerEnd")
+    assert "If(!Coalesce(varProcesandoConfirmacionP9, false)," in fx("attXlsxP9", "OnAddFile")      # no se reinicia nada a mitad de una confirmación
+
+
+def test_45_ningun_IfError_de_la_pantalla_mezcla_tabla_y_booleano_y_los_de_la_confirmacion_tienen_la_forma_validada_en_el_tenant():
     import sys
-    sys.path.insert(0, sys_path)
+    sys.path.insert(0, str(PA))
     import auditar_iferror as AI
-    assert AI.auditar(PA / "P9_Confirmacion_Masiva.pa.yaml") == [] and AI.auditar(PA / "tenant/P9_Confirmacion_Masiva.pa.yaml") == []
-    f = fx_crudo("btnConfirmarMasivamenteP9", "OnSelect")
-    externo, interno = AI.llamadas_iferror(f)
-    assert [AI.ultima_sentencia(a) for a in externo] == ["true", "false"] and [AI.ultima_sentencia(a) for a in interno] == ["true", "false"]
-    assert plano(interno[0]).startswith("ClearCollect(colConfirmacionP9,") and plano(interno[1]).startswith('Notify("No se pudo leer el detalle de la confirmación: "')
-    # misma forma que la prevalidación ya aceptada por Studio: calcado, solo cambian nombres
+    for ruta in ("P9_Confirmacion_Masiva.pa.yaml", "tenant_v1/P9_Confirmacion_Masiva.pa.yaml", "tenant/P9_Confirmacion_Masiva.pa.yaml"):
+        assert AI.auditar(PA / ruta) == [], ruta
+    click = AI.llamadas_iferror(fx_crudo("btnConfirmarMasivamenteP9", "OnSelect"))
+    assert len(click) == 1 and [AI.ultima_sentencia(a) for a in click[0]] == ["true", "false"]       # Run(...) -> true | registro de error -> false
+    timer = AI.llamadas_iferror(fx_crudo("tmrProgresoP9", "OnTimerEnd"))
+    assert len(timer) == 2 and all([AI.ultima_sentencia(a) for a in ll] == ["true", "false"] for ll in timer)
+    assert plano(timer[1][0]).startswith("ClearCollect(colConfirmacionP9,") and plano(timer[1][1]).startswith('Notify("No se pudo leer el detalle de la confirmación: "')
+    # misma forma que la prevalidación ya aceptada por Studio
     prev = AI.llamadas_iferror(fx_crudo("btnPrevalidarP9", "OnSelect"))
     assert [[AI.ultima_sentencia(a) for a in ll] for ll in prev] == [["true", "false"], ["true", "false"]]
-    # el 4.º argumento fabricado por la app coincide con la forma del 8-texto del flujo (misma variable, mismo tipo en las dos asignaciones)
-    assert fx("btnConfirmarMasivamenteP9", "OnSelect").count("Set(varResultadoConfirmacionP9,") == 3  # Blank(), respuesta del flujo, registro de error
+    assert fx("btnConfirmarMasivamenteP9", "OnSelect").count("Set(varResultadoConfirmacionP9,") == 2 and fx("btnConfirmarMasivamenteP9", "OnSelect").count("Set(varEjecucionMasivaP9,") == 3
 
 
 def test_46_las_dos_ramas_de_Items_de_la_galeria_tienen_las_mismas_columnas_y_el_titulo_conoce_cada_resultado():
@@ -659,14 +760,11 @@ def test_46_las_dos_ramas_de_Items_de_la_galeria_tienen_las_mismas_columnas_y_el
 
 
 def test_47_el_modal_descartado_no_queda_en_ningun_artefacto_de_la_pantalla():
-    for ruta in (PA / "P9_Confirmacion_Masiva.pa.yaml", PA / "P9_Confirmacion_Masiva_CONTROLES_PEGAR.yaml", PA / "CONFIRMACION_POWERFX.md",
-                 PA / "PREVALIDACION_POWERFX.md"):
-        texto = ruta.read_text(encoding="utf-8")
-        if ruta.name == "CONFIRMACION_POWERFX.md":     # se nombra solo para decir que ya no se usa
-            assert texto.count("varConfirmarMasivaVisible") == 2 and "**ya no se usa**" in texto
-        else:
-            assert "varConfirmarMasivaVisible" not in texto, ruta.name
-    # la fuente real del tenant SÍ la conserva (checkpoint): es lo que la integración retira
+    for ruta in (PA / "P9_Confirmacion_Masiva.pa.yaml", PA / "P9_Confirmacion_Masiva_CONTROLES_PEGAR.yaml", PA / "PREVALIDACION_POWERFX.md", PA / "tenant_v1/P9_Confirmacion_Masiva.pa.yaml"):
+        assert "varConfirmarMasivaVisible" not in ruta.read_text(encoding="utf-8"), ruta.name
+    md = (PA / "CONFIRMACION_POWERFX.md").read_text(encoding="utf-8")
+    assert md.count("varConfirmarMasivaVisible") == 1 and "**no existe**" in md                  # solo para decir que no existe
+    # la fuente real ANTERIOR (tenant/) SÍ la conservaba: es lo que la V1 retiró
     assert (PA / "tenant/P9_Confirmacion_Masiva.pa.yaml").read_text(encoding="utf-8").count("varConfirmarMasivaVisible") == 2
 
 
@@ -731,29 +829,32 @@ def test_50_ShowColumns_sin_comillas_en_el_yaml_las_fuentes_del_tenant_y_los_doc
         assert total == 2, yaml_                                                              # el botón (VALIDO) y la rama de prevalidación de la galería
     bloques = re.findall(r"```\n(.*?)```", (PA / "CONFIRMACION_POWERFX.md").read_text(encoding="utf-8"), re.S)
     con_show = [b for b in bloques if "ShowColumns(" in b]
-    assert len(con_show) == 2 and all(AI.showcolumns_con_comillas(b, ";") == [] for b in con_show)
+    assert len(con_show) == 1 and all(AI.showcolumns_con_comillas(b, ";") == [] for b in con_show)   # la galería no cambia: solo está en el OnSelect
     # el auditor muerde: el patrón rechazado se detecta en sintaxis canónica y regional
     assert AI.showcolumns_con_comillas('ShowColumns(Filter(t, a = "x"), "fila_excel", "banco")') == ['"fila_excel"', '"banco"']
     assert AI.showcolumns_con_comillas('ShowColumns(Filter(t; a = "x"); "fila_excel"; banco)', ";") == ['"fila_excel"']
     assert AI.showcolumns_con_comillas('ShowColumns(Filter(t, a = "x"), fila_excel, banco)') == []
 
 
-def test_51_la_fuente_de_trabajo_es_el_export_final_del_tenant_y_conserva_las_reglas_validadas():
+def test_51_la_V1_real_esta_intacta_en_tenant_v1_y_la_version_de_trabajo_parte_de_ella():
+    import hashlib
     tv1 = PA / "tenant_v1"
-    assert (PA / "P9_Confirmacion_Masiva.pa.yaml").read_bytes() == (tv1 / "P9_Confirmacion_Masiva.pa.yaml").read_bytes()
+    # el export REAL de la V1 que funcionó en el tenant (checkpoint 82b279e) no se toca: sus hashes están fijados aquí
+    assert hashlib.sha256((tv1 / "P9_Confirmacion_Masiva.pa.yaml").read_bytes()).hexdigest() == "f6f57e39094def1f2c021cea9892ea8c85cc3b1ea2c6ccabc8acfd3b7175df77"
+    assert hashlib.sha256((tv1 / "Main_Screen.pa.yaml").read_bytes()).hexdigest() == "26f26fefb4ff6f892f10a405e04933ce5ef5403dc0302fcbfc6adb18f908384b"
     assert (PA / "Main_Screen_CON_BOTON_IMPORTACION_MASIVA.yaml").read_bytes() == (tv1 / "Main_Screen.pa.yaml").read_bytes() == (PA / "tenant/Main_Screen.pa.yaml").read_bytes()
     propias, base = _props_del_yaml(tv1 / "P9_Confirmacion_Masiva.pa.yaml"), _props_del_yaml(PA / "tenant/P9_Confirmacion_Masiva.pa.yaml")
-    assert {k for k in propias if k[1] == "__Control__"} == {k for k in base if k[1] == "__Control__"} and len(base) and \
-        len({k[0] for k in propias if k[1] == "__Control__"}) == 44                           # mismos 44 controles que antes de integrar
+    assert len({k[0] for k in propias if k[1] == "__Control__"}) == 44                    # mismos 44 controles que antes de integrar la V1
     cambiadas = {k for k in set(propias) | set(base) if plano(str(propias.get(k))) != plano(str(base.get(k)))}
-    assert cambiadas == CAMBIOS_ESPERADOS                                                     # el export final = base + las 18 fórmulas previstas, nada más
-    texto = (tv1 / "P9_Confirmacion_Masiva.pa.yaml").read_text(encoding="utf-8")
+    assert cambiadas == CAMBIOS_V1
+    texto = (PA / "P9_Confirmacion_Masiva.pa.yaml").read_text(encoding="utf-8")
     assert "varConfirmarMasivaVisible" not in texto and "mostrarConfirmacion" not in texto    # D: el segundo modal no vuelve
-    assert texto.count("P9_MASIVA_PROTO_CONFIRMAR.Run(") == 1 and texto.count("P9_MASIVA_PROTO_PREVALIDAR.Run(") == 1
+    assert texto.count("P9_MASIVA_PROTO_CONFIRMAR.Run(") == 1 and texto.count("P9_MASIVA_PROTO_PREVALIDAR.Run(") == 1 and texto.count("P9_MASIVA_PROTO_ESTADO.Run(") == 1
 
 
-def test_52_el_boton_del_tenant_envia_solo_las_filas_VALIDO_con_las_12_columnas_del_contrato_y_el_correo():
-    f = plano(str(_props_del_yaml(PA / "tenant_v1/P9_Confirmacion_Masiva.pa.yaml")[("btnConfirmarMasivamenteP9", "OnSelect")]))
+@pytest.mark.parametrize("yaml_", ["tenant_v1/P9_Confirmacion_Masiva.pa.yaml", "P9_Confirmacion_Masiva.pa.yaml"])
+def test_52_el_boton_envia_solo_las_filas_VALIDO_con_las_12_columnas_del_contrato_y_el_correo(yaml_):
+    f = plano(str(_props_del_yaml(PA / yaml_)[("btnConfirmarMasivamenteP9", "OnSelect")]))
     m = re.search(r"P9_MASIVA_PROTO_CONFIRMAR\.Run\(JSON\(ShowColumns\(Filter\(colPrevalidacionP9, resultado = \"VALIDO\"\), ([^)]*)\), JSONFormat\.Compact\), User\(\)\.Email\)\)", f)
     assert m, "Run(JSON(ShowColumns(Filter(colPrevalidacionP9, resultado = \"VALIDO\"), …), JSONFormat.Compact), User().Email)"
     assert re.findall(r"\w+", m[1]) == list(K.CAMPOS_ENTRADA) and '"' not in m[1]              # E: solo VALIDO, las 12 columnas del contrato, sin comillas
@@ -763,7 +864,7 @@ def test_52_el_boton_del_tenant_envia_solo_las_filas_VALIDO_con_las_12_columnas_
     import sys
     sys.path.insert(0, str(PA))
     import auditar_iferror as AI
-    assert AI.auditar(PA / "tenant_v1/P9_Confirmacion_Masiva.pa.yaml") == []
+    assert AI.auditar(PA / yaml_) == []
 
 
 def test_53_el_flujo_que_funciono_en_el_tenant_conserva_PT5S_en_la_lectura_y_MERGE_sin_reintentos():

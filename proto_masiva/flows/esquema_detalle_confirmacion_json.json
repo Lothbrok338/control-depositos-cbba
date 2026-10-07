@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "detalle_json de P9_MASIVA_PROTO_CONFIRMAR",
-  "description": "Texto JSON: arreglo con UN objeto por fila recibida. Las filas mal formadas (ERROR_FILA sin tocar SharePoint) van primero; después, las procesadas en el orden recibido. Es solo la respuesta a Power Apps (memoria de la app): NO se guarda como historial ni lote. No incluye ETag.",
+  "description": "Texto JSON: arreglo con UN objeto por fila NO confirmada (como máximo 300; el resto se cuenta en filas_no_confirmadas y detalle_truncado=true). Las filas mal formadas (ERROR_FILA sin tocar SharePoint) van primero; después, las procesadas en el orden recibido. Las confirmadas NO se listan: se cuentan (filas_confirmadas). Viaja dentro del archivo temporal confirmacion_<execution_uid>.json y lo devuelve P9_MASIVA_PROTO_ESTADO: NO es historial ni lote. No incluye ETag.",
   "type": "array",
   "items": {
     "type": "object",
@@ -36,7 +36,6 @@
       "resultado": {
         "type": "string",
         "enum": [
-          "CONFIRMADO",
           "NO_ENCONTRADO",
           "NO_DISPONIBLE",
           "CONFLICTO",

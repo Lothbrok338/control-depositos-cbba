@@ -1,0 +1,36 @@
+{
+  "escenario": "60 filas válidas; Power Apps consulta mientras el flujo sigue procesando (50 de 60). El detalle de no confirmadas llega solo al terminar",
+  "respuesta_temprana": {
+    "resultado": "ACEPTADO",
+    "codigo": "PROCESAMIENTO_INICIADO",
+    "mensaje": "Confirmación iniciada: 60 depósitos en proceso.",
+    "execution_uid": "00000000-0000-4000-8000-000000000001",
+    "filas_recibidas": "60"
+  },
+  "estado_en_curso": {
+    "execution_uid": "00000000-0000-4000-8000-000000000001",
+    "estado": "PROCESANDO",
+    "codigo": "PROCESAMIENTO_INICIADO",
+    "filas_totales": 60,
+    "filas_procesadas": 50,
+    "filas_confirmadas": 49,
+    "filas_no_confirmadas": 1,
+    "porcentaje": 83,
+    "mensaje": "50 de 60 procesados.",
+    "detalle_json": [],
+    "detalle_truncado": false,
+    "actualizado_utc": "2026-10-05T12:00:00.413000Z",
+    "tiempos_ms": "total=412;filas=60;ms_por_fila=7"
+  },
+  "consulta_estado": {
+    "estado": "PROCESANDO",
+    "filas_totales": "60",
+    "filas_procesadas": "50",
+    "filas_confirmadas": "49",
+    "filas_no_confirmadas": "1",
+    "porcentaje": "83",
+    "mensaje": "50 de 60 procesados.",
+    "detalle_json": "[]",
+    "tiempos_ms": "total=412;filas=60;ms_por_fila=7"
+  }
+}
