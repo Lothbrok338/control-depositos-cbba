@@ -5,7 +5,7 @@
 Power Automate SOLO orquesta; no recorre ni parsea movimientos:
 
   OneDrive (ENTRADA, .xls/.xlsx) ─► Get file content using path ─► HTTP POST a P0 en Railway (stateless)
-      ok=true  ─► (publicar_json=true ─► crea el JSON P7 tal cual en CARGA_EXTRACTOS_BANCARIOS) ─► original a PROCESADOS/YYYY/MM_MES
+      ok=true  ─► (publicar_json=true ─► crea el JSON P7 tal cual en CARGA_EXTRACTOS_BANCARIOS) ─► original a PROCESADOS/YYYY/MM_MES/DD (DD = día de procesamiento, hora Bolivia)
       ok=false ─► <nombre>.error.json (respuesta de P0) + original a ERROR/YYYY/MM_MES
       fallo técnico (TRY/CATCH) ─► <nombre>.error.json {codigo_error, etapa, mensaje, fecha_hora} + original a ERROR/YYYY/MM_MES
 
@@ -26,7 +26,7 @@ from p9.wdl import FALLOS, TODOS, ambito, asignar, compose, contar_acciones, def
 CARPETA_SALIDA = Path(__file__).resolve().parent
 RAIZ = CARPETA_SALIDA.parents[1]
 NOMBRE_FLUJO = "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD"
-NOMBRE_ZIP = "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V4.zip"
+NOMBRE_ZIP = "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V5.zip"
 SPLIT_ON_DISPARADOR = "@triggerOutputs()?['body']"  # el cuerpo de OnNewFilesV2 es un array de BlobMetadata
 CAMPOS_DISPARADOR = ("Id", "Name", "Path", "IsFolder")  # BlobMetadata de OnNewFilesV2
 DESCRIPCION = ("Extractos bancarios (.xls/.xlsx) en OneDrive ENTRADA -> P0 en Railway -> JSON P7 en CARGA_EXTRACTOS_BANCARIOS; "
@@ -229,8 +229,12 @@ def calcular_destino():
         "Periodo_Bolivia": compose("@concat(formatDateTime(outputs('Ahora_Bolivia'),'yyyy'),'/',"
                                    "outputs('PARAM_MESES')?[formatDateTime(outputs('Ahora_Bolivia'),'MM')])"),
         "Periodo_Carpeta": compose(f"@if({periodo_valido(v)},{v},outputs('Periodo_Bolivia'))"),
+        # DD = día de PROCESAMIENTO en Bolivia (hora de ejecución del flujo, UTC-4), no la fecha de los movimientos bancarios.
+        "Dia_Bolivia": compose("@formatDateTime(outputs('Ahora_Bolivia'),'dd')"),
+        # PROCESADOS: .../YYYY/MM_MES/DD   ·   ERROR: .../YYYY/MM_MES (sin día)
         "Carpeta_Destino": compose("@concat(if(equals(variables('varEstado'),'PROCESADO'),outputs('PARAM_CARPETA_PROCESADOS'),"
-                                   "outputs('PARAM_CARPETA_ERROR')),'/',outputs('Periodo_Carpeta'))")}
+                                   "outputs('PARAM_CARPETA_ERROR')),'/',outputs('Periodo_Carpeta'),"
+                                   "if(equals(variables('varEstado'),'PROCESADO'),concat('/',outputs('Dia_Bolivia')),''))")}
 
 
 def archivar_error_json():

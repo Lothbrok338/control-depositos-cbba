@@ -650,11 +650,20 @@
         ]
       }
     },
-    "Carpeta_Destino": {
+    "Dia_Bolivia": {
       "type": "Compose",
-      "inputs": "@concat(if(equals(variables('varEstado'),'PROCESADO'),outputs('PARAM_CARPETA_PROCESADOS'),outputs('PARAM_CARPETA_ERROR')),'/',outputs('Periodo_Carpeta'))",
+      "inputs": "@formatDateTime(outputs('Ahora_Bolivia'),'dd')",
       "runAfter": {
         "Periodo_Carpeta": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Carpeta_Destino": {
+      "type": "Compose",
+      "inputs": "@concat(if(equals(variables('varEstado'),'PROCESADO'),outputs('PARAM_CARPETA_PROCESADOS'),outputs('PARAM_CARPETA_ERROR')),'/',outputs('Periodo_Carpeta'),if(equals(variables('varEstado'),'PROCESADO'),concat('/',outputs('Dia_Bolivia')),''))",
+      "runAfter": {
+        "Dia_Bolivia": [
           "Succeeded"
         ]
       }

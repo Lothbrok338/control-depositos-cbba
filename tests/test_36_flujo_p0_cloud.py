@@ -66,7 +66,7 @@ def test_artefactos_versionados_son_la_salida_actual_del_generador():
     assert json.loads(RUTA_DEF.read_text(encoding="utf-8")) == DEF
     assert RUTA_ZIP.read_bytes() == F.zip_bytes(DEF)
     assert F.zip_bytes(DEF) == F.zip_bytes(F.construir_definicion())  # determinista
-    assert F.NOMBRE_ZIP == "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V4.zip" and F.NOMBRE_FLUJO == "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD"
+    assert F.NOMBRE_ZIP == "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V5.zip" and F.NOMBRE_FLUJO == "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD"
 
 
 def test_zip_estructura_e_idiomas_de_importacion():
@@ -246,6 +246,25 @@ def test_periodo_de_la_api_o_hora_bolivia_con_validacion():
     assert "convertTimeZone(utcNow(),'UTC','SA Western Standard Time'" in TODAS["Error_llamada_p0"]["inputs"]["value"]["fecha_hora"]
 
 
+def test_procesados_lleva_subcarpeta_dd_del_dia_de_procesamiento_en_bolivia_y_error_no():
+    assert TODAS["Dia_Bolivia"]["inputs"] == "@formatDateTime(outputs('Ahora_Bolivia'),'dd')"
+    assert "SA Western Standard Time" in TODAS["Ahora_Bolivia"]["inputs"]  # Bolivia UTC-4; no depende de las fechas de los movimientos
+    assert "movimiento" not in TODAS["Dia_Bolivia"]["inputs"].lower() and "periodo" not in TODAS["Dia_Bolivia"]["inputs"].lower()
+    assert TODAS["Carpeta_Destino"]["inputs"] == (
+        "@concat(if(equals(variables('varEstado'),'PROCESADO'),outputs('PARAM_CARPETA_PROCESADOS'),outputs('PARAM_CARPETA_ERROR')),"
+        "'/',outputs('Periodo_Carpeta'),if(equals(variables('varEstado'),'PROCESADO'),concat('/',outputs('Dia_Bolivia')),''))")
+    # el día solo se agrega en la rama PROCESADO; ERROR, ENTRADA y CARGA conservan sus rutas
+    assert TODAS["Carpeta_Destino"]["inputs"].count("Dia_Bolivia") == 1
+    assert DEF["actions"]["PARAM_CARPETA_ERROR"]["inputs"] == "/CONTROL_DEPOSITOS/P0_EXTRACTOS/ERROR"
+    assert DEF["actions"]["PARAM_CARPETA_PROCESADOS"]["inputs"] == "/CONTROL_DEPOSITOS/P0_EXTRACTOS/PROCESADOS"
+    assert DEF["actions"]["PARAM_CARPETA_CARGA"]["inputs"] == "/CONTROL_DEPOSITOS/P0_EXTRACTOS/CARGA_EXTRACTOS_BANCARIOS"
+    assert F.CARPETA_ENTRADA == "/CONTROL_DEPOSITOS/P0_EXTRACTOS/ENTRADA"
+    # la cadena de cálculo: Ahora_Bolivia -> Periodo_Bolivia -> Periodo_Carpeta -> Dia_Bolivia -> Carpeta_Destino
+    cadena = ["Ahora_Bolivia", "Periodo_Bolivia", "Periodo_Carpeta", "Dia_Bolivia", "Carpeta_Destino"]
+    for previa, nombre in zip(cadena, cadena[1:]):
+        assert DEF["actions"][nombre]["runAfter"] == {previa: ["Succeeded"]}
+
+
 def test_anio_mes_se_crean_solo_al_escribir_el_archivo_real_sin_carpetas_anticipadas():
     # No hay acciones de crear carpetas ni de generar meses futuros: el año/mes solo existe porque CreateFile escribe dentro de él.
     assert not [n for n, a in TODAS.items() if a["type"] == "OpenApiConnection" and "older" in a["inputs"]["host"]["operationId"]]
@@ -318,7 +337,7 @@ def test_no_hay_apply_to_each_ni_parse_json_ni_filtros_sobre_movimientos():
     assert "movimientos" not in TEXTO.lower()
     assert "parse_json" not in TEXTO.lower() and "Apply_to_each" not in TEXTO
     assert tipos() <= {"Scope", "If", "Switch", "Compose", "InitializeVariable", "SetVariable", "OpenApiConnection", "Http", "Terminate"}
-    assert contar_acciones(DEF["actions"]) == 58
+    assert contar_acciones(DEF["actions"]) == 59
 
 
 # ------------------------------------------------------------------ integridad estructural
@@ -398,5 +417,5 @@ def test_p8_p7_motor_y_api_no_fueron_modificados():
 def test_documentacion_de_importacion_cubre_los_puntos_manuales():
     texto = DOC.read_text(encoding="utf-8")
     for clave in ("<PEGAR_P0_API_TOKEN_AQUI>", "Authorization", "OneDrive for Business", "ENTRADA", "CARGA_EXTRACTOS_BANCARIOS",
-                  "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V4.zip", "Secure"):
+                  "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V5.zip", "Secure"):
         assert clave in texto, clave
