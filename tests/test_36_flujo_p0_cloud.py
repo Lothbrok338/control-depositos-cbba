@@ -66,7 +66,7 @@ def test_artefactos_versionados_son_la_salida_actual_del_generador():
     assert json.loads(RUTA_DEF.read_text(encoding="utf-8")) == DEF
     assert RUTA_ZIP.read_bytes() == F.zip_bytes(DEF)
     assert F.zip_bytes(DEF) == F.zip_bytes(F.construir_definicion())  # determinista
-    assert F.NOMBRE_ZIP == "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V2.zip" and F.NOMBRE_FLUJO == "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD"
+    assert F.NOMBRE_ZIP == "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V3.zip" and F.NOMBRE_FLUJO == "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD"
 
 
 def test_zip_estructura_e_idiomas_de_importacion():
@@ -94,17 +94,29 @@ def test_zip_estructura_e_idiomas_de_importacion():
 # ------------------------------------------------------------------ disparador
 def test_disparador_onedrive_for_business_entrada_xls_xlsx_concurrencia_1():
     (nombre, t), = DEF["triggers"].items()
-    assert t["type"] == "OpenApiConnection" and t["inputs"]["host"]["operationId"] == "OnNewFileV2"
+    assert t["type"] == "OpenApiConnection" and t["inputs"]["host"]["operationId"] == "OnNewFilesV2"  # properties only (BlobMetadata)
     assert t["inputs"]["host"]["connectionName"] == "shared_onedriveforbusiness" and t["inputs"]["host"]["apiId"].endswith("shared_onedriveforbusiness")
     p = t["inputs"]["parameters"]
     assert unquote(unquote(p["folderId"])) == "/CONTROL_DEPOSITOS/P0_EXTRACTOS/ENTRADA"
-    assert p["includeSubfolders"] is False and p["inferContentType"] is False
+    assert p == {"folderId": p["folderId"], "includeSubfolders": False}
     assert t["runtimeConfiguration"]["concurrency"]["runs"] == 1
     cond = t["conditions"][0]["expression"]
     assert "IsFolder" in cond and ".xls'" in cond and ".xlsx'" in cond and "toLower" in cond
     for ext in (".csv", ".pdf", ".xlsm", ".txt"):
         assert ext not in cond
     assert "splitOn" not in t
+
+
+def test_el_disparador_es_properties_only_y_todo_lo_que_lee_del_existe_en_blobmetadata():
+    # Regresión: OnNewFileV2 devuelve el binario; Name/IsFolder llegaban null y el filtro descartaba todos los archivos.
+    assert DEF["triggers"]["Cuando_se_crea_un_archivo"]["inputs"]["host"]["operationId"] != "OnNewFileV2"
+    assert "OnNewFileV2" not in TEXTO.replace("OnNewFilesV2", "")
+    usados = set(re.findall(r"triggerBody\(\)\?\['([^']+)'\]", TEXTO)) | set(re.findall(r"triggerOutputs\(\)\?\['body/([^']+)'\]", TEXTO))
+    assert usados == {"Name", "IsFolder", "Path", "Id"} and usados <= set(F.CAMPOS_DISPARADOR)
+    assert not re.findall(r"triggerBody\(\)(?!\?\[)", TEXTO) and "$content" not in json.dumps(DEF["triggers"])  # nada del binario
+    assert "FilenameWithExtension" not in TEXTO and "{IsFolder}" not in TEXTO  # nombres de SharePoint, no de OneDrive
+    # el contenido sale solo de la acción Get file content, que usa el Path del disparador
+    assert TODAS["Get_file_content_using_path"]["inputs"]["parameters"]["path"] == "@triggerOutputs()?['body/Path']"
 
 
 def test_solo_onedrive_for_business_sin_sharepoint_ni_otros_conectores():
@@ -384,5 +396,5 @@ def test_p8_p7_motor_y_api_no_fueron_modificados():
 def test_documentacion_de_importacion_cubre_los_puntos_manuales():
     texto = DOC.read_text(encoding="utf-8")
     for clave in ("<PEGAR_P0_API_TOKEN_AQUI>", "Authorization", "OneDrive for Business", "ENTRADA", "CARGA_EXTRACTOS_BANCARIOS",
-                  "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V2.zip", "Secure"):
+                  "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V3.zip", "Secure"):
         assert clave in texto, clave

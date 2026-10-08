@@ -26,7 +26,8 @@ from p9.wdl import FALLOS, TODOS, ambito, asignar, compose, contar_acciones, def
 CARPETA_SALIDA = Path(__file__).resolve().parent
 RAIZ = CARPETA_SALIDA.parents[1]
 NOMBRE_FLUJO = "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD"
-NOMBRE_ZIP = "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V2.zip"
+NOMBRE_ZIP = "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V3.zip"
+CAMPOS_DISPARADOR = ("Id", "Name", "Path", "IsFolder")  # BlobMetadata de OnNewFilesV2
 DESCRIPCION = ("Extractos bancarios (.xls/.xlsx) en OneDrive ENTRADA -> P0 en Railway -> JSON P7 en CARGA_EXTRACTOS_BANCARIOS; "
                "original a PROCESADOS o ERROR por año/mes. Solo orquesta: no recorre movimientos.")
 
@@ -108,13 +109,16 @@ def nombre_unico(prefijo, carpeta, nombre):
 
 # ---------------------------------------------------------------------------------------------- disparador
 def disparador():
+    """«When a file is created (properties only)» = OnNewFilesV2: devuelve BlobMetadata (Id, Name, Path, IsFolder…), NO el contenido.
+    OnNewFileV2 («When a file is created») devuelve el binario y deja Name/IsFolder en null, con lo que el filtro descartaba todo.
+    Los únicos campos del disparador que usa el flujo están en CAMPOS_DISPARADOR; el contenido se lee con Get file content."""
     nombre = "coalesce(triggerBody()?['Name'],'')"
     condicion = (f"@and(not(equals(triggerBody()?['IsFolder'],true)),not(startsWith({nombre},'~$')),"
                  f"or(endsWith(toLower({nombre}),'.xls'),endsWith(toLower({nombre}),'.xlsx')))")
     return {"Cuando_se_crea_un_archivo": {
         "type": "OpenApiConnection", "recurrence": {"interval": 1, "frequency": "Minute"},
-        "inputs": {"host": {"apiId": API_OD, "connectionName": "shared_onedriveforbusiness", "operationId": "OnNewFileV2"},
-                   "parameters": {"folderId": FOLDER_ID_ENTRADA, "includeSubfolders": False, "inferContentType": False},
+        "inputs": {"host": {"apiId": API_OD, "connectionName": "shared_onedriveforbusiness", "operationId": "OnNewFilesV2"},
+                   "parameters": {"folderId": FOLDER_ID_ENTRADA, "includeSubfolders": False},
                    "authentication": "@parameters('$authentication')"},
         "conditions": [{"expression": condicion}],
         "runtimeConfiguration": {"concurrency": {"runs": 1}}}}

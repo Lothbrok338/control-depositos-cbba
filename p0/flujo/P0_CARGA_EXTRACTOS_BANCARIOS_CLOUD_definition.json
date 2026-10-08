@@ -22,12 +22,11 @@
         "host": {
           "apiId": "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness",
           "connectionName": "shared_onedriveforbusiness",
-          "operationId": "OnNewFileV2"
+          "operationId": "OnNewFilesV2"
         },
         "parameters": {
           "folderId": "%252FCONTROL_DEPOSITOS%252FP0_EXTRACTOS%252FENTRADA",
-          "includeSubfolders": false,
-          "inferContentType": false
+          "includeSubfolders": false
         },
         "authentication": "@parameters('$authentication')"
       },
