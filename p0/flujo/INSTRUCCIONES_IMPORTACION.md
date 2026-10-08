@@ -1,6 +1,6 @@
 # P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD — importación
 
-Paquete: `P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V1.zip` (raíz del repo). Generador: `python -m p0.flujo.construir`. Definición legible: `p0/flujo/P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_definition.json`.
+Paquete: `P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V2.zip` (raíz del repo). Generador: `python -m p0.flujo.construir`. Definición legible: `p0/flujo/P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_definition.json`.
 
 Power Automate solo orquesta: lee el archivo de OneDrive, hace un POST a P0 (Railway) y guarda lo que P0 devuelve. No recorre ni parsea movimientos. P0 sigue sin guardar nada (sin DB, volumen ni bucket).
 
@@ -24,7 +24,7 @@ El original solo se borra de ENTRADA cuando su copia ya existe en destino (copia
 
 ## Importar (clic a clic)
 
-1. Power Automate → **My flows** → **Import** → **Import Package (Legacy)** → **Upload** → `P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V1.zip`.
+1. Power Automate → **My flows** → **Import** → **Import Package (Legacy)** → **Upload** → `P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V2.zip`.
 2. En *Related resources* → **OneDrive for Business** → **Select during import** → elige tu conexión OneDrive for Business (`gtorricot@univalle.edu`) → **Save** → **Import**.
 3. Abre el flujo → **Edit**.
 
@@ -40,7 +40,7 @@ Cuando el flujo viva dentro de una Solution, conviene mover el token a una Envir
 ## Verificar tras importar (2 minutos)
 
 - **Disparador**: debe mostrar la carpeta `ENTRADA`. El paquete la trae con el formato interno del conector; si el diseñador la marca en rojo o vacía, vuelve a elegirla con el icono de carpeta (`/CONTROL_DEPOSITOS/P0_EXTRACTOS/ENTRADA`), *Include subfolders = No*, *Infer Content Type = No*. Es el único punto del flujo que no se pudo comprobar sin tenant.
-- **Secure Inputs/Outputs** (⋯ → *Settings*): HTTP (inputs+outputs), Get file content (outputs), Crear_JSON_P7, Original_Crear_copia, Error_json_Crear y Guardar_respuesta_de_P0.
+- **Secure Inputs/Outputs** (⋯ → *Settings*): HTTP (inputs+outputs), Get file content (outputs), Crear_JSON_P7 (inputs), Original_Crear_copia (inputs) y Error_json_Crear (inputs). Power Automate no admite Secure Inputs/Outputs en acciones de variable, Compose, condiciones ni ámbitos, por eso solo esas cinco lo llevan.
 - **Concurrency** del disparador = 1 (⋯ → *Settings*).
 - Activar el flujo (*Turn on*).
 

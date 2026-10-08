@@ -316,14 +316,6 @@
                     "name": "varPeriodoApi",
                     "value": "@coalesce(body('HTTP')?['periodo']?['carpeta'],'')"
                   },
-                  "runtimeConfiguration": {
-                    "secureData": {
-                      "properties": [
-                        "inputs",
-                        "outputs"
-                      ]
-                    }
-                  },
                   "runAfter": {}
                 },
                 "Publicar_JSON": {
@@ -404,14 +396,6 @@
                           "name": "varPeriodoApi",
                           "value": "@coalesce(body('HTTP')?['periodo']?['carpeta'],'')"
                         },
-                        "runtimeConfiguration": {
-                          "secureData": {
-                            "properties": [
-                              "inputs",
-                              "outputs"
-                            ]
-                          }
-                        },
                         "runAfter": {}
                       },
                       "Guardar_respuesta_de_P0": {
@@ -419,14 +403,6 @@
                         "inputs": {
                           "name": "varError",
                           "value": "@body('HTTP')"
-                        },
-                        "runtimeConfiguration": {
-                          "secureData": {
-                            "properties": [
-                              "inputs",
-                              "outputs"
-                            ]
-                          }
                         },
                         "runAfter": {
                           "Fijar_periodo_de_la_API_error": [
@@ -460,14 +436,6 @@
                               "fecha_hora": "@concat(convertTimeZone(utcNow(),'UTC','SA Western Standard Time','yyyy-MM-ddTHH:mm:ss'),'-04:00')",
                               "archivo": "@variables('varNombre')",
                               "sede": "@outputs('PARAM_SEDE')"
-                            }
-                          },
-                          "runtimeConfiguration": {
-                            "secureData": {
-                              "properties": [
-                                "inputs",
-                                "outputs"
-                              ]
                             }
                           },
                           "runAfter": {}
@@ -506,14 +474,6 @@
                     "fecha_hora": "@concat(convertTimeZone(utcNow(),'UTC','SA Western Standard Time','yyyy-MM-ddTHH:mm:ss'),'-04:00')",
                     "archivo": "@variables('varNombre')",
                     "sede": "@outputs('PARAM_SEDE')"
-                  }
-                },
-                "runtimeConfiguration": {
-                  "secureData": {
-                    "properties": [
-                      "inputs",
-                      "outputs"
-                    ]
                   }
                 },
                 "runAfter": {}
@@ -586,14 +546,6 @@
                       "fecha_hora": "@concat(convertTimeZone(utcNow(),'UTC','SA Western Standard Time','yyyy-MM-ddTHH:mm:ss'),'-04:00')",
                       "archivo": "@variables('varNombre')",
                       "sede": "@outputs('PARAM_SEDE')"
-                    }
-                  },
-                  "runtimeConfiguration": {
-                    "secureData": {
-                      "properties": [
-                        "inputs",
-                        "outputs"
-                      ]
                     }
                   },
                   "runAfter": {}

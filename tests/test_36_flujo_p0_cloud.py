@@ -66,7 +66,7 @@ def test_artefactos_versionados_son_la_salida_actual_del_generador():
     assert json.loads(RUTA_DEF.read_text(encoding="utf-8")) == DEF
     assert RUTA_ZIP.read_bytes() == F.zip_bytes(DEF)
     assert F.zip_bytes(DEF) == F.zip_bytes(F.construir_definicion())  # determinista
-    assert F.NOMBRE_ZIP == "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V1.zip" and F.NOMBRE_FLUJO == "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD"
+    assert F.NOMBRE_ZIP == "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V2.zip" and F.NOMBRE_FLUJO == "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD"
 
 
 def test_zip_estructura_e_idiomas_de_importacion():
@@ -149,19 +149,40 @@ def test_token_real_no_esta_versionado():
     assert TEXTO.replace("<PEGAR_P0_API_TOKEN_AQUI>", "").count("P0_API_TOKEN") == 0  # el marcador es el único lugar
 
 
-def test_secure_inputs_outputs_en_todo_lo_que_toca_contenido_bancario():
-    seguro = lambda n: set(TODAS[n].get("runtimeConfiguration", {}).get("secureData", {}).get("properties", []))  # noqa: E731
-    assert seguro("HTTP") == {"inputs", "outputs"}
-    assert "outputs" in seguro("Get_file_content_using_path")
-    assert "inputs" in seguro("Crear_JSON_P7") and "inputs" in seguro("Original_Crear_copia") and "inputs" in seguro("Error_json_Crear")
-    assert seguro("Guardar_respuesta_de_P0") == {"inputs", "outputs"}
-    # toda acción que referencia el cuerpo de HTTP o el contenido del Excel dentro de sus entradas está protegida
+SECURE_ESPERADO = {
+    "Get_file_content_using_path": {"outputs"},
+    "HTTP": {"inputs", "outputs"},
+    "Crear_JSON_P7": {"inputs"},
+    "Original_Crear_copia": {"inputs"},
+    "Error_json_Crear": {"inputs"},
+}
+
+
+def test_secure_inputs_outputs_exactamente_donde_corresponde():
+    con_secure = {n: set(a["runtimeConfiguration"]["secureData"]["properties"])
+                  for n, a in TODAS.items() if "secureData" in a.get("runtimeConfiguration", {})}
+    assert con_secure == SECURE_ESPERADO
+    # el contenido del Excel (Base64) y el JSON bancario salen de HTTP/conectores protegidos; el resto de acciones no los referencian
     for nombre, a in TODAS.items():
         entradas = json.dumps(a.get("inputs", {}))
-        if "body('HTTP')" in entradas or "body('Get_file_content_using_path')" in entradas or "outputs('HTTP')" in entradas:
-            if a["type"] in ("If", "Switch", "Scope"):
-                continue
-            assert "inputs" in seguro(nombre), nombre
+        if "$content" in entradas or "texto'" in entradas or "body('Get_file_content_using_path')" in entradas:
+            assert nombre in SECURE_ESPERADO, nombre
+
+
+def test_secure_data_solo_en_acciones_que_power_automate_admite():
+    # Regresión: «SecureDataPropertyNotSupported ... action 'Fijar_error_http_inesperado' of type 'SetVariable'»
+    assert F.TIPOS_CON_SECURE_DATA == ("Http", "OpenApiConnection")
+    for nombre, a in TODAS.items():
+        rc = a.get("runtimeConfiguration", {})
+        if "secureData" in rc:
+            assert a["type"] in F.TIPOS_CON_SECURE_DATA, (nombre, a["type"])
+        propio = {k: v for k, v in a.items() if k not in ("actions", "else", "cases", "default")}  # sin los hijos del contenedor
+        assert "secureData" not in propio and "secureInputs" not in json.dumps(a) and "secureOutputs" not in json.dumps(a), nombre
+        if a["type"] in ("SetVariable", "InitializeVariable", "Compose", "If", "Switch", "Scope", "Terminate"):
+            assert "secureData" not in json.dumps(propio), (nombre, a["type"])
+    assert "secureData" not in json.dumps(DEF["triggers"])
+    # y los únicos runtimeConfiguration de acciones son secureData (el disparador lleva solo concurrency)
+    assert all(set(a.get("runtimeConfiguration", {})) <= {"secureData"} for a in TODAS.values())
 
 
 # ------------------------------------------------------------------ decisiones y publicación
@@ -363,5 +384,5 @@ def test_p8_p7_motor_y_api_no_fueron_modificados():
 def test_documentacion_de_importacion_cubre_los_puntos_manuales():
     texto = DOC.read_text(encoding="utf-8")
     for clave in ("<PEGAR_P0_API_TOKEN_AQUI>", "Authorization", "OneDrive for Business", "ENTRADA", "CARGA_EXTRACTOS_BANCARIOS",
-                  "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V1.zip", "Secure"):
+                  "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V2.zip", "Secure"):
         assert clave in texto, clave

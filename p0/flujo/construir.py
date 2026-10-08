@@ -26,7 +26,7 @@ from p9.wdl import FALLOS, TODOS, ambito, asignar, compose, contar_acciones, def
 CARPETA_SALIDA = Path(__file__).resolve().parent
 RAIZ = CARPETA_SALIDA.parents[1]
 NOMBRE_FLUJO = "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD"
-NOMBRE_ZIP = "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V1.zip"
+NOMBRE_ZIP = "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V2.zip"
 DESCRIPCION = ("Extractos bancarios (.xls/.xlsx) en OneDrive ENTRADA -> P0 en Railway -> JSON P7 en CARGA_EXTRACTOS_BANCARIOS; "
                "original a PROCESADOS o ERROR por año/mes. Solo orquesta: no recorre movimientos.")
 
@@ -47,6 +47,9 @@ API_OD = "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness"
 # al importar, se vuelve a elegir ENTRADA con el selector (ver INSTRUCCIONES_IMPORTACION.md).
 FOLDER_ID_ENTRADA = quote(quote(CARPETA_ENTRADA, safe=""), safe="")
 
+# `secureData` solo lo admiten las acciones de conector (OpenApiConnection) y HTTP; Power Automate rechaza el paquete
+# (SecureDataPropertyNotSupported) si aparece en SetVariable, Compose, If, Switch, Scope o Terminate.
+TIPOS_CON_SECURE_DATA = ("Http", "OpenApiConnection")
 SIN_REINTENTO = {"type": "none"}
 CON_FALLO = ["Succeeded", "Failed", "TimedOut"]
 SEGURO_TODO = {"secureData": {"properties": ["inputs", "outputs"]}}
@@ -69,16 +72,10 @@ def od(operacion, parametros, reintento=SIN_REINTENTO, seguro=None):
     return accion
 
 
-def asignar_seguro(nombre, valor):
-    accion = asignar(nombre, valor)
-    accion["runtimeConfiguration"] = SEGURO_TODO
-    return accion
-
-
-def fijar_error(codigo, etapa, mensaje, seguro=False):
+def fijar_error(codigo, etapa, mensaje):
     valor = {"codigo_error": codigo, "etapa": etapa, "mensaje": mensaje, "fecha_hora": "@" + FECHA_HORA_ERROR,
              "archivo": "@variables('varNombre')", "sede": "@outputs('PARAM_SEDE')"}
-    return asignar_seguro("varError", valor) if seguro else asignar("varError", valor)
+    return asignar("varError", valor)
 
 
 def codigo_http(sc):
@@ -141,15 +138,15 @@ def respuesta_ok():
                                         "name": "@body('HTTP')?['json']?['nombre']",
                                         "body": "@body('HTTP')?['json']?['texto']"}, seguro=SEGURO_ENTRADA))
     return secuencia(
-        Fijar_periodo_de_la_API=asignar_seguro("varPeriodoApi", "@coalesce(body('HTTP')?['periodo']?['carpeta'],'')"),
+        Fijar_periodo_de_la_API=asignar("varPeriodoApi", "@coalesce(body('HTTP')?['periodo']?['carpeta'],'')"),
         Publicar_JSON=si("@equals(body('HTTP')?['publicar_json'],true)", publicar),
         Fijar_estado_PROCESADO=asignar("varEstado", "PROCESADO"))
 
 
 def respuesta_no_ok():
     return secuencia(
-        Fijar_periodo_de_la_API_error=asignar_seguro("varPeriodoApi", "@coalesce(body('HTTP')?['periodo']?['carpeta'],'')"),
-        Guardar_respuesta_de_P0=asignar_seguro("varError", "@body('HTTP')"),
+        Fijar_periodo_de_la_API_error=asignar("varPeriodoApi", "@coalesce(body('HTTP')?['periodo']?['carpeta'],'')"),
+        Guardar_respuesta_de_P0=asignar("varError", "@body('HTTP')"),
         Fijar_estado_ERROR_NEGOCIO=asignar("varEstado", "ERROR_NEGOCIO"))
 
 
@@ -157,7 +154,7 @@ def respuesta_invalida():
     return secuencia(
         Fijar_error_respuesta_invalida=fijar_error(
             "P0_RESPUESTA_INVALIDA", "EVALUAR_RESPUESTA",
-            "P0 respondió HTTP 200 pero sin el campo booleano ok. Revise la API.", seguro=True),
+            "P0 respondió HTTP 200 pero sin el campo booleano ok. Revise la API."),
         Fijar_estado_ERROR_TECNICO_invalida=asignar("varEstado", "ERROR_TECNICO"))
 
 
@@ -166,7 +163,7 @@ def http_no_200():
     return secuencia(
         Fijar_error_http_inesperado=fijar_error(
             "@" + codigo_http(sc), "EVALUAR_RESPUESTA",
-            f"@concat('Railway respondió HTTP ',string({sc}),' en lugar de 200.')", seguro=True),
+            f"@concat('Railway respondió HTTP ',string({sc}),' en lugar de 200.')"),
         Fijar_estado_ERROR_TECNICO_http=asignar("varEstado", "ERROR_TECNICO"))
 
 
@@ -198,7 +195,7 @@ def captura_fallos():
         "Caso_LLAMAR_P0": {"case": "LLAMAR_P0", "actions": secuencia(Error_llamada_p0=fijar_error(
             "@" + codigo_http(sc), "LLAMAR_P0",
             f"@concat(if(equals({sc},0),'Sin respuesta de P0 en Railway (timeout o red). ',concat('Railway respondió HTTP ',string({sc}),'. ')),"
-            f"{detalle_http})", seguro=True))},
+            f"{detalle_http})"))},
         "Caso_PUBLICAR_JSON": {"case": "PUBLICAR_JSON", "actions": secuencia(Error_publicacion_json=fijar_error(
             "P0_JSON_NO_PUBLICADO", "PUBLICAR_JSON",
             f"@concat('No se pudo crear el JSON P7 en CARGA_EXTRACTOS_BANCARIOS. ',{msg('Crear_JSON_P7')})"))}}
