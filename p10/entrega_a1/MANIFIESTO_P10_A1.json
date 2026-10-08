@@ -3,7 +3,7 @@
   {
    "advertencias": [],
    "banco": "BANCO ECONÓMICO",
-   "bytes": 99093,
+   "bytes": 99981,
    "creditos": 440785.38,
    "cuenta": "3041210569",
    "debitos": 28743.71,
@@ -16,13 +16,13 @@
    "movimientos": 388,
    "nombre_archivo": "EXTRACTO_HISTORICO_BANCO_ECONOMICO_3041210569_BOB_2026-08.xlsx",
    "periodo": "2026-08",
-   "sha256": "da58804cda3e7fa9699eec4059ea074bd8531a43ab50e8bcb75e1c9a07d55845",
+   "sha256": "128353bb1ba706ba91892ae47a320ae2c6ae155db441ae3c6317e5af5b64a382",
    "validacion": "OK"
   },
   {
    "advertencias": [],
    "banco": "BANCO ECONÓMICO",
-   "bytes": 9999,
+   "bytes": 9982,
    "creditos": 6000.0,
    "cuenta": "3051446946",
    "debitos": 0.0,
@@ -34,13 +34,13 @@
    "movimientos": 1,
    "nombre_archivo": "EXTRACTO_HISTORICO_BANCO_ECONOMICO_3051446946_BOB_2026-08.xlsx",
    "periodo": "2026-08",
-   "sha256": "1d564c17805b417111863fe2ca1d4d2022a84b9e084cfaaccdfb35cdc704fe1d",
+   "sha256": "773c7ac91bd93e91a03bca548f6f03eabd8a8903bbe52404d6cdee782a4427cf",
    "validacion": "OK"
   },
   {
    "advertencias": [],
    "banco": "BANCO UNIÓN",
-   "bytes": 15890,
+   "bytes": 15882,
    "creditos": 143466.2,
    "cuenta": "10000003224552",
    "debitos": 0.0,
@@ -53,13 +53,13 @@
    "movimientos": 32,
    "nombre_archivo": "EXTRACTO_HISTORICO_BANCO_UNION_10000003224552_BOB_2026-08.xlsx",
    "periodo": "2026-08",
-   "sha256": "0fffc71b70a6f9cbaa30a1a7c03d3896beb68b20ac6aae10a713a1f68358aafc",
+   "sha256": "1aa7401f81fbfa69248b392f989c37547a8e86013187a45772cda2e81e5096f1",
    "validacion": "OK"
   },
   {
    "advertencias": [],
    "banco": "BCP",
-   "bytes": 11381,
+   "bytes": 11360,
    "creditos": 5565.0,
    "cuenta": "301-5005425-2-71",
    "debitos": 0.0,
@@ -71,13 +71,13 @@
    "movimientos": 8,
    "nombre_archivo": "EXTRACTO_HISTORICO_BCP_301-5005425-2-71_USD_2026-07.xlsx",
    "periodo": "2026-07",
-   "sha256": "37921cb03dbec6999daa8bf76feca3a03c9acf53ab5af228cd84787f18600b0c",
+   "sha256": "bfe14f17bff52476a6c6bdd4aff18290485af42b2e61aab4e36d81110ec3691d",
    "validacion": "OK"
   },
   {
    "advertencias": [],
    "banco": "BCP",
-   "bytes": 507908,
+   "bytes": 511623,
    "creditos": 3807655.56,
    "cuenta": "301-5005684-3-97",
    "debitos": 1047485.39,
@@ -90,13 +90,13 @@
    "movimientos": 2331,
    "nombre_archivo": "EXTRACTO_HISTORICO_BCP_301-5005684-3-97_BOB_2026-08.xlsx",
    "periodo": "2026-08",
-   "sha256": "0e75a4584b14d88aae79971cff04e4738c5086e1580e7c99a705ddca6b4dcfd0",
+   "sha256": "d0c4433fa338359b6d3bf279a1092973fbc6fa6f2e9b9906593203a649201ebe",
    "validacion": "OK"
   },
   {
    "advertencias": [],
    "banco": "BISA",
-   "bytes": 10292,
+   "bytes": 10276,
    "creditos": 1139.0,
    "cuenta": "0696870039",
    "debitos": 0.0,
@@ -108,13 +108,13 @@
    "movimientos": 1,
    "nombre_archivo": "EXTRACTO_HISTORICO_BISA_0696870039_BOB_2026-08.xlsx",
    "periodo": "2026-08",
-   "sha256": "eade381fc03e8bd72e170a717f91680fccf7b143ac9c627cec5633018597a5cd",
+   "sha256": "3ab39325c124005f829176e4ddb32ef6cd5ce0d29db997237944fc0ee2270457",
    "validacion": "OK"
   },
   {
    "advertencias": [],
    "banco": "BMSC",
-   "bytes": 11208,
+   "bytes": 11183,
    "creditos": 7238.0,
    "cuenta": "1000872489",
    "debitos": 0.0,
@@ -126,13 +126,13 @@
    "movimientos": 3,
    "nombre_archivo": "EXTRACTO_HISTORICO_BMSC_1000872489_BOB_2026-08.xlsx",
    "periodo": "2026-08",
-   "sha256": "3bdbf8d60aafc0f3b97469e5162016533cf5a5f6f707d13939c0a0ce4a62da1c",
+   "sha256": "af509d166e0aa71e00c0648e234ad9811540fe112fc8ed24da7202aadd9026dc",
    "validacion": "OK"
   },
   {
    "advertencias": [],
    "banco": "BNB",
-   "bytes": 309396,
+   "bytes": 310394,
    "creditos": 8909991.73,
    "cuenta": "3000100152",
    "debitos": 12080920.09,
@@ -145,13 +145,13 @@
    "movimientos": 1184,
    "nombre_archivo": "EXTRACTO_HISTORICO_BNB_3000100152_BOB_2026-08.xlsx",
    "periodo": "2026-08",
-   "sha256": "7163241dd9c6d1a85198fa2f6f5b83ca794562db9aad7db4f221e768af436112",
+   "sha256": "8eade8eee07131f86d946105d0e872816ae860485b90f304542eb554bf70e2a6",
    "validacion": "OK"
   },
   {
    "advertencias": [],
    "banco": "BNB",
-   "bytes": 12982,
+   "bytes": 12995,
    "creditos": 68976.9,
    "cuenta": "3000100705",
    "debitos": 0.0,
@@ -164,13 +164,13 @@
    "movimientos": 14,
    "nombre_archivo": "EXTRACTO_HISTORICO_BNB_3000100705_BOB_2026-08.xlsx",
    "periodo": "2026-08",
-   "sha256": "2f04a496787708cace178b1eb5cdeaaab7186ee036dc43f3a6c95db450fdc2a3",
+   "sha256": "146826e3027c7413878db396b447ca7d8fd2cca48aaba2443c1662e043c7ded6",
    "validacion": "OK"
   },
   {
    "advertencias": [],
    "banco": "BNB",
-   "bytes": 11483,
+   "bytes": 11467,
    "creditos": 1477.25,
    "cuenta": "3400041236",
    "debitos": 5553.6,
@@ -182,13 +182,13 @@
    "movimientos": 7,
    "nombre_archivo": "EXTRACTO_HISTORICO_BNB_3400041236_USD_2026-08.xlsx",
    "periodo": "2026-08",
-   "sha256": "d1d66a701ab938d385c156404c111cd5fd3110b8817ff4f5717799492f9e503a",
+   "sha256": "6456aeddb2e789c663647acf5bc33a7a68575ac3c910adc85fcfb5d3e0a6e4ad",
    "validacion": "OK"
   },
   {
    "advertencias": [],
    "banco": "BNB",
-   "bytes": 36433,
+   "bytes": 36557,
    "creditos": 13070.0,
    "cuenta": "3501936692",
    "debitos": 0.0,
@@ -201,16 +201,16 @@
    "movimientos": 95,
    "nombre_archivo": "EXTRACTO_HISTORICO_BNB_3501936692_BOB_2026-08.xlsx",
    "periodo": "2026-08",
-   "sha256": "7a29b09d168805aaf2d09b348feac84481a6d791b1c908b898efdef1e8feaee5",
+   "sha256": "4aa0729ce37201ffad587090c5b7d883ecf775bda9db09ef42d505801a82514e",
    "validacion": "OK"
   }
  ],
  "carpeta": null,
  "entradas": {
   "lists": "LISTS.csv",
-  "lists_sha256": "a3883754d2cbac4e4c807160c0bef5902fa1c1cb434d8666367ee7619f608054",
+  "lists_sha256": "db2a2a84e8f2c2871aacb881b330a2fe9f5d707b6aaf9b9561463b6350f9aebd",
   "origen": "ORIGEN.xlsx",
-  "origen_sha256": "de15382d7da4abd66bbd700d5192edcc4beca1a8de3c91b9339f948dee599001"
+  "origen_sha256": "7eb8b0581c9cd271191328a1a2132eeb9a28f6d998e837033fb87c421d680672"
  },
  "estado": "OK",
  "extractos_sin_movimientos": [
@@ -223,7 +223,7 @@
   "fecha_corte": "2026-08-22T08:00:00",
   "movimientos": 4064,
   "origen": "SIMULADO",
-  "sha256": "48ca3e90c50d55d204a070ccb04a2fda6c84f620f6769cf329efbeea82d57214",
+  "sha256": "4d91201bfaff3c946a73792893446bb965959c5002bb53a88cbfeb130b3b0aa5",
   "sin_fila_en_snapshot": 0,
   "snapshot_filas": 4064,
   "snapshot_fuera_del_extracto": 0

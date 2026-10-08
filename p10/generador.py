@@ -7,7 +7,7 @@ p10/generador.py · P10-A.1 · generador del libro mensual histórico (REGENERAC
                       \\                          /
                        +--->  un .xlsx por BANCO + CUENTA + MONEDA + MES  <---+
                               hoja EXTRACTO   (diseño aprobado de la capa 4, historico.py)
-                              hoja AUDITORIA  (las 26 COLUMNAS_LISTS de P0)
+                              hoja AUDITORIA  (las 26 COLUMNAS_LISTS de P0 + las 2 columnas reales de Depositos_Activos sin equivalente)
 
 Qué se reutiliza y qué se agrega
 --------------------------------
@@ -38,6 +38,7 @@ from openpyxl import load_workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter, range_boundaries
 from openpyxl.worksheet.table import Table, TableStyleInfo
+from openpyxl.worksheet.views import Selection
 
 from . import contrato as C
 from .snapshot import Snapshot, cargar_snapshot
@@ -66,16 +67,22 @@ def valores_operativos(fila_p0, fila_snapshot):
     return out
 
 
+def valores_adicionales(fila_snapshot):
+    """Columnas reales de Depositos_Activos sin equivalente en P0 (CODIGO_ESTUDIANTE, ULTIMA_REVERSION_ID)."""
+    return {col: (fila_snapshot[campo] if fila_snapshot is not None else "")
+            for col, campo in C.ADICIONALES_AUDITORIA.items()}
+
+
 def aplicar_snapshot(filas_p0, snapshot):
     """
-    Filas de P0 con los 7 campos operativos resueltos. No modifica `filas_p0`.
+    Filas de P0 con los 7 campos operativos resueltos y las 2 columnas adicionales de la lista. No modifica `filas_p0`.
     Devuelve (filas_efectivas, resumen) con cuántos movimientos cruzaron por CLAVE.
     """
     efectivas, con_snapshot = [], 0
     for r in filas_p0:
         s = snapshot.get(r[C.COLUMNA_CLAVE]) if snapshot is not None else None
         con_snapshot += s is not None
-        efectivas.append(dict(r, **valores_operativos(r, s)))
+        efectivas.append(dict(r, **valores_operativos(r, s), **valores_adicionales(s)))
     claves_p0 = {r[C.COLUMNA_CLAVE] for r in filas_p0}
     resumen = {
         "movimientos": len(filas_p0),
@@ -89,7 +96,7 @@ def aplicar_snapshot(filas_p0, snapshot):
 
 
 # =====================================================================
-# 2. HOJA AUDITORIA (las 26 columnas de P0)
+# 2. HOJA AUDITORIA (las 26 columnas de P0 + 2 columnas reales de Depositos_Activos)
 # =====================================================================
 
 def _texto_o_none(v):
@@ -98,7 +105,7 @@ def _texto_o_none(v):
 
 
 def valor_auditoria(col, v):
-    """Valor tipado de una columna de las 26: números y fechas reales; códigos y textos como texto exacto."""
+    """Valor tipado de una columna de AUDITORIA: números y fechas reales; códigos y textos como texto exacto."""
     tipo = C.TIPO_AUDITORIA[col]
     if tipo == "importe":
         return H._numero(v)
@@ -111,7 +118,7 @@ def valor_auditoria(col, v):
 
 
 def fila_auditoria(fila_efectiva):
-    return [valor_auditoria(col, fila_efectiva[col]) for col in C.COLUMNAS_LISTS]
+    return [valor_auditoria(col, fila_efectiva[col]) for col in C.COLUMNAS_AUDITORIA]
 
 
 def _formato_celda(tipo, fm):
@@ -125,9 +132,9 @@ def _escribir_auditoria(wb, libro):
     fm = libro.resultado["formatos"]
     color = libro.resultado["colores"]["operativo"]
     fino = Side(style="thin", color="BFBFBF")
-    formatos = [_formato_celda(C.TIPO_AUDITORIA[c], fm) for c in C.COLUMNAS_LISTS]
+    formatos = [_formato_celda(C.TIPO_AUDITORIA[c], fm) for c in C.COLUMNAS_AUDITORIA]
 
-    for j, col in enumerate(C.COLUMNAS_LISTS, start=1):
+    for j, col in enumerate(C.COLUMNAS_AUDITORIA, start=1):
         celda = ws.cell(1, j)
         H._poner_texto(celda, col)
         celda.font = Font(color="FFFFFF", bold=True)
@@ -139,7 +146,7 @@ def _escribir_auditoria(wb, libro):
     ws.row_dimensions[1].height = 32
 
     for i, fila in enumerate(libro.auditoria, start=2):
-        for j, (col, v) in enumerate(zip(C.COLUMNAS_LISTS, fila), start=1):
+        for j, (col, v) in enumerate(zip(C.COLUMNAS_AUDITORIA, fila), start=1):
             if v is None:
                 continue
             celda = ws.cell(i, j)
@@ -153,11 +160,11 @@ def _escribir_auditoria(wb, libro):
                 celda.alignment = Alignment(horizontal="center")
 
     ultima = 1 + len(libro.auditoria)
-    tabla = Table(displayName=C.TABLA_AUDITORIA, ref=f"A1:{get_column_letter(len(C.COLUMNAS_LISTS))}{ultima}")
+    tabla = Table(displayName=C.TABLA_AUDITORIA, ref=f"A1:{get_column_letter(len(C.COLUMNAS_AUDITORIA))}{ultima}")
     tabla.tableStyleInfo = TableStyleInfo(name="TableStyleLight1", showRowStripes=True, showColumnStripes=False,
                                           showFirstColumn=False, showLastColumn=False)
     ws.add_table(tabla)
-    ws.freeze_panes = "A2"
+    # sin paneles inmovilizados: desplazamiento libre (decisión de Gabriel)
     ws.print_title_rows = "1:1"
     ws.page_setup.orientation = "landscape"
     ws.page_setup.fitToWidth = 1
@@ -258,7 +265,12 @@ def _fijar_zip(ruta, modificado):
 
 
 def _ajustar_extracto(ws):
-    """Único ajuste visual de P10 sobre la hoja aprobada: ancho de CONFIRMADO POR (correo completo)."""
+    """
+    Ajustes de P10 sobre la hoja aprobada (historico.py no se modifica): ancho de CONFIRMADO POR (correo completo) y
+    SIN paneles inmovilizados (desplazamiento libre; decisión de Gabriel). Nada más cambia.
+    """
+    ws.freeze_panes = None
+    ws.sheet_view.selection = [Selection(activeCell="A1", sqref="A1")]   # sin selección ligada al panel eliminado
     tabla = ws.tables[C.TABLA_EXTRACTO]
     c0, r0, c1, _ = range_boundaries(tabla.ref)
     for c in range(c0, c1 + 1):

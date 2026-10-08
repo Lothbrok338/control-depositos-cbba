@@ -131,9 +131,9 @@ def validar_libro(ruta, libro, filas_p0, snapshot, indice, registro, max_errores
 
     # ------------------------------------------------------------ AUDITORIA
     wa = wb[C.HOJA_AUDITORIA]
-    if [c.value for c in wa[1]] != list(C.COLUMNAS_LISTS) or wa.max_column != len(C.COLUMNAS_LISTS):
-        err("AUDITORIA: las columnas no son exactamente las 26 de COLUMNAS_LISTS en su orden")
-    filas_a = list(wa.iter_rows(min_row=2, max_col=len(C.COLUMNAS_LISTS)))
+    if [c.value for c in wa[1]] != list(C.COLUMNAS_AUDITORIA) or wa.max_column != len(C.COLUMNAS_AUDITORIA):
+        err("AUDITORIA: las columnas no son las 26 de COLUMNAS_LISTS en su orden + las 2 reales de Depositos_Activos")
+    filas_a = list(wa.iter_rows(min_row=2, max_col=len(C.COLUMNAS_AUDITORIA)))
     if len(filas_a) != n:
         err(f"AUDITORIA tiene {len(filas_a)} filas y el libro {n} movimientos")
     claves_a = [f[0].value for f in filas_a]
@@ -142,21 +142,23 @@ def validar_libro(ruta, libro, filas_p0, snapshot, indice, registro, max_errores
     if claves_a != libro.claves:
         err("AUDITORIA: las claves (conjunto u orden) no coinciden con las de EXTRACTO")
     tabla_a = wa.tables.get(C.TABLA_AUDITORIA)
-    if tabla_a is None or tabla_a.ref != f"A1:{get_column_letter(len(C.COLUMNAS_LISTS))}{n + 1}":
+    if tabla_a is None or tabla_a.ref != f"A1:{get_column_letter(len(C.COLUMNAS_AUDITORIA))}{n + 1}":
         err("AUDITORIA: falta la tabla de Excel o su rango no cubre los datos")
     if tabla_a is not None and tabla_a.autoFilter is None:
         err("AUDITORIA: la tabla no tiene filtros")
-    if wa.freeze_panes != "A2":
-        err("AUDITORIA: encabezado no inmovilizado")
-    op_por_clave = {k: G.valores_operativos(p0, snapshot.get(k) if snapshot is not None else None)
+    for ws in (wa, wb[C.HOJA_EXTRACTO]):
+        if ws.freeze_panes is not None or ws.sheet_view.pane is not None:
+            err(f"{ws.title}: no debe tener paneles inmovilizados")
+    op_por_clave = {k: {**G.valores_operativos(p0, snapshot.get(k) if snapshot is not None else None),
+                        **G.valores_adicionales(snapshot.get(k) if snapshot is not None else None)}
                     for k, p0 in esperadas.items()}
     for fila in filas_a:
         clave = fila[0].value
         p0, op = esperadas.get(clave), op_por_clave.get(clave)
         if p0 is None:
             continue
-        for col, celda in zip(C.COLUMNAS_LISTS, fila):
-            esperado = op[col] if col in C.OPERATIVOS else p0[col]
+        for col, celda in zip(C.COLUMNAS_AUDITORIA, fila):
+            esperado = op[col] if (col in C.OPERATIVOS or col in C.ADICIONALES_AUDITORIA) else p0[col]
             m = _cmp_auditoria(col, esperado, celda)
             if m:
                 err(f"AUDITORIA {clave} · {col}: {m}")
@@ -184,8 +186,6 @@ def validar_libro(ruta, libro, filas_p0, snapshot, indice, registro, max_errores
         err(f"EXTRACTO tiene {r1 - r0} filas y el libro {n} movimientos")
     if tabla.autoFilter is None:
         err("EXTRACTO: la tabla no tiene filtros")
-    if we.freeze_panes != f"A{r0 + 1}":
-        err("EXTRACTO: encabezado de la tabla no inmovilizado")
     if not we.column_dimensions[get_column_letter(c1)].hidden:
         err("EXTRACTO: la columna CLAVE TRANSACCIÓN debe estar oculta")
 

@@ -46,8 +46,11 @@ OPERATIVOS = {
     "OBSERVACIÓN": "OBSERVACION",
 }
 COLUMNAS_FIJAS = tuple(c for c in COLUMNAS_LISTS if c not in OPERATIVOS)   # las 19 que P10 nunca cambia
-# CODIGO_ESTUDIANTE existe en Depositos_Activos pero NO tiene columna en las 26 de P0: P10-A.1 no lo proyecta.
-SIN_COLUMNA_EN_26 = ("CODIGO_ESTUDIANTE", "ULTIMA_REVERSION_ID")
+# Columnas PROPIAS Y REALES de Depositos_Activos (P8 / P9-reversión) sin equivalente entre las 26 de P0. AUDITORIA las
+# conserva AL FINAL, tras las 26 y con su nombre interno de la lista (así una fila eliminada de la lista no pierde nada).
+# Evidencia: p8/esquema_listas_p8.json (#29) y p9/reversion/esquema_reversiones.json (solo adiciones) + captura del tenant.
+ADICIONALES_AUDITORIA = {"CODIGO_ESTUDIANTE": "CODIGO_ESTUDIANTE", "ULTIMA_REVERSION_ID": "ULTIMA_REVERSION_ID"}
+COLUMNAS_AUDITORIA = tuple(COLUMNAS_LISTS) + tuple(ADICIONALES_AUDITORIA)   # 26 de P0, en su orden, + 2 reales
 
 # Lo que ve el usuario (Power Apps) para cada estado de P9: ASIGNADO se muestra como CONFIRMADO.
 ESTADO_VISIBLE = {ESTADO_DISPONIBLE: "DISPONIBLE", ESTADO_ASIGNADO: "CONFIRMADO"}
@@ -67,6 +70,8 @@ TIPO_AUDITORIA = {
     "SEDE SOLICITANTE": "texto", "CONFIRMADO POR": "texto", "FECHA CONFIRMACIÓN": "fecha_hora",
     "OBSERVACIÓN": "texto", "TEXTO DE BÚSQUEDA": "texto", "ARCHIVO ORIGEN": "texto",
     "LOTE DE CARGA": "codigo", "FECHA DE CARGA": "fecha_hora_seg",
+    "CODIGO_ESTUDIANTE": "codigo",          # texto: conserva ceros a la izquierda
+    "ULTIMA_REVERSION_ID": "codigo",        # UID de la solicitud en Depositos_Reversiones
 }
 ANCHO_AUDITORIA = {
     "CLAVE TRANSACCIÓN": 44, "CÓDIGO DE ASIGNACIÓN": 16, "BANCO": 16, "CUENTA BANCARIA": 20, "MONEDA": 9,
@@ -75,12 +80,14 @@ ANCHO_AUDITORIA = {
     "INFORMACIÓN ADICIONAL": 50, "ESTADO": 14, "ESTUDIANTE": 24, "SOLICITADO POR": 22,
     "SEDE SOLICITANTE": 16, "CONFIRMADO POR": ANCHO_CONFIRMADO_POR, "FECHA CONFIRMACIÓN": 18, "OBSERVACIÓN": 34,
     "TEXTO DE BÚSQUEDA": 50, "ARCHIVO ORIGEN": 22, "LOTE DE CARGA": 18, "FECHA DE CARGA": 20,
+    "CODIGO_ESTUDIANTE": 20, "ULTIMA_REVERSION_ID": 40,
 }
 
 # ---------------------------------------------------------------- invariantes (fallan al importar, no en producción)
 assert len(COLUMNAS_LISTS) == 26
-assert set(TIPO_AUDITORIA) == set(COLUMNAS_LISTS) == set(ANCHO_AUDITORIA)
+assert set(TIPO_AUDITORIA) == set(COLUMNAS_AUDITORIA) == set(ANCHO_AUDITORIA)
+assert len(COLUMNAS_AUDITORIA) == 28 and COLUMNAS_AUDITORIA[:26] == tuple(COLUMNAS_LISTS)
 assert set(ESTADO_VISIBLE) == set(ESTADOS)
 assert set(OPERATIVOS) <= set(COLUMNAS_LISTS) and len(COLUMNAS_FIJAS) == 19
-assert set(OPERATIVOS.values()) | set(SIN_COLUMNA_EN_26) <= set(CAMPOS_SNAPSHOT)
+assert set(OPERATIVOS.values()) | set(ADICIONALES_AUDITORIA.values()) <= set(CAMPOS_SNAPSHOT)
 assert set(CAMPOS_LIMPIAR) <= set(CAMPOS_SNAPSHOT)

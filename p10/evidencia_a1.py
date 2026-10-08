@@ -87,9 +87,13 @@ def ejecutar(trabajo, salida, id_cuenta="BNB_MN"):
                                                                           for h, v in _resumen_difs(d01).items()}},
             "T1_a_T2": {"claves": revertidas, "diferencias": len(d12), "resumen": {h: {**v, "claves": len(v["claves"])}
                                                                               for h, v in _resumen_difs(d12).items()}},
-            "T0_a_T2_claves": sorted({d["clave"] for d in d02 if d["tipo"] == "CELDA"}),
+            "T0_a_T2_claves_extracto": sorted({d["clave"] for d in d02 if d["hoja"] == "EXTRACTO"}),
+            "T0_a_T2_claves_auditoria": sorted({d["clave"] for d in d02 if d["hoja"] == "AUDITORIA"}),
             "repetir_T1": {"mismos_bytes": a1["sha256"] == a1b["sha256"], "diferencias_logicas": len(d11)},
-            "confirmar_y_revertir_3": {"diferencias_con_T0": len(d03)},
+            "confirmar_y_revertir_3": {
+                "diferencias_extracto_con_T0": len([d for d in d03 if d["hoja"] == "EXTRACTO"]),
+                "diferencias_auditoria_con_T0": len([d for d in d03 if d["hoja"] == "AUDITORIA"]),
+                "columnas_auditoria_distintas": sorted({d["columna"] for d in d03 if d["hoja"] == "AUDITORIA"})},
         }
         os.makedirs(salida, exist_ok=True)
         with open(os.path.join(salida, "EVIDENCIA_ESCENARIOS_BNB_MN.json"), "w", encoding="utf-8", newline="\n") as f:
@@ -140,13 +144,16 @@ def _escribir_md(ruta, datos, d01, d12, por_clave):
     md += ["", "## Reconstrucción y determinismo", "",
            f"* Regenerar T1 por segunda vez: mismos bytes = **{datos['repetir_T1']['mismos_bytes']}**, "
            f"diferencias lógicas = {datos['repetir_T1']['diferencias_logicas']}.",
-           f"* Confirmar 3 movimientos y revertirlos produce el mismo contenido lógico que T0: "
-           f"diferencias = **{datos['confirmar_y_revertir_3']['diferencias_con_T0']}**.",
-           f"* T0 → T2: solo difieren {len(datos['T0_a_T2_claves'])} movimientos ({len(datos['T0_a_T1']['claves']) - 1} "
-           "confirmados en T1 que siguen confirmados + 1 confirmado en T0 que se revirtió); el movimiento confirmado en T1 "
-           "y revertido en T2 vuelve a ser idéntico a T0.",
-           "", "Los campos `ULTIMA_REVERSION_ID` y `CODIGO_ESTUDIANTE` existen en el snapshot pero no se proyectan "
-           "a ninguna hoja (no tienen columna en las 26 de P0)."]
+           f"* Confirmar 3 movimientos y revertirlos reconstruye EXTRACTO idéntico a T0 (diferencias = "
+           f"**{datos['confirmar_y_revertir_3']['diferencias_extracto_con_T0']}**); en AUDITORIA solo difiere "
+           f"{', '.join(datos['confirmar_y_revertir_3']['columnas_auditoria_distintas'])} "
+           f"({datos['confirmar_y_revertir_3']['diferencias_auditoria_con_T0']} celdas): P9 no borra nunca el marcador de reversión.",
+           f"* T0 → T2: en EXTRACTO solo difieren {len(datos['T0_a_T2_claves_extracto'])} movimientos "
+           f"({len(datos['T0_a_T1']['claves']) - 1} confirmados en T1 que siguen confirmados + 1 confirmado en T0 que se revirtió); "
+           "el movimiento confirmado en T1 y revertido en T2 vuelve a ser idéntico a T0 en EXTRACTO y conserva en AUDITORIA solo su "
+           "marcador `ULTIMA_REVERSION_ID`.",
+           "", "`CODIGO_ESTUDIANTE` y `ULTIMA_REVERSION_ID` son columnas reales de `Depositos_Activos` y se conservan al final de "
+           "AUDITORIA (28 columnas = las 26 de P0 + esas 2); EXTRACTO no las muestra."]
     with open(ruta, "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(md) + "\n")
 

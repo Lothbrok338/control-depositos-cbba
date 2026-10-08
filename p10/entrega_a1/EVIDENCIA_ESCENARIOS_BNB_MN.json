@@ -6,12 +6,13 @@
    "BNB|3000100152|20260818|083753|3P98405295|CRÉDITO|75398.74|3422078.28",
    "BNB|3000100152|20260813|135057|3P87433321|CRÉDITO|1000.00|3074005.72"
   ],
-  "diferencias": 38,
+  "diferencias": 40,
   "resumen": {
    "AUDITORIA": {
-    "celdas": 25,
+    "celdas": 27,
     "claves": 4,
     "columnas": {
+     "CODIGO_ESTUDIANTE": 2,
      "CONFIRMADO POR": 4,
      "ESTADO": 4,
      "ESTUDIANTE": 4,
@@ -35,7 +36,14 @@
    }
   }
  },
- "T0_a_T2_claves": [
+ "T0_a_T2_claves_auditoria": [
+  "BNB|3000100152|20260805|171203|1P85404606|CRÉDITO|12696.40|8461556.70",
+  "BNB|3000100152|20260812|113215|3P8B159655|CRÉDITO|30000.00|8188818.75",
+  "BNB|3000100152|20260813|135057|3P87433321|CRÉDITO|1000.00|3074005.72",
+  "BNB|3000100152|20260818|083753|3P98405295|CRÉDITO|75398.74|3422078.28",
+  "BNB|3000100152|20260820|203704|3P05037700|CRÉDITO|600.00|4108314.12"
+ ],
+ "T0_a_T2_claves_extracto": [
   "BNB|3000100152|20260805|171203|1P85404606|CRÉDITO|12696.40|8461556.70",
   "BNB|3000100152|20260812|113215|3P8B159655|CRÉDITO|30000.00|8188818.75",
   "BNB|3000100152|20260813|135057|3P87433321|CRÉDITO|1000.00|3074005.72",
@@ -46,10 +54,10 @@
    "BNB|3000100152|20260812|113215|3P8B159655|CRÉDITO|30000.00|8188818.75",
    "BNB|3000100152|20260820|203704|3P05037700|CRÉDITO|600.00|4108314.12"
   ],
-  "diferencias": 18,
+  "diferencias": 20,
   "resumen": {
    "AUDITORIA": {
-    "celdas": 12,
+    "celdas": 14,
     "claves": 2,
     "columnas": {
      "CONFIRMADO POR": 2,
@@ -57,7 +65,8 @@
      "ESTUDIANTE": 2,
      "FECHA CONFIRMACIÓN": 2,
      "SEDE SOLICITANTE": 2,
-     "SOLICITADO POR": 2
+     "SOLICITADO POR": 2,
+     "ULTIMA_REVERSION_ID": 2
     },
     "otros": 0
    },
@@ -75,7 +84,11 @@
  },
  "archivo": "EXTRACTO_HISTORICO_BNB_3000100152_BOB_2026-08.xlsx",
  "confirmar_y_revertir_3": {
-  "diferencias_con_T0": 0
+  "columnas_auditoria_distintas": [
+   "ULTIMA_REVERSION_ID"
+  ],
+  "diferencias_auditoria_con_T0": 3,
+  "diferencias_extracto_con_T0": 0
  },
  "cuenta": "BNB_MN",
  "libros": {
@@ -85,7 +98,7 @@
     "DISPONIBLE": 1112
    },
    "movimientos": 1184,
-   "sha256": "7163241dd9c6d1a85198fa2f6f5b83ca794562db9aad7db4f221e768af436112"
+   "sha256": "8eade8eee07131f86d946105d0e872816ae860485b90f304542eb554bf70e2a6"
   },
   "T1": {
    "estados": {
@@ -93,7 +106,7 @@
     "DISPONIBLE": 1108
    },
    "movimientos": 1184,
-   "sha256": "13d77ad33650e7d6595d12361c66918bd0873794ea108da787cc01bc900b4013"
+   "sha256": "4e2a94b78b2d8d65a249ab66e1ebb4312e2b698bfa1842660d0e0bbee1e53580"
   },
   "T2": {
    "estados": {
@@ -101,7 +114,7 @@
     "DISPONIBLE": 1110
    },
    "movimientos": 1184,
-   "sha256": "97b1a8091711af6223ab05dcb8689442d0d1f2e8f07959a3458d302a5c8f6814"
+   "sha256": "d817cf3f0e0fc9c72997f41fdc29788452701131a520637f135fd16f61a8ba4f"
   }
  },
  "repetir_T1": {
@@ -111,15 +124,15 @@
  "snapshots": {
   "T0": {
    "fecha_corte": "2026-08-22T08:00:00",
-   "sha256": "48ca3e90c50d55d204a070ccb04a2fda6c84f620f6769cf329efbeea82d57214"
+   "sha256": "4d91201bfaff3c946a73792893446bb965959c5002bb53a88cbfeb130b3b0aa5"
   },
   "T1": {
    "fecha_corte": "2026-08-23T10:00:00",
-   "sha256": "c31a1a03a5566c663003ebde6fa7f5a6f08ad069ff9da856c0b36f813ae4c76d"
+   "sha256": "977300ac421ffb98eb1e8f852441521fdf57ebf1e393461b3e8145c963513dd2"
   },
   "T2": {
    "fecha_corte": "2026-08-23T13:00:00",
-   "sha256": "435a8242f173896a74526cdb1c51e40369e9453f5544449f05368bf8206be0ea"
+   "sha256": "043cde190b14fa23a7cf3539b0ba6f21b661db6074c75add61c1671ee48e7733"
   }
  }
 }

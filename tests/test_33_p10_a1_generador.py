@@ -38,6 +38,8 @@ BNB_MN = "EXTRACTO_HISTORICO_BNB_3000100152_BOB_2026-08.xlsx"
 OPERATIVAS_EXTRACTO = ["ESTADO", "CONFIRMADO POR", "FECHA DE CONFIRMACIÓN", "OBSERVACIONES"]
 OPERATIVAS_26 = ["ESTADO", "ESTUDIANTE", "SOLICITADO POR", "SEDE SOLICITANTE", "CONFIRMADO POR",
                  "FECHA CONFIRMACIÓN", "OBSERVACIÓN"]
+ADICIONALES = ["CODIGO_ESTUDIANTE", "ULTIMA_REVERSION_ID"]          # columnas REALES de Depositos_Activos sin equivalente en P0
+OPERATIVAS_AUDITORIA = OPERATIVAS_26 + ADICIONALES
 # columnas del banco por cuenta, según el diseño aprobado (DISENO_TRES_CAPAS.md §6.4)
 COLUMNAS_BANCO_ESPERADAS = {"BNB_MN": 11, "BNB_ME": 11, "BNB_AHORRO": 11, "BNB_CLINICA": 11, "BCP_MN": 9, "BCP_ME": 9,
                             "BISA_MN": 12, "ECO_CTA_CTE": 7, "ECO_AHORRO": 7, "BMSC": 21, "UNION_MN": 6}
@@ -177,11 +179,14 @@ def test_cada_libro_tiene_exactamente_dos_hojas_visibles(libros):
         assert [w.sheet_state for w in wb.worksheets] == ["visible", "visible"], nombre
 
 
-def test_auditoria_tiene_exactamente_las_26_columnas_en_orden(libros):
+def test_auditoria_tiene_las_26_columnas_de_p0_en_orden_y_las_2_reales_adicionales_al_final(libros):
     for nombre, wb in libros.items():
         ws = wb["AUDITORIA"]
-        assert [c.value for c in ws[1]] == COLUMNAS_LISTS_CONTRATO, nombre
-        assert ws.max_column == 26 and ws.tables["tblAUDITORIA"].ref == f"A1:Z{ws.max_row}", nombre
+        cab = [c.value for c in ws[1]]
+        assert cab[:26] == COLUMNAS_LISTS_CONTRATO, nombre                 # las 26 de P0, exactas y en el mismo orden
+        assert cab[26:] == ADICIONALES and len(cab) == 28, nombre          # + 2 columnas reales de la lista, al final
+        assert ws.max_column == 28 and ws.tables["tblAUDITORIA"].ref == f"A1:AB{ws.max_row}", nombre
+        assert not any(t.startswith(("P10", "SNAPSHOT", "HASH")) for t in cab)   # ninguna columna técnica de P10
 
 
 def test_cantidad_de_movimientos_igual_a_p0_por_cuenta_y_mes(libros, filas):
@@ -205,16 +210,31 @@ def test_ninguna_clave_duplicada_en_ninguna_hoja_ni_entre_libros(libros):
     assert len(todas) == len(set(todas)) == 4064
 
 
-def test_tabla_filtros_paneles_y_clave_oculta(libros):
+def test_tabla_filtros_y_clave_oculta(libros):
     for nombre, wb in libros.items():
         we = wb["EXTRACTO"]
         t = we.tables["tblEXTRACTO"]
         c0, r0, c1, r1 = range_boundaries(t.ref)
-        assert t.autoFilter is not None and we.freeze_panes == f"A{r0 + 1}", nombre
+        assert t.autoFilter is not None, nombre
         assert we.cell(r0, c1).value == "CLAVE TRANSACCIÓN" and we.column_dimensions[we.cell(r0, c1).column_letter].hidden
         assert [we.cell(r0, c).value for c in range(c1 - 4, c1)] == OPERATIVAS_EXTRACTO, nombre
-        wa = wb["AUDITORIA"]
-        assert wa.tables["tblAUDITORIA"].autoFilter is not None and wa.freeze_panes == "A2", nombre
+        assert wb["AUDITORIA"].tables["tblAUDITORIA"].autoFilter is not None, nombre
+
+
+def test_ningun_libro_tiene_paneles_inmovilizados_ni_en_el_xml_crudo(t0):
+    """Decisión de Gabriel: desplazamiento libre en EXTRACTO y AUDITORIA. Se comprueba el XML, no solo openpyxl."""
+    info, salida = t0
+    assert len(info["archivos"]) == 11
+    for a in info["archivos"]:
+        with zipfile.ZipFile(salida / a["nombre_archivo"]) as z:
+            hojas = [n for n in z.namelist() if n.startswith("xl/worksheets/sheet")]
+            assert len(hojas) == 2, a["nombre_archivo"]
+            for n in hojas:
+                xml = z.read(n).decode("utf-8")
+                assert "<pane" not in xml and 'pane="' not in xml and "state=\"frozen" not in xml, (a["nombre_archivo"], n)
+        wb = load_workbook(salida / a["nombre_archivo"])
+        for ws in wb.worksheets:
+            assert ws.freeze_panes is None and ws.sheet_view.pane is None, (a["nombre_archivo"], ws.title)
 
 
 def test_columnas_propias_de_cada_banco_completas_y_operativas_al_final(libros, filas):
@@ -370,6 +390,58 @@ def test_columnas_originales_del_banco_igual_a_origen_xlsx(libros, p0):
     assert comprobadas == 5 * 1184
 
 
+# ====================================================================== 3b. AUDITORIA CUBRE TODA LA LISTA REAL
+# Columnas PROPIAS de Depositos_Activos vistas en el selector de columnas del tenant (captura aportada por Gabriel, 2026-10-08).
+# «Última reversión aplicada» es el nombre para mostrar de ULTIMA_REVERSION_ID. No incluye las columnas de sistema de
+# SharePoint (ID, Creado, Creado por, Modificado, Modificado por, Título, Tipo, Datos adjuntos, etiquetas de retención...).
+COLUMNAS_PROPIAS_TENANT_2026_10_08 = {
+    "CLAVE_TRANSACCION", "BANCO", "FECHA_MOVIMIENTO", "IMPORTE", "ESTADO_ASIGNACION", "CODIGO_ASIGNACION",
+    "CUENTA_BANCARIA", "HORA_MOVIMIENTO", "SALDO", "DESCRIPCION", "ESTUDIANTE", "SOLICITADO_POR", "CODIGO_ESTUDIANTE",
+    "SEDE_ASIGNACION", "FECHA_HORA_ASIGNACION", "OBSERVACION", "ULTIMA_REVERSION_ID", "MONEDA", "DEBITO", "CREDITO",
+    "TIPO_MOVIMIENTO", "DEPOSITANTE_ORIGINANTE", "INFORMACION_ADICIONAL", "MOTOR_ESTADO", "MOTOR_ESTUDIANTE",
+    "MOTOR_SOLICITADO_POR", "MOTOR_SEDE_SOLICITANTE", "MOTOR_CONFIRMADO_POR", "MOTOR_FECHA_CONFIRMACION",
+    "MOTOR_OBSERVACION", "TEXTO_BUSQUEDA", "ARCHIVO_ORIGEN", "LOTE_CARGA", "FECHA_CARGA", "USUARIO_ASIGNACION"}
+
+
+def _esquema_real_depositos_activos():
+    p8 = json.loads((RAIZ / "p8/esquema_listas_p8.json").read_text(encoding="utf-8"))["Depositos_Activos"]["columnas"]
+    p9 = json.loads((RAIZ / "p9/reversion/esquema_reversiones.json").read_text(encoding="utf-8"))["Depositos_Activos"]["columnas"]
+    return [c["nombre_tecnico"] for c in p8], [c["nombre_tecnico"] for c in p9]
+
+
+def test_el_esquema_del_repo_coincide_con_las_35_columnas_propias_del_tenant():
+    p8, p9 = _esquema_real_depositos_activos()
+    assert len(p8) == 34 and p9 == ["ULTIMA_REVERSION_ID"]
+    assert set(p8) | set(p9) == COLUMNAS_PROPIAS_TENANT_2026_10_08 and len(COLUMNAS_PROPIAS_TENANT_2026_10_08) == 35
+
+
+def test_auditoria_cubre_cada_columna_real_de_depositos_activos():
+    """
+    Si la lista evoluciona (columna nueva en el esquema del repo) y AUDITORIA no la conserva, esta prueba FALLA:
+    en P10-B, al eliminar un registro, AUDITORIA debe llevar toda la información persistida relevante.
+    Cada columna real es: (a) una de las 19 de P0 sin cambio de nombre, (b) la columna operativa viva que reemplaza a una
+    de las 7 de P0 (cuyo homónimo MOTOR_* es una constante reservada que ningún flujo escribe), o (c) una adicional.
+    """
+    import adaptador_m365 as A
+    p8, p9 = _esquema_real_depositos_activos()
+    interno = dict(zip(A.COLUMNAS_LISTS_P6, A.COLUMNAS_TECNICAS))               # nombre P0 -> nombre interno en la lista
+    fijas = {interno[c] for c in C.COLUMNAS_FIJAS}
+    vivas = set(C.OPERATIVOS.values())
+    adicionales = set(C.ADICIONALES_AUDITORIA.values())
+    reservadas = {interno[c] for c in C.OPERATIVOS}                              # MOTOR_*: constantes de P0
+    assert all(r.startswith("MOTOR_") for r in reservadas) and len(reservadas) == 7
+    reales = set(p8) | set(p9)
+    assert reales == fijas | vivas | adicionales | reservadas                    # nada de la lista queda sin clasificar
+    assert not (fijas & vivas) and not (vivas & adicionales) and not (reservadas & (fijas | vivas | adicionales))
+    # y AUDITORIA realmente trae todo lo conservable: 19 fijas + 7 vivas (en las columnas P0 homónimas) + 2 adicionales
+    assert len(fijas) + len(vivas) + len(adicionales) == 28 == len(C.COLUMNAS_AUDITORIA)
+    # P9 solo escribe estas columnas: ninguna MOTOR_* cambia nunca (por eso no se duplican en AUDITORIA)
+    from p9.contrato import CAMPOS_ESCRITOS
+    from p9.reversion.contrato import CAMPOS_ESCRITOS as ESCRITOS_REVERSION
+    escritos = set(CAMPOS_ESCRITOS) | set(ESCRITOS_REVERSION)
+    assert escritos <= vivas | adicionales and not (escritos & reservadas)
+
+
 # ====================================================================== 4. CRUCE CON EL SNAPSHOT (por CLAVE)
 def _esperado_snapshot(snapshot_dict):
     """Expectativa literal de las 7 columnas operativas, escrita aquí (no importada de p10)."""
@@ -381,7 +453,8 @@ def _esperado_snapshot(snapshot_dict):
             "ESTUDIANTE": f["ESTUDIANTE"], "SOLICITADO POR": f["SOLICITADO_POR"],
             "SEDE SOLICITANTE": f["SEDE_ASIGNACION"], "CONFIRMADO POR": f["USUARIO_ASIGNACION"],
             "FECHA CONFIRMACIÓN": dt.datetime.fromisoformat(f["FECHA_HORA_ASIGNACION"]) if f["FECHA_HORA_ASIGNACION"] else None,
-            "OBSERVACIÓN": f["OBSERVACION"]}
+            "OBSERVACIÓN": f["OBSERVACION"],
+            "CODIGO_ESTUDIANTE": f["CODIGO_ESTUDIANTE"], "ULTIMA_REVERSION_ID": f["ULTIMA_REVERSION_ID"]}
     return out
 
 
@@ -393,7 +466,7 @@ def test_estados_cruzados_por_clave_en_las_dos_hojas(libros, snap0):
         _, ext = _por_clave(wb, "EXTRACTO")
         for clave, f in aud.items():
             e = esperado[clave]
-            for col in OPERATIVAS_26:
+            for col in OPERATIVAS_AUDITORIA:
                 assert f[col].value == e[col], (nombre, clave, col, f[col].value, e[col])
             x = ext[clave]
             assert (x["ESTADO"].value, x["CONFIRMADO POR"].value, x["FECHA DE CONFIRMACIÓN"].value,
@@ -440,12 +513,29 @@ def test_observaciones_se_alimentan_de_observacion_y_se_conservan_tal_cual(libro
             assert x["OBSERVACIONES"].data_type == "s" and aud[clave]["OBSERVACIÓN"].data_type == "s"   # "=..." NO es fórmula
 
 
-def test_codigo_estudiante_no_aparece_en_ninguna_hoja(libros, snap0):
-    codigos = {f["CODIGO_ESTUDIANTE"] for f in snap0.a_dict()["filas"] if f["CODIGO_ESTUDIANTE"]}
-    assert codigos
+def test_columnas_reales_adicionales_van_solo_en_auditoria_con_su_valor_del_snapshot(libros, snap0):
+    filas_snap = snap0.a_dict()["filas"]
+    codigos = {f["CODIGO_ESTUDIANTE"] for f in filas_snap if f["CODIGO_ESTUDIANTE"]}
+    marcadores = {f["ULTIMA_REVERSION_ID"] for f in filas_snap if f["ULTIMA_REVERSION_ID"]}
+    assert codigos and any(c.startswith("0") for c in codigos) and len(marcadores) > 50
     wb = libros[BNB_MN]
-    visto = {str(c.value) for ws in wb.worksheets for fila in ws.iter_rows() for c in fila if c.value is not None}
-    assert not (codigos & visto)          # no existe columna para él en las 26: decisión pendiente, no se filtra
+    _, aud = _por_clave(wb, "AUDITORIA")
+    vistos_codigo = {f["CODIGO_ESTUDIANTE"].value for f in aud.values() if f["CODIGO_ESTUDIANTE"].value}
+    vistos_marcador = {f["ULTIMA_REVERSION_ID"].value for f in aud.values() if f["ULTIMA_REVERSION_ID"].value}
+    assert vistos_codigo and vistos_marcador
+    for f in aud.values():
+        for col in ADICIONALES:
+            c = f[col]
+            assert c.value is None or (isinstance(c.value, str) and c.data_type == "s" and c.number_format == "@")
+    assert any(v.startswith("0") for v in vistos_codigo)                           # ceros a la izquierda conservados
+    # un depósito revertido que volvió a DISPONIBLE conserva el marcador (como en P9) y tiene los 7 campos limpios
+    revertidos = [f for f in aud.values() if f["ESTADO"].value == "DISPONIBLE" and f["ULTIMA_REVERSION_ID"].value]
+    assert revertidos and all(f["ESTUDIANTE"].value is None and f["CODIGO_ESTUDIANTE"].value is None for f in revertidos)
+    # EXTRACTO NO cambia: no recibe ninguna de las dos columnas
+    titulos, ext = _por_clave(wb, "EXTRACTO")
+    assert not (set(ADICIONALES) & set(titulos))
+    visto_en_extracto = {str(c.value) for f in ext.values() for c in f.values() if c.value is not None}
+    assert not (codigos & visto_en_extracto) and not (marcadores & visto_en_extracto)
 
 
 def test_manifiesto_resume_el_cruce(t0, snap0):
@@ -496,7 +586,7 @@ def test_disponible_a_confirmado_cambia_solo_los_campos_operativos_de_esas_clave
     assert difs and all(d["tipo"] == "CELDA" for d in difs)                  # misma estructura, claves, orden y zona superior
     assert {d["clave"] for d in difs} == set(e.nuevas)
     assert {d["columna"] for d in difs if d["hoja"] == "EXTRACTO"} <= set(OPERATIVAS_EXTRACTO)
-    assert {d["columna"] for d in difs if d["hoja"] == "AUDITORIA"} <= set(OPERATIVAS_26)
+    assert {d["columna"] for d in difs if d["hoja"] == "AUDITORIA"} <= set(OPERATIVAS_AUDITORIA)
     for hoja, col in (("EXTRACTO", "ESTADO"), ("AUDITORIA", "ESTADO")):
         cambios = [d for d in difs if d["hoja"] == hoja and d["columna"] == col]
         assert len(cambios) == 4 and all((d["antes"], d["despues"]) == ("DISPONIBLE", "CONFIRMADO") for d in cambios)
@@ -514,26 +604,36 @@ def test_reversion_representada_con_el_payload_de_p9_vuelve_a_disponible_y_limpi
     for clave in e.revertidas:
         f = aud[clave]
         assert f["ESTADO"].value == "DISPONIBLE"
-        assert all(f[c].value is None for c in OPERATIVAS_26 if c != "ESTADO")
-    # la reversión de lo recién confirmado deja ese movimiento como estaba en T0
-    solo_t0_vs_t2 = {d["clave"] for d in diferencias(e.ruta_t0, e.ruta_t2)}
-    assert e.nuevas[0] not in solo_t0_vs_t2
-    assert solo_t0_vs_t2 == (set(e.nuevas) - {e.nuevas[0]}) | set(e.previa)
+        assert all(f[c].value is None for c in OPERATIVAS_26 + ["CODIGO_ESTUDIANTE"] if c != "ESTADO")
+        assert f["ULTIMA_REVERSION_ID"].value                       # el marcador de la reversión SÍ queda (P9)
+    # Lo recién confirmado y revertido queda IGUAL a T0 en EXTRACTO y, en AUDITORIA, solo conserva el marcador de la reversión
+    # (P9 nunca borra ULTIMA_REVERSION_ID).
+    d02 = diferencias(e.ruta_t0, e.ruta_t2)
+    claves_extracto = {d["clave"] for d in d02 if d["hoja"] == "EXTRACTO"}
+    assert claves_extracto == (set(e.nuevas) - {e.nuevas[0]}) | set(e.previa)
+    assert {d["columna"] for d in d02 if d["hoja"] == "AUDITORIA" and d["clave"] == e.nuevas[0]} == {"ULTIMA_REVERSION_ID"}
 
 
-def test_confirmar_y_revertir_lo_mismo_reconstruye_el_libro_de_t0(p0, filas, snap0, t0, tmp_path):
+def test_confirmar_y_revertir_lo_mismo_reconstruye_el_extracto_de_t0_y_deja_solo_el_marcador_en_auditoria(
+        p0, filas, snap0, t0, tmp_path):
     nuevas = SS.elegir_a_confirmar(snap0, filas, "3000100152", 3)
     ida_vuelta = SS.revertir(SS.confirmar(snap0, filas, nuevas), nuevas)
     G.generar_libros(p0.origen, p0.lists, ida_vuelta, tmp_path, solo_cuentas={"BNB_MN"})
-    assert diferencias(t0[1] / BNB_MN, tmp_path / BNB_MN) == []
+    difs = diferencias(t0[1] / BNB_MN, tmp_path / BNB_MN)
+    assert difs and all(d["tipo"] == "CELDA" for d in difs)
+    assert not [d for d in difs if d["hoja"] == "EXTRACTO"]                          # EXTRACTO: idéntico a T0
+    assert {(d["hoja"], d["columna"], d["clave"]) for d in difs} == {("AUDITORIA", "ULTIMA_REVERSION_ID", k) for k in nuevas}
 
 
-def test_ultima_reversion_id_no_se_proyecta_a_las_hojas(escenarios):
+def test_la_reversion_deja_el_marcador_en_auditoria_y_nada_nuevo_en_extracto(escenarios):
     wb = load_workbook(escenarios.ruta_t2)
-    ids = {f["ULTIMA_REVERSION_ID"] for f in escenarios.t2.a_dict()["filas"] if f["ULTIMA_REVERSION_ID"]}
-    assert len(ids) == 2
-    visto = {str(c.value) for ws in wb.worksheets for fila in ws.iter_rows() for c in fila if c.value is not None}
-    assert not (ids & visto)
+    _, aud = _por_clave(wb, "AUDITORIA")
+    nuevos = {escenarios.t2.get(k)["ULTIMA_REVERSION_ID"] for k in escenarios.revertidas}
+    assert len(nuevos) == 2 and all(nuevos)
+    assert {aud[k]["ULTIMA_REVERSION_ID"].value for k in escenarios.revertidas} == nuevos
+    visto_en_extracto = {str(c.value) for fila in _por_clave(wb, "EXTRACTO")[1].values() for c in fila.values()
+                         if c.value is not None}
+    assert not (nuevos & visto_en_extracto)
 
 
 def test_el_estado_visible_no_cambia_la_zona_superior_ni_las_columnas(escenarios):
@@ -650,6 +750,10 @@ def _manipular(ruta, fn):
     ("columna_renombrada", lambda wb: wb["AUDITORIA"].cell(1, 3).__setattr__("value", "BANCOS"), "26"),
     ("clave_duplicada", lambda wb: wb["AUDITORIA"].cell(3, 1).__setattr__("value", wb["AUDITORIA"].cell(2, 1).value), "duplicada"),
     ("codigo_como_numero", lambda wb: wb["AUDITORIA"].cell(2, 2).__setattr__("value", 123), "CÓDIGO"),
+    ("codigo_estudiante_ajeno", lambda wb: wb["AUDITORIA"].cell(2, 27).__setattr__("value", "9999999"), "CODIGO_ESTUDIANTE"),
+    ("marcador_ajeno", lambda wb: wb["AUDITORIA"].cell(2, 28).__setattr__("value", "uid-que-no-existe"), "ULTIMA_REVERSION_ID"),
+    ("panel_en_extracto", lambda wb: setattr(wb["EXTRACTO"], "freeze_panes", "A11"), "paneles"),
+    ("panel_en_auditoria", lambda wb: setattr(wb["AUDITORIA"], "freeze_panes", "A2"), "paneles"),
     ("fecha_como_texto", lambda wb: wb["AUDITORIA"].cell(2, 6).__setattr__("value", "2026-08-01"), "FECHA MOVIMIENTO"),
 ])
 def test_validador_detecta_manipulaciones(entorno_validacion, snap0, copia, nombre, fn, fragmento):
@@ -697,7 +801,8 @@ def test_hoja_extracto_identica_a_la_que_escribe_historico_mas_las_4_operativas(
     final = tmp_path / "final.xlsx"
     G.escribir_libro(libro, str(final), snap0)
     a, b = load_workbook(solo)["EXTRACTO"], load_workbook(final)["EXTRACTO"]
-    assert a.dimensions == b.dimensions and a.freeze_panes == b.freeze_panes and a.print_title_rows == b.print_title_rows
+    assert a.freeze_panes is not None and b.freeze_panes is None       # único cambio de comportamiento: sin paneles
+    assert a.dimensions == b.dimensions and a.print_title_rows == b.print_title_rows
     assert sorted(map(str, a.merged_cells.ranges)) == sorted(map(str, b.merged_cells.ranges))
     assert a.tables["tblEXTRACTO"].ref == b.tables["tblEXTRACTO"].ref
     for fa, fb in zip(a.iter_rows(), b.iter_rows()):

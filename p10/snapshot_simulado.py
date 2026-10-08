@@ -77,20 +77,34 @@ def _confirmacion(clave, fila_p0, fecha_corte, semilla):
     }
 
 
+def _uid_reversion(clave, etiqueta):
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"p10-a1-{etiqueta}|{clave}"))
+
+
 def _corte_por_defecto(filas_p0):
     ultimo = max(H._fecha(r["FECHA MOVIMIENTO"]) for r in filas_p0)
     return dt.datetime(ultimo.year, ultimo.month, ultimo.day, 8, 0) + dt.timedelta(days=1)
 
 
 def snapshot_simulado(filas_p0, semilla=SEMILLA, porcentaje=PORCENTAJE_CONFIRMADOS, fecha_corte=None):
-    """Snapshot base (T0): todos los movimientos de P0 en la lista; ~`porcentaje` % de los créditos CONFIRMADOS."""
+    """
+    Snapshot base (T0): todos los movimientos de P0 en la lista; ~`porcentaje` % de los créditos CONFIRMADOS y, para
+    ejercitar ULTIMA_REVERSION_ID como lo deja P9 (el marcador NO se borra nunca): ~2 % de los créditos fueron
+    revertidos y vuelven a estar DISPONIBLES, y 1 de cada 8 confirmados lo fue de nuevo después de una reversión previa.
+    """
     corte = fecha_corte or _corte_por_defecto(filas_p0)
     filas = []
     for r in sorted(filas_p0, key=lambda x: x[C.COLUMNA_CLAVE]):
         clave = r[C.COLUMNA_CLAVE]
         fila = _fila_vacia(clave)
-        if r["TIPO MOVIMIENTO"].strip() == "CRÉDITO" and _h(semilla + ":seleccion", clave) % 100 < porcentaje:
-            fila.update(_confirmacion(clave, r, corte, semilla))
+        if r["TIPO MOVIMIENTO"].strip() == "CRÉDITO":
+            sel = _h(semilla + ":seleccion", clave) % 100
+            if sel < porcentaje:
+                fila.update(_confirmacion(clave, r, corte, semilla))
+                if _h(semilla + ":reconfirmado", clave) % 8 == 0:
+                    fila["ULTIMA_REVERSION_ID"] = _uid_reversion(clave, "reversion-previa")
+            elif sel < porcentaje + 2:
+                fila.update(payload_reversion(_uid_reversion(clave, "reversion-previa")))
         filas.append(fila)
     return cargar_snapshot({"version": C.VERSION_SNAPSHOT, "origen": "SIMULADO",
                             "fecha_corte": corte.isoformat(), "filas": filas})
