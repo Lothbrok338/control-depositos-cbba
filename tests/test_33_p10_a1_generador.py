@@ -133,10 +133,12 @@ def test_p10_usa_el_motor_real_y_sus_26_columnas_por_identidad():
 
 
 def test_modulos_de_p0_p3b_p9_sin_cambios():
+    """P10 no toca ningún módulo previo: mismas huellas que exige P9, con la excepción de P0 ya autorizada allí."""
+    from test_16_asignacion_p9 import EXCEPCIONES_AUTORIZADAS          # única fuente de las excepciones autorizadas
     huellas = json.loads((RAIZ / "p9/evidencias/huellas_base_p8_5.json").read_text(encoding="utf-8"))["archivos"]
     for f in ("motor_control_depositos_cbba.py", "motor_generico.py", "deteccion_registro.py", "captura_origen.py",
               "historico.py", "registro_bancos.json", "adaptador_m365.py"):
-        assert _sha(RAIZ / f) == huellas[f], f
+        assert _sha(RAIZ / f) in (huellas[f], EXCEPCIONES_AUTORIZADAS.get(f)), f
 
 
 def test_p10_solo_lee_las_salidas_de_p0(t0, p0):
