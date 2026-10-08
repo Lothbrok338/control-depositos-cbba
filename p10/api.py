@@ -125,6 +125,9 @@ def _items(cuerpo, nombre, obligatorio=True):
 
 # ---------------------------------------------------------------- manejadores
 def _h_ciclo(c):
+    if c.get("control_incompleto") is True:
+        return {"ok": False, "codigo_error": "CONTROL_EXCEDE_LIMITE",
+                "mensaje": "P10_Control tiene más de 5000 elementos; depurar los registros de extractos antiguos."}
     return PL.ciclo(_fecha(c), _items(c, "control"), _campo(c, "mes_inicio", str, False, "2026-10"),
                     bool(_campo(c, "forzar_completo", bool, False, False)))
 
