@@ -4,3 +4,8 @@ numpy
 openpyxl
 xlrd
 python-calamine
+fastapi
+httpx
+python-multipart
+uvicorn
+tzdata

@@ -1,0 +1,13 @@
+# Lista blanca: a la imagen solo entra lo que la API necesita. NO entran extractos reales (tests/fixtures,
+# ORIGEN_EJEMPLO.xlsx), pruebas, evidencias ni paquetes de flujos.
+*
+!p0/**
+!motor_control_depositos_cbba.py
+!motor_generico.py
+!deteccion_registro.py
+!captura_origen.py
+!registro_bancos.json
+!adaptador_m365.py
+!requirements-p0.txt
+**/__pycache__
+**/*.pyc

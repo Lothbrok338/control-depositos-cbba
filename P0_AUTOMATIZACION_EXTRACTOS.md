@@ -1,123 +1,172 @@
-# P0 · Automatización de la entrada de extractos
+# P0 · Automatización de la entrada de extractos (API en Railway + Power Automate)
 
-**Resumen.** Gabriel deja extractos bancarios en `ENTRADA`; un orquestador pequeño ejecuta el motor y P7 que ya existían, deja el JSON en `CARGA_EXTRACTOS_BANCARIOS` (la carpeta que debe escuchar el flujo P8 V5) y mueve el extracto a `PROCESADOS/AAAA/MM_MES` (o a `ERROR/AAAA/MM_MES` con el motivo). P0 **no** cambia el motor bancario, P7 ni P8 (salvo el control del año, ver §8).
+**Resumen.** Gabriel deja extractos en `ENTRADA`. Un flujo de Power Automate los detecta y los envía a una **API Python sin estado en Railway**, que ejecuta el motor bancario y P7 que ya existían y devuelve el JSON. El flujo guarda ese JSON en `CARGA_EXTRACTOS_BANCARIOS` (donde escucha P8 V5) y mueve el extracto original a `PROCESADOS/AAAA/MM_MES` o `ERROR/AAAA/MM_MES`. **Railway no guarda nada** y no depende de ningún equipo personal.
 
 ```
-Documents/CONTROL_DEPOSITOS/P0_EXTRACTOS/ENTRADA/<extracto>.xls|xlsx      ← único paso manual de Gabriel (ENTRADA es plana)
-   │  (python -m p0, un archivo a la vez)
-   ├─ motor_control_depositos_cbba.py   detecta banco/cuenta/moneda, normaliza, valida saldos  → LISTS.csv
-   ├─ adaptador_m365.py (P7)            LISTS.csv → DEPOSITOS_ACTIVOS__P7-<hash>.json
-   ├─ copia del JSON a  CARGA_EXTRACTOS_BANCARIOS/  (la carpeta que escucha P8)
-   │      └─ P8_CARGA_DEPOSITOS_ACTIVOS_V5_TENANT_LISTAS_REALES  → Depositos_Activos + Depositos_Cargas
-   └─ el extracto original pasa a  PROCESADOS/AAAA/MM_MES/   (si algo falló: ERROR/AAAA/MM_MES/ + <archivo>.error.json)
+SharePoint/OneDrive  CONTROL_DEPOSITOS/P0_EXTRACTOS/ENTRADA/<extracto>.xls|xlsx     ← único paso manual de Gabriel
+   │  Power Automate (flujo P0): detecta el archivo y obtiene su contenido binario
+   ▼  HTTP POST  https://<servicio>.up.railway.app/procesar-extracto   (Bearer token)
+Railway · API P0 (sin estado, en memoria/temporal, se borra al terminar)
+   │  detección P4 → motor_control_depositos_cbba.ejecutar_motor → adaptador_m365.adaptar (P7)
+   ▼  respuesta: { ok, json.texto = DEPOSITOS_ACTIVOS__P7-….json, banco, movimientos, periodo AAAA/MM_MES }
+Power Automate
+   ├─ ok: guarda json.texto en  P0_EXTRACTOS/CARGA_EXTRACTOS_BANCARIOS/  →  P8 V5  →  Depositos_Activos
+   │      y mueve el original a  PROCESADOS/AAAA/MM_MES/
+   └─ error: guarda <archivo>.error.json y mueve el original a  ERROR/AAAA/MM_MES/
 ```
 
-## 1. Qué hace Gabriel
-
-1. Descargar uno o varios extractos bancarios **vírgenes** (sin renombrar ni abrir y guardar).
-2. Copiarlos a `Documents/CONTROL_DEPOSITOS/P0_EXTRACTOS/ENTRADA`.
-3. Nada más. Unos minutos después el extracto aparece en `PROCESADOS/AAAA/MM_MES` o `ERROR/AAAA/MM_MES`.
-
-Si quiere confirmar la carga: en la lista `Depositos_Cargas` aparece un registro por lote (`LOTE_ID` y `ARCHIVO_JSON` están en el archivo `<extracto>.p0.json` de `PROCESADOS`).
-
-## 1b. Estructura de carpetas
+Estructura de carpetas (la maneja Power Automate; la API no ve SharePoint):
 
 ```
 CONTROL_DEPOSITOS/P0_EXTRACTOS/
-├── ENTRADA/                       plana: solo se dejan ahí los .xls/.xlsx (las subcarpetas se ignoran)
+├── ENTRADA/                       plana
 ├── PROCESADOS/AAAA/MM_MES/        p. ej. PROCESADOS/2026/10_OCTUBRE/
-├── ERROR/AAAA/MM_MES/             el original y su <archivo>.error.json, juntos
-└── CARGA_EXTRACTOS_BANCARIOS/     los DEPOSITOS_ACTIVOS__*.json (sin subcarpetas); la escucha P8
+├── ERROR/AAAA/MM_MES/             el original y su <archivo>.error.json
+└── CARGA_EXTRACTOS_BANCARIOS/     los DEPOSITOS_ACTIVOS__*.json que escucha P8
 ```
 
-`MM_MES`: 01_ENERO, 02_FEBRERO, 03_MARZO, 04_ABRIL, 05_MAYO, 06_JUNIO, 07_JULIO, 08_AGOSTO, 09_SEPTIEMBRE, 10_OCTUBRE, 11_NOVIEMBRE, 12_DICIEMBRE (fijos, no dependen del idioma del equipo). El año y el mes son los de la **fecha en que P0 procesa el archivo** (no la de los movimientos). P0 crea `AAAA` y `MM_MES` solo cuando va a guardar algo ahí; nunca por adelantado. Un nombre repetido en la misma carpeta no se pisa (se añade `__AAAAMMDD_HHMMSS`).
+`MM_MES`: 01_ENERO … 12_DICIEMBRE (nombres fijos). La API devuelve en cada respuesta el `periodo` de la fecha de procesamiento en hora de la sede (America/La_Paz), p. ej. `"carpeta": "2026/10_OCTUBRE"`, para que el flujo no tenga que calcularlo; en diciembre→enero cambia sola a `2027/01_ENERO`.
 
-## 2. Dónde corre Python (decisión)
+## 1. Qué cambió respecto del P0 local anterior
 
-**Decisión para esta fase: local, en el equipo que ya sincroniza el OneDrive `Documents` (PC o mini-servidor de la sede), sin n8n ni Railway.** Confianza ≈ 70 %.
+* **Eliminado:** el orquestador local que vigilaba carpetas del disco (`python -m p0`, `p0/__main__.py`), sus candados, `PROCESADOS/ERROR` en disco, `--documentos`, la dependencia de OneDrive sincronizado y `tests/test_34_orquestador_p0.py`.
+* **Reutilizado (el código del orquestador pasó a `p0/nucleo.py`):** las etapas de detección → motor → P7, la traducción de errores del motor a códigos, el registro de bancos por sede, `procesar archivo por archivo`, la regla de no entregar un extracto con filas inválidas para P7.
+* **Nuevo:** `p0/api.py` (FastAPI), `Dockerfile`, `.dockerignore`, `requirements-p0.txt`, `railway.json`, `tests/test_35_api_p0.py`.
+* **Sin cambios:** motor bancario (salvo el control del año ya hecho antes, ver §8), P7, P8, `registro_bancos.json`, lógica de duplicados.
 
-| Criterio | A · Local (elegida) | B · Servicio cloud Python | C · Otra (Power Automate, Azure Functions…) |
-|---|---|---|---|
-| Acceso a la carpeta | El cliente de OneDrive ya la sincroniza: cero credenciales nuevas. | Requiere registrar una aplicación en Entra ID del tenant de la universidad, permisos de Graph (`Files.ReadWrite…`/`Sites.Selected`, normalmente con consentimiento de administrador) y código nuevo de descarga/subida/mover por Graph, más suscripciones o *polling*. La ENTRADA hoy está en un OneDrive personal. No hay nada de esto validado en el repo. | Power Automate **no ejecuta Python**; llamar a un servicio exige conector HTTP (licencia premium, no verificada). |
-| Código nuevo | ~500 líneas (este orquestador). | El mismo núcleo + adaptador de almacenamiento Graph + alojamiento + secretos. | Igual que B, más el flujo. |
-| Coste / mantenimiento | Ninguno extra; hay que mantener Python y el repo en ese equipo. | Hosting, secretos, renovación de suscripciones, monitoreo. | Licencias y dos sistemas que mantener. |
-| Equipo encendido | **Sí hace falta** (limitación real). Mitigación: un equipo de sede siempre encendido. | No. | No. |
-| Varias sedes | Un equipo con el mismo repositorio por sede (misma versión del motor); cuentas por sede en configuración. | Un solo despliegue central (mejor a escala nacional). | — |
-| Aprovecha lo ya validado | **Sí:** el JSON aparece en la carpeta de SharePoint que V5 ya escucha. | No (hay que replicar ese comportamiento). | No. |
+## 2. Contrato de `POST /procesar-extracto`
 
-Por qué no cloud ahora: añadiría una integración de identidad y de almacenamiento que hoy no existe ni se puede validar desde el repositorio, para automatizar un tramo que con el cliente de OneDrive cabe en un script. **El diseño no ata el sistema a un PC:** el núcleo (`Orquestador`) solo ve carpetas; el mismo código puede ejecutarse más adelante en un contenedor con la carpeta montada o sustituyendo únicamente las funciones de lectura/mover/publicar por Graph. Cuando se piense en despliegue nacional con muchas sedes, la comparación se rehace con datos reales de sedes y del tenant.
+**Autenticación:** cabecera `Authorization: Bearer <P0_API_TOKEN>`. Sin la variable `P0_API_TOKEN` (≥ 16 caracteres) en el servidor, la API rechaza todo con 503 (falla cerrada). `GET /health` no pide token.
 
-Disparador: **un solo mecanismo** — el propio orquestador consulta `ENTRADA` cada 60 s (`--intervalo`). Solo procesa archivos «estables» (sin cambios en los últimos 30 s, `--estable`) para no leer un archivo mientras se copia o se sincroniza.
+**Petición (recomendada para Power Automate): `Content-Type: application/json`**
 
-## 3. Puesta en marcha (una vez, por equipo)
-
-1. Python 3.10+ y `pip install pandas numpy xlrd openpyxl python-calamine`.
-2. El repositorio en una carpeta local (misma rama/versión que el resto de sedes).
-3. Comprobar la ruta local sincronizada de `Documents` de OneDrive (por ejemplo `C:\Users\<usuario>\OneDrive - <organización>\Documents`) y que existe `<Documents>\CONTROL_DEPOSITOS\P0_EXTRACTOS` (si no existe, P0 se detiene con un error en vez de crear un árbol falso por una ruta mal escrita). P0 crea las carpetas base que falten (`ENTRADA`, `PROCESADOS`, `ERROR`, `CARGA_EXTRACTOS_BANCARIOS`), nunca años ni meses por adelantado.
-4. **Apuntar el flujo P8 V5 a la carpeta nueva** (cambio en el tenant, ver §7).
-5. Probar un ciclo:
-
-```
-cd <repositorio>
-python -m p0 --sede CBBA --documentos "<ruta local de Documents>" --una-vez
+```json
+{ "sede": "CBBA", "nombre_archivo": "bcp_me_1.xls", "contenido_base64": "<Base64 del .xls/.xlsx>" }
 ```
 
-6. Dejarlo en marcha (opción simple en Windows): Programador de tareas → *Crear tarea* → desencadenador «Al iniciar sesión» → acción `python -m p0 --sede CBBA --documentos "<ruta>"` con «Iniciar en» = carpeta del repositorio. Sin `--una-vez` queda en bucle.
+También se acepta `multipart/form-data` con los campos `sede` y `archivo` (y opcional `nombre_archivo`). Máximo `P0_MAX_BYTES` (30 MB por defecto) → 413.
 
-**Reiniciar:** cerrar la ventana/tarea y volver a lanzarla. Si dice «ya hay otra instancia de P0», borrar `p0.lock` de la carpeta de trabajo (por defecto `%TEMP%\cbba_p0\CBBA\`; se reemplaza solo si tiene más de 2 h). Registro de actividad: `p0.log` en esa carpeta. Opciones: `--trabajo`, `--intervalo`, `--estable`, `--raiz`, `--carga`; variable `CBBA_DOCUMENTOS` equivale a `--documentos`.
+**Respuesta de éxito — HTTP 200, `ok: true`:**
 
-## 4. Qué significa PROCESADOS y ERROR
+```json
+{
+  "ok": true, "resultado": "PROCESADO", "version": "P0-API-1", "sede": "CBBA",
+  "archivo": { "nombre": "bcp_me_1.xls", "sha256": "…", "bytes": 50688 },
+  "deteccion": { "banco": "BCP", "cuenta_id": "BCP_ME", "moneda": "USD", "formato": "BCP_EXTRACTO_V1" },
+  "movimientos": 8,
+  "publicar_json": true,
+  "json": { "nombre": "DEPOSITOS_ACTIVOS__P7-ad0542d8a88a.json", "lote_id": "P7-ad0542d8a88a",
+            "sha256": "…", "bytes": 7830, "texto": "<contenido exacto del JSON de P7 (UTF-8)>" },
+  "periodo": { "anio": 2026, "mes": "10_OCTUBRE", "carpeta": "2026/10_OCTUBRE" },
+  "procesado_en": "2026-10-08T10:19:28-04:00", "duracion_ms": 1294
+}
+```
 
-* **PROCESADOS** — el extracto se normalizó, P7 generó un JSON válido y **el JSON se copió completo (se comprueba su SHA-256) a `CARGA_EXTRACTOS_BANCARIOS`**. El extracto se mueve a `PROCESADOS/AAAA/MM_MES` *después* de eso, nunca antes. Junto a él queda `<archivo>.p0.json` (sede, fecha, hash del extracto, movimientos, `lote_id`, nombre del JSON). **PROCESADOS no significa que SharePoint ya cargó los movimientos:** esa carga la hace P8 en el siguiente minuto y deja su resultado en `Depositos_Cargas`.
-  * Un extracto válido **sin movimientos** (p. ej. BISA ME vacía) también va a PROCESADOS, sin JSON (no hay nada que cargar; se anota en `advertencia`).
-* **ERROR** — el extracto se mueve a `ERROR/AAAA/MM_MES` y se escribe `<archivo>.error.json` con `nombre_archivo`, `fecha_hora`, `etapa`, `codigo_error`, `mensaje` (y, si aplica, un extracto del registro del motor). No se publica nada. Para reintentar: corregir la causa y copiar de nuevo el archivo (no es necesario borrar el `.error.json`).
+`json.texto` es **byte a byte la salida de `adaptador_m365.adaptar`** (P7): es lo que el flujo debe guardar como archivo, sin volver a serializarlo. Si el extracto es válido pero no tiene movimientos: `movimientos: 0`, `publicar_json: false`, `json: null` y `advertencia` (no hay nada que cargar; el original se archiva en PROCESADOS).
+
+**Respuesta de error de negocio — HTTP 200, `ok: false`** (el extracto se rechazó; el flujo lo manda a ERROR):
+
+```json
+{
+  "ok": false, "resultado": "ERROR", "version": "P0-API-1", "sede": "CBBA",
+  "etapa": "DETECCION", "codigo_error": "CUENTA_NO_REGISTRADA",
+  "mensaje": "CUENTA_NO_REGISTRADA: formato BNB_EXTRACTO_V1 reconocido, pero la cuenta '****9999' de la cabecera no está registrada…",
+  "archivo": { "nombre": "…", "sha256": "…", "bytes": 1234 }, "deteccion": null,
+  "periodo": { "anio": 2026, "mes": "10_OCTUBRE", "carpeta": "2026/10_OCTUBRE" },
+  "procesado_en": "…", "duracion_ms": 311
+}
+```
+
+Los números de cuenta de los mensajes salen enmascarados (`****9999`) y no se incluyen tablas de saldos ni filas del extracto.
+
+**Errores de la propia API** (mismo cuerpo `ok:false`, `etapa: "API"`, sin `archivo`):
+
+| HTTP | `codigo_error` | Cuándo |
+|---|---|---|
+| 400 | `SOLICITUD_INVALIDA`, `CONTENIDO_INVALIDO`, `SEDE_DESCONOCIDA` | JSON/multipart mal formado, Base64 inválido, sede inexistente |
+| 401 | `NO_AUTORIZADO` | token ausente o incorrecto |
+| 413 | `ARCHIVO_DEMASIADO_GRANDE` | supera `P0_MAX_BYTES` |
+| 500 | `ERROR_INESPERADO` / `CONFIGURACION_INVALIDA` | fallo interno (el mensaje solo trae el tipo de excepción) |
+| 503 | `API_NO_CONFIGURADA` | falta `P0_API_TOKEN` |
+
+Códigos de negocio (`ok:false`, HTTP 200):
 
 | `codigo_error` | Etapa | Significado |
 |---|---|---|
-| `EXTENSION_NO_SOPORTADA`, `ARCHIVO_VACIO` | ARCHIVO | No es .xls/.xlsx o tiene 0 bytes |
+| `EXTENSION_NO_SOPORTADA`, `ARCHIVO_VACIO` | ARCHIVO | No es .xls/.xlsx o está vacío |
 | `ARCHIVO_ILEGIBLE` | DETECCION | Corrupto o no es un Excel real |
-| `SIN_FORMATO`, `NO_RECONOCIDO`, `RECHAZADO`, `ENCABEZADO_INCOMPLETO`, `SIN_CUENTA`, `AMBIGUO` | DETECCION | No coincide con ningún formato bancario del registro (p. ej. el reporte «Últimos 12 movimientos» de Unión) |
-| `CUENTA_NO_REGISTRADA` | DETECCION | El formato se reconoce pero la cuenta de la cabecera no está en el registro de la sede (una entrada nueva en `CUENTAS` lo resuelve) |
-| `SALDOS_NO_CUADRAN`, `AUDITORIA_ESTRUCTURAL`, `ANIO_FUERA_DE_RANGO`, `NORMALIZACION_FALLIDA`, `FALLO_MOTOR` | MOTOR | El motor bloqueó la exportación (mensaje con el detalle) |
-| `ARCHIVO_EXCLUIDO_POR_NOMBRE` | MOTOR | El nombre contiene `NORMALIZADO` o parece una salida del sistema (el motor lo ignora); renombrar el original |
-| `P7_CONTRATO`, `P7_FILAS_INVALIDAS` | P7 | Contrato de 26 columnas roto, o P7 marcó filas inválidas (no se carga un extracto incompleto) |
-| `CARPETA_CARGA_NO_EXISTE`, `PUBLICACION_FALLIDA`, `COPIA_INCOMPLETA` | PUBLICACION | No se pudo entregar el JSON a `CARGA_EXTRACTOS_BANCARIOS` |
-| `ERROR_INESPERADO` | la etapa en curso | Excepción no prevista; el detalle está en `p0.log` |
+| `SIN_FORMATO`, `NO_RECONOCIDO`, `RECHAZADO`, `ENCABEZADO_INCOMPLETO`, `SIN_CUENTA`, `AMBIGUO` | DETECCION | No coincide con un formato bancario del registro (p. ej. el reporte «Últimos 12 movimientos» de Unión) |
+| `CUENTA_NO_REGISTRADA` | DETECCION | Formato reconocido pero la cuenta no está registrada para la sede |
+| `SALDOS_NO_CUADRAN`, `AUDITORIA_ESTRUCTURAL`, `ANIO_FUERA_DE_RANGO`, `NORMALIZACION_FALLIDA`, `FALLO_MOTOR` | MOTOR | El motor bloqueó la exportación |
+| `ARCHIVO_EXCLUIDO_POR_NOMBRE` | MOTOR | El nombre contiene `NORMALIZADO` o parece salida del sistema (el motor lo ignora) |
+| `P7_CONTRATO`, `P7_FILAS_INVALIDAS` | P7 | Contrato de 26 columnas roto, o P7 marcó filas inválidas (no se entrega un extracto incompleto) |
 
-Si el original no se puede mover (p. ej. está abierto en Excel), el JSON ya publicado no se vuelve a generar en cada ciclo; el archivo queda en `ENTRADA` con una advertencia en `p0.log` y se reintenta al reiniciar P0 (P8 evita duplicados de todos modos).
+## 3. Sin estado y sin contenido bancario en logs
 
-Archivos transitorios (`~$…`, `.tmp`, `.crdownload`, ocultos, `desktop.ini`) y subcarpetas se ignoran y quedan donde están.
+* No hay base de datos, volumen ni bucket. Cada solicitud escribe el archivo en un directorio temporal propio (`tempfile.TemporaryDirectory`) que se **elimina siempre** (éxito, error o excepción). Ni el extracto ni el JSON se guardan; viven solo en la respuesta.
+* **Logs** (`registrar_tecnico`, único punto de logging): `archivo`, `sha` (12 caracteres), `etapa`, `banco`, `filas`, `resultado`, `codigo`, `ms`. Nunca movimientos, números de cuenta completos, claves, descripciones, mensajes de error del motor ni JSON. Una excepción inesperada se registra y se responde solo con el nombre de su tipo. Probado en `tests/test_35_api_p0.py`.
+* Una solicitud a la vez por proceso (el motor cambia una variable de entorno y redirige `stdout` por corrida): `--workers 1` más un candado. Si hace falta más caudal, se suben réplicas de Railway (cada una sin estado).
+* Trazabilidad histórica: el original queda en `PROCESADOS`; los históricos normalizados los generará y archivará P10.
 
-## 5. Archivo por archivo
+## 4. Despliegue en Railway (paso a paso)
 
-Cada extracto se procesa **solo**, con su propia corrida del motor: un archivo malo no impide procesar los demás y no hay *rollback* global (BNB → PROCESADOS, BISA → PROCESADOS, BCP → ERROR, UNION → PROCESADOS). El motor sigue sin aceptar dos extractos de la misma cuenta en una misma corrida, pero P0 ya no se lo pide.
+No se creó ningún recurso en Railway. Usa un proyecto **nuevo** (no mezclar con `CAJAS-GABO-DEV`).
 
-## 6. Si se repite un extracto
+1. En Railway: **New Project → Deploy from GitHub repo** → `Lothbrok338/control-depositos-cbba` → rama `experiment/p9-masiva-prototipo` (más adelante, la rama definitiva). Railway detecta el `Dockerfile` de la raíz y `railway.json` (builder Dockerfile, healthcheck `/health`).
+2. **No** agregues base de datos, volumen ni bucket.
+3. Servicio → **Variables → New Variable**: `P0_API_TOKEN` = un secreto largo aleatorio, generado por ti, p. ej. `python -c "import secrets; print(secrets.token_urlsafe(48))"`. Guárdalo también para Power Automate. (Opcional: `P0_MAX_BYTES`.) No lo pongas en el repositorio.
+4. Servicio → **Settings → Networking → Generate Domain**. Anota la URL `https://<servicio>.up.railway.app`.
+5. Espera a que el despliegue quede *Active* y comprueba en el navegador: `https://<servicio>.up.railway.app/health` → `{"status":"ok","servicio":"p0-extractos",…}`.
+6. Prueba la API con un extracto pequeño (desde tu equipo; el token solo en tu terminal):
+   `curl -s -X POST https://<servicio>.up.railway.app/procesar-extracto -H "Authorization: Bearer <TOKEN>" -F sede=CBBA -F archivo=@bcp_me_1.xls | head -c 600`
+   Debe devolver `"ok":true,"movimientos":8`.
+7. El servicio fija `TZ` a UTC-4 para que `FECHA DE CARGA` quede en hora de Bolivia (defecto D-15 del motor: usa la hora de la máquina).
 
-P0 no inventa otra estrategia de idempotencia: el mismo extracto (o dos extractos que se solapan) genera un JSON más y **P8 evita duplicados con `CLAVE_TRANSACCION`** (consulta previa por clave + valores únicos en la lista); el lote queda con `CANTIDAD_NUEVA` = 0 y `CANTIDAD_YA_EXISTE` = movimientos. Un mismo nombre de archivo ya presente en `PROCESADOS` no se pisa (se añade `__AAAAMMDD_HHMMSS`). Dentro de **un** extracto, dos filas con la misma clave sí son error (`AUDITORIA_ESTRUCTURAL`), como antes.
+## 5. Flujo de Power Automate (paso a paso)
 
-## 7. Dónde termina el JSON y cómo llega a Depositos_Activos
+Nombre sugerido: `P0_INGESTA_EXTRACTOS_CBBA`. **No** se construyó ni importó nada en el tenant; los nombres exactos de acciones pueden variar según el idioma del diseñador y deben verificarse en la primera armada.
 
-Termina en `CONTROL_DEPOSITOS/P0_EXTRACTOS/CARGA_EXTRACTOS_BANCARIOS` (carpeta de `Documents` de OneDrive de `…/personal/gtorricot_univalle_edu`; ruta de SharePoint `/Documents/CONTROL_DEPOSITOS/P0_EXTRACTOS/CARGA_EXTRACTOS_BANCARIOS`). OneDrive sube el archivo, el flujo `P8_CARGA_DEPOSITOS_ACTIVOS_V5_TENANT_LISTAS_REALES` (disparador «Cuando se crea un archivo (solo propiedades)» cada minuto, solo `DEPOSITOS_ACTIVOS__*.json`) lo detecta, consulta cada clave, crea solo los movimientos nuevos y escribe el lote en `Depositos_Cargas`. El archivo se copia **ya con su nombre final** (no se usa temporal + renombrar, porque un archivo renombrado podría no disparar «archivo nuevo»). Los JSON se quedan en esa carpeta como historial; P0 no los borra.
+1. **Disparador:** SharePoint → *Cuando se crea un archivo (solo propiedades)* → sitio y biblioteca de `CONTROL_DEPOSITOS`, carpeta `…/P0_EXTRACTOS/ENTRADA`. En **⋯ → Configuración → Control de simultaneidad: Activado, grado 1**. En **Condiciones del desencadenador** agrega:
+   `@and(equals(triggerBody()?['{IsFolder}'],false), or(endsWith(toLower(triggerBody()?['{FilenameWithExtension}']),'.xls'), endsWith(toLower(triggerBody()?['{FilenameWithExtension}']),'.xlsx')))`
+2. **Ámbito `PROCESAR`** (Control → Ámbito) con:
+   1. SharePoint → *Obtener contenido del archivo* → Identificador de archivo: `Identificador` del disparador; **Inferir tipo de contenido: No**. En **⋯ → Configuración**: *Entradas/Salidas seguras: Activado*.
+   2. **HTTP** → Método `POST`, URI `https://<servicio>.up.railway.app/procesar-extracto`, Encabezados: `Authorization` = `Bearer <TOKEN>` (guárdalo como *variable de entorno de la solución* de tipo secreto, no en texto), `Content-Type` = `application/json`. Cuerpo:
+      ```
+      {
+        "sede": "CBBA",
+        "nombre_archivo": "@{triggerBody()?['{FilenameWithExtension}']}",
+        "contenido_base64": "@{body('Obtener_contenido_del_archivo')?['$content']}"
+      }
+      ```
+      **⋯ → Configuración:** *Entradas/Salidas seguras: Activado* (así el contenido bancario no queda en el historial de ejecuciones), *Tiempo de espera* `PT5M`, *Directiva de reintentos* fija: 3 reintentos, intervalo `PT30S` (es seguro reintentar: la API no tiene estado y P8 evita duplicados).
+   3. **Condición** `@equals(body('HTTP')?['ok'], true)`.
+      * **Sí:** Condición `@equals(body('HTTP')?['publicar_json'], true)` → **Sí:** SharePoint → *Crear archivo* en `…/P0_EXTRACTOS/CARGA_EXTRACTOS_BANCARIOS`, Nombre `@{body('HTTP')?['json']?['nombre']}`, Contenido `@{body('HTTP')?['json']?['texto']}`. (Entradas seguras activadas.) Después, en ambos casos, **archivar en PROCESADOS** (paso 4 con `@{body('HTTP')?['periodo']?['carpeta']}`).
+      * **No:** SharePoint → *Crear archivo* en `…/P0_EXTRACTOS/ERROR/@{body('HTTP')?['periodo']?['carpeta']}`, Nombre `@{triggerBody()?['{FilenameWithExtension}']}.error.json`, Contenido `@{string(body('HTTP'))}`; y **mover a ERROR** (paso 4).
+3. **Ámbito `CATCH`** (*Configurar ejecución posterior*: solo si `PROCESAR` **falló** o **expiró**; cubre Railway caído, 401, 413, 500): calcula la carpeta con `@{formatDateTime(convertTimeZone(utcNow(),'UTC','SA Western Standard Time'),'yyyy')}/@{split('01_ENERO,02_FEBRERO,03_MARZO,04_ABRIL,05_MAYO,06_JUNIO,07_JULIO,08_AGOSTO,09_SEPTIEMBRE,10_OCTUBRE,11_NOVIEMBRE,12_DICIEMBRE',',')[sub(int(formatDateTime(convertTimeZone(utcNow(),'UTC','SA Western Standard Time'),'MM')),1)]}`; crea `<archivo>.error.json` con `{"ok":false,"etapa":"API","codigo_error":"P0_API_NO_DISPONIBLE","mensaje":"La API no respondió o rechazó la solicitud"}` y mueve el original a ERROR (paso 4).
+4. **Archivar el original** (PROCESADOS o ERROR): crear la carpeta del año y la del mes (SharePoint → *Crear nueva carpeta*; configura la acción siguiente para ejecutarse **tanto si esta tuvo éxito como si falló**, porque puede fallar cuando la carpeta ya existe), copiar el archivo al destino `…/PROCESADOS/AAAA/MM_MES/` (o `ERROR/…`) y **eliminar el archivo de ENTRADA** solo después de que la copia haya tenido éxito. Si tu conector ofrece *Mover archivo*, úsalo en su lugar.
+5. **P8 V5** debe escuchar la carpeta nueva: Power Automate → flujo V5 → editar → disparador → *Carpeta* → `/Documents/CONTROL_DEPOSITOS/P0_EXTRACTOS/CARGA_EXTRACTOS_BANCARIOS` (hoy escucha `/Documents/P8_PILOTO`).
 
-**P8 no se modificó en el repositorio, pero hoy el flujo V5 desplegado escucha `/Documents/P8_PILOTO`. Hay que apuntarlo a la carpeta nueva (paso manual, una vez):** Power Automate → flujo V5 → editar → disparador *Cuando se crea un archivo (solo propiedades)* → *Carpeta* → elegir `/Documents/CONTROL_DEPOSITOS/P0_EXTRACTOS/CARGA_EXTRACTOS_BANCARIOS` (el sitio y la biblioteca no cambian) → guardar. Mientras no se haga, P0 deja los JSON en la carpeta nueva y **nada los carga**. (El zip versionado de V5 sigue con `/Documents/P8_PILOTO`; no se regeneró.)
+Nota: la API ya no resuelve la colisión de nombres en `PROCESADOS`/`ERROR` (no ve las carpetas). Si el mismo nombre de archivo puede llegar dos veces el mismo mes, añade un prefijo de fecha al nombre archivado (`@{formatDateTime(utcNow(),'yyyyMMdd_HHmmss')}__<nombre>`); el nombre original sigue quedando en `ARCHIVO ORIGEN` de los datos, porque la API recibe el original.
+
+## 6. Duplicados y repetidos
+
+Sin cambios: el mismo extracto (o dos que se solapan) genera un JSON más y **P8 evita duplicados con `CLAVE_TRANSACCION`**. Cada extracto es una solicitud independiente: un archivo malo no afecta a los demás.
+
+## 7. Varias sedes
+
+Un solo motor y una sola API. `sede` viaja en cada solicitud; `p0/sedes.json` define por sede `zona_horaria`, `cuentas` (`"TODAS"` o lista de ids del registro) y `cuentas_adicionales` (archivo con entradas propias de `CUENTAS`). La API construye el registro efectivo (formatos comunes + cuentas de la sede) en el directorio temporal de la solicitud. CBBA usa `registro_bancos.json` tal cual. Una cuenta de otra sede sale como `CUENTA_NO_REGISTRADA`. Cada sede tendrá su flujo de Power Automate (con su `sede` y sus carpetas). Pendiente (no hecho): flujo P8 por sede y un registro de cuentas fuera de `registro_bancos.json` cuando sean muchas.
 
 ## 8. Año ya no fijo en 2026
 
-El control del paso 6 del motor protegía contra fechas mal leídas (año de 2 dígitos, texto ilegible), no contra «otro año de trabajo». Regla actual (`anios_fuera_de_rango`): cada año de los movimientos debe estar en **[`ANIO_MINIMO_DATOS` (2026, primer año de operación; no vence), año de la fecha del equipo]**. Por eso 2027, 2028… son válidos cuando el equipo ya está en ese año, y un extracto que cruza diciembre/enero también. Un año anterior a 2026 o posterior al del equipo (p. ej. 2062 por un mal parseo, o un equipo con la fecha atrasada) bloquea con un mensaje que nombra el rango, los años y la fecha del equipo. Si el equipo tiene la fecha mal puesta, todos los extractos irán a `ERROR` con `ANIO_FUERA_DE_RANGO`.
+El control del paso 6 del motor protegía contra fechas mal leídas, no contra «otro año de trabajo». Regla actual (`anios_fuera_de_rango`): cada año debe estar en **[`ANIO_MINIMO_DATOS` (2026, primer año de operación; no vence), año de la fecha del servidor]**. 2027, 2028… son válidos cuando el reloj ya está en ese año y un extracto que cruza diciembre/enero también. Fuera de rango → `ANIO_FUERA_DE_RANGO`.
 
-## 9. Varias sedes con un solo motor
+## 9. Lo que NO se validó
 
-Un solo `motor_control_depositos_cbba.py`, un solo orquestador, formatos comunes en `registro_bancos.json`. Lo que cambia por sede está en `p0/sedes.json`: `carpeta_p0`, `carpeta_carga` (relativa a `carpeta_p0`), `cuentas` (`"TODAS"` o lista de ids del registro base) y `cuentas_adicionales` (JSON con entradas de `CUENTAS` propias de la sede). P0 genera el registro efectivo de la sede (formatos comunes + sus cuentas) y lo usa solo en esa corrida; **CBBA usa `registro_bancos.json` tal cual**. Una sede nueva = una entrada en `sedes.json` + (si hace falta) su archivo de cuentas + su equipo/carpetas + su flujo P8 o carpeta. Una cuenta de otra sede presentada en la sede equivocada sale como `CUENTA_NO_REGISTRADA`. Pendiente (no hecho): flujo P8 por sede y un registro de cuentas fuera de `registro_bancos.json` cuando sean muchas.
+* No se desplegó nada en Railway ni se tocó el tenant. No se pudo construir la imagen (el entorno de trabajo no tiene demonio de Docker). Sí se arrancó la API real con `uvicorn` desde una carpeta que contiene **solo** los archivos que copia el `Dockerfile`, y respondió `/health` y un extracto real de prueba por HTTP.
+* No se probó el flujo de Power Automate: la expresión `body('Obtener_contenido_del_archivo')?['$content']` (Base64 del binario con *Inferir tipo de contenido: No*), la creación de carpetas de año/mes y el borrado del original deben confirmarse en la primera ejecución real.
+* Las pruebas de duplicados usan el flujo P8 V5 con SharePoint **simulado**.
+* P8.5 / `control_origen` sigue fuera. El zip de V5 versionado sigue apuntando a `/Documents/P8_PILOTO` (se edita en el tenant, §5.5).
 
-## 10. Lo que NO se validó (honestidad)
+## 10. Pruebas
 
-* Todo lo que depende de Microsoft 365 / OneDrive: que el flujo V5 ya apunte a la carpeta nueva, que el cliente de OneDrive suba el JSON y que V5 se dispare con un archivo copiado localmente. Primera prueba real sugerida: un extracto pequeño (p. ej. `bcp_me_1.xls`, 8 movimientos) con V5 activo; esperar 1–2 minutos; revisar `Depositos_Cargas`.
-* Las pruebas usan el flujo V5 con SharePoint **simulado** (`p8/ensayo_wdl.py`), no el tenant.
-* **P8.5 / `control_origen` queda fuera:** no está desplegado (V7 no se importó en el tenant) y exigiría cambiar el flujo; no es necesario para cargar. Se puede añadir después como etapa opcional.
-* `FECHA DE CARGA` sigue siendo la hora local de la máquina del motor (defecto D-15, sin cambios).
-* Los flujos antiguos (`NORMALIZAR EXTRACTOS DIARIOS CBBA` y `PROCESAR.txt`) no se usan ni se tocaron.
-
-## 11. Archivos de P0 y pruebas
-
-`p0/orquestador.py` (núcleo y línea de comandos), `p0/sedes.json`, `p0/__main__.py`; cambio en el motor: `motor_control_depositos_cbba.py` (control del año); pruebas: `tests/test_33_anio_dinamico_p0.py` y `tests/test_34_orquestador_p0.py` (`pytest -m p0`).
+`pytest -m p0` (`tests/test_33_anio_dinamico_p0.py`, `tests/test_35_api_p0.py`).

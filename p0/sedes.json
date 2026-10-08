@@ -1,16 +1,14 @@
 {
   "_ayuda": {
-    "sedes": "Una entrada por sede. Los bancos y formatos son comunes (registro_bancos.json); lo que cambia por sede son las cuentas y las carpetas. Un solo motor, un solo orquestador.",
-    "carpeta_p0": "Carpeta con ENTRADA/ (plana), PROCESADOS/AAAA/MM_MES/, ERROR/AAAA/MM_MES/ y CARGA_EXTRACTOS_BANCARIOS/. Relativa a --documentos (carpeta local sincronizada 'Documents' de OneDrive) o absoluta. Los años y meses se crean solo cuando se usan.",
+    "sedes": "Una entrada por sede. Los bancos y formatos son comunes (registro_bancos.json); lo que cambia por sede son las cuentas. Un solo motor, una sola API. Las carpetas de SharePoint/OneDrive de cada sede las maneja Power Automate, no la API.",
     "cuentas": "\"TODAS\" = todas las cuentas de registro_bancos.json (comportamiento actual de CBBA), o una lista de ids de CUENTAS de ese archivo que pertenecen a la sede.",
     "cuentas_adicionales": "Ruta (relativa a p0/) de un JSON con una lista de cuentas propias de la sede, con el mismo formato que CUENTAS de registro_bancos.json; o null.",
-    "carpeta_carga": "Carpeta donde P0 deja los DEPOSITOS_ACTIVOS__*.json. Es la carpeta que debe escuchar el flujo P8 de esa sede (V5: se edita el disparador en Power Automate). Relativa a carpeta_p0 o absoluta."
+    "zona_horaria": "Zona horaria IANA para calcular AAAA/MM_MES del periodo que devuelve la API (Bolivia: America/La_Paz)."
   },
   "sedes": {
     "CBBA": {
       "nombre": "Cochabamba",
-      "carpeta_p0": "CONTROL_DEPOSITOS/P0_EXTRACTOS",
-      "carpeta_carga": "CARGA_EXTRACTOS_BANCARIOS",
+      "zona_horaria": "America/La_Paz",
       "cuentas": "TODAS",
       "cuentas_adicionales": null
     }
