@@ -408,3 +408,15 @@ def test_un_xlsx_que_no_se_puede_generar_no_deja_un_hash_falso_y_se_reintenta(in
     monkeypatch.undo()
     otra = sincronizar(d64(r["estado_b64"]), control=_ctl(r))
     assert otra["ok"] and otra["xlsx_valido"] and otra["cambio_xlsx"] and otra["control"]["ESTADO"] == "OK"
+
+
+# ====================================================================== lo cerrado no cambia
+def test_p10_a1_cerrado_y_los_modulos_reutilizados_no_cambiaron():
+    """A.1 está APROBADO Y CERRADO: su contrato/generador no cambian sin aprobación explícita de Gabriel (regenerar con `python -m p10.huellas`)."""
+    from p10 import huellas
+    esperado = json.loads((huellas.DESTINO).read_text(encoding="utf-8"))
+    actual = huellas.calcular()
+    from tests.test_16_asignacion_p9 import EXCEPCIONES_AUTORIZADAS
+    for grupo in ("a1_cerrado", "reutilizado_sin_cambios"):
+        for ruta, h in actual[grupo].items():
+            assert h in (esperado[grupo][ruta], EXCEPCIONES_AUTORIZADAS.get(ruta)), f"{ruta} cambió respecto de lo aprobado"

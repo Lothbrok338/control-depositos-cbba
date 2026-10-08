@@ -486,3 +486,99 @@ def test_los_claves_de_control_que_emite_el_servicio_existen_en_la_lista_provisi
     corrupto = S.sincronizar_grupo("CBBA", GID, b"basura", [], None, "2026-10-08T10:00:00")
     for c in (r["control"], bad["control"], s["control"], corrupto["control"]):
         assert set(c) <= set(NOMBRES_CONTROL), set(c) - set(NOMBRES_CONTROL)
+
+
+# ====================================================================== más escenarios de robustez
+def test_dos_cuentas_en_el_mismo_ciclo_generan_cada_una_su_estado_y_su_xlsx(b):
+    chico = RAIZ / "tests/fixtures/extractos/bisa_mn_2.xls"
+    b.soltar()
+    b.t.soltar_en_procesados("bisa_mn_2.xls", chico.read_bytes(), 2026, "10_OCTUBRE", "08")
+    r = b.ciclo()
+    assert r.estado_final == "Succeeded"
+    grupos = sorted(i["CLAVE_CONTROL"] for i in b.control() if i["TIPO"] == "GRUPO")
+    assert grupos == ["GRUPO|BISA|0696870039|BOB|2026-08", "GRUPO|" + GID]
+    assert len([k for k in b.t.archivos if k.startswith("/CONTROL_DEPOSITOS/P10_HISTORICO/")]) == 2
+    assert len([k for k in b.t.archivos if k.startswith("/CONTROL_DEPOSITOS/P10_ESTADO/")]) == 2
+
+
+def test_caida_prolongada_del_servicio_no_pierde_extractos_ni_los_marca_como_error_final(b):
+    b.soltar()
+    b.t.fallar("api", "/p10/extracto", veces=6, http=502)
+    for h in ("10:00", "10:15", "10:30", "10:45", "11:00", "11:15"):
+        r = b.ciclo(f"2026-10-08T{h}:00")
+        assert r.estado_final == "Failed"
+    assert b.control("EXTRACTO|" + EXTRACTO) is None                          # un fallo técnico no gasta intentos del extracto
+    r = b.ciclo("2026-10-08T11:30:00")
+    assert r.estado_final == "Succeeded" and b.control("EXTRACTO|" + EXTRACTO)["ESTADO"] == "PROCESADO"
+
+
+def test_si_falla_la_escritura_de_un_cambio_de_lista_la_huella_del_mes_no_se_actualiza_y_se_reintenta(b):
+    b.soltar()
+    b.ciclo()
+    b.cargar_lista_p8()
+    b.ciclo("2026-10-08T10:15:00")
+    huella0 = b.control("MES|2026-08")["HUELLA"]
+    b.t.avanzar(minutes=10)
+    c = b.claves()[5]
+    b.t.depositos.confirmar(c, estudiante="LUIS")
+    b.t.fallar("UpdateFile", "EXTRACTO_HISTORICO", veces=1)
+    r = b.ciclo("2026-10-08T10:30:00")
+    assert r.estado_final == "Failed"
+    assert b.control("MES|2026-08")["HUELLA"] == huella0                                  # no se da por visto un mes con un grupo fallido
+    assert next(f for f in b.auditoria() if f["CLAVE TRANSACCIÓN"] == c)["ESTADO"] == "DISPONIBLE"      # el histórico sigue como estaba
+    r = b.ciclo("2026-10-08T10:45:00")
+    assert r.estado_final == "Succeeded"
+    assert next(f for f in b.auditoria() if f["CLAVE TRANSACCIÓN"] == c)["ESTADO"] == "CONFIRMADO"
+    assert b.control("MES|2026-08")["HUELLA"] != huella0
+
+
+def test_un_mes_con_mas_de_5000_elementos_se_rechaza_con_aviso_y_el_bloqueo_se_libera(b):
+    b.soltar()
+    b.ciclo()
+    for i in range(5001):
+        b.t.depositos.items[100000 + i] = {"Id": 100000 + i, "CLAVE_TRANSACCION": f"X|{i}", "FECHA_MOVIMIENTO": "2026-10-03T00:00:00Z",
+                                           "Modified": "2026-10-08T15:00:00Z", "__etag": 1, "BANCO": "X"}
+    r = b.ciclo("2026-10-08T10:30:00")
+    assert r.estado_final == "Failed" and "MES_EXCEDE_LIMITE" in r.error_final[1]
+    assert b.control("LOCK")["LOCK_HASTA"] == ""
+
+
+def test_el_control_con_mas_de_5000_elementos_detiene_el_ciclo_antes_de_trabajar(b):
+    lista = b.t.listas["P10_Control"]
+    for i in range(5001):
+        lista.items.append({"Id": 1000 + i, "__etag": 1, "CLAVE_CONTROL": f"EXTRACTO|{i}", "TIPO": "EXTRACTO"})
+    b.soltar()
+    r = b.ciclo()
+    assert r.estado_final == "Failed" and r.error_final[0] == "CONTROL_EXCEDE_LIMITE" and XLSX not in b.t.archivos
+
+
+def test_el_ciclo_completo_corre_una_vez_al_dia_y_los_domingos_verifica_todos_los_meses(b):
+    b.soltar()
+    b.ciclo("2026-10-08T06:00:00")
+    assert b.control("LOCK")["ULTIMA_COMPLETA"] == "2026-10-08"
+    b.ciclo("2026-10-08T06:15:00")
+    assert b.control("LOCK")["ULTIMA_COMPLETA"] == "2026-10-08"
+    n_ant = len(b.t.api_llamadas)
+    b.ciclo("2026-10-09T06:00:00")
+    assert b.control("LOCK")["ULTIMA_COMPLETA"] == "2026-10-09" and len(b.t.api_llamadas) > n_ant
+
+
+def test_la_provision_y_el_sincronizador_no_tocan_depositos_activos(b):
+    """P10-A.2 solo LEE la lista de negocio: ninguna escritura (POST/MERGE/DELETE) apunta a Depositos_Activos."""
+    b.soltar()
+    b.ciclo()
+    b.cargar_lista_p8()
+    b.ciclo("2026-10-08T10:15:00")
+    escrituras_dep = [d for op, d in b.t.registro if op != "HttpRequest:GET" and "guid" in d.lower()]
+    assert escrituras_dep == [] and b.t.depositos.escrituras == b.t.depositos.total
+
+
+def test_el_flujo_solo_lee_depositos_activos(defs):
+    """Garantía estática: toda acción que apunta a la lista de negocio es un GET (P10-B es otra fase)."""
+    guid = F.C9.LISTA_DEPOSITOS_ACTIVOS_ID
+    vistas = 0
+    for n, a in todas(defs[0]["actions"]):
+        if guid in json.dumps(a.get("inputs", {})):
+            assert a["inputs"]["parameters"]["parameters/method"] == "GET" and "X-HTTP-Method" not in a["inputs"]["parameters"]["parameters/headers"], n
+            vistas += 1
+    assert vistas == 2
