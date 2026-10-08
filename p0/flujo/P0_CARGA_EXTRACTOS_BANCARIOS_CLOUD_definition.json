@@ -1,0 +1,988 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "$authentication": {
+      "defaultValue": {},
+      "type": "SecureObject"
+    },
+    "$connections": {
+      "defaultValue": {},
+      "type": "Object"
+    }
+  },
+  "triggers": {
+    "Cuando_se_crea_un_archivo": {
+      "type": "OpenApiConnection",
+      "recurrence": {
+        "interval": 1,
+        "frequency": "Minute"
+      },
+      "inputs": {
+        "host": {
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness",
+          "connectionName": "shared_onedriveforbusiness",
+          "operationId": "OnNewFileV2"
+        },
+        "parameters": {
+          "folderId": "%252FCONTROL_DEPOSITOS%252FP0_EXTRACTOS%252FENTRADA",
+          "includeSubfolders": false,
+          "inferContentType": false
+        },
+        "authentication": "@parameters('$authentication')"
+      },
+      "conditions": [
+        {
+          "expression": "@and(not(equals(triggerBody()?['IsFolder'],true)),not(startsWith(coalesce(triggerBody()?['Name'],''),'~$')),or(endsWith(toLower(coalesce(triggerBody()?['Name'],'')),'.xls'),endsWith(toLower(coalesce(triggerBody()?['Name'],'')),'.xlsx')))"
+        }
+      ],
+      "runtimeConfiguration": {
+        "concurrency": {
+          "runs": 1
+        }
+      }
+    }
+  },
+  "actions": {
+    "PARAM_SEDE": {
+      "type": "Compose",
+      "inputs": "CBBA",
+      "runAfter": {}
+    },
+    "PARAM_CARPETA_PROCESADOS": {
+      "type": "Compose",
+      "inputs": "/CONTROL_DEPOSITOS/P0_EXTRACTOS/PROCESADOS",
+      "runAfter": {
+        "PARAM_SEDE": [
+          "Succeeded"
+        ]
+      }
+    },
+    "PARAM_CARPETA_ERROR": {
+      "type": "Compose",
+      "inputs": "/CONTROL_DEPOSITOS/P0_EXTRACTOS/ERROR",
+      "runAfter": {
+        "PARAM_CARPETA_PROCESADOS": [
+          "Succeeded"
+        ]
+      }
+    },
+    "PARAM_CARPETA_CARGA": {
+      "type": "Compose",
+      "inputs": "/CONTROL_DEPOSITOS/P0_EXTRACTOS/CARGA_EXTRACTOS_BANCARIOS",
+      "runAfter": {
+        "PARAM_CARPETA_ERROR": [
+          "Succeeded"
+        ]
+      }
+    },
+    "PARAM_MESES": {
+      "type": "Compose",
+      "inputs": {
+        "01": "01_ENERO",
+        "02": "02_FEBRERO",
+        "03": "03_MARZO",
+        "04": "04_ABRIL",
+        "05": "05_MAYO",
+        "06": "06_JUNIO",
+        "07": "07_JULIO",
+        "08": "08_AGOSTO",
+        "09": "09_SEPTIEMBRE",
+        "10": "10_OCTUBRE",
+        "11": "11_NOVIEMBRE",
+        "12": "12_DICIEMBRE"
+      },
+      "runAfter": {
+        "PARAM_CARPETA_CARGA": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varNombre": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varNombre",
+            "type": "string",
+            "value": "@coalesce(triggerOutputs()?['body/Name'],'')"
+          }
+        ]
+      },
+      "runAfter": {
+        "PARAM_MESES": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varIdOrigen": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varIdOrigen",
+            "type": "string",
+            "value": "@string(coalesce(triggerOutputs()?['body/Id'],''))"
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varNombre": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varEtapa": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varEtapa",
+            "type": "string",
+            "value": "INICIO"
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varIdOrigen": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varEstado": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varEstado",
+            "type": "string",
+            "value": "PENDIENTE"
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varEtapa": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varPeriodoApi": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varPeriodoApi",
+            "type": "string",
+            "value": ""
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varEstado": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varError": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varError",
+            "type": "object",
+            "value": {}
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varPeriodoApi": [
+          "Succeeded"
+        ]
+      }
+    },
+    "TRY": {
+      "type": "Scope",
+      "actions": {
+        "Etapa_OBTENER_CONTENIDO": {
+          "type": "SetVariable",
+          "inputs": {
+            "name": "varEtapa",
+            "value": "OBTENER_CONTENIDO"
+          },
+          "runAfter": {}
+        },
+        "Get_file_content_using_path": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness",
+              "connectionName": "shared_onedriveforbusiness",
+              "operationId": "GetFileContentByPath"
+            },
+            "parameters": {
+              "path": "@triggerOutputs()?['body/Path']",
+              "inferContentType": false
+            },
+            "authentication": "@parameters('$authentication')",
+            "retryPolicy": {
+              "type": "none"
+            }
+          },
+          "runtimeConfiguration": {
+            "secureData": {
+              "properties": [
+                "outputs"
+              ]
+            }
+          },
+          "runAfter": {
+            "Etapa_OBTENER_CONTENIDO": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Etapa_LLAMAR_P0": {
+          "type": "SetVariable",
+          "inputs": {
+            "name": "varEtapa",
+            "value": "LLAMAR_P0"
+          },
+          "runAfter": {
+            "Get_file_content_using_path": [
+              "Succeeded"
+            ]
+          }
+        },
+        "HTTP": {
+          "type": "Http",
+          "inputs": {
+            "method": "POST",
+            "uri": "https://p0-api-production-dd77.up.railway.app/procesar-extracto",
+            "headers": {
+              "Content-Type": "application/json",
+              "Authorization": "Bearer <PEGAR_P0_API_TOKEN_AQUI>"
+            },
+            "body": {
+              "sede": "@outputs('PARAM_SEDE')",
+              "nombre_archivo": "@variables('varNombre')",
+              "contenido_base64": "@body('Get_file_content_using_path')?['$content']"
+            },
+            "retryPolicy": {
+              "type": "fixed",
+              "count": 3,
+              "interval": "PT30S"
+            },
+            "limit": {
+              "timeout": "PT5M"
+            }
+          },
+          "runtimeConfiguration": {
+            "secureData": {
+              "properties": [
+                "inputs",
+                "outputs"
+              ]
+            }
+          },
+          "runAfter": {
+            "Etapa_LLAMAR_P0": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Etapa_EVALUAR_RESPUESTA": {
+          "type": "SetVariable",
+          "inputs": {
+            "name": "varEtapa",
+            "value": "EVALUAR_RESPUESTA"
+          },
+          "runAfter": {
+            "HTTP": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Evaluar_HTTP_200": {
+          "type": "If",
+          "expression": "@equals(outputs('HTTP')?['statusCode'],200)",
+          "actions": {
+            "Evaluar_ok": {
+              "type": "If",
+              "expression": "@equals(body('HTTP')?['ok'],true)",
+              "actions": {
+                "Fijar_periodo_de_la_API": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "varPeriodoApi",
+                    "value": "@coalesce(body('HTTP')?['periodo']?['carpeta'],'')"
+                  },
+                  "runtimeConfiguration": {
+                    "secureData": {
+                      "properties": [
+                        "inputs",
+                        "outputs"
+                      ]
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "Publicar_JSON": {
+                  "type": "If",
+                  "expression": "@equals(body('HTTP')?['publicar_json'],true)",
+                  "actions": {
+                    "Etapa_PUBLICAR_JSON": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "varEtapa",
+                        "value": "PUBLICAR_JSON"
+                      },
+                      "runAfter": {}
+                    },
+                    "Crear_JSON_P7": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness",
+                          "connectionName": "shared_onedriveforbusiness",
+                          "operationId": "CreateFile"
+                        },
+                        "parameters": {
+                          "folderPath": "@outputs('PARAM_CARPETA_CARGA')",
+                          "name": "@body('HTTP')?['json']?['nombre']",
+                          "body": "@body('HTTP')?['json']?['texto']"
+                        },
+                        "authentication": "@parameters('$authentication')",
+                        "retryPolicy": {
+                          "type": "none"
+                        }
+                      },
+                      "runtimeConfiguration": {
+                        "secureData": {
+                          "properties": [
+                            "inputs"
+                          ]
+                        }
+                      },
+                      "runAfter": {
+                        "Etapa_PUBLICAR_JSON": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {}
+                  },
+                  "runAfter": {
+                    "Fijar_periodo_de_la_API": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Fijar_estado_PROCESADO": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "varEstado",
+                    "value": "PROCESADO"
+                  },
+                  "runAfter": {
+                    "Publicar_JSON": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Evaluar_ok_false": {
+                    "type": "If",
+                    "expression": "@equals(body('HTTP')?['ok'],false)",
+                    "actions": {
+                      "Fijar_periodo_de_la_API_error": {
+                        "type": "SetVariable",
+                        "inputs": {
+                          "name": "varPeriodoApi",
+                          "value": "@coalesce(body('HTTP')?['periodo']?['carpeta'],'')"
+                        },
+                        "runtimeConfiguration": {
+                          "secureData": {
+                            "properties": [
+                              "inputs",
+                              "outputs"
+                            ]
+                          }
+                        },
+                        "runAfter": {}
+                      },
+                      "Guardar_respuesta_de_P0": {
+                        "type": "SetVariable",
+                        "inputs": {
+                          "name": "varError",
+                          "value": "@body('HTTP')"
+                        },
+                        "runtimeConfiguration": {
+                          "secureData": {
+                            "properties": [
+                              "inputs",
+                              "outputs"
+                            ]
+                          }
+                        },
+                        "runAfter": {
+                          "Fijar_periodo_de_la_API_error": [
+                            "Succeeded"
+                          ]
+                        }
+                      },
+                      "Fijar_estado_ERROR_NEGOCIO": {
+                        "type": "SetVariable",
+                        "inputs": {
+                          "name": "varEstado",
+                          "value": "ERROR_NEGOCIO"
+                        },
+                        "runAfter": {
+                          "Guardar_respuesta_de_P0": [
+                            "Succeeded"
+                          ]
+                        }
+                      }
+                    },
+                    "else": {
+                      "actions": {
+                        "Fijar_error_respuesta_invalida": {
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "varError",
+                            "value": {
+                              "codigo_error": "P0_RESPUESTA_INVALIDA",
+                              "etapa": "EVALUAR_RESPUESTA",
+                              "mensaje": "P0 respondió HTTP 200 pero sin el campo booleano ok. Revise la API.",
+                              "fecha_hora": "@concat(convertTimeZone(utcNow(),'UTC','SA Western Standard Time','yyyy-MM-ddTHH:mm:ss'),'-04:00')",
+                              "archivo": "@variables('varNombre')",
+                              "sede": "@outputs('PARAM_SEDE')"
+                            }
+                          },
+                          "runtimeConfiguration": {
+                            "secureData": {
+                              "properties": [
+                                "inputs",
+                                "outputs"
+                              ]
+                            }
+                          },
+                          "runAfter": {}
+                        },
+                        "Fijar_estado_ERROR_TECNICO_invalida": {
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "varEstado",
+                            "value": "ERROR_TECNICO"
+                          },
+                          "runAfter": {
+                            "Fijar_error_respuesta_invalida": [
+                              "Succeeded"
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "runAfter": {}
+                  }
+                }
+              },
+              "runAfter": {}
+            }
+          },
+          "else": {
+            "actions": {
+              "Fijar_error_http_inesperado": {
+                "type": "SetVariable",
+                "inputs": {
+                  "name": "varError",
+                  "value": {
+                    "codigo_error": "@if(contains(createArray(0,408,502,503,504),outputs('HTTP')?['statusCode']),'P0_API_NO_DISPONIBLE',if(contains(createArray(401,403),outputs('HTTP')?['statusCode']),'P0_API_NO_AUTORIZADO',if(equals(outputs('HTTP')?['statusCode'],413),'P0_API_PAYLOAD_EXCEDIDO',if(contains(createArray(400,422),outputs('HTTP')?['statusCode']),'P0_API_SOLICITUD_INVALIDA',if(greaterOrEquals(outputs('HTTP')?['statusCode'],500),'P0_API_ERROR_SERVIDOR',concat('P0_API_HTTP_',string(outputs('HTTP')?['statusCode'])))))))",
+                    "etapa": "EVALUAR_RESPUESTA",
+                    "mensaje": "@concat('Railway respondió HTTP ',string(outputs('HTTP')?['statusCode']),' en lugar de 200.')",
+                    "fecha_hora": "@concat(convertTimeZone(utcNow(),'UTC','SA Western Standard Time','yyyy-MM-ddTHH:mm:ss'),'-04:00')",
+                    "archivo": "@variables('varNombre')",
+                    "sede": "@outputs('PARAM_SEDE')"
+                  }
+                },
+                "runtimeConfiguration": {
+                  "secureData": {
+                    "properties": [
+                      "inputs",
+                      "outputs"
+                    ]
+                  }
+                },
+                "runAfter": {}
+              },
+              "Fijar_estado_ERROR_TECNICO_http": {
+                "type": "SetVariable",
+                "inputs": {
+                  "name": "varEstado",
+                  "value": "ERROR_TECNICO"
+                },
+                "runAfter": {
+                  "Fijar_error_http_inesperado": [
+                    "Succeeded"
+                  ]
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Etapa_EVALUAR_RESPUESTA": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runAfter": {
+        "Inicializar_varError": [
+          "Succeeded"
+        ]
+      }
+    },
+    "CATCH": {
+      "type": "Scope",
+      "actions": {
+        "Clasificar_fallo_por_etapa": {
+          "type": "Switch",
+          "expression": "@variables('varEtapa')",
+          "cases": {
+            "Caso_OBTENER_CONTENIDO": {
+              "case": "OBTENER_CONTENIDO",
+              "actions": {
+                "Error_lectura_origen": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "varError",
+                    "value": {
+                      "codigo_error": "ORIGEN_NO_LEIDO",
+                      "etapa": "OBTENER_CONTENIDO",
+                      "mensaje": "@concat('No se pudo leer el archivo en OneDrive. ',take(coalesce(actions('Get_file_content_using_path')?['error']?['message'],'sin detalle'),500))",
+                      "fecha_hora": "@concat(convertTimeZone(utcNow(),'UTC','SA Western Standard Time','yyyy-MM-ddTHH:mm:ss'),'-04:00')",
+                      "archivo": "@variables('varNombre')",
+                      "sede": "@outputs('PARAM_SEDE')"
+                    }
+                  },
+                  "runAfter": {}
+                }
+              }
+            },
+            "Caso_LLAMAR_P0": {
+              "case": "LLAMAR_P0",
+              "actions": {
+                "Error_llamada_p0": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "varError",
+                    "value": {
+                      "codigo_error": "@if(contains(createArray(0,408,502,503,504),coalesce(actions('HTTP')?['outputs']?['statusCode'],0)),'P0_API_NO_DISPONIBLE',if(contains(createArray(401,403),coalesce(actions('HTTP')?['outputs']?['statusCode'],0)),'P0_API_NO_AUTORIZADO',if(equals(coalesce(actions('HTTP')?['outputs']?['statusCode'],0),413),'P0_API_PAYLOAD_EXCEDIDO',if(contains(createArray(400,422),coalesce(actions('HTTP')?['outputs']?['statusCode'],0)),'P0_API_SOLICITUD_INVALIDA',if(greaterOrEquals(coalesce(actions('HTTP')?['outputs']?['statusCode'],0),500),'P0_API_ERROR_SERVIDOR',concat('P0_API_HTTP_',string(coalesce(actions('HTTP')?['outputs']?['statusCode'],0))))))))",
+                      "etapa": "LLAMAR_P0",
+                      "mensaje": "@concat(if(equals(coalesce(actions('HTTP')?['outputs']?['statusCode'],0),0),'Sin respuesta de P0 en Railway (timeout o red). ',concat('Railway respondió HTTP ',string(coalesce(actions('HTTP')?['outputs']?['statusCode'],0)),'. ')),take(string(coalesce(actions('HTTP')?['outputs']?['body'],actions('HTTP')?['error']?['message'],'sin detalle')),500))",
+                      "fecha_hora": "@concat(convertTimeZone(utcNow(),'UTC','SA Western Standard Time','yyyy-MM-ddTHH:mm:ss'),'-04:00')",
+                      "archivo": "@variables('varNombre')",
+                      "sede": "@outputs('PARAM_SEDE')"
+                    }
+                  },
+                  "runtimeConfiguration": {
+                    "secureData": {
+                      "properties": [
+                        "inputs",
+                        "outputs"
+                      ]
+                    }
+                  },
+                  "runAfter": {}
+                }
+              }
+            },
+            "Caso_PUBLICAR_JSON": {
+              "case": "PUBLICAR_JSON",
+              "actions": {
+                "Error_publicacion_json": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "varError",
+                    "value": {
+                      "codigo_error": "P0_JSON_NO_PUBLICADO",
+                      "etapa": "PUBLICAR_JSON",
+                      "mensaje": "@concat('No se pudo crear el JSON P7 en CARGA_EXTRACTOS_BANCARIOS. ',take(coalesce(actions('Crear_JSON_P7')?['error']?['message'],'sin detalle'),500))",
+                      "fecha_hora": "@concat(convertTimeZone(utcNow(),'UTC','SA Western Standard Time','yyyy-MM-ddTHH:mm:ss'),'-04:00')",
+                      "archivo": "@variables('varNombre')",
+                      "sede": "@outputs('PARAM_SEDE')"
+                    }
+                  },
+                  "runAfter": {}
+                }
+              }
+            }
+          },
+          "default": {
+            "actions": {
+              "Error_no_controlado": {
+                "type": "SetVariable",
+                "inputs": {
+                  "name": "varError",
+                  "value": {
+                    "codigo_error": "ERROR_NO_CONTROLADO",
+                    "etapa": "@variables('varEtapa')",
+                    "mensaje": "@concat('Falló la etapa ',variables('varEtapa'),'. Revise el historial del flujo.')",
+                    "fecha_hora": "@concat(convertTimeZone(utcNow(),'UTC','SA Western Standard Time','yyyy-MM-ddTHH:mm:ss'),'-04:00')",
+                    "archivo": "@variables('varNombre')",
+                    "sede": "@outputs('PARAM_SEDE')"
+                  }
+                },
+                "runAfter": {}
+              }
+            }
+          },
+          "runAfter": {}
+        },
+        "Fijar_estado_ERROR_TECNICO_catch": {
+          "type": "SetVariable",
+          "inputs": {
+            "name": "varEstado",
+            "value": "ERROR_TECNICO"
+          },
+          "runAfter": {
+            "Clasificar_fallo_por_etapa": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runAfter": {
+        "TRY": [
+          "Failed",
+          "TimedOut"
+        ]
+      }
+    },
+    "Ahora_Bolivia": {
+      "type": "Compose",
+      "inputs": "@convertTimeZone(utcNow(),'UTC','SA Western Standard Time','yyyy-MM-ddTHH:mm:ss')",
+      "runAfter": {
+        "TRY": [
+          "Succeeded",
+          "Failed",
+          "Skipped",
+          "TimedOut"
+        ],
+        "CATCH": [
+          "Succeeded",
+          "Failed",
+          "Skipped",
+          "TimedOut"
+        ]
+      }
+    },
+    "Periodo_Bolivia": {
+      "type": "Compose",
+      "inputs": "@concat(formatDateTime(outputs('Ahora_Bolivia'),'yyyy'),'/',outputs('PARAM_MESES')?[formatDateTime(outputs('Ahora_Bolivia'),'MM')])",
+      "runAfter": {
+        "Ahora_Bolivia": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Periodo_Carpeta": {
+      "type": "Compose",
+      "inputs": "@if(and(not(empty(variables('varPeriodoApi'))),greater(length(variables('varPeriodoApi')),6),equals(indexOf(variables('varPeriodoApi'),'/'),4),equals(length(split(variables('varPeriodoApi'),'/')),2),not(contains(variables('varPeriodoApi'),'..')),isInt(first(split(variables('varPeriodoApi'),'/')))),variables('varPeriodoApi'),outputs('Periodo_Bolivia'))",
+      "runAfter": {
+        "Periodo_Bolivia": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Carpeta_Destino": {
+      "type": "Compose",
+      "inputs": "@concat(if(equals(variables('varEstado'),'PROCESADO'),outputs('PARAM_CARPETA_PROCESADOS'),outputs('PARAM_CARPETA_ERROR')),'/',outputs('Periodo_Carpeta'))",
+      "runAfter": {
+        "Periodo_Carpeta": [
+          "Succeeded"
+        ]
+      }
+    },
+    "ARCHIVAR": {
+      "type": "Scope",
+      "actions": {
+        "Escribir_error_json": {
+          "type": "If",
+          "expression": "@not(equals(variables('varEstado'),'PROCESADO'))",
+          "actions": {
+            "Error_json_Nombre": {
+              "type": "Compose",
+              "inputs": "@concat(variables('varNombre'),'.error.json')",
+              "runAfter": {}
+            },
+            "Error_json_Probar_destino": {
+              "type": "Scope",
+              "actions": {
+                "Error_json_Consultar_destino": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness",
+                      "connectionName": "shared_onedriveforbusiness",
+                      "operationId": "GetFileMetadataByPath"
+                    },
+                    "parameters": {
+                      "path": "@concat(outputs('Carpeta_Destino'),'/',outputs('Error_json_Nombre'))"
+                    },
+                    "authentication": "@parameters('$authentication')",
+                    "retryPolicy": {
+                      "type": "none"
+                    }
+                  },
+                  "runAfter": {}
+                }
+              },
+              "runAfter": {
+                "Error_json_Nombre": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Error_json_Nombre_final": {
+              "type": "Compose",
+              "inputs": "@if(equals(actions('Error_json_Probar_destino')?['status'],'Succeeded'),concat(substring(outputs('Error_json_Nombre'),0,lastIndexOf(outputs('Error_json_Nombre'),'.')),'_',formatDateTime(outputs('Ahora_Bolivia'),'yyyyMMddTHHmmss'),substring(outputs('Error_json_Nombre'),lastIndexOf(outputs('Error_json_Nombre'),'.'))),outputs('Error_json_Nombre'))",
+              "runAfter": {
+                "Error_json_Probar_destino": [
+                  "Succeeded",
+                  "Failed",
+                  "TimedOut"
+                ]
+              }
+            },
+            "Error_json_Crear": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness",
+                  "connectionName": "shared_onedriveforbusiness",
+                  "operationId": "CreateFile"
+                },
+                "parameters": {
+                  "folderPath": "@outputs('Carpeta_Destino')",
+                  "name": "@outputs('Error_json_Nombre_final')",
+                  "body": "@string(variables('varError'))"
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              },
+              "runtimeConfiguration": {
+                "secureData": {
+                  "properties": [
+                    "inputs"
+                  ]
+                }
+              },
+              "runAfter": {
+                "Error_json_Nombre_final": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {}
+        },
+        "Archivar_original": {
+          "type": "Scope",
+          "actions": {
+            "Original_Nombre": {
+              "type": "Compose",
+              "inputs": "@variables('varNombre')",
+              "runAfter": {}
+            },
+            "Original_Probar_destino": {
+              "type": "Scope",
+              "actions": {
+                "Original_Consultar_destino": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness",
+                      "connectionName": "shared_onedriveforbusiness",
+                      "operationId": "GetFileMetadataByPath"
+                    },
+                    "parameters": {
+                      "path": "@concat(outputs('Carpeta_Destino'),'/',outputs('Original_Nombre'))"
+                    },
+                    "authentication": "@parameters('$authentication')",
+                    "retryPolicy": {
+                      "type": "none"
+                    }
+                  },
+                  "runAfter": {}
+                }
+              },
+              "runAfter": {
+                "Original_Nombre": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Original_Nombre_final": {
+              "type": "Compose",
+              "inputs": "@if(equals(actions('Original_Probar_destino')?['status'],'Succeeded'),concat(substring(outputs('Original_Nombre'),0,lastIndexOf(outputs('Original_Nombre'),'.')),'_',formatDateTime(outputs('Ahora_Bolivia'),'yyyyMMddTHHmmss'),substring(outputs('Original_Nombre'),lastIndexOf(outputs('Original_Nombre'),'.'))),outputs('Original_Nombre'))",
+              "runAfter": {
+                "Original_Probar_destino": [
+                  "Succeeded",
+                  "Failed",
+                  "TimedOut"
+                ]
+              }
+            },
+            "Original_Hay_contenido": {
+              "type": "If",
+              "expression": "@equals(actions('Get_file_content_using_path')?['status'],'Succeeded')",
+              "actions": {
+                "Original_Crear_copia": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness",
+                      "connectionName": "shared_onedriveforbusiness",
+                      "operationId": "CreateFile"
+                    },
+                    "parameters": {
+                      "folderPath": "@outputs('Carpeta_Destino')",
+                      "name": "@outputs('Original_Nombre_final')",
+                      "body": "@body('Get_file_content_using_path')"
+                    },
+                    "authentication": "@parameters('$authentication')",
+                    "retryPolicy": {
+                      "type": "none"
+                    }
+                  },
+                  "runtimeConfiguration": {
+                    "secureData": {
+                      "properties": [
+                        "inputs"
+                      ]
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "Original_Borrar_de_ENTRADA": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness",
+                      "connectionName": "shared_onedriveforbusiness",
+                      "operationId": "DeleteFile"
+                    },
+                    "parameters": {
+                      "id": "@variables('varIdOrigen')"
+                    },
+                    "authentication": "@parameters('$authentication')",
+                    "retryPolicy": {
+                      "type": "fixed",
+                      "count": 2,
+                      "interval": "PT5S"
+                    }
+                  },
+                  "runAfter": {
+                    "Original_Crear_copia": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Original_Mover_sin_contenido": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness",
+                        "connectionName": "shared_onedriveforbusiness",
+                        "operationId": "MoveFile"
+                      },
+                      "parameters": {
+                        "id": "@variables('varIdOrigen')",
+                        "destination": "@concat(outputs('Carpeta_Destino'),'/',outputs('Original_Nombre_final'))",
+                        "overwrite": false
+                      },
+                      "authentication": "@parameters('$authentication')",
+                      "retryPolicy": {
+                        "type": "none"
+                      }
+                    },
+                    "runAfter": {}
+                  }
+                }
+              },
+              "runAfter": {
+                "Original_Nombre_final": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "runAfter": {
+            "Escribir_error_json": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runAfter": {
+        "Carpeta_Destino": [
+          "Succeeded"
+        ]
+      }
+    },
+    "ARCHIVAR_FALLO": {
+      "type": "Terminate",
+      "runAfter": {
+        "ARCHIVAR": [
+          "Failed",
+          "TimedOut"
+        ]
+      },
+      "inputs": {
+        "runStatus": "Failed",
+        "runError": {
+          "code": "ARCHIVO_ORIGINAL_NO_ARCHIVADO",
+          "message": "No se pudo archivar el extracto original; sigue en ENTRADA (o ya fue copiado a destino). Revise el historial."
+        }
+      }
+    },
+    "CERRAR": {
+      "type": "If",
+      "expression": "@not(or(equals(variables('varEstado'),'PROCESADO'),equals(variables('varEstado'),'ERROR_NEGOCIO')))",
+      "actions": {
+        "Terminar_con_error_tecnico": {
+          "type": "Terminate",
+          "inputs": {
+            "runStatus": "Failed",
+            "runError": {
+              "code": "@coalesce(variables('varError')?['codigo_error'],'ERROR_NO_CONTROLADO')",
+              "message": "@concat('Extracto movido a ERROR. Etapa: ',coalesce(variables('varError')?['etapa'],'?'))"
+            }
+          },
+          "runAfter": {}
+        }
+      },
+      "else": {
+        "actions": {}
+      },
+      "runAfter": {
+        "ARCHIVAR": [
+          "Succeeded"
+        ]
+      }
+    }
+  },
+  "outputs": {}
+}

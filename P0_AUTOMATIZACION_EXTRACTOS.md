@@ -124,6 +124,8 @@ No se creó ningún recurso en Railway. Usa un proyecto **nuevo** (no mezclar co
 
 ## 5. Flujo de Power Automate (paso a paso)
 
+> **Paquete listo para importar:** `P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V1.zip` (generador `p0/flujo/construir.py`, guía `p0/flujo/INSTRUCCIONES_IMPORTACION.md`). Implementa este §5 con **OneDrive for Business** en lugar de SharePoint; abajo queda la descripción manual de referencia.
+
 Nombre sugerido: `P0_INGESTA_EXTRACTOS_CBBA`. **No** se construyó ni importó nada en el tenant; los nombres exactos de acciones pueden variar según el idioma del diseñador y deben verificarse en la primera armada.
 
 1. **Disparador:** SharePoint → *Cuando se crea un archivo (solo propiedades)* → sitio y biblioteca de `CONTROL_DEPOSITOS`, carpeta `…/P0_EXTRACTOS/ENTRADA`. En **⋯ → Configuración → Control de simultaneidad: Activado, grado 1**. En **Condiciones del desencadenador** agrega:
