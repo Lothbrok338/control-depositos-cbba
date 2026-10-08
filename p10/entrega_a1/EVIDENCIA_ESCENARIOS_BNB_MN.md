@@ -4,9 +4,9 @@ Archivo: `EXTRACTO_HISTORICO_BNB_3000100152_BOB_2026-08.xlsx` · generado SOLO d
 
 | Paso | Estado operativo | Movimientos | CONFIRMADO | DISPONIBLE | SHA-256 del libro |
 |---|---|---|---|---|---|
-| T0 · snapshot base | snapshot `48ca3e90c50d` | 1184 | 72 | 1112 | `8a248ac2a9972d69…` |
-| T1 · 4 DISPONIBLE → CONFIRMADO | snapshot `c31a1a03a556` | 1184 | 76 | 1108 | `e9f730fd164deb2f…` |
-| T2 · 2 reversiones (payload P9) | snapshot `435a8242f173` | 1184 | 74 | 1110 | `20ab7905234ae9c9…` |
+| T0 · snapshot base | snapshot `48ca3e90c50d` | 1184 | 72 | 1112 | `7163241dd9c6d1a8…` |
+| T1 · 4 DISPONIBLE → CONFIRMADO | snapshot `c31a1a03a556` | 1184 | 76 | 1108 | `13d77ad33650e7d6…` |
+| T2 · 2 reversiones (payload P9) | snapshot `435a8242f173` | 1184 | 74 | 1110 | `97b1a8091711af62…` |
 
 El nombre del archivo, el número de filas (sin duplicados), el orden de los movimientos y la zona superior son idénticos en los tres pasos.
 

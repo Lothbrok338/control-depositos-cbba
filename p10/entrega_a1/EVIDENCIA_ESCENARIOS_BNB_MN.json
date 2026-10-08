@@ -85,7 +85,7 @@
     "DISPONIBLE": 1112
    },
    "movimientos": 1184,
-   "sha256": "8a248ac2a9972d6971b7a4770290a04e6897d5790798abde14dfceed84e1cdc0"
+   "sha256": "7163241dd9c6d1a85198fa2f6f5b83ca794562db9aad7db4f221e768af436112"
   },
   "T1": {
    "estados": {
@@ -93,7 +93,7 @@
     "DISPONIBLE": 1108
    },
    "movimientos": 1184,
-   "sha256": "e9f730fd164deb2f253a7f36364ed741900d5d79ede79deaabfdaa903a783ff1"
+   "sha256": "13d77ad33650e7d6595d12361c66918bd0873794ea108da787cc01bc900b4013"
   },
   "T2": {
    "estados": {
@@ -101,7 +101,7 @@
     "DISPONIBLE": 1110
    },
    "movimientos": 1184,
-   "sha256": "20ab7905234ae9c9f1c086fbb40ad6add818197fc65f89bae15087df91cd697e"
+   "sha256": "97b1a8091711af6223ab05dcb8689442d0d1f2e8f07959a3458d302a5c8f6814"
   }
  },
  "repetir_T1": {
