@@ -3,7 +3,6 @@
     GET  /health            sin autenticación (healthcheck de Railway)
     POST /p10/ciclo         bloqueo + modo + meses a mirar               (decisión pura, p10/plan.py)
     POST /p10/plan          extractos de PROCESADOS que hay que incorporar
-    POST /p10/verificar     (ciclo COMPLETO) estados/XLSX perdidos o alterados
     POST /p10/clasificar    grupos de un mes de Depositos_Activos que cambiaron
     POST /p10/extracto      UN extracto de PROCESADOS -> aportes (parciales) por BANCO+CUENTA+MONEDA+MES, con el MOTOR REAL de P0
     POST /p10/sincronizar   UN grupo: estado + parciales + filas de la lista -> estado nuevo + XLSX (generador aprobado de A.1)
@@ -27,6 +26,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 
+from . import estado as E
 from . import plan as PL
 from . import sincronizacion as S
 
@@ -134,13 +134,12 @@ def _h_plan(c):
                    _campo(c, "prefijo_servidor", str, False, ""), _campo(c, "limite", int, False, PL.MAX_EXTRACTOS_NORMAL))
 
 
-def _h_verificar(c):
-    return PL.verificar(_items(c, "control"), _items(c, "verificaciones"))
-
-
 def _h_clasificar(c):
-    return PL.clasificar(_campo(c, "periodo", str), _items(c, "items"), _items(c, "control"), _campo(c, "modo", str, False, "NORMAL"),
-                         bool(_campo(c, "hay_mas", bool, False, False)), _items(c, "forzar", False))
+    r = PL.clasificar(_campo(c, "periodo", str), _items(c, "items"), _items(c, "control"), _campo(c, "modo", str, False, "NORMAL"),
+                      bool(_campo(c, "hay_mas", bool, False, False)), _campo(c, "verificar", list, False, []))
+    for g in r.get("sucios", []):                       # el flujo necesita las rutas ANTES de llamar a /sincronizar
+        g["rutas"] = S.rutas_grupo(E.grupo_desde_id(g["grupo_id"]))
+    return r
 
 
 def _h_extracto(c):
@@ -152,20 +151,25 @@ def _h_extracto(c):
 
 def _h_sincronizar(c):
     estado = _campo(c, "estado_base64", str, False)
+    xlsx = _campo(c, "xlsx_actual_base64", str, False)
     parciales = _campo(c, "parciales_base64", list, False, [])
     if any(not isinstance(p, str) for p in parciales):
         raise _Mala("`parciales_base64` debe ser una lista de textos Base64.")
     filas = c.get("filas")
     if filas is not None and (not isinstance(filas, list) or any(not isinstance(f, dict) for f in filas)):
         raise _Mala("`filas` debe ser una lista de objetos o null.")
+    control = c.get("control_grupo")
+    if control is not None and not isinstance(control, dict):
+        raise _Mala("`control_grupo` debe ser un objeto o null.")
     with _SERIE:
         return S.sincronizar_grupo(
             _campo(c, "sede", str), _campo(c, "grupo_id", str), _b64(estado, "estado_base64") if estado else None,
-            [_b64(p, "parciales_base64") for p in parciales], filas, _fecha(c), bool(_campo(c, "forzar_xlsx", bool, False, False)),
-            _campo(c, "esperado_version", int, False, 0), _campo(c, "intentos", int, False, 0))
+            [_b64(p, "parciales_base64") for p in parciales], filas, _fecha(c), control,
+            bool(_campo(c, "forzar_xlsx", bool, False, False)), bool(_campo(c, "verificar_xlsx", bool, False, False)),
+            _b64(xlsx, "xlsx_actual_base64") if xlsx else None, bool(_campo(c, "finalizar", bool, False, False)))
 
 
-RUTAS = {"ciclo": _h_ciclo, "plan": _h_plan, "verificar": _h_verificar, "clasificar": _h_clasificar,
+RUTAS = {"ciclo": _h_ciclo, "plan": _h_plan, "clasificar": _h_clasificar,
          "extracto": _h_extracto, "sincronizar": _h_sincronizar}
 
 
@@ -194,4 +198,6 @@ async def operar(operacion: str, request: Request):
         _log.exception("p10 %s: error interno", operacion)
         return _error("ERROR_INESPERADO", "Error interno inesperado.", 500)
     _log.info("p10 %s ok=%s", operacion, resultado.get("ok"))
-    return JSONResponse(resultado, status_code=500 if resultado.get("codigo_error") == "ERROR_INESPERADO" else 200)
+    # Un extracto rechazado (incluido un error inesperado al procesarlo) responde 200 con ok:false y su registro de control listo:
+    # el flujo lo anota y sigue. Solo un fallo del propio servicio (excepción no controlada, arriba) responde 5xx.
+    return JSONResponse(resultado, status_code=200)

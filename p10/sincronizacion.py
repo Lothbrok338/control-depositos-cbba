@@ -31,6 +31,7 @@ from p0 import nucleo
 from . import contrato as C
 from . import estado as E
 from . import generador as G
+from . import plan as PL
 from . import validacion as V
 from .snapshot import SnapshotError, cargar_snapshot
 
@@ -136,7 +137,7 @@ def procesar_extracto(contenido, nombre, sede, ruta, ahora_local, intentos_previ
     Un extracto rechazado devuelve ok:false con `control` listo para el registro (ESTADO ERROR / ERROR_FINAL).
     """
     nombre, sha = nucleo.nombre_seguro(nombre), nucleo.sha256_bytes(contenido)
-    control = {"CLAVE_CONTROL": "EXTRACTO|" + ruta, "TIPO": "EXTRACTO", "PERIODO": _periodo_de_ruta(ruta, ahora_local),
+    control = {"CLAVE_CONTROL": PL.clave_extracto(ruta), "TIPO": "EXTRACTO", "PERIODO": _periodo_de_ruta(ruta, ahora_local),
                "BYTES": len(contenido), "SHA256": sha, "ULTIMA_SYNC": ahora_local}
     try:
         if os.path.splitext(nombre)[1].lower() not in nucleo.EXTENSIONES:
@@ -174,8 +175,8 @@ def procesar_extracto(contenido, nombre, sede, ruta, ahora_local, intentos_previ
                        INTENTOS=intentos_previos, DETALLE="")
         return {"ok": True, "version": VERSION, "extracto": {"nombre": nombre, "sha256": sha, "bytes": len(contenido),
                                                               "movimientos": control["MOVIMIENTOS"]},
-                "grupos": [{"grupo_id": gid, "parcial_b64": b64(E.empaquetar(p)), "movimientos": len(p["movimientos"])}
-                           for gid, p in parciales.items()], "control": control}
+                "grupos": [{"grupo_id": gid, "parcial_b64": b64(E.empaquetar(p)), "movimientos": len(p["movimientos"]),
+                            "rutas": rutas_grupo(E.grupo_desde_id(gid))} for gid, p in parciales.items()], "control": control}
     except ErrorP10 as e:
         intentos = intentos_previos + 1
         control.update(ESTADO="ERROR_FINAL" if intentos >= 3 else "ERROR", INTENTOS=intentos,
@@ -228,35 +229,63 @@ def construir_xlsx(estado, registro):
     return contenido, {"nombre": libro.nombre_archivo, "estados": libro.estados, "movimientos": len(libro.claves)}
 
 
-def sincronizar_grupo(sede, gid, estado_bytes, parciales_bytes, filas, ahora_local, forzar_xlsx=False, esperado_version=0,
-                      intentos=0, base=BASE_DEFECTO):
+def _num(v):
+    try:
+        return int(float(v))
+    except (TypeError, ValueError):
+        return 0
+
+
+def sincronizar_grupo(sede, gid, estado_bytes, parciales_bytes, filas, ahora_local, control=None, forzar_xlsx=False,
+                      verificar_xlsx=False, xlsx_actual=None, finalizar=False, base=BASE_DEFECTO):
     """
     Aplica parciales y/o la foto actual de la lista a un grupo y regenera su XLSX.
     `filas`: filas normalizadas de la lista para ESTE grupo (de `plan.clasificar`) o None si no se leyó la lista.
+    `control`: el elemento de P10_Control del grupo tal como está AHORA (o None si aún no existe). De él salen la versión y el sello
+    del último estado confirmado (detección de alteración/retroceso), los intentos y la marca RECONSTRUIR.
+    `verificar_xlsx` + `xlsx_actual`: ciclo COMPLETO; el XLSX que hay en OneDrive (bytes o None si falta) se compara con el hash que el
+    estado dice haber escrito y, si falta o difiere, se regenera.
+    `finalizar`: quita la marca RECONSTRUIR (solo cuando ya no quedan extractos por reincorporar; lo decide `plan.clasificar`).
     Resultado ok:true incluye `estado_b64` solo si el estado cambió y `xlsx_b64` solo si el libro cambió (o se forzó).
     """
     g = E.grupo_desde_id(gid)
     rutas = rutas_grupo(g, base)
+    ctl = control or {}
+    cv, ch, intentos = _num(ctl.get("VERSION_ESTADO")), str(ctl.get("HASH_ESTADO") or ""), _num(ctl.get("INTENTOS"))
+    marcado = ctl.get("ESTADO") == "RECONSTRUIR"
+    reconstruyendo = marcado and not finalizar
+    ignorar = marcado and cv == 0                  # reconstrucción en curso: el archivo de estado viejo no se usa
     control = {"CLAVE_CONTROL": "GRUPO|" + gid, "TIPO": "GRUPO", "BANCO": g["banco"], "CUENTA": g["cuenta"], "MONEDA": g["moneda"],
                "PERIODO": g["periodo"], "RUTA_XLSX": rutas["ruta_xlsx"], "RUTA_ESTADO": rutas["ruta_estado"],
                "ULTIMA_SYNC": ahora_local}
 
     def falla(codigo, mensaje, estado_control="ERROR", **extra):
-        control.update(ESTADO=estado_control, DETALLE=f"{codigo}: {mensaje}"[:900], INTENTOS=intentos + 1, **extra)
+        control.update({"ESTADO": estado_control, "DETALLE": f"{codigo}: {mensaje}"[:900], "INTENTOS": intentos + 1, **extra})
         return {"ok": False, "version": VERSION, "grupo_id": gid, "codigo_error": codigo, "mensaje": mensaje[:400],
                 "rutas": rutas, "control": control}
 
+    def a_reconstruir(codigo, mensaje):
+        return falla(codigo, mensaje, "RECONSTRUIR", HASH_OPERATIVO="", HASH_ESTADO="", VERSION_ESTADO=0,
+                     RECONSTRUIR_DESDE=ahora_local, INTENTOS=0)
+
+    estado = None
     try:
-        if estado_bytes:
+        if estado_bytes and not ignorar:
             estado = E.cargar_estado(estado_bytes, gid)
-        elif esperado_version > 0:
-            return falla("ESTADO_AUSENTE", "El registro dice que el grupo tenía estado pero no se encontró el archivo.",
-                         "RECONSTRUIR", HASH_OPERATIVO="")
-        else:
-            estado = None
+            if cv > 0 and ch:                       # el control confirma lo último que se escribió; el estado puede ir 1 adelante
+                v = estado["version"]               # (cierre interrumpido entre escribir el estado y confirmarlo en el control)
+                if v == cv and estado["integridad"] != ch:
+                    raise E.ErrorEstado("ESTADO_ALTERADO", "El sello del estado no coincide con el confirmado en el control.")
+                if v < cv:
+                    raise E.ErrorEstado("ESTADO_RETROCEDIDO", "El estado es más antiguo que el confirmado en el control.")
+                if v > cv + 1:
+                    raise E.ErrorEstado("ESTADO_ALTERADO", "El estado es más nuevo de lo que el control permite.")
+        elif not estado_bytes and cv > 0 and not ignorar:
+            raise E.ErrorEstado("ESTADO_AUSENTE", "El control dice que el grupo tenía estado pero no se encontró el archivo.")
     except E.ErrorEstado as e:
-        return falla(e.codigo, e.mensaje, "RECONSTRUIR", HASH_OPERATIVO="")
+        return a_reconstruir(e.codigo, e.mensaje)
     integridad_inicial = estado["integridad"] if estado else None
+    xlsx_previo = dict(estado["xlsx"]) if estado and estado.get("xlsx") else None
     info = {"parciales": [], "operativo": None}
     cambio_datos = False
     try:
@@ -279,13 +308,18 @@ def sincronizar_grupo(sede, gid, estado_bytes, parciales_bytes, filas, ahora_loc
             cambio_datos |= r["cambio"]
     except E.ErrorEstado as e:
         return falla(e.codigo, e.mensaje)
-    if cambio_datos:
-        estado["version"] += 1
     registro = registro_de_sede(sede)
-    xlsx_bytes, xlsx_err = None, None
-    reconstruir_xlsx = cambio_datos or forzar_xlsx or estado["xlsx"] is None
     resumen = {"parciales": info["parciales"], "operativo": info["operativo"], "movimientos": len(estado["movimientos"])}
-    if reconstruir_xlsx:
+    verificado = None
+    if verificar_xlsx and estado.get("xlsx"):
+        if xlsx_actual is None:
+            verificado = "XLSX_AUSENTE"
+        elif sha256_bytes(xlsx_actual) != estado["xlsx"]["sha256"]:
+            verificado = "XLSX_ALTERADO"
+        resumen["xlsx_verificado"] = verificado or "OK"
+    forzar = forzar_xlsx or verificado is not None
+    xlsx_bytes, xlsx_err = None, None
+    if cambio_datos or forzar or estado["xlsx"] is None:
         try:
             xlsx_bytes, r = construir_xlsx(estado, registro)
             resumen.update(estados=r["estados"])
@@ -295,20 +329,29 @@ def sincronizar_grupo(sede, gid, estado_bytes, parciales_bytes, filas, ahora_loc
     if xlsx_bytes is not None:
         h = sha256_bytes(xlsx_bytes)
         control["XLSX_BYTES"] = len(xlsx_bytes)
-        cambio_xlsx = forzar_xlsx or estado["xlsx"] is None or estado["xlsx"]["sha256"] != h
+        cambio_xlsx = forzar or estado["xlsx"] is None or estado["xlsx"]["sha256"] != h
         estado["xlsx"] = {"nombre": rutas["nombre_xlsx"], "sha256": h, "bytes": len(xlsx_bytes)}
+    elif xlsx_err:
+        estado["xlsx"] = None                       # no hay libro válido para este estado: el próximo intento lo regenera
+    if cambio_datos or estado["xlsx"] != xlsx_previo:
+        estado["version"] += 1                      # cada escritura del estado sube la versión en 1 (lo comprueba el próximo ciclo)
     E.sellar(estado)
     cambio_estado = estado["integridad"] != integridad_inicial
     empaquetado = E.empaquetar(estado)
     control.update(HASH_ESTADO=estado["integridad"], MOVIMIENTOS=len(estado["movimientos"]), VERSION_ESTADO=estado["version"],
                    ESTADO_BYTES=len(empaquetado), HASH_XLSX=(estado["xlsx"] or {}).get("sha256", ""))
     if xlsx_err:
-        control.update(ESTADO="ERROR", DETALLE=f"{xlsx_err[0]}: {xlsx_err[1]}"[:900], INTENTOS=intentos + 1)
+        control.update(ESTADO="RECONSTRUIR" if reconstruyendo else "ERROR", DETALLE=f"{xlsx_err[0]}: {xlsx_err[1]}"[:900],
+                       INTENTOS=intentos + 1)
         if hash_op is not None:
             control["HASH_INTENTO"] = hash_op
     else:
-        control.update(ESTADO="OK", DETALLE="", INTENTOS=0)
-        if hash_op is not None:
+        control.update(ESTADO="RECONSTRUIR" if reconstruyendo else "OK", DETALLE="", INTENTOS=0)
+        if finalizar:
+            control["RECONSTRUIR_DESDE"] = ""
+        if reconstruyendo:
+            control["HASH_OPERATIVO"] = ""
+        elif hash_op is not None:
             control["HASH_OPERATIVO"] = hash_op
     out = {"ok": True, "version": VERSION, "grupo_id": gid, "cambio_estado": cambio_estado, "cambio_xlsx": cambio_xlsx,
            "xlsx_valido": xlsx_err is None, "estado_b64": b64(empaquetado) if cambio_estado else None,

@@ -297,7 +297,7 @@ def test_estado_dañado_o_ausente_pide_reconstruir_sin_inventar_datos(inicial):
     corrupto = sincronizar(d64(inicial["estado_b64"])[:50])
     assert not corrupto["ok"] and corrupto["codigo_error"] == "ESTADO_CORRUPTO"
     assert (corrupto["control"]["ESTADO"], corrupto["control"]["HASH_OPERATIVO"]) == ("RECONSTRUIR", "")
-    ausente = sincronizar(None, esperado_version=3)
+    ausente = sincronizar(None, control={"VERSION_ESTADO": 3, "HASH_ESTADO": "x", "ESTADO": "OK"})
     assert not ausente["ok"] and ausente["codigo_error"] == "ESTADO_AUSENTE" and ausente["control"]["ESTADO"] == "RECONSTRUIR"
     sin_nada = sincronizar(None)
     assert not sin_nada["ok"] and sin_nada["codigo_error"] == "SIN_DATOS"
@@ -323,3 +323,88 @@ def test_errores_de_negocio_del_extracto_producen_registro_de_error_sin_datos_ba
     assert not S.procesar_extracto(b"", "x.xls", "CBBA", "/x", AHORA)["ok"]
     assert S.procesar_extracto(b"x", "x.txt", "CBBA", "/x", AHORA)["codigo_error"] == "EXTENSION_NO_SOPORTADA"
     assert S.procesar_extracto(b"x", "x.xls", "NOEXISTE", "/x", AHORA)["codigo_error"] == "SEDE_DESCONOCIDA"
+
+
+# ====================================================================== sellos cruzados con el control, verificación y reconstrucción
+def _ctl(r, **kw):
+    """El elemento de P10_Control tal como el flujo lo dejaría tras confirmar `r`."""
+    return {**r["control"], **kw}
+
+
+def test_el_control_detecta_un_estado_alterado_retrocedido_o_adelantado(inicial, lista):
+    claves = sorted(i["CLAVE_TRANSACCION"] for i in lista.items.values())
+    lista.confirmar(claves[0])
+    r2 = sincronizar(d64(inicial["estado_b64"]), filas=filas_de(lista), control=_ctl(inicial))
+    assert r2["ok"] and r2["control"]["VERSION_ESTADO"] == _ctl(inicial)["VERSION_ESTADO"] + 1
+    # 1. el archivo fue restaurado a una versión anterior mientras el control ya confirmó la nueva
+    viejo = sincronizar(d64(inicial["estado_b64"]), control=_ctl(r2))
+    assert not viejo["ok"] and viejo["codigo_error"] == "ESTADO_RETROCEDIDO" and viejo["control"]["ESTADO"] == "RECONSTRUIR"
+    # 2. mismo número de versión pero otro contenido (sello recalculado a mano o archivo de otro lado)
+    falso = E.desempaquetar(d64(r2["estado_b64"]))
+    falso["movimientos"][next(iter(falso["movimientos"]))]["p0"][4] = "OTRO"
+    E.sellar(falso)
+    r = sincronizar(E.empaquetar(falso), control=_ctl(r2))
+    assert not r["ok"] and r["codigo_error"] == "ESTADO_ALTERADO"
+    # 3. cierre interrumpido: el estado se escribió (versión +1) pero el control quedó en la versión anterior => NO es alteración
+    ok = sincronizar(d64(r2["estado_b64"]), control=_ctl(inicial))
+    assert ok["ok"] and ok["control"]["ESTADO"] == "OK"
+    # 4. versión muy por delante de lo confirmado
+    adelantado = E.desempaquetar(d64(r2["estado_b64"]))
+    adelantado["version"] = _ctl(r2)["VERSION_ESTADO"] + 3
+    E.sellar(adelantado)
+    r = sincronizar(E.empaquetar(adelantado), control=_ctl(r2))
+    assert r["codigo_error"] == "ESTADO_ALTERADO"
+
+
+def test_cada_escritura_del_estado_sube_la_version_en_uno(inicial):
+    v0 = inicial["control"]["VERSION_ESTADO"]
+    r = sincronizar(d64(inicial["estado_b64"]), control=_ctl(inicial), forzar_xlsx=True)       # XLSX igual: el estado no cambia
+    assert not r["cambio_estado"] and r["control"]["VERSION_ESTADO"] == v0
+    sin_xlsx = E.desempaquetar(d64(inicial["estado_b64"]))
+    sin_xlsx["xlsx"] = None
+    E.sellar(sin_xlsx)
+    r = sincronizar(E.empaquetar(sin_xlsx), control=_ctl(inicial, VERSION_ESTADO=sin_xlsx["version"], HASH_ESTADO=sin_xlsx["integridad"]))
+    assert r["cambio_estado"] and r["control"]["VERSION_ESTADO"] == sin_xlsx["version"] + 1
+
+
+def test_verificacion_nocturna_del_xlsx_ausente_alterado_o_correcto(inicial):
+    est, xlsx = d64(inicial["estado_b64"]), d64(inicial["xlsx_b64"])
+    ctl = _ctl(inicial)
+    ok = sincronizar(est, control=ctl, verificar_xlsx=True, xlsx_actual=xlsx)
+    assert ok["ok"] and not ok["cambio_xlsx"] and ok["xlsx_b64"] is None and ok["resumen"]["xlsx_verificado"] == "OK"
+    falta = sincronizar(est, control=ctl, verificar_xlsx=True, xlsx_actual=None)
+    assert falta["cambio_xlsx"] and sha(d64(falta["xlsx_b64"])) == sha(xlsx) and falta["resumen"]["xlsx_verificado"] == "XLSX_AUSENTE"
+    alterado = sincronizar(est, control=ctl, verificar_xlsx=True, xlsx_actual=xlsx[:-10] + b"0123456789")
+    assert alterado["cambio_xlsx"] and sha(d64(alterado["xlsx_b64"])) == sha(xlsx) and alterado["resumen"]["xlsx_verificado"] == "XLSX_ALTERADO"
+    assert not alterado["cambio_estado"]               # el estado no cambia: solo se reescribe el libro
+
+
+def test_reconstruccion_completa_con_marca_hasta_finalizar(parcial, inicial, lista):
+    """Marca RECONSTRUIR -> ignora el archivo de estado viejo, conserva la marca mientras haya extractos y la quita al finalizar."""
+    marcado = {"CLAVE_CONTROL": "GRUPO|" + GID, "ESTADO": "RECONSTRUIR", "VERSION_ESTADO": 0, "HASH_ESTADO": "",
+               "RECONSTRUIR_DESDE": "2026-10-08T09:00:00"}
+    viejo = d64(inicial["estado_b64"])
+    r1 = sincronizar(viejo, [parcial], control=marcado)                      # el estado viejo se ignora (aunque fuera válido)
+    assert r1["ok"] and r1["control"]["ESTADO"] == "RECONSTRUIR" and r1["control"]["VERSION_ESTADO"] == 1
+    assert "RECONSTRUIR_DESDE" not in r1["control"]
+    r2 = sincronizar(d64(r1["estado_b64"]), [parcial], control=_ctl(r1, RECONSTRUIR_DESDE=marcado["RECONSTRUIR_DESDE"]))
+    assert r2["ok"] and r2["control"]["ESTADO"] == "RECONSTRUIR" and not r2["cambio_estado"]       # 2º extracto: mismos datos
+    fin = sincronizar(d64(r1["estado_b64"]), filas=filas_de(lista), control=_ctl(r1, RECONSTRUIR_DESDE=marcado["RECONSTRUIR_DESDE"]),
+                      finalizar=True)
+    assert fin["ok"] and fin["control"]["ESTADO"] == "OK" and fin["control"]["RECONSTRUIR_DESDE"] == ""
+    assert fin["control"]["HASH_OPERATIVO"] == E.hash_lista(filas_de(lista))
+    sin_caida = sincronizar(d64(inicial["estado_b64"]), filas=filas_de(lista), control=_ctl(inicial))   # camino sin pérdida de estado
+    assert sha(d64(fin["xlsx_b64"] or r1["xlsx_b64"])) == sha(d64(sin_caida["xlsx_b64"] or inicial["xlsx_b64"]))
+
+
+def test_un_xlsx_que_no_se_puede_generar_no_deja_un_hash_falso_y_se_reintenta(inicial, monkeypatch):
+    def explota(*a, **k):
+        raise S.ErrorP10("XLSX_NO_VALIDO", "prueba", "XLSX")
+    monkeypatch.setattr(S, "construir_xlsx", explota)
+    r = sincronizar(d64(inicial["estado_b64"]), control=_ctl(inicial), forzar_xlsx=True)
+    assert r["ok"] and not r["xlsx_valido"] and r["control"]["ESTADO"] == "ERROR" and r["control"]["INTENTOS"] == 1
+    e = E.desempaquetar(d64(r["estado_b64"]))
+    assert e["xlsx"] is None                           # el estado ya no afirma que existe un libro válido
+    monkeypatch.undo()
+    otra = sincronizar(d64(r["estado_b64"]), control=_ctl(r))
+    assert otra["ok"] and otra["xlsx_valido"] and otra["cambio_xlsx"] and otra["control"]["ESTADO"] == "OK"

@@ -49,7 +49,7 @@ def test_lock_libre_vencido_u_ocupado():
 
 def test_el_lease_dura_lo_declarado_y_trae_el_etag_para_el_cas():
     r = PL.ciclo("2026-10-08T10:00:00", [lock()])["lock"]
-    assert r["hasta_nuevo"] == "2026-10-08T10:40:00" and r["etag"] == '"3"' and r["item_id"] == 1
+    assert r["hasta_nuevo"] == "2026-10-08T11:00:00" and r["etag"] == '"3"' and r["item_id"] == 1
 
 
 def test_modo_normal_de_dia_y_completo_la_primera_vez_pasadas_las_2am():
@@ -68,7 +68,10 @@ def test_ventanas_de_meses():
     assert n["grupos_a_verificar"] == []
     c = PL.ciclo("2026-10-08T03:00:00", [lock(), grupo("BNB|1|BOB|2026-02"), grupo()])
     assert "2026-02" in c["meses_escanear"] and c["meses_listar"][0] == "2026-10" and c["meses_listar"][-1] == "2026-10"
-    assert sorted(c["grupos_a_verificar"]) == ["BNB|1|BOB|2026-02", GID]
+    assert c["grupos_a_verificar"] == [GID]                                   # jueves: solo la ventana de 3 meses
+    d = PL.ciclo("2026-10-11T03:00:00", [lock(), grupo("BNB|1|BOB|2026-02"), grupo()])    # domingo: todos los meses conocidos
+    assert sorted(d["grupos_a_verificar"]) == ["BNB|1|BOB|2026-02", GID]
+    assert PL.ciclo("2026-10-08T03:00:00", [lock(), grupo(ESTADO="RECONSTRUIR")])["grupos_a_verificar"] == []
 
 
 def test_meses_desplazados_cruzan_el_anio():
@@ -123,20 +126,53 @@ def test_la_ruta_de_onedrive_se_obtiene_quitando_el_prefijo_del_servidor():
     assert PL._ruta_onedrive(f"{PREF}/CONTROL_DEPOSITOS/x.xls", PREF) == "/CONTROL_DEPOSITOS/x.xls"
 
 
-# ---------------------------------------------------------------- verificar
-def test_verificar_detecta_perdidas_y_alteraciones():
-    ctrl = [grupo()]
-    ok = {"grupo_id": GID, "estado_existe": True, "estado_bytes": 100, "xlsx_existe": True, "xlsx_bytes": 200}
-    assert PL.verificar(ctrl, [ok]) == {"ok": True, "reconstruir": [], "forzar": [], "correctos": 1}
-    r = PL.verificar(ctrl, [dict(ok, estado_existe=False)])
-    assert [x["motivo"] for x in r["reconstruir"]] == ["ESTADO_AUSENTE"]
-    r = PL.verificar(ctrl, [dict(ok, estado_bytes=99)])
-    assert [x["motivo"] for x in r["reconstruir"]] == ["ESTADO_ALTERADO"]
-    r = PL.verificar(ctrl, [dict(ok, xlsx_existe=False)])
-    assert [x["motivo"] for x in r["forzar"]] == ["XLSX_AUSENTE"] and not r["reconstruir"]
-    r = PL.verificar(ctrl, [dict(ok, xlsx_bytes=201)])
-    assert [x["motivo"] for x in r["forzar"]] == ["XLSX_ALTERADO"]
-    assert PL.verificar([grupo(ESTADO="RECONSTRUIR")], [dict(ok, estado_existe=False)])["reconstruir"] == []   # ya está en cola
+# ---------------------------------------------------------------- meses con trabajo pendiente
+def test_meses_pendientes_por_error_o_reconstruccion_aunque_la_lista_no_cambie():
+    n = lambda *g: PL.ciclo("2026-10-08T10:00:00", [lock(completa="2026-10-08"), *g])["meses_pendientes"]   # noqa: E731
+    assert n(grupo()) == []
+    assert n(grupo(ESTADO="ERROR", INTENTOS=1)) == ["2026-10"]
+    assert n(grupo(ESTADO="ERROR", INTENTOS=3)) == []                      # agotado: espera al ciclo completo
+    assert n(grupo(ESTADO="RECONSTRUIR")) == ["2026-10"]
+
+
+def test_clave_de_extracto_larga_se_reemplaza_por_su_huella():
+    corta = PL.clave_extracto("/a/b.xls")
+    assert corta == "EXTRACTO|/a/b.xls"
+    larga = PL.clave_extracto("/x/" + "n" * 300 + ".xls")
+    assert len(larga) < 255 and larga.startswith("EXTRACTO|#") and larga == PL.clave_extracto("/x/" + "n" * 300 + ".xls")
+
+
+# ---------------------------------------------------------------- reconstrucción
+def _marcado(desde="2026-10-08T10:00:00"):
+    return grupo(ESTADO="RECONSTRUIR", VERSION_ESTADO=0, RECONSTRUIR_DESDE=desde)
+
+
+def test_reconstruir_exige_reincorporar_todos_los_extractos_aunque_superen_el_limite():
+    rutas = [RUTA.replace("a.xls", f"e{i}.xls") for i in range(4)]
+    ctrl = [_marcado(), *[extracto(r, ULTIMA_SYNC="2026-10-07T09:00:00", Id=20 + i) for i, r in enumerate(rutas)]]
+    archivos = [arch(f"e{i}.xls", creado=f"2026-10-0{i + 1}T09:00:00Z") for i in range(4)]
+    p = PL.plan("2026-10-08T12:00:00", "NORMAL", archivos, ctrl, PREF, 1)
+    assert [e["razon"] for e in p["extractos"]] == ["RECONSTRUIR"] * 4 and p["pendientes"] == 0
+    assert p["extractos"][0]["item_id"] == 20
+    ctrl[1]["ULTIMA_SYNC"] = "2026-10-08T12:05:00"                          # ya reincorporado después de la marca
+    p = PL.plan("2026-10-08T12:10:00", "NORMAL", archivos, ctrl, PREF, 1)
+    assert [e["nombre"] for e in p["extractos"]] == ["e1.xls", "e2.xls", "e3.xls"]
+
+
+def test_la_marca_reconstruir_solo_se_quita_cuando_no_quedan_extractos_pendientes():
+    lst = _lista_con()
+    marca = _marcado()
+    pend = extracto(ULTIMA_SYNC="2026-10-07T09:00:00")
+    r = PL.clasificar("2026-10", items(lst), [marca, pend], "NORMAL", False)
+    assert r["en_espera"] == [GID] and r["sucios"] == []
+    hecho = extracto(ULTIMA_SYNC="2026-10-08T10:30:00")
+    r = PL.clasificar("2026-10", items(lst), [marca, hecho], "NORMAL", False)
+    assert [(s["grupo_id"], s["finalizar"]) for s in r["sucios"]] == [(GID, True)]
+
+
+def test_grupo_en_reconstruccion_sin_filas_en_la_lista_tambien_se_finaliza():
+    r = PL.clasificar("2026-10", [], [_marcado(), extracto(ULTIMA_SYNC="2026-10-08T10:30:00")], "NORMAL", False)
+    assert [(s["grupo_id"], s["filas"], s["finalizar"]) for s in r["sucios"]] == [(GID, None, True)]
 
 
 # ---------------------------------------------------------------- clasificar
@@ -192,15 +228,15 @@ def test_clasificar_error_agotado_se_reintenta_solo_en_el_ciclo_completo_o_si_ca
     assert [s["grupo_id"] for s in PL.clasificar("2026-10", items(lst), [malo], "NORMAL", False)["sucios"]] == [GID]
 
 
-def test_clasificar_forzado_y_grupo_en_reconstruccion():
+def test_clasificar_verificacion_completa():
     lst = _lista_con()
     h = E.hash_lista(__import__("p10.sharepoint", fromlist=["x"]).agrupar(items(lst))[0][GID])
     ctrl = [grupo(HASH_OPERATIVO=h)]
-    r = PL.clasificar("2026-10", items(lst), ctrl, "COMPLETO", False, forzar=[{"grupo_id": GID}])
-    assert r["sucios"][0]["forzar_xlsx"]
-    r = PL.clasificar("2026-10", [], ctrl, "COMPLETO", False, forzar=[{"grupo_id": GID}])
-    assert r["sucios"][0]["filas"] is None and r["sucios"][0]["forzar_xlsx"]
-    assert PL.clasificar("2026-10", items(lst), [grupo(ESTADO="RECONSTRUIR")], "NORMAL", False)["en_espera"] == [GID]
+    r = PL.clasificar("2026-10", items(lst), ctrl, "COMPLETO", False, verificar=[GID])
+    assert r["sucios"][0]["verificar_xlsx"] and not r["sucios"][0]["finalizar"]
+    r = PL.clasificar("2026-10", [], ctrl, "COMPLETO", False, verificar=[GID])
+    assert r["sucios"][0]["filas"] is None and r["sucios"][0]["verificar_xlsx"]
+    assert PL.clasificar("2026-10", [], ctrl, "NORMAL", False)["sucios"] == []
 
 
 def test_clasificar_no_confunde_vecinos_de_otro_mes_ni_acepta_consultas_truncadas():
@@ -216,3 +252,10 @@ def test_clasificar_registra_anomalias_sin_detenerse():
     malo = dict(items(lst)[0], CLAVE_TRANSACCION="")
     r = PL.clasificar("2026-10", [malo] + items(lst)[1:], [], "NORMAL", False)
     assert r["ok"] and len(r["anomalias"]) == 1
+
+
+def test_grupo_con_error_se_reintenta_aunque_la_lista_no_haya_cambiado():
+    lst = _lista_con()
+    h = E.hash_lista(__import__("p10.sharepoint", fromlist=["x"]).agrupar(items(lst))[0][GID])
+    r = PL.clasificar("2026-10", items(lst), [grupo(ESTADO="ERROR", HASH_OPERATIVO=h, INTENTOS=1)], "NORMAL", False)
+    assert [s["grupo_id"] for s in r["sucios"]] == [GID]

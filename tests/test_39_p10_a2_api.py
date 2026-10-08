@@ -68,12 +68,12 @@ def test_tamano_maximo(cli, monkeypatch):
     assert r.status_code == 413
 
 
-def test_ciclo_plan_verificar_clasificar_por_http(cli):
+def test_ciclo_plan_clasificar_por_http(cli):
     lock = {"Id": 1, "CLAVE_CONTROL": "LOCK", "TIPO": "LOCK", "LOCK_HASTA": "", "__metadata": {"etag": '"1"'}}
     r = cli.post("/p10/ciclo", json={"ahora_local": AHORA, "control": [lock]}, headers=H).json()
     assert r["ok"] and r["modo"] == "COMPLETO" and r["lock"]["libre"]
     assert cli.post("/p10/plan", json={"ahora_local": AHORA, "modo": "NORMAL", "archivos": [], "control": []}, headers=H).json()["extractos"] == []
-    assert cli.post("/p10/verificar", json={"control": [], "verificaciones": []}, headers=H).json()["ok"]
+    assert cli.post("/p10/verificar", json={}, headers=H).status_code == 404         # la verificación vive en /sincronizar
     r = cli.post("/p10/clasificar", json={"periodo": "2026-10", "items": [], "control": [], "hay_mas": True}, headers=H).json()
     assert r["codigo_error"] == "MES_EXCEDE_LIMITE"
 
