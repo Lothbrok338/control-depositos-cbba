@@ -26,7 +26,8 @@ from p9.wdl import FALLOS, TODOS, ambito, asignar, compose, contar_acciones, def
 CARPETA_SALIDA = Path(__file__).resolve().parent
 RAIZ = CARPETA_SALIDA.parents[1]
 NOMBRE_FLUJO = "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD"
-NOMBRE_ZIP = "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V3.zip"
+NOMBRE_ZIP = "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V4.zip"
+SPLIT_ON_DISPARADOR = "@triggerOutputs()?['body']"  # el cuerpo de OnNewFilesV2 es un array de BlobMetadata
 CAMPOS_DISPARADOR = ("Id", "Name", "Path", "IsFolder")  # BlobMetadata de OnNewFilesV2
 DESCRIPCION = ("Extractos bancarios (.xls/.xlsx) en OneDrive ENTRADA -> P0 en Railway -> JSON P7 en CARGA_EXTRACTOS_BANCARIOS; "
                "original a PROCESADOS o ERROR por año/mes. Solo orquesta: no recorre movimientos.")
@@ -111,12 +112,16 @@ def nombre_unico(prefijo, carpeta, nombre):
 def disparador():
     """«When a file is created (properties only)» = OnNewFilesV2: devuelve BlobMetadata (Id, Name, Path, IsFolder…), NO el contenido.
     OnNewFileV2 («When a file is created») devuelve el binario y deja Name/IsFolder en null, con lo que el filtro descartaba todo.
-    Los únicos campos del disparador que usa el flujo están en CAMPOS_DISPARADOR; el contenido se lee con Get file content."""
+    OnNewFilesV2 entrega un ARRAY de BlobMetadata: `splitOn` lo separa y cada ejecución recibe UN elemento, de modo que
+    `triggerBody()?['Name']`, `['IsFolder']` y `triggerOutputs()?['body/Path']` se refieren a ese archivo (mismo patrón que P8 V5).
+    Las `conditions` se evalúan sobre cada elemento separado. Los únicos campos que usa el flujo están en CAMPOS_DISPARADOR;
+    el contenido se lee con Get file content."""
     nombre = "coalesce(triggerBody()?['Name'],'')"
     condicion = (f"@and(not(equals(triggerBody()?['IsFolder'],true)),not(startsWith({nombre},'~$')),"
                  f"or(endsWith(toLower({nombre}),'.xls'),endsWith(toLower({nombre}),'.xlsx')))")
     return {"Cuando_se_crea_un_archivo": {
         "type": "OpenApiConnection", "recurrence": {"interval": 1, "frequency": "Minute"},
+        "splitOn": SPLIT_ON_DISPARADOR,
         "inputs": {"host": {"apiId": API_OD, "connectionName": "shared_onedriveforbusiness", "operationId": "OnNewFilesV2"},
                    "parameters": {"folderId": FOLDER_ID_ENTRADA, "includeSubfolders": False},
                    "authentication": "@parameters('$authentication')"},

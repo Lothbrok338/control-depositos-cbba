@@ -1,6 +1,6 @@
 # P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD — importación
 
-Paquete: `P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V3.zip` (raíz del repo). Generador: `python -m p0.flujo.construir`. Definición legible: `p0/flujo/P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_definition.json`.
+Paquete: `P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V4.zip` (raíz del repo). Generador: `python -m p0.flujo.construir`. Definición legible: `p0/flujo/P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_definition.json`.
 
 Power Automate solo orquesta: lee el archivo de OneDrive, hace un POST a P0 (Railway) y guarda lo que P0 devuelve. No recorre ni parsea movimientos. P0 sigue sin guardar nada (sin DB, volumen ni bucket).
 
@@ -8,7 +8,7 @@ Power Automate solo orquesta: lee el archivo de OneDrive, hace un POST a P0 (Rai
 
 | Paso | Detalle |
 |---|---|
-| Disparador | OneDrive for Business · *When a file is created (properties only)* (`OnNewFilesV2`, devuelve Id/Name/Path/IsFolder; el contenido se lee después) · `/CONTROL_DEPOSITOS/P0_EXTRACTOS/ENTRADA` · cada 1 min · concurrencia 1 · solo `.xls`/`.xlsx` (ignora carpetas, `~$*` y otras extensiones) |
+| Disparador | OneDrive for Business · *When a file is created (properties only)* (`OnNewFilesV2`, devuelve un array de Id/Name/Path/IsFolder; *Split On* = `@triggerOutputs()?['body']` procesa cada archivo por separado; el contenido se lee después) · `/CONTROL_DEPOSITOS/P0_EXTRACTOS/ENTRADA` · cada 1 min · concurrencia 1 · solo `.xls`/`.xlsx` (ignora carpetas, `~$*` y otras extensiones) |
 | Leer | *Get file content using path* (`triggerOutputs()?['body/Path']`), Infer Content Type = No |
 | P0 | `POST https://p0-api-production-dd77.up.railway.app/procesar-extracto` con `{"sede":"CBBA","nombre_archivo":…,"contenido_base64":body('Get_file_content_using_path')?['$content']}` |
 | `ok=true` + `publicar_json=true` | Crea `json.nombre` con `json.texto` (sin transformar) en `CARGA_EXTRACTOS_BANCARIOS` → P8 V5 lo toma |
@@ -24,7 +24,7 @@ El original solo se borra de ENTRADA cuando su copia ya existe en destino (copia
 
 ## Importar (clic a clic)
 
-1. Power Automate → **My flows** → **Import** → **Import Package (Legacy)** → **Upload** → `P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V3.zip`.
+1. Power Automate → **My flows** → **Import** → **Import Package (Legacy)** → **Upload** → `P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V4.zip`.
 2. En *Related resources* → **OneDrive for Business** → **Select during import** → elige tu conexión OneDrive for Business (`gtorricot@univalle.edu`) → **Save** → **Import**.
 3. Abre el flujo → **Edit**.
 
@@ -41,7 +41,7 @@ Cuando el flujo viva dentro de una Solution, conviene mover el token a una Envir
 
 - **Disparador**: debe mostrar la carpeta `ENTRADA`. El paquete la trae con el formato interno del conector; si el diseñador la marca en rojo o vacía, vuelve a elegirla con el icono de carpeta (`/CONTROL_DEPOSITOS/P0_EXTRACTOS/ENTRADA`), *Include subfolders = No*. Es el único punto del flujo que no se pudo comprobar sin tenant.
 - **Secure Inputs/Outputs** (⋯ → *Settings*): HTTP (inputs+outputs), Get file content (outputs), Crear_JSON_P7 (inputs), Original_Crear_copia (inputs) y Error_json_Crear (inputs). Power Automate no admite Secure Inputs/Outputs en acciones de variable, Compose, condiciones ni ámbitos, por eso solo esas cinco lo llevan.
-- **Concurrency** del disparador = 1 (⋯ → *Settings*).
+- **Split On** del disparador activo (⋯ → *Settings* → *Split on* = `@triggerOutputs()?['body']`) y **Concurrency** = 1 (⋯ → *Settings*).
 - Activar el flujo (*Turn on*).
 
 ## Prueba mínima en el tenant

@@ -66,7 +66,7 @@ def test_artefactos_versionados_son_la_salida_actual_del_generador():
     assert json.loads(RUTA_DEF.read_text(encoding="utf-8")) == DEF
     assert RUTA_ZIP.read_bytes() == F.zip_bytes(DEF)
     assert F.zip_bytes(DEF) == F.zip_bytes(F.construir_definicion())  # determinista
-    assert F.NOMBRE_ZIP == "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V3.zip" and F.NOMBRE_FLUJO == "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD"
+    assert F.NOMBRE_ZIP == "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V4.zip" and F.NOMBRE_FLUJO == "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD"
 
 
 def test_zip_estructura_e_idiomas_de_importacion():
@@ -104,7 +104,9 @@ def test_disparador_onedrive_for_business_entrada_xls_xlsx_concurrencia_1():
     assert "IsFolder" in cond and ".xls'" in cond and ".xlsx'" in cond and "toLower" in cond
     for ext in (".csv", ".pdf", ".xlsm", ".txt"):
         assert ext not in cond
-    assert "splitOn" not in t
+    # OnNewFilesV2 devuelve un ARRAY de BlobMetadata: sin splitOn, triggerBody()?['IsFolder'] falla («Array elements can only be selected
+    # using an integer index»). Con splitOn cada ejecución recibe un único elemento (mismo patrón que el trigger de P8 V5).
+    assert t["splitOn"] == "@triggerOutputs()?['body']"
 
 
 def test_el_disparador_es_properties_only_y_todo_lo_que_lee_del_existe_en_blobmetadata():
@@ -396,5 +398,5 @@ def test_p8_p7_motor_y_api_no_fueron_modificados():
 def test_documentacion_de_importacion_cubre_los_puntos_manuales():
     texto = DOC.read_text(encoding="utf-8")
     for clave in ("<PEGAR_P0_API_TOKEN_AQUI>", "Authorization", "OneDrive for Business", "ENTRADA", "CARGA_EXTRACTOS_BANCARIOS",
-                  "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V3.zip", "Secure"):
+                  "P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V4.zip", "Secure"):
         assert clave in texto, clave
