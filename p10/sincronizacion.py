@@ -237,7 +237,7 @@ def _num(v):
 
 
 def sincronizar_grupo(sede, gid, estado_bytes, parciales_bytes, filas, ahora_local, control=None, forzar_xlsx=False,
-                      verificar_xlsx=False, xlsx_actual=None, finalizar=False, base=BASE_DEFECTO):
+                      verificar_xlsx=False, xlsx_actual=None, finalizar=False, parcial_lista=False, base=BASE_DEFECTO):
     """
     Aplica parciales y/o la foto actual de la lista a un grupo y regenera su XLSX.
     `filas`: filas normalizadas de la lista para ESTE grupo (de `plan.clasificar`) o None si no se leyó la lista.
@@ -246,6 +246,8 @@ def sincronizar_grupo(sede, gid, estado_bytes, parciales_bytes, filas, ahora_loc
     `verificar_xlsx` + `xlsx_actual`: ciclo COMPLETO; el XLSX que hay en OneDrive (bytes o None si falta) se compara con el hash que el
     estado dice haber escrito y, si falta o difiere, se regenera.
     `finalizar`: quita la marca RECONSTRUIR (solo cuando ya no quedan extractos por reincorporar; lo decide `plan.clasificar`).
+    `parcial_lista`: `filas` son solo las filas que cambiaron (lectura incremental): no es una foto completa de la lista, así que no se
+    registra su hash como «lo último conciliado» y, si nada cambió, no hay nada que anotar en el control (`escribir_control`: false).
     Resultado ok:true incluye `estado_b64` solo si el estado cambió y `xlsx_b64` solo si el libro cambió (o se forzó).
     """
     g = E.grupo_desde_id(gid)
@@ -343,7 +345,7 @@ def sincronizar_grupo(sede, gid, estado_bytes, parciales_bytes, filas, ahora_loc
     if xlsx_err:
         control.update(ESTADO="RECONSTRUIR" if reconstruyendo else "ERROR", DETALLE=f"{xlsx_err[0]}: {xlsx_err[1]}"[:900],
                        INTENTOS=intentos + 1)
-        if hash_op is not None:
+        if hash_op is not None and not parcial_lista:
             control["HASH_INTENTO"] = hash_op
     else:
         control.update(ESTADO="RECONSTRUIR" if reconstruyendo else "OK", DETALLE="", INTENTOS=0)
@@ -351,12 +353,14 @@ def sincronizar_grupo(sede, gid, estado_bytes, parciales_bytes, filas, ahora_loc
             control["RECONSTRUIR_DESDE"] = ""
         if reconstruyendo:
             control["HASH_OPERATIVO"] = ""
-        elif hash_op is not None:
+        elif hash_op is not None and not parcial_lista:
             control["HASH_OPERATIVO"] = hash_op
     out = {"ok": True, "version": VERSION, "grupo_id": gid, "cambio_estado": cambio_estado, "cambio_xlsx": cambio_xlsx,
            "xlsx_valido": xlsx_err is None, "estado_b64": b64(empaquetado) if cambio_estado else None,
            "xlsx_b64": b64(xlsx_bytes) if (cambio_xlsx and xlsx_bytes is not None) else None,
-           "rutas": rutas, "control": control, "resumen": resumen}
+           "rutas": rutas, "control": control, "resumen": resumen,
+           "escribir_control": not (parcial_lista and not cambio_estado and not cambio_xlsx and xlsx_err is None
+                                    and ctl.get("ESTADO") == "OK")}
     if xlsx_err:
         out["codigo_error"], out["mensaje"] = xlsx_err[0], xlsx_err[1][:400]
     return out

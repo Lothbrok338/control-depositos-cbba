@@ -170,11 +170,12 @@ def upsert(pre, existe, item_id, cuerpo):
 
 
 # ---------------------------------------------------------------------------------------------- bloque de grupo (único para extractos y meses)
-def bloque_grupo(pre, valor_varG, leer_xlsx):
+def bloque_grupo(pre, valor_varG, leer_xlsx, encolar_conciliacion=False):
     """
     Sincroniza UN grupo (BANCO+CUENTA+MONEDA+MES). Entrada: `varG` = {grupo_id, rutas, parciales, filas, verificar_xlsx, finalizar}.
     Orden de escritura: XLSX -> estado -> control. Un fallo técnico se anota, marca varGrupoOk=false y no toca el control.
-    `leer_xlsx`: solo el ciclo de meses verifica el XLSX existente (el camino de extractos no lo lee).
+    `leer_xlsx`: solo la conciliación verifica el XLSX existente (los caminos de extractos y de delta no lo leen).
+    `encolar_conciliacion`: si el estado del grupo cambió, su BANCO+MES se concilia con la lista completa más adelante en el mismo ciclo.
     """
     def G(campo):
         return f"variables('varG')?['{campo}']"
@@ -198,13 +199,17 @@ def bloque_grupo(pre, valor_varG, leer_xlsx):
             "estado_base64": f"@outputs('{n('Estado')}')", "parciales_base64": "@" + G("parciales"), "filas": "@" + G("filas"),
             "control_grupo": f"@outputs('{n('Control')}')", "verificar_xlsx": "@" + G("verificar_xlsx"),
             "xlsx_actual_base64": f"@outputs('{n('Xlsx')}')" if leer_xlsx else None,
-            "finalizar": "@" + G("finalizar")}),
+            "finalizar": "@" + G("finalizar"), "parcial_lista": "@" + G("parcial_lista")}),
         n("Escribir_XLSX"): si(f"@and({ok},not(empty(body('{resp}')?['xlsx_b64'])))", secuencia(**escritura(
             n("X_"), "@" + R("carpeta_xlsx"), "@" + R("nombre_xlsx"), "@" + R("ruta_xlsx"), f"body('{resp}')?['xlsx_b64']"))),
         n("Escribir_ESTADO"): si(f"@and({ok},not(empty(body('{resp}')?['estado_b64'])))", secuencia(**escritura(
             n("E_"), "@" + R("carpeta_estado"), "@" + R("nombre_estado"), "@" + R("ruta_estado"), f"body('{resp}')?['estado_b64']"))),
-        n("Guardar_CONTROL"): si(f"@equals(outputs('{resp}')?['statusCode'],200)", secuencia(**{n("Control_Upsert"): upsert(
+        n("Guardar_CONTROL"): si(f"@and(equals(outputs('{resp}')?['statusCode'],200),coalesce(body('{resp}')?['escribir_control'],true))",
+                                 secuencia(**{n("Control_Upsert"): upsert(
             n("Ctl_"), f"not(empty(outputs('{n('Control')}')))", f"outputs('{n('Control')}')?['Id']", f"body('{resp}')?['control']")})),
+        **({n("Encolar_conciliacion"): si(f"@and({ok},equals(body('{resp}')?['cambio_estado'],true))", secuencia(**{n("Encolar"): agregar(
+            "varSlices", {"periodo": "@split(" + G("grupo_id") + ",'|')[3]", "banco": "@split(" + G("grupo_id") + ",'|')[0]"})}))}
+           if encolar_conciliacion else {}),
         n("Revisar_resultado"): si(f"@or(not({ok}),not(equals(body('{resp}')?['xlsx_valido'],true)))", secuencia(**{
             n("Fijar_no_ok"): asignar("varGrupoOk", False),
             n("Anotar"): anotar("@concat('GRUPO '," + G("grupo_id") + f",': ',coalesce(body('{resp}')?['codigo_error'],'XLSX_NO_VALIDO'))")})),
@@ -259,7 +264,7 @@ def fase_extractos():
             "body('E_Procesar')?['grupos'],createArray())",
             bloque_grupo("GE_", {"grupo_id": "@items('Cada_grupo_E')?['grupo_id']", "rutas": "@items('Cada_grupo_E')?['rutas']",
                                  "parciales": "@createArray(items('Cada_grupo_E')?['parcial_b64'])", "filas": None,
-                                 "verificar_xlsx": False, "finalizar": False}, False)),
+                                 "verificar_xlsx": False, "finalizar": False, "parcial_lista": False}, False, True)),
         E_Anotar=si(
             "@and(equals(outputs('E_Procesar')?['statusCode'],200),or(not(equals(body('E_Procesar')?['ok'],true)),variables('varGrupoOk')))",
             secuencia(E_Ledger=upsert("E_Led_", "greater(coalesce(items('Cada_extracto')?['item_id'],0),0)",
@@ -284,62 +289,77 @@ def rango_mes(periodo):
     return ini, fin
 
 
-def filtro_rango(periodo):
+def filtro_banco_mes(banco, periodo):
     ini, fin = rango_mes(periodo)
-    return f"uriComponent(concat('FECHA_MOVIMIENTO ge datetime''',{ini},''' and FECHA_MOVIMIENTO lt datetime''',{fin},''''))"
+    return (f"uriComponent(concat('BANCO eq ''',replace({banco},'''',''''''),''' and FECHA_MOVIMIENTO ge datetime''',{ini},"
+            f"''' and FECHA_MOVIMIENTO lt datetime''',{fin},''''))")
 
 
-def fase_meses(campos_select):
-    mes = "items('Cada_mes_huella')"
-    valor = "if(empty(body('H_GET')?['value']),'',concat(first(body('H_GET')?['value'])?['Modified'],'|',string(first(body('H_GET')?['value'])?['Id'])))"
-    huella = secuencia(
-        H_GET=sp("GET", lista_depositos(["/items?$select=Id,Modified&$orderby=Modified%20desc&$top=1&$filter=", ("x", filtro_rango(mes))]), JSON_SIN),
-        H_Necesario={"type": "If", "expression": (
-            f"@or(equals(body('Ciclo_API')?['modo'],'COMPLETO'),not(equals({valor},coalesce(body('Ciclo_API')?['huellas']?[{mes}],''))),"
-            f"contains(body('Ciclo_API')?['meses_pendientes'],{mes}))"),
-                     "actions": secuencia(Encolar_mes=agregar("varMeses", {"periodo": "@" + mes, "huella": "@" + valor})), "else": {"actions": {}}})
-    huella["H_Falla"] = anotar("@concat('Huella de ',items('Cada_mes_huella'),': no se pudo leer Depositos_Activos')", H_GET=FALLOS)
-    por_sucio = bloque_grupo("GM_", {
-        "grupo_id": "@items('Cada_sucio')?['grupo_id']", "rutas": "@items('Cada_sucio')?['rutas']", "parciales": "@createArray()",
-        "filas": "@items('Cada_sucio')?['filas']", "verificar_xlsx": "@items('Cada_sucio')?['verificar_xlsx']",
-        "finalizar": "@items('Cada_sucio')?['finalizar']"}, True)
-    periodo = "items('Cada_mes_trabajo')?['periodo']"
-    ctl2 = "body('T_Control_GET')?['d']?['results']"
-    cuerpo_mes = (f"json(concat('{{\"CLAVE_CONTROL\":\"MES|',{periodo},'\",\"TIPO\":\"MES\",\"PERIODO\":\"',{periodo},'\",\"HUELLA\":\"',"
-                  f"items('Cada_mes_trabajo')?['huella'],'\",\"ULTIMA_SYNC\":\"',{AHORA},'\"}}'))")
-    por_mes = secuencia(
-        T_Control_GET=sp("GET", uri_control(["/items?$top=5000"]), JSON_V),
-        T_Items=sp("GET", lista_depositos([f"/items?$select={campos_select}&$orderby=Id&$top=5000&$filter=", ("x", filtro_rango(periodo))]),
-                   JSON_SIN, seguro=SEGURO_SALIDA),
-        T_Clasificar=api("clasificar", {
-            "periodo": "@" + periodo, "items": "@body('T_Items')?['value']", "control": "@" + ctl2,
-            "modo": "@body('Ciclo_API')?['modo']", "hay_mas": "@not(empty(body('T_Items')?['odata.nextLink']))",
+def fase_lista(campos_select):
+    """
+    B1 (todos los ciclos): lectura INCREMENTAL de Depositos_Activos: solo las filas con Modified >= cursor (un GET; vacío casi siempre).
+    B2: conciliación de BANCO+MES con la lista completa (noche, grupos con error o en reconstrucción, y tras cada cambio de extracto).
+    """
+    sel = f"/items?$select={campos_select}&$top=5000&$filter="
+    ctl_d = "body('D_Control_GET')?['d']?['results']"
+    fijar_d = {"grupo_id": "@items('Cada_sucio_D')?['grupo_id']", "rutas": "@items('Cada_sucio_D')?['rutas']", "parciales": "@createArray()",
+               "filas": "@items('Cada_sucio_D')?['filas']", "verificar_xlsx": False, "finalizar": False, "parcial_lista": True}
+    dentro = secuencia(
+        D_Control_GET=sp("GET", uri_control(["/items?$top=5000"]), JSON_V),
+        D_Clasificar=api("delta", {"ahora_local": "@" + AHORA, "items": "@body('D_GET')?['value']", "control": "@" + ctl_d,
+                                   "cursor_desde": "@body('Ciclo_API')?['cursor_desde']"}),
+        D_Reiniciar=asignar("varGrupoOk", True),
+        Cada_sucio_D=cada("@if(equals(body('D_Clasificar')?['ok'],true),body('D_Clasificar')?['sucios'],createArray())",
+                          bloque_grupo("GD_", fijar_d, False)),
+        D_Cursor=si("@and(variables('varGrupoOk'),not(empty(body('D_Clasificar')?['cursor_nuevo'])))", secuencia(Fijar_cursor=sp(
+            "POST", uri_control(["/items(", ("x", "string(body('Ciclo_API')?['lock']?['item_id'])"), ")"]), MERGE,
+            "@concat('{\"CURSOR_LISTA\":\"',body('D_Clasificar')?['cursor_nuevo'],'\"}')"))))
+    leer_d = sp("GET", lista_depositos([sel.replace(f"/items?$select={campos_select}&$top=5000&$filter=",
+                                                    f"/items?$select={campos_select}&$orderby=Modified&$top=5000&$filter="),
+                                        ("x", "uriComponent(concat('Modified gt datetime''',body('Ciclo_API')?['cursor_desde'],''''))")]),
+                JSON_SIN, seguro=SEGURO_SALIDA)
+    delta_acc = secuencia(
+        D_GET=leer_d,
+        D_Hay_cambios=si("@greater(length(body('D_GET')?['value']),0)", dentro))
+    delta_acc["D_Falla_lectura"] = anotar("@concat('Lectura incremental de Depositos_Activos: no se pudo leer')", D_GET=FALLOS)
+
+    s = "items('Cada_slice')"
+    ctl_s = "body('S_Control_GET')?['d']?['results']"
+    fijar_s = {"grupo_id": "@items('Cada_sucio_S')?['grupo_id']", "rutas": "@items('Cada_sucio_S')?['rutas']", "parciales": "@createArray()",
+               "filas": "@items('Cada_sucio_S')?['filas']", "verificar_xlsx": "@items('Cada_sucio_S')?['verificar_xlsx']",
+               "finalizar": "@items('Cada_sucio_S')?['finalizar']", "parcial_lista": False}
+    por_slice = secuencia(
+        S_Control_GET=sp("GET", uri_control(["/items?$top=5000"]), JSON_V),
+        S_Items=sp("GET", lista_depositos([f"/items?$select={campos_select}&$orderby=Id&$top=5000&$filter=",
+                                           ("x", filtro_banco_mes(s + "?['banco']", s + "?['periodo']"))]), JSON_SIN, seguro=SEGURO_SALIDA),
+        S_Clasificar=api("clasificar", {
+            "periodo": f"@{s}?['periodo']", "banco": f"@{s}?['banco']", "items": "@body('S_Items')?['value']", "control": "@" + ctl_s,
+            "modo": "@body('Ciclo_API')?['modo']", "hay_mas": "@not(empty(body('S_Items')?['odata.nextLink']))",
             "verificar": "@body('Ciclo_API')?['grupos_a_verificar']"}),
-        T_Reiniciar=asignar("varGrupoOk", True),
-        Cada_sucio=cada("@if(equals(body('T_Clasificar')?['ok'],true),body('T_Clasificar')?['sucios'],createArray())", por_sucio),
-        T_Mes_item={"type": "Query", "inputs": {"from": "@" + ctl2, "where": f"@equals(item()?['CLAVE_CONTROL'],concat('MES|',{periodo}))"}},
-        T_Anotar=si("@and(equals(body('T_Clasificar')?['ok'],true),variables('varGrupoOk'))", secuencia(T_Mes=upsert(
-            "T_Mes_", "greater(length(body('T_Mes_item')),0)", "first(body('T_Mes_item'))?['Id']", cuerpo_mes))))
-    por_mes["T_Falla_lectura"] = anotar(f"@concat('Mes ',{periodo},': no se pudo leer')", T_Control_GET=FALLOS, T_Items=FALLOS)
-    por_mes["T_Falla_clasificar"] = anotar(f"@concat('Mes ',{periodo},': el servicio no respondió')", T_Clasificar=FALLOS)
-    por_mes["T_Clasificar_rechazo"] = con_ra(si(
-        "@not(equals(body('T_Clasificar')?['ok'],true))",
-        {"Anotar_rechazo": anotar(f"@concat('Mes ',{periodo},': ',coalesce(body('T_Clasificar')?['codigo_error'],'rechazado'))")}),
-        T_Clasificar=["Succeeded"])
-    return dict(Cada_mes_huella=cada("@body('Ciclo_API')?['meses_escanear']", huella),
-                Cada_mes_trabajo=cada("@variables('varMeses')", por_mes))
+        S_Reiniciar=asignar("varGrupoOk", True),
+        Cada_sucio_S=cada("@if(equals(body('S_Clasificar')?['ok'],true),body('S_Clasificar')?['sucios'],createArray())",
+                          bloque_grupo("GM_", fijar_s, True)))
+    por_slice["S_Falla_lectura"] = anotar(f"@concat('Conciliación {{',{s}?['banco'],' ',{s}?['periodo'],'}}: no se pudo leer')",
+                                          S_Control_GET=FALLOS, S_Items=FALLOS)
+    por_slice["S_Falla_servicio"] = anotar(f"@concat('Conciliación {{',{s}?['banco'],' ',{s}?['periodo'],'}}: el servicio no respondió')",
+                                           S_Clasificar=FALLOS)
+    por_slice["S_Rechazo"] = con_ra(si("@not(equals(body('S_Clasificar')?['ok'],true))", {"Anotar_rechazo": anotar(
+        f"@concat('Conciliación {{',{s}?['banco'],' ',{s}?['periodo'],'}}: ',coalesce(body('S_Clasificar')?['codigo_error'],'rechazada'))")}),
+        S_Clasificar=["Succeeded"])
+    return dict(**delta_acc, Cada_slice=con_ra(cada("@union(body('Ciclo_API')?['slices'],variables('varSlices'))", por_slice),
+                                              D_Hay_cambios=TODOS))
 
 
 # ---------------------------------------------------------------------------------------------- flujo principal
 def construir_sync(campos_select):
-    main = secuencia(**fase_extractos(), **fase_meses(campos_select))
+    main = secuencia(**fase_extractos(), **fase_lista(campos_select))
     item_lock = "string(body('Ciclo_API')?['lock']?['item_id'])"
     termina = lambda estado, **extra: {"type": "Terminate", "inputs": {"runStatus": estado, **extra}}  # noqa: E731
     acciones = secuencia(
         P=compose({"sede": SEDE, "url_api": URL_API, "prefijo_servidor": PREFIJO_SERVIDOR, "mes_inicio": MES_INICIO, "meses": P0.MESES}),
         Inicializar_varDetalles=variable("varDetalles", "array", []),
         Inicializar_varArchivos=variable("varArchivos", "array", []),
-        Inicializar_varMeses=variable("varMeses", "array", []),
+        Inicializar_varSlices=variable("varSlices", "array", []),
         Inicializar_varGrupoOk=variable("varGrupoOk", "boolean", True),
         Inicializar_varG=variable("varG", "object", {}),
         Leer_token=od("GetFileContentByPath", {"path": RUTA_TOKEN, "inferContentType": False}, seguro=SEGURO_SALIDA),

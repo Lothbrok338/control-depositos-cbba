@@ -106,7 +106,7 @@ def test_la_provision_crea_la_lista_con_todas_las_columnas_indices_y_lock_y_es_i
 
 
 def test_la_provision_avisa_si_falta_una_columna(b):
-    del b.t.listas["P10_Control"].campos["HUELLA"]
+    del b.t.listas["P10_Control"].campos["CURSOR_LISTA"]
     b.t.fallar("HttpRequest", "createfieldasxml", veces=1, http=500)         # la reparación también falla
     r = Ejecucion(b.prov, b.t).ejecutar()
     assert r.estado_final == "Failed"                                        # la ejecución queda en rojo; no certifica
@@ -512,34 +512,35 @@ def test_caida_prolongada_del_servicio_no_pierde_extractos_ni_los_marca_como_err
     assert r.estado_final == "Succeeded" and b.control("EXTRACTO|" + EXTRACTO)["ESTADO"] == "PROCESADO"
 
 
-def test_si_falla_la_escritura_de_un_cambio_de_lista_la_huella_del_mes_no_se_actualiza_y_se_reintenta(b):
+def test_si_falla_la_escritura_de_un_cambio_de_lista_el_cursor_no_avanza_y_se_reintenta(b):
     b.soltar()
     b.ciclo()
     b.cargar_lista_p8()
     b.ciclo("2026-10-08T10:15:00")
-    huella0 = b.control("MES|2026-08")["HUELLA"]
+    cursor0 = b.control("LOCK")["CURSOR_LISTA"]
     b.t.avanzar(minutes=10)
     c = b.claves()[5]
     b.t.depositos.confirmar(c, estudiante="LUIS")
     b.t.fallar("UpdateFile", "EXTRACTO_HISTORICO", veces=1)
     r = b.ciclo("2026-10-08T10:30:00")
     assert r.estado_final == "Failed"
-    assert b.control("MES|2026-08")["HUELLA"] == huella0                                  # no se da por visto un mes con un grupo fallido
+    assert b.control("LOCK")["CURSOR_LISTA"] == cursor0                                  # el cursor no se adelanta si algo falló
     assert next(f for f in b.auditoria() if f["CLAVE TRANSACCIÓN"] == c)["ESTADO"] == "DISPONIBLE"      # el histórico sigue como estaba
     r = b.ciclo("2026-10-08T10:45:00")
     assert r.estado_final == "Succeeded"
     assert next(f for f in b.auditoria() if f["CLAVE TRANSACCIÓN"] == c)["ESTADO"] == "CONFIRMADO"
-    assert b.control("MES|2026-08")["HUELLA"] != huella0
+    assert b.control("LOCK")["CURSOR_LISTA"] > cursor0
 
 
-def test_un_mes_con_mas_de_5000_elementos_se_rechaza_con_aviso_y_el_bloqueo_se_libera(b):
+def test_una_lista_de_mas_de_5000_filas_en_un_banco_y_mes_se_rechaza_con_aviso_y_el_bloqueo_se_libera(b):
     b.soltar()
     b.ciclo()
     for i in range(5001):
-        b.t.depositos.items[100000 + i] = {"Id": 100000 + i, "CLAVE_TRANSACCION": f"X|{i}", "FECHA_MOVIMIENTO": "2026-10-03T00:00:00Z",
-                                           "Modified": "2026-10-08T15:00:00Z", "__etag": 1, "BANCO": "X"}
-    r = b.ciclo("2026-10-08T10:30:00")
-    assert r.estado_final == "Failed" and "MES_EXCEDE_LIMITE" in r.error_final[1]
+        b.t.depositos.items[100000 + i] = {
+            "Id": 100000 + i, "CLAVE_TRANSACCION": f"BNB|3501936692|20260803|{i:06d}|X|CRÉDITO|1.00|1", "FECHA_MOVIMIENTO": "2026-08-03T00:00:00Z",
+            "Modified": "2026-10-08T14:00:00Z", "__etag": 1, "BANCO": "BNB", "CUENTA_BANCARIA": "3501936692", "MONEDA": "BOB"}
+    r = b.ciclo("2026-10-09T06:00:00")                                       # ciclo completo: concilia BNB+agosto
+    assert r.estado_final == "Failed" and "REBANADA_EXCEDE_LIMITE" in r.error_final[1]
     assert b.control("LOCK")["LOCK_HASTA"] == ""
 
 
@@ -582,3 +583,94 @@ def test_el_flujo_solo_lee_depositos_activos(defs):
             assert a["inputs"]["parameters"]["parameters/method"] == "GET" and "X-HTTP-Method" not in a["inputs"]["parameters"]["parameters/headers"], n
             vistas += 1
     assert vistas == 2
+
+
+# ====================================================================== lectura incremental y conciliación
+def lecturas_de_depositos(b):
+    return [d for op, d in b.t.registro if op == "HttpRequest:GET" and "guid" in d.lower()]
+
+
+def test_un_ciclo_ocioso_hace_una_sola_lectura_incremental_de_la_lista(b):
+    b.soltar()
+    b.ciclo()
+    b.cargar_lista_p8()
+    b.ciclo("2026-10-08T10:15:00")
+    b.t.registro.clear()
+    r = b.ciclo("2026-10-08T10:30:00")
+    assert r.estado_final == "Succeeded" and len(lecturas_de_depositos(b)) == 1
+    assert b.total_acciones(r) <= 32, b.total_acciones(r)
+
+
+def test_las_filas_recientes_se_leen_otra_vez_una_sola_vez_y_sin_reescribir_nada(b):
+    b.soltar()
+    b.ciclo()
+    b.cargar_lista_p8()
+    b.ciclo("2026-10-08T10:15:00")
+    b.t.avanzar(minutes=17)                                                  # son las 10:32 locales
+    b.t.depositos.confirmar(b.claves()[0], estudiante="X")                   # Modified = 10:32
+    b.t.avanzar(minutes=2)
+    b.ciclo("2026-10-08T10:34:00")                                           # la fila tiene 2 min: se aplica pero el cursor no la deja atrás
+    cursor1 = b.control("LOCK")["CURSOR_LISTA"]
+    assert next(f for f in b.auditoria() if f["CLAVE TRANSACCIÓN"] == b.claves()[0])["ESTADO"] == "CONFIRMADO"
+    b.t.registro.clear()
+    b.ciclo("2026-10-08T10:49:00")                                           # ahora ya «asentó»: se lee de nuevo, nada cambia, el cursor avanza
+    assert [op for op, _ in b.t.registro if op in ("CreateFile", "UpdateFile")] == []
+    assert b.control("LOCK")["CURSOR_LISTA"] > cursor1
+    b.t.registro.clear()
+    b.ciclo("2026-10-08T11:04:00")
+    assert not [1 for op, d in b.t.registro if op == "HttpRequest:POST" and "/items(" in d and "Control" in d and False]
+    assert len(lecturas_de_depositos(b)) == 1                                # y de ahí en más, una lectura vacía por ciclo
+
+
+def test_un_evento_perdido_se_concilia_en_el_ciclo_completo(b):
+    """La lista cambia SIN que SharePoint actualice Modified (evento que el cursor nunca verá): la conciliación nocturna lo corrige."""
+    b.soltar()
+    b.ciclo()
+    b.cargar_lista_p8()
+    b.ciclo("2026-10-08T10:15:00")
+    c = b.claves()[7]
+    it = b.t.depositos._por_clave(c)
+    it.update(ESTADO_ASIGNACION="ASIGNADO", ESTUDIANTE="FANTASMA", USUARIO_ASIGNACION="x@y.z", SOLICITADO_POR="S", SEDE_ASIGNACION="CBBA")
+    b.ciclo("2026-10-08T10:30:00")
+    assert next(f for f in b.auditoria() if f["CLAVE TRANSACCIÓN"] == c)["ESTADO"] == "DISPONIBLE"      # el cursor no lo ve
+    r = b.ciclo("2026-10-09T06:00:00")
+    assert r.estado_final == "Succeeded"
+    fila = next(f for f in b.auditoria() if f["CLAVE TRANSACCIÓN"] == c)
+    assert fila["ESTADO"] == "CONFIRMADO" and fila["ESTUDIANTE"] == "FANTASMA"
+
+
+def test_filas_de_la_lista_sin_estado_retienen_el_cursor_hasta_que_llega_el_extracto(b):
+    """P8 cargó la lista antes de que P10 pudiera incorporar el extracto (servicio caído): nada se pierde ni se da por visto."""
+    from p10 import sincronizacion as S
+    r = S.procesar_extracto(FIXTURE.read_bytes(), FIXTURE.name, "CBBA", EXTRACTO, "2026-10-08T09:00:00")
+    ref = S.sincronizar_grupo("CBBA", GID, None, [base64.b64decode(r["grupos"][0]["parcial_b64"])], None, "2026-10-08T09:00:00")
+    _, _, filas, _ = E.entradas_generador(E.desempaquetar(base64.b64decode(ref["estado_b64"])))
+    b.t.depositos.reloj = b.t._local() - __import__("datetime").timedelta(hours=1)
+    b.t.depositos.cargar(filas)
+    b.t.depositos.confirmar(sorted(i["CLAVE_TRANSACCION"] for i in b.t.depositos.items.values())[2], estudiante="ANTES")
+    b.soltar()
+    b.t.fallar("api", "/p10/extracto", veces=1, http=503)
+    r1 = b.ciclo()
+    assert r1.estado_final == "Failed" and b.control("LOCK")["CURSOR_LISTA"] == "2026-10-08T12:59:59Z"   # queda justo antes de esas filas
+    r2 = b.ciclo("2026-10-08T10:15:00")
+    assert r2.estado_final == "Succeeded" and b.control("LOCK")["CURSOR_LISTA"] > "2026-10-08T12:59:59Z"
+    fila = next(f for f in b.auditoria() if f["ESTADO"] == "CONFIRMADO")
+    assert fila["ESTUDIANTE"] == "ANTES"
+
+
+def test_el_flujo_encola_la_conciliacion_del_banco_y_mes_cuando_un_extracto_cambia_un_grupo(defs):
+    texto = json.dumps(defs[0])
+    assert "Encolar_conciliacion" in texto and "varSlices" in texto
+    nombres = [n for n, _ in todas(defs[0]["actions"])]
+    assert [n for n in nombres if n.endswith("Encolar_conciliacion")] == ["GE_Encolar_conciliacion"]    # solo el camino de extractos
+
+
+def test_una_conciliacion_no_reescribe_nada_si_todo_coincide(b):
+    b.soltar()
+    b.ciclo()
+    b.cargar_lista_p8()
+    b.ciclo("2026-10-08T10:15:00")
+    b.ciclo("2026-10-09T06:00:00")                                           # primera noche: fija los hash de lo conciliado
+    b.t.registro.clear()
+    b.ciclo("2026-10-10T06:00:00")                                           # segunda noche: nada cambió
+    assert [op for op, _ in b.t.registro if op in ("CreateFile", "UpdateFile")] == []

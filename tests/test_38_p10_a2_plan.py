@@ -22,7 +22,7 @@ def lock(hasta="", completa="", etag='"3"'):
 
 
 def grupo(gid=GID, **kw):
-    d = {"Id": 7, "CLAVE_CONTROL": "GRUPO|" + gid, "TIPO": "GRUPO", "PERIODO": gid.split("|")[3], "ESTADO": "OK",
+    d = {"Id": 7, "BANCO": gid.split("|")[0], "CLAVE_CONTROL": "GRUPO|" + gid, "TIPO": "GRUPO", "PERIODO": gid.split("|")[3], "ESTADO": "OK",
          "VERSION_ESTADO": 1, "HASH_OPERATIVO": "", "ESTADO_BYTES": 100, "XLSX_BYTES": 200}
     d.update(kw)
     return d
@@ -64,14 +64,17 @@ def test_modo_normal_de_dia_y_completo_la_primera_vez_pasadas_las_2am():
 
 def test_ventanas_de_meses():
     n = PL.ciclo("2026-10-08T10:00:00", [lock(completa="2026-10-08")])
-    assert n["modo"] == "NORMAL" and n["meses_escanear"] == ["2026-10", "2026-09", "2026-08"] and n["meses_listar"] == ["2026-10", "2026-09"]
-    assert n["grupos_a_verificar"] == []
+    assert n["modo"] == "NORMAL" and n["meses_listar"] == ["2026-10", "2026-09"]
+    assert n["grupos_a_verificar"] == [] and n["slices"] == []
     c = PL.ciclo("2026-10-08T03:00:00", [lock(), grupo("BNB|1|BOB|2026-02"), grupo()])
-    assert "2026-02" in c["meses_escanear"] and c["meses_listar"][0] == "2026-10" and c["meses_listar"][-1] == "2026-10"
+    assert c["meses_listar"][0] == "2026-01" and c["meses_listar"][-1] == "2026-10"
     assert c["grupos_a_verificar"] == [GID]                                   # jueves: solo la ventana de 3 meses
     d = PL.ciclo("2026-10-11T03:00:00", [lock(), grupo("BNB|1|BOB|2026-02"), grupo()])    # domingo: todos los meses conocidos
     assert sorted(d["grupos_a_verificar"]) == ["BNB|1|BOB|2026-02", GID]
     assert PL.ciclo("2026-10-08T03:00:00", [lock(), grupo(ESTADO="RECONSTRUIR")])["grupos_a_verificar"] == []
+    # la conciliación nocturna cubre BANCO+MES de la ventana; el domingo, todos los meses conocidos
+    assert [(x["banco"], x["periodo"]) for x in c["slices"]] == [("BNB", "2026-10")]
+    assert sorted((x["banco"], x["periodo"]) for x in d["slices"]) == [("BNB", "2026-02"), ("BNB", "2026-10")]
 
 
 def test_meses_desplazados_cruzan_el_anio():
@@ -79,9 +82,12 @@ def test_meses_desplazados_cruzan_el_anio():
     assert PL.meses_entre("2026-11", "2027-02") == ["2026-11", "2026-12", "2027-01", "2027-02"]
 
 
-def test_huellas_por_mes():
-    ctrl = [lock(), {"CLAVE_CONTROL": "MES|2026-10", "TIPO": "MES", "PERIODO": "2026-10", "HUELLA": "abc"}]
-    assert PL.ciclo("2026-10-08T10:00:00", ctrl)["huellas"] == {"2026-10": "abc"}
+def test_cursor_de_lectura_de_la_lista():
+    r = PL.ciclo("2026-10-08T10:00:00", [lock(completa="2026-10-08")])
+    assert r["cursor_desde"] == "2026-10-07T14:00:00Z"                           # sin cursor: el día anterior (hora UTC)
+    con = lock(completa="2026-10-08")
+    con["CURSOR_LISTA"] = "2026-10-08T13:55:00Z"
+    assert PL.ciclo("2026-10-08T10:00:00", [con])["cursor_desde"] == "2026-10-08T13:55:00Z"
 
 
 # ---------------------------------------------------------------- plan de extractos
@@ -127,12 +133,15 @@ def test_la_ruta_de_onedrive_se_obtiene_quitando_el_prefijo_del_servidor():
 
 
 # ---------------------------------------------------------------- meses con trabajo pendiente
-def test_meses_pendientes_por_error_o_reconstruccion_aunque_la_lista_no_cambie():
-    n = lambda *g: PL.ciclo("2026-10-08T10:00:00", [lock(completa="2026-10-08"), *g])["meses_pendientes"]   # noqa: E731
+def test_grupos_con_error_o_en_reconstruccion_se_concilian_aunque_la_lista_no_cambie():
+    n = lambda *g: [(x["banco"], x["periodo"]) for x in PL.ciclo(
+        "2026-10-08T10:00:00", [lock(completa="2026-10-08"), *g])["slices"]]   # noqa: E731
     assert n(grupo()) == []
-    assert n(grupo(ESTADO="ERROR", INTENTOS=1)) == ["2026-10"]
+    assert n(grupo(ESTADO="ERROR", INTENTOS=1)) == [("BNB", "2026-10")]
     assert n(grupo(ESTADO="ERROR", INTENTOS=3)) == []                      # agotado: espera al ciclo completo
-    assert n(grupo(ESTADO="RECONSTRUIR")) == ["2026-10"]
+    assert n(grupo(ESTADO="RECONSTRUIR")) == [("BNB", "2026-10")]
+    assert n(grupo("BNB|1|BOB|2026-02", ESTADO="RECONSTRUIR"), grupo("BCP|2|BOB|2026-10", ESTADO="ERROR")) == [
+        ("BCP", "2026-10"), ("BNB", "2026-02")]
 
 
 def test_clave_de_extracto_larga_se_reemplaza_por_su_huella():
@@ -244,7 +253,7 @@ def test_clasificar_no_confunde_vecinos_de_otro_mes_ni_acepta_consultas_truncada
     r = PL.clasificar("2026-09", items(lst), [], "NORMAL", False)
     assert r["fuera_de_periodo"] == 3 and r["sucios"] == [] and r["sin_estado"] == []
     r = PL.clasificar("2026-10", items(lst), [], "NORMAL", True)
-    assert not r["ok"] and r["codigo_error"] == "MES_EXCEDE_LIMITE"
+    assert not r["ok"] and r["codigo_error"] == "REBANADA_EXCEDE_LIMITE"
 
 
 def test_clasificar_registra_anomalias_sin_detenerse():
@@ -259,3 +268,54 @@ def test_grupo_con_error_se_reintenta_aunque_la_lista_no_haya_cambiado():
     h = E.hash_lista(__import__("p10.sharepoint", fromlist=["x"]).agrupar(items(lst))[0][GID])
     r = PL.clasificar("2026-10", items(lst), [grupo(ESTADO="ERROR", HASH_OPERATIVO=h, INTENTOS=1)], "NORMAL", False)
     assert [s["grupo_id"] for s in r["sucios"]] == [GID]
+
+
+def test_clasificar_por_banco_ignora_los_grupos_de_otros_bancos():
+    lst = _lista_con()
+    otro = grupo("BCP|9|BOB|2026-10", ESTADO="RECONSTRUIR", RECONSTRUIR_DESDE="2026-10-08T09:00:00")
+    r = PL.clasificar("2026-10", items(lst), [otro], "NORMAL", False, banco="BNB")
+    assert r["sucios"] == [] and r["en_espera"] == [] and r["sin_estado"] == [GID]
+    r = PL.clasificar("2026-10", [], [otro], "NORMAL", False, banco="BCP")
+    assert [(s["grupo_id"], s["finalizar"]) for s in r["sucios"]] == [("BCP|9|BOB|2026-10", True)]
+
+
+# ---------------------------------------------------------------- lectura incremental (delta)
+def _con_modificado(lst, hora="2026-10-08T14:00:00Z"):
+    return [dict(i, Modified=hora) for i in items(lst)]
+
+
+def test_delta_entrega_las_filas_cambiadas_de_cada_grupo_con_estado_y_avanza_el_cursor():
+    lst = _lista_con(3)
+    fila = _con_modificado(lst, "2026-10-08T13:00:00Z")[:2]
+    r = PL.delta(fila, [grupo()], "2026-10-08T10:00:00")
+    assert r["ok"] and [s["grupo_id"] for s in r["sucios"]] == [GID] and len(r["sucios"][0]["filas"]) == 2
+    assert r["sucios"][0]["parcial_lista"] is True and r["sin_estado"] == []
+    assert r["cursor_nuevo"] == "2026-10-08T13:00:00Z"
+
+
+def test_delta_no_avanza_el_cursor_sobre_filas_recientes_ni_sobre_grupos_sin_estado():
+    lst = _lista_con(3)
+    reciente = _con_modificado(lst, "2026-10-08T13:58:00Z")          # 2 min antes de las 10:00 locales (14:00Z): aún no asienta
+    r = PL.delta(reciente, [grupo()], "2026-10-08T10:00:00")
+    assert r["cursor_nuevo"] == "" and len(r["sucios"]) == 1
+    viejas = _con_modificado(lst, "2026-10-08T12:00:00Z")
+    r = PL.delta(viejas, [], "2026-10-08T10:00:00")                  # el grupo aún no tiene estado: su extracto no llegó
+    assert r["sin_estado"] == [GID] and r["sucios"] == [] and r["cursor_nuevo"] == "2026-10-08T11:59:59Z"     # justo antes de esas filas
+    mezcla = _con_modificado(lst, "2026-10-08T12:00:00Z")[:1] + _con_modificado(lst, "2026-10-08T13:00:00Z")[1:]
+    r = PL.delta(mezcla, [grupo(VERSION_ESTADO=0)], "2026-10-08T10:00:00")
+    assert r["cursor_nuevo"] == "2026-10-08T11:59:59Z"               # no deja atrás lo que aún no pudo aplicarse
+    r = PL.delta(_con_modificado(lst, "2026-10-01T12:00:00Z"), [], "2026-10-08T10:00:00")
+    assert r["cursor_nuevo"] == "2026-10-01T12:00:00Z"               # pasadas 24 h manda la conciliación nocturna
+    r = PL.delta(viejas, [], "2026-10-08T10:00:00", cursor_desde="2026-10-08T12:30:00Z")
+    assert r["cursor_nuevo"] == ""                                   # el cursor nunca retrocede
+
+
+def test_delta_deja_los_grupos_en_reconstruccion_a_la_conciliacion_completa():
+    lst = _lista_con(2)
+    r = PL.delta(_con_modificado(lst), [grupo(ESTADO="RECONSTRUIR", VERSION_ESTADO=0)], "2026-10-08T12:00:00")
+    assert r["sucios"] == [] and r["en_espera"] == [GID]
+
+
+def test_delta_sin_cambios_no_hace_nada():
+    r = PL.delta([], [grupo()], "2026-10-08T10:00:00")
+    assert r == {"ok": True, "elementos": 0, "sucios": [], "sin_estado": [], "en_espera": [], "cursor_nuevo": "", "anomalias": []}

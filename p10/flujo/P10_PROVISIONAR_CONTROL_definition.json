@@ -234,7 +234,7 @@
           }
         },
         {
-          "nombre": "HUELLA",
+          "nombre": "CURSOR_LISTA",
           "indexada": false,
           "unica": false,
           "crear": {
@@ -242,7 +242,7 @@
               "__metadata": {
                 "type": "SP.XmlSchemaFieldCreationInformation"
               },
-              "SchemaXml": "<Field Type=\"Text\" DisplayName=\"HUELLA\" Name=\"HUELLA\" StaticName=\"HUELLA\" MaxLength=\"100\" />",
+              "SchemaXml": "<Field Type=\"Text\" DisplayName=\"CURSOR_LISTA\" Name=\"CURSOR_LISTA\" StaticName=\"CURSOR_LISTA\" MaxLength=\"20\" />",
               "Options": 9
             }
           }

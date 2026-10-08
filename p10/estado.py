@@ -11,7 +11,7 @@ XLSX aprobado de A.1 se reconstruye completo y, con las mismas entradas, byte a 
       extractos   [ {sha256, nombre, movimientos, ultimo_mov, procesado_en} ]      extractos bancarios ya incorporados
       cabecera    {sha256, ultimo_mov, movimientos, multi_mes, hoja, encabezado, zona}   cabecera/zona del extracto más completo
       movimientos { CLAVE: {p0: [26 textos de LISTS.csv], fila, celdas: {col: texto}} }  salida de P0 + celdas originales del banco
-      operativo   {fecha_corte, hash_lista, filas: {CLAVE: campos de Depositos_Activos}} última foto de la lista
+      operativo   {fecha_corte, filas: {CLAVE: campos de Depositos_Activos}} última información operativa conocida de cada movimiento
       xlsx        {nombre, sha256, bytes}                                                  último libro generado
       integridad  sha256 del resto del estado (detecta corrupción/alteración)
     }
@@ -115,7 +115,7 @@ def estado_vacio(grupo, hoja, id_cuenta, formato_banco):
         "formato": FORMATO_ESTADO, "version": 0,
         "grupo": dict(grupo, id_cuenta=id_cuenta, formato_banco=formato_banco),
         "hoja": hoja, "extractos": [], "cabecera": None, "movimientos": {},
-        "operativo": {"fecha_corte": None, "hash_lista": None, "filas": {}},
+        "operativo": {"fecha_corte": None, "filas": {}},
         "xlsx": None}
 
 
@@ -191,7 +191,6 @@ def aplicar_operativo(estado, filas, fecha_corte):
             cambio = True
     if cambio:
         op["fecha_corte"] = fecha_corte
-    op["hash_lista"] = h
     return {"cambio": cambio, "hash_lista": h, "sin_movimiento": sin_mov}
 
 

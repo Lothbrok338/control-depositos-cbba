@@ -76,8 +76,18 @@ def _ruta_onedrive(ruta_servidor, prefijo):
 
 
 # ------------------------------------------------------------------ ciclo
-def ciclo(ahora_local, control, mes_inicio="2026-10", forzar_completo=False):
-    """Primera decisión del ciclo: bloqueo, modo y meses a mirar."""
+FORMATO_UTC = "%Y-%m-%dT%H:%M:%SZ"
+ASENTAR_MIN = 5                  # una fila modificada hace menos de 5 min se aplica, pero el cursor no la deja atrás hasta que «asiente»
+MAX_SLICES = 60                  # pares BANCO+MES que se concilian con la lista completa en un ciclo
+
+
+def a_utc(ahora_local):
+    """Hora de Bolivia (UTC-4, sin horario de verano) -> texto UTC como lo entrega SharePoint."""
+    return (_ahora(ahora_local) + timedelta(hours=4)).strftime(FORMATO_UTC)
+
+
+def ciclo(ahora_local, control, mes_inicio="2026-01", forzar_completo=False):
+    """Primera decisión del ciclo: bloqueo, modo, qué listar en PROCESADOS, desde dónde leer la lista y qué conciliar por completo."""
     ahora = _ahora(ahora_local)
     hoy, actual = ahora.strftime("%Y-%m-%d"), ahora.strftime("%Y-%m")
     lock = next((i for i in control if i.get("CLAVE_CONTROL") == "LOCK"), None)
@@ -89,25 +99,32 @@ def ciclo(ahora_local, control, mes_inicio="2026-10", forzar_completo=False):
     completo = forzar_completo or (ahora.hour >= HORA_COMPLETA and lock.get("ULTIMA_COMPLETA") != hoy)
     ventana = [mes_desplazado(actual, -k) for k in range(VENTANA_MESES)]
     grupos = _por_tipo(control, "GRUPO")
+    cursor = str(lock.get("CURSOR_LISTA") or "")
+    try:
+        desde = datetime.strptime(cursor, FORMATO_UTC)
+    except ValueError:                               # sin cursor (primera vez): el día anterior; el ciclo completo concilia el resto
+        desde = ahora + timedelta(hours=4) - timedelta(days=1)
+    conciliar = set()
     if completo:
-        escanear = sorted({*ventana, *(g["PERIODO"] for g in grupos if g.get("PERIODO"))}, reverse=True)[:MAX_MESES_ESCANEAR]
         listar = meses_entre(max(mes_inicio, mes_desplazado(actual, -(MAX_MESES_LISTAR - 1))), actual)
-        # Verificación de archivos: cada noche los grupos de la ventana; los domingos, todos los meses conocidos.
-        verificar = escanear if ahora.weekday() == 6 else ventana
+        # Cada noche se concilian con la lista completa los grupos de la ventana; los domingos, todos los meses conocidos.
+        todos = sorted({*ventana, *(g["PERIODO"] for g in grupos if g.get("PERIODO"))}, reverse=True)[:MAX_MESES_ESCANEAR]
+        verificar = todos if ahora.weekday() == 6 else ventana
         a_verificar = [g["CLAVE_CONTROL"][len("GRUPO|"):] for g in grupos
                        if g.get("PERIODO") in verificar and g.get("ESTADO") != "RECONSTRUIR" and _num(g.get("VERSION_ESTADO")) > 0]
+        conciliar |= {(g["PERIODO"], g.get("BANCO") or "") for g in grupos if g.get("PERIODO") in verificar}
     else:
-        escanear, listar, a_verificar = ventana, [actual, mes_desplazado(actual, -1)], []
-    huellas = {i["PERIODO"]: i.get("HUELLA") or "" for i in _por_tipo(control, "MES") if i.get("PERIODO")}
-    # meses con trabajo pendiente aunque la lista no haya cambiado: grupos con error por reintentar o en reconstrucción
-    pendientes = sorted({g["PERIODO"] for g in grupos if g.get("PERIODO") in escanear and (
-        g.get("ESTADO") == "RECONSTRUIR" or (g.get("ESTADO") == "ERROR" and _num(g.get("INTENTOS")) < MAX_INTENTOS))})
+        listar, a_verificar = [actual, mes_desplazado(actual, -1)], []
+    # grupos con trabajo pendiente aunque la lista no haya cambiado: error por reintentar, reconstrucción por finalizar
+    conciliar |= {(g["PERIODO"], g.get("BANCO") or "") for g in grupos if g.get("PERIODO") and (
+        g.get("ESTADO") == "RECONSTRUIR" or (g.get("ESTADO") == "ERROR" and _num(g.get("INTENTOS")) < MAX_INTENTOS))}
+    slices = [{"periodo": p, "banco": b} for p, b in sorted(conciliar, reverse=True) if b][:MAX_SLICES]
     return {
         "ok": True, "modo": "COMPLETO" if completo else "NORMAL", "hoy": hoy, "periodo_actual": actual,
         "lock": {"libre": libre, "item_id": lock.get("Id"), "etag": (lock.get("__metadata") or {}).get("etag"),
                  "ocupado_hasta": hasta or "", "lock_id_actual": lock.get("LOCK_ID") or "",
                  "hasta_nuevo": (ahora + timedelta(minutes=LEASE_MINUTOS)).isoformat(timespec="seconds")},
-        "meses_listar": listar, "meses_escanear": escanear, "meses_pendientes": pendientes, "huellas": huellas,
+        "meses_listar": listar, "cursor_desde": desde.strftime(FORMATO_UTC), "slices": slices,
         "grupos_a_verificar": a_verificar,
         "limite_extractos": MAX_EXTRACTOS_COMPLETO if completo else MAX_EXTRACTOS_NORMAL,
     }
@@ -166,17 +183,65 @@ def plan(ahora_local, modo, archivos, control, prefijo_servidor, limite):
     return {"ok": True, "extractos": elegidos, "pendientes": len(cola) - len(elegidos), "error_final": finales}
 
 
-# ------------------------------------------------------------------ clasificar un mes de la lista
-def clasificar(periodo, items, control, modo, hay_mas, verificar=()):
+# ------------------------------------------------------------------ lectura incremental de la lista (delta por Modified)
+def delta(items, control, ahora_local, cursor_desde=""):
     """
-    Agrupa las filas de Depositos_Activos del mes y decide qué grupos hay que sincronizar:
-      * la lista cambió respecto de lo último aplicado, o el grupo quedó con error por reintentar;
+    Lo que cambió en Depositos_Activos desde el cursor (`Modified > cursor`): normalmente nada o unas pocas filas.
+    Se aplican a su grupo como información parcial (las filas ausentes NO se tocan). Devuelve además el cursor nuevo:
+      * solo avanza sobre filas «asentadas» (modificadas hace más de ASENTAR_MIN minutos): las más recientes se leen otra vez
+        en el ciclo siguiente por si SharePoint aún no mostraba otra fila de la misma hora;
+      * no pasa de largo las filas cuyo grupo aún no tiene estado (su extracto todavía no se incorporó), hasta 24 h:
+        pasado ese plazo manda la conciliación completa de la noche.
+    """
+    ctrl = {i["CLAVE_CONTROL"][len("GRUPO|"):]: i for i in _por_tipo(control, "GRUPO")}
+    por_gid, modificados, anomalias, vistas = {}, {}, [], set()
+    for it in items:
+        try:
+            gid, fila = SP.fila_lista(it)
+        except SP.FilaInvalida as e:
+            anomalias.append(str(e)[:200])
+            continue
+        if fila["CLAVE_TRANSACCION"] in vistas:
+            anomalias.append(f"CLAVE repetida en la lista: {fila['CLAVE_TRANSACCION'][:80]}")
+            continue
+        vistas.add(fila["CLAVE_TRANSACCION"])
+        por_gid.setdefault(gid, []).append(fila)
+        modificados.setdefault(gid, []).append(str(it.get("Modified") or ""))
+    sucios, sin_estado, en_espera, retenidas = [], [], [], []
+    for gid in sorted(por_gid):
+        c = ctrl.get(gid)
+        if c is None or (_num(c.get("VERSION_ESTADO")) == 0 and c.get("ESTADO") != "RECONSTRUIR"):
+            sin_estado.append(gid)
+            retenidas += modificados[gid]
+        elif c.get("ESTADO") == "RECONSTRUIR":
+            en_espera.append(gid)                      # la conciliación completa del grupo lo atiende
+        else:
+            sucios.append({"grupo_id": gid, "filas": por_gid[gid], "parcial_lista": True, "verificar_xlsx": False,
+                           "finalizar": False, "intentos": _num(c.get("INTENTOS"))})
+    asentado = (_ahora(ahora_local) + timedelta(hours=4, minutes=-ASENTAR_MIN)).strftime(FORMATO_UTC)
+    todas = [str(i.get("Modified")) for i in items if i.get("Modified") and str(i.get("Modified")) <= asentado]
+    cursor_nuevo = max(todas) if todas else ""
+    retenidas = [m for m in retenidas if m]
+    if retenidas and min(retenidas) > (_ahora(ahora_local) + timedelta(hours=4, days=-1)).strftime(FORMATO_UTC):
+        un_segundo_antes = (datetime.strptime(min(retenidas), FORMATO_UTC) - timedelta(seconds=1)).strftime(FORMATO_UTC)
+        cursor_nuevo = min(cursor_nuevo, un_segundo_antes) if cursor_nuevo else un_segundo_antes
+    if cursor_nuevo and cursor_nuevo <= cursor_desde:                         # nunca retrocede ni repite el mismo valor
+        cursor_nuevo = ""
+    return {"ok": True, "elementos": len(items), "sucios": sucios, "sin_estado": sin_estado, "en_espera": en_espera,
+            "cursor_nuevo": cursor_nuevo, "anomalias": anomalias[:20]}
+
+
+# ------------------------------------------------------------------ conciliar un BANCO+MES con la lista completa
+def clasificar(periodo, items, control, modo, hay_mas, verificar=(), banco=None):
+    """
+    Agrupa las filas de Depositos_Activos de un BANCO en un mes (`banco=None`: todo el mes) y decide qué grupos sincronizar:
+      * la lista difiere de lo último conciliado, o el grupo quedó con error por reintentar;
       * `verificar` (ciclo COMPLETO): se sincroniza aunque nada haya cambiado, comparando los archivos reales con sus sellos;
       * grupo en reconstrucción cuyos extractos ya se reincorporaron todos: se sincroniza para quitarle la marca (`finalizar`).
     """
     if hay_mas:
-        return {"ok": False, "codigo_error": "MES_EXCEDE_LIMITE",
-                "mensaje": "La consulta del mes devolvió más de 5000 elementos; hay que dividirla por BANCO."}
+        return {"ok": False, "codigo_error": "REBANADA_EXCEDE_LIMITE",
+                "mensaje": "La consulta de BANCO+MES devolvió 5000 elementos o más; no se puede conciliar con certeza."}
     grupos, anomalias = SP.agrupar(items)
     ctrl = {i["CLAVE_CONTROL"][len("GRUPO|"):]: i for i in _por_tipo(control, "GRUPO")}
     pedidos = set(verificar)
@@ -219,7 +284,8 @@ def clasificar(periodo, items, control, modo, hay_mas, verificar=()):
             continue
         procesar(gid, filas)
     for gid in sorted(ctrl):
-        if gid.endswith("|" + periodo) and gid not in grupos and (gid in pedidos or ctrl[gid].get("ESTADO") == "RECONSTRUIR"):
+        if (gid.endswith("|" + periodo) and gid not in grupos and (banco is None or ctrl[gid].get("BANCO") == banco)
+                and (gid in pedidos or ctrl[gid].get("ESTADO") == "RECONSTRUIR")):
             procesar(gid, None)
     return {"ok": True, "periodo": periodo, "elementos": len(items), "grupos_en_lista": len(grupos), "sucios": sucios,
             "sin_estado": sin_estado, "en_espera": en_espera, "fuera_de_periodo": fuera, "anomalias": anomalias[:20]}

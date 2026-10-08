@@ -420,3 +420,26 @@ def test_p10_a1_cerrado_y_los_modulos_reutilizados_no_cambiaron():
     for grupo in ("a1_cerrado", "reutilizado_sin_cambios"):
         for ruta, h in actual[grupo].items():
             assert h in (esperado[grupo][ruta], EXCEPCIONES_AUTORIZADAS.get(ruta)), f"{ruta} cambió respecto de lo aprobado"
+
+
+# ====================================================================== lectura incremental de la lista
+def test_filas_parciales_de_la_lista_no_registran_hash_ni_obligan_a_escribir_el_control(inicial, lista):
+    claves = sorted(i["CLAVE_TRANSACCION"] for i in lista.items.values())
+    lista.confirmar(claves[0], estudiante="X")
+    parcial_filas = [f for f in filas_de(lista) if f["CLAVE_TRANSACCION"] == claves[0]]
+    r = sincronizar(d64(inicial["estado_b64"]), filas=parcial_filas, control=_ctl(inicial), parcial_lista=True)
+    assert r["ok"] and r["cambio_estado"] and r["cambio_xlsx"] and r["escribir_control"]
+    assert "HASH_OPERATIVO" not in r["control"] and r["control"]["ESTADO"] == "OK"
+    otra = sincronizar(d64(r["estado_b64"]), filas=parcial_filas, control=_ctl(r), parcial_lista=True)       # misma fila otra vez
+    assert not otra["cambio_estado"] and not otra["cambio_xlsx"] and otra["escribir_control"] is False
+    con_error = sincronizar(d64(r["estado_b64"]), filas=parcial_filas, control=_ctl(r, ESTADO="ERROR"), parcial_lista=True)
+    assert con_error["escribir_control"] is True                              # un grupo que estaba en error sí se vuelve a anotar
+    completa = sincronizar(d64(r["estado_b64"]), filas=filas_de(lista), control=_ctl(r))                      # conciliación completa
+    assert completa["control"]["HASH_OPERATIVO"] == E.hash_lista(filas_de(lista)) and completa["escribir_control"] is True
+
+
+def test_el_estado_ya_no_guarda_el_hash_de_la_lista(inicial, lista):
+    claves = sorted(i["CLAVE_TRANSACCION"] for i in lista.items.values())
+    lista.confirmar(claves[0], estudiante="X")
+    r = sincronizar(d64(inicial["estado_b64"]), filas=filas_de(lista), control=_ctl(inicial))
+    assert "hash_lista" not in E.desempaquetar(d64(r["estado_b64"]))["operativo"]

@@ -113,12 +113,12 @@
         ]
       }
     },
-    "Inicializar_varMeses": {
+    "Inicializar_varSlices": {
       "type": "InitializeVariable",
       "inputs": {
         "variables": [
           {
-            "name": "varMeses",
+            "name": "varSlices",
             "type": "array",
             "value": []
           }
@@ -142,7 +142,7 @@
         ]
       },
       "runAfter": {
-        "Inicializar_varMeses": [
+        "Inicializar_varSlices": [
           "Succeeded"
         ]
       }
@@ -592,7 +592,8 @@
                       "parciales": "@createArray(items('Cada_grupo_E')?['parcial_b64'])",
                       "filas": null,
                       "verificar_xlsx": false,
-                      "finalizar": false
+                      "finalizar": false,
+                      "parcial_lista": false
                     }
                   },
                   "runAfter": {}
@@ -718,7 +719,8 @@
                           "control_grupo": "@outputs('GE_Control')",
                           "verificar_xlsx": "@variables('varG')?['verificar_xlsx']",
                           "xlsx_actual_base64": null,
-                          "finalizar": "@variables('varG')?['finalizar']"
+                          "finalizar": "@variables('varG')?['finalizar']",
+                          "parcial_lista": "@variables('varG')?['parcial_lista']"
                         },
                         "limit": {
                           "timeout": "PT10M"
@@ -963,7 +965,7 @@
                     },
                     "GE_Guardar_CONTROL": {
                       "type": "If",
-                      "expression": "@equals(outputs('GE_Sync')?['statusCode'],200)",
+                      "expression": "@and(equals(outputs('GE_Sync')?['statusCode'],200),coalesce(body('GE_Sync')?['escribir_control'],true))",
                       "actions": {
                         "GE_Control_Upsert": {
                           "type": "If",
@@ -1038,6 +1040,31 @@
                         ]
                       }
                     },
+                    "GE_Encolar_conciliacion": {
+                      "type": "If",
+                      "expression": "@and(and(equals(outputs('GE_Sync')?['statusCode'],200),equals(body('GE_Sync')?['ok'],true)),equals(body('GE_Sync')?['cambio_estado'],true))",
+                      "actions": {
+                        "GE_Encolar": {
+                          "type": "AppendToArrayVariable",
+                          "inputs": {
+                            "name": "varSlices",
+                            "value": {
+                              "periodo": "@split(variables('varG')?['grupo_id'],'|')[3]",
+                              "banco": "@split(variables('varG')?['grupo_id'],'|')[0]"
+                            }
+                          },
+                          "runAfter": {}
+                        }
+                      },
+                      "else": {
+                        "actions": {}
+                      },
+                      "runAfter": {
+                        "GE_Guardar_CONTROL": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
                     "GE_Revisar_resultado": {
                       "type": "If",
                       "expression": "@or(not(and(equals(outputs('GE_Sync')?['statusCode'],200),equals(body('GE_Sync')?['ok'],true))),not(equals(body('GE_Sync')?['xlsx_valido'],true)))",
@@ -1067,7 +1094,7 @@
                         "actions": {}
                       },
                       "runAfter": {
-                        "GE_Guardar_CONTROL": [
+                        "GE_Encolar_conciliacion": [
                           "Succeeded"
                         ]
                       }
@@ -1237,88 +1264,41 @@
             ]
           }
         },
-        "Cada_mes_huella": {
-          "type": "Foreach",
-          "foreach": "@body('Ciclo_API')?['meses_escanear']",
-          "actions": {
-            "H_GET": {
-              "type": "OpenApiConnection",
-              "inputs": {
-                "host": {
-                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
-                  "connectionName": "shared_sharepointonline",
-                  "operationId": "HttpRequest"
-                },
-                "parameters": {
-                  "dataset": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
-                  "parameters/method": "GET",
-                  "parameters/uri": "@concat('_api/web/lists(guid''296c450a-25d6-415b-ad10-c909c74817cb'')','/items?$select=Id,Modified&$orderby=Modified%20desc&$top=1&$filter=',uriComponent(concat('FECHA_MOVIMIENTO ge datetime''',formatDateTime(addDays(concat(items('Cada_mes_huella'),'-01T00:00:00Z'),-1),'yyyy-MM-ddT00:00:00Z'),''' and FECHA_MOVIMIENTO lt datetime''',formatDateTime(addDays(startOfMonth(addDays(concat(items('Cada_mes_huella'),'-01T00:00:00Z'),32)),1),'yyyy-MM-ddT00:00:00Z'),'''')))",
-                  "parameters/headers": {
-                    "Accept": "application/json;odata=nometadata"
-                  }
-                },
-                "authentication": "@parameters('$authentication')",
-                "retryPolicy": {
-                  "type": "none"
-                }
-              },
-              "runAfter": {}
+        "D_GET": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
             },
-            "H_Necesario": {
-              "type": "If",
-              "expression": "@or(equals(body('Ciclo_API')?['modo'],'COMPLETO'),not(equals(if(empty(body('H_GET')?['value']),'',concat(first(body('H_GET')?['value'])?['Modified'],'|',string(first(body('H_GET')?['value'])?['Id']))),coalesce(body('Ciclo_API')?['huellas']?[items('Cada_mes_huella')],''))),contains(body('Ciclo_API')?['meses_pendientes'],items('Cada_mes_huella')))",
-              "actions": {
-                "Encolar_mes": {
-                  "type": "AppendToArrayVariable",
-                  "inputs": {
-                    "name": "varMeses",
-                    "value": {
-                      "periodo": "@items('Cada_mes_huella')",
-                      "huella": "@if(empty(body('H_GET')?['value']),'',concat(first(body('H_GET')?['value'])?['Modified'],'|',string(first(body('H_GET')?['value'])?['Id'])))"
-                    }
-                  },
-                  "runAfter": {}
-                }
-              },
-              "else": {
-                "actions": {}
-              },
-              "runAfter": {
-                "H_GET": [
-                  "Succeeded"
-                ]
+            "parameters": {
+              "dataset": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/lists(guid''296c450a-25d6-415b-ad10-c909c74817cb'')','/items?$select=Id,Modified,CLAVE_TRANSACCION,BANCO,CUENTA_BANCARIA,MONEDA,FECHA_MOVIMIENTO,ESTADO_ASIGNACION,ESTUDIANTE,CODIGO_ESTUDIANTE,SOLICITADO_POR,SEDE_ASIGNACION,USUARIO_ASIGNACION,FECHA_HORA_ASIGNACION,OBSERVACION,ULTIMA_REVERSION_ID,LOTE_CARGA,FECHA_CARGA,ARCHIVO_ORIGEN&$orderby=Modified&$top=5000&$filter=',uriComponent(concat('Modified gt datetime''',body('Ciclo_API')?['cursor_desde'],'''')))",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
               }
             },
-            "H_Falla": {
-              "type": "AppendToArrayVariable",
-              "inputs": {
-                "name": "varDetalles",
-                "value": "@concat('Huella de ',items('Cada_mes_huella'),': no se pudo leer Depositos_Activos')"
-              },
-              "runAfter": {
-                "H_GET": [
-                  "Failed",
-                  "TimedOut"
-                ]
-              }
+            "authentication": "@parameters('$authentication')",
+            "retryPolicy": {
+              "type": "none"
             }
           },
           "runtimeConfiguration": {
-            "concurrency": {
-              "repetitions": 1
+            "secureData": {
+              "properties": [
+                "outputs"
+              ]
             }
           },
-          "runAfter": {
-            "Cada_extracto": [
-              "Succeeded"
-            ]
-          }
+          "runAfter": {}
         },
-        "Cada_mes_trabajo": {
-          "type": "Foreach",
-          "foreach": "@variables('varMeses')",
+        "D_Hay_cambios": {
+          "type": "If",
+          "expression": "@greater(length(body('D_GET')?['value']),0)",
           "actions": {
-            "T_Control_GET": {
+            "D_Control_GET": {
               "type": "OpenApiConnection",
               "inputs": {
                 "host": {
@@ -1341,7 +1321,671 @@
               },
               "runAfter": {}
             },
-            "T_Items": {
+            "D_Clasificar": {
+              "type": "Http",
+              "inputs": {
+                "method": "POST",
+                "uri": "@concat(outputs('P')?['url_api'],'/p10/delta')",
+                "headers": {
+                  "Content-Type": "application/json",
+                  "Authorization": "@concat('Bearer ',trim(base64ToString(body('Leer_token')?['$content'])))"
+                },
+                "body": {
+                  "ahora_local": "@convertTimeZone(utcNow(),'UTC','SA Western Standard Time','yyyy-MM-ddTHH:mm:ss')",
+                  "items": "@body('D_GET')?['value']",
+                  "control": "@body('D_Control_GET')?['d']?['results']",
+                  "cursor_desde": "@body('Ciclo_API')?['cursor_desde']"
+                },
+                "limit": {
+                  "timeout": "PT10M"
+                },
+                "retryPolicy": {
+                  "type": "fixed",
+                  "count": 2,
+                  "interval": "PT30S"
+                }
+              },
+              "runtimeConfiguration": {
+                "secureData": {
+                  "properties": [
+                    "inputs",
+                    "outputs"
+                  ]
+                }
+              },
+              "runAfter": {
+                "D_Control_GET": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "D_Reiniciar": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varGrupoOk",
+                "value": true
+              },
+              "runAfter": {
+                "D_Clasificar": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Cada_sucio_D": {
+              "type": "Foreach",
+              "foreach": "@if(equals(body('D_Clasificar')?['ok'],true),body('D_Clasificar')?['sucios'],createArray())",
+              "actions": {
+                "GD_Fijar_varG": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "varG",
+                    "value": {
+                      "grupo_id": "@items('Cada_sucio_D')?['grupo_id']",
+                      "rutas": "@items('Cada_sucio_D')?['rutas']",
+                      "parciales": "@createArray()",
+                      "filas": "@items('Cada_sucio_D')?['filas']",
+                      "verificar_xlsx": false,
+                      "finalizar": false,
+                      "parcial_lista": true
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "GD_TRY": {
+                  "type": "Scope",
+                  "actions": {
+                    "GD_Control_GET": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "HttpRequest"
+                        },
+                        "parameters": {
+                          "dataset": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
+                          "parameters/method": "GET",
+                          "parameters/uri": "@concat('_api/web/lists/getbytitle(''P10_Control'')','/items?$top=1&$filter=',uriComponent(concat('CLAVE_CONTROL eq ''',concat('GRUPO|',variables('varG')?['grupo_id']),'''')))",
+                          "parameters/headers": {
+                            "Accept": "application/json;odata=verbose"
+                          }
+                        },
+                        "authentication": "@parameters('$authentication')",
+                        "retryPolicy": {
+                          "type": "none"
+                        }
+                      },
+                      "runAfter": {}
+                    },
+                    "GD_Control": {
+                      "type": "Compose",
+                      "inputs": "@first(body('GD_Control_GET')?['d']?['results'])",
+                      "runAfter": {
+                        "GD_Control_GET": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "GD_Estado_Probar": {
+                      "type": "Scope",
+                      "actions": {
+                        "GD_Estado_Leer": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness",
+                              "connectionName": "shared_onedriveforbusiness",
+                              "operationId": "GetFileContentByPath"
+                            },
+                            "parameters": {
+                              "path": "@variables('varG')?['rutas']?['ruta_estado']",
+                              "inferContentType": false
+                            },
+                            "authentication": "@parameters('$authentication')",
+                            "retryPolicy": {
+                              "type": "none"
+                            }
+                          },
+                          "runtimeConfiguration": {
+                            "secureData": {
+                              "properties": [
+                                "outputs"
+                              ]
+                            }
+                          },
+                          "runAfter": {}
+                        }
+                      },
+                      "runAfter": {
+                        "GD_Control": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "GD_Estado": {
+                      "type": "Compose",
+                      "inputs": "@if(equals(actions('GD_Estado_Leer')?['status'],'Succeeded'),body('GD_Estado_Leer')?['$content'],null)",
+                      "runAfter": {
+                        "GD_Estado_Probar": [
+                          "Succeeded",
+                          "Failed",
+                          "Skipped",
+                          "TimedOut"
+                        ]
+                      }
+                    },
+                    "GD_Estado_Error": {
+                      "type": "If",
+                      "expression": "@and(not(equals(actions('GD_Estado_Leer')?['status'],'Succeeded')),not(equals(outputs('GD_Estado_Leer')?['statusCode'],404)))",
+                      "actions": {
+                        "GD_Estado_Fallo": {
+                          "type": "Compose",
+                          "inputs": "@int('FALLO_TECNICO_LECTURA_ESTADO')",
+                          "runAfter": {}
+                        }
+                      },
+                      "else": {
+                        "actions": {}
+                      },
+                      "runAfter": {
+                        "GD_Estado": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "GD_Sync": {
+                      "type": "Http",
+                      "inputs": {
+                        "method": "POST",
+                        "uri": "@concat(outputs('P')?['url_api'],'/p10/sincronizar')",
+                        "headers": {
+                          "Content-Type": "application/json",
+                          "Authorization": "@concat('Bearer ',trim(base64ToString(body('Leer_token')?['$content'])))"
+                        },
+                        "body": {
+                          "sede": "@outputs('P')?['sede']",
+                          "grupo_id": "@variables('varG')?['grupo_id']",
+                          "ahora_local": "@convertTimeZone(utcNow(),'UTC','SA Western Standard Time','yyyy-MM-ddTHH:mm:ss')",
+                          "estado_base64": "@outputs('GD_Estado')",
+                          "parciales_base64": "@variables('varG')?['parciales']",
+                          "filas": "@variables('varG')?['filas']",
+                          "control_grupo": "@outputs('GD_Control')",
+                          "verificar_xlsx": "@variables('varG')?['verificar_xlsx']",
+                          "xlsx_actual_base64": null,
+                          "finalizar": "@variables('varG')?['finalizar']",
+                          "parcial_lista": "@variables('varG')?['parcial_lista']"
+                        },
+                        "limit": {
+                          "timeout": "PT10M"
+                        },
+                        "retryPolicy": {
+                          "type": "fixed",
+                          "count": 2,
+                          "interval": "PT30S"
+                        }
+                      },
+                      "runtimeConfiguration": {
+                        "secureData": {
+                          "properties": [
+                            "inputs",
+                            "outputs"
+                          ]
+                        }
+                      },
+                      "runAfter": {
+                        "GD_Estado_Error": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "GD_Escribir_XLSX": {
+                      "type": "If",
+                      "expression": "@and(and(equals(outputs('GD_Sync')?['statusCode'],200),equals(body('GD_Sync')?['ok'],true)),not(empty(body('GD_Sync')?['xlsx_b64'])))",
+                      "actions": {
+                        "GD_X_Probar": {
+                          "type": "Scope",
+                          "actions": {
+                            "GD_X_Meta": {
+                              "type": "OpenApiConnection",
+                              "inputs": {
+                                "host": {
+                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness",
+                                  "connectionName": "shared_onedriveforbusiness",
+                                  "operationId": "GetFileMetadataByPath"
+                                },
+                                "parameters": {
+                                  "path": "@variables('varG')?['rutas']?['ruta_xlsx']"
+                                },
+                                "authentication": "@parameters('$authentication')",
+                                "retryPolicy": {
+                                  "type": "none"
+                                }
+                              },
+                              "runAfter": {}
+                            }
+                          },
+                          "runAfter": {}
+                        },
+                        "GD_X_Escribir": {
+                          "type": "If",
+                          "runAfter": {
+                            "GD_X_Probar": [
+                              "Succeeded",
+                              "Failed",
+                              "Skipped",
+                              "TimedOut"
+                            ]
+                          },
+                          "expression": "@equals(actions('GD_X_Meta')?['status'],'Succeeded')",
+                          "actions": {
+                            "GD_X_Actualizar": {
+                              "type": "OpenApiConnection",
+                              "inputs": {
+                                "host": {
+                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness",
+                                  "connectionName": "shared_onedriveforbusiness",
+                                  "operationId": "UpdateFile"
+                                },
+                                "parameters": {
+                                  "id": "@body('GD_X_Meta')?['Id']",
+                                  "body": "@base64ToBinary(body('GD_Sync')?['xlsx_b64'])"
+                                },
+                                "authentication": "@parameters('$authentication')",
+                                "retryPolicy": {
+                                  "type": "none"
+                                }
+                              },
+                              "runtimeConfiguration": {
+                                "secureData": {
+                                  "properties": [
+                                    "inputs"
+                                  ]
+                                }
+                              },
+                              "runAfter": {}
+                            }
+                          },
+                          "else": {
+                            "actions": {
+                              "GD_X_Crear": {
+                                "type": "OpenApiConnection",
+                                "inputs": {
+                                  "host": {
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness",
+                                    "connectionName": "shared_onedriveforbusiness",
+                                    "operationId": "CreateFile"
+                                  },
+                                  "parameters": {
+                                    "folderPath": "@variables('varG')?['rutas']?['carpeta_xlsx']",
+                                    "name": "@variables('varG')?['rutas']?['nombre_xlsx']",
+                                    "body": "@base64ToBinary(body('GD_Sync')?['xlsx_b64'])"
+                                  },
+                                  "authentication": "@parameters('$authentication')",
+                                  "retryPolicy": {
+                                    "type": "none"
+                                  }
+                                },
+                                "runtimeConfiguration": {
+                                  "secureData": {
+                                    "properties": [
+                                      "inputs"
+                                    ]
+                                  }
+                                },
+                                "runAfter": {}
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {}
+                      },
+                      "runAfter": {
+                        "GD_Sync": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "GD_Escribir_ESTADO": {
+                      "type": "If",
+                      "expression": "@and(and(equals(outputs('GD_Sync')?['statusCode'],200),equals(body('GD_Sync')?['ok'],true)),not(empty(body('GD_Sync')?['estado_b64'])))",
+                      "actions": {
+                        "GD_E_Probar": {
+                          "type": "Scope",
+                          "actions": {
+                            "GD_E_Meta": {
+                              "type": "OpenApiConnection",
+                              "inputs": {
+                                "host": {
+                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness",
+                                  "connectionName": "shared_onedriveforbusiness",
+                                  "operationId": "GetFileMetadataByPath"
+                                },
+                                "parameters": {
+                                  "path": "@variables('varG')?['rutas']?['ruta_estado']"
+                                },
+                                "authentication": "@parameters('$authentication')",
+                                "retryPolicy": {
+                                  "type": "none"
+                                }
+                              },
+                              "runAfter": {}
+                            }
+                          },
+                          "runAfter": {}
+                        },
+                        "GD_E_Escribir": {
+                          "type": "If",
+                          "runAfter": {
+                            "GD_E_Probar": [
+                              "Succeeded",
+                              "Failed",
+                              "Skipped",
+                              "TimedOut"
+                            ]
+                          },
+                          "expression": "@equals(actions('GD_E_Meta')?['status'],'Succeeded')",
+                          "actions": {
+                            "GD_E_Actualizar": {
+                              "type": "OpenApiConnection",
+                              "inputs": {
+                                "host": {
+                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness",
+                                  "connectionName": "shared_onedriveforbusiness",
+                                  "operationId": "UpdateFile"
+                                },
+                                "parameters": {
+                                  "id": "@body('GD_E_Meta')?['Id']",
+                                  "body": "@base64ToBinary(body('GD_Sync')?['estado_b64'])"
+                                },
+                                "authentication": "@parameters('$authentication')",
+                                "retryPolicy": {
+                                  "type": "none"
+                                }
+                              },
+                              "runtimeConfiguration": {
+                                "secureData": {
+                                  "properties": [
+                                    "inputs"
+                                  ]
+                                }
+                              },
+                              "runAfter": {}
+                            }
+                          },
+                          "else": {
+                            "actions": {
+                              "GD_E_Crear": {
+                                "type": "OpenApiConnection",
+                                "inputs": {
+                                  "host": {
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness",
+                                    "connectionName": "shared_onedriveforbusiness",
+                                    "operationId": "CreateFile"
+                                  },
+                                  "parameters": {
+                                    "folderPath": "@variables('varG')?['rutas']?['carpeta_estado']",
+                                    "name": "@variables('varG')?['rutas']?['nombre_estado']",
+                                    "body": "@base64ToBinary(body('GD_Sync')?['estado_b64'])"
+                                  },
+                                  "authentication": "@parameters('$authentication')",
+                                  "retryPolicy": {
+                                    "type": "none"
+                                  }
+                                },
+                                "runtimeConfiguration": {
+                                  "secureData": {
+                                    "properties": [
+                                      "inputs"
+                                    ]
+                                  }
+                                },
+                                "runAfter": {}
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {}
+                      },
+                      "runAfter": {
+                        "GD_Escribir_XLSX": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "GD_Guardar_CONTROL": {
+                      "type": "If",
+                      "expression": "@and(equals(outputs('GD_Sync')?['statusCode'],200),coalesce(body('GD_Sync')?['escribir_control'],true))",
+                      "actions": {
+                        "GD_Control_Upsert": {
+                          "type": "If",
+                          "expression": "@not(empty(outputs('GD_Control')))",
+                          "actions": {
+                            "GD_Ctl_Actualizar": {
+                              "type": "OpenApiConnection",
+                              "inputs": {
+                                "host": {
+                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                                  "connectionName": "shared_sharepointonline",
+                                  "operationId": "HttpRequest"
+                                },
+                                "parameters": {
+                                  "dataset": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
+                                  "parameters/method": "POST",
+                                  "parameters/uri": "@concat('_api/web/lists/getbytitle(''P10_Control'')','/items(',string(outputs('GD_Control')?['Id']),')')",
+                                  "parameters/headers": {
+                                    "Accept": "application/json;odata=nometadata",
+                                    "Content-Type": "application/json;odata=nometadata",
+                                    "X-HTTP-Method": "MERGE",
+                                    "IF-MATCH": "*"
+                                  },
+                                  "parameters/body": "@string(body('GD_Sync')?['control'])"
+                                },
+                                "authentication": "@parameters('$authentication')",
+                                "retryPolicy": {
+                                  "type": "none"
+                                }
+                              },
+                              "runAfter": {}
+                            }
+                          },
+                          "else": {
+                            "actions": {
+                              "GD_Ctl_Crear": {
+                                "type": "OpenApiConnection",
+                                "inputs": {
+                                  "host": {
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                                    "connectionName": "shared_sharepointonline",
+                                    "operationId": "HttpRequest"
+                                  },
+                                  "parameters": {
+                                    "dataset": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
+                                    "parameters/method": "POST",
+                                    "parameters/uri": "@concat('_api/web/lists/getbytitle(''P10_Control'')','/items')",
+                                    "parameters/headers": {
+                                      "Accept": "application/json;odata=nometadata",
+                                      "Content-Type": "application/json;odata=nometadata"
+                                    },
+                                    "parameters/body": "@string(body('GD_Sync')?['control'])"
+                                  },
+                                  "authentication": "@parameters('$authentication')",
+                                  "retryPolicy": {
+                                    "type": "none"
+                                  }
+                                },
+                                "runAfter": {}
+                              }
+                            }
+                          },
+                          "runAfter": {}
+                        }
+                      },
+                      "else": {
+                        "actions": {}
+                      },
+                      "runAfter": {
+                        "GD_Escribir_ESTADO": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "GD_Revisar_resultado": {
+                      "type": "If",
+                      "expression": "@or(not(and(equals(outputs('GD_Sync')?['statusCode'],200),equals(body('GD_Sync')?['ok'],true))),not(equals(body('GD_Sync')?['xlsx_valido'],true)))",
+                      "actions": {
+                        "GD_Fijar_no_ok": {
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "varGrupoOk",
+                            "value": false
+                          },
+                          "runAfter": {}
+                        },
+                        "GD_Anotar": {
+                          "type": "AppendToArrayVariable",
+                          "inputs": {
+                            "name": "varDetalles",
+                            "value": "@concat('GRUPO ',variables('varG')?['grupo_id'],': ',coalesce(body('GD_Sync')?['codigo_error'],'XLSX_NO_VALIDO'))"
+                          },
+                          "runAfter": {
+                            "GD_Fijar_no_ok": [
+                              "Succeeded"
+                            ]
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {}
+                      },
+                      "runAfter": {
+                        "GD_Guardar_CONTROL": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "GD_Fijar_varG": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "GD_CATCH": {
+                  "type": "Scope",
+                  "actions": {
+                    "GD_Fijar_no_ok_catch": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "varGrupoOk",
+                        "value": false
+                      },
+                      "runAfter": {}
+                    },
+                    "GD_Anotar_catch": {
+                      "type": "AppendToArrayVariable",
+                      "inputs": {
+                        "name": "varDetalles",
+                        "value": "@concat('GRUPO ',variables('varG')?['grupo_id'],': fallo técnico')"
+                      },
+                      "runAfter": {
+                        "GD_Fijar_no_ok_catch": [
+                          "Succeeded"
+                        ]
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "GD_TRY": [
+                      "Failed",
+                      "TimedOut"
+                    ]
+                  }
+                }
+              },
+              "runtimeConfiguration": {
+                "concurrency": {
+                  "repetitions": 1
+                }
+              },
+              "runAfter": {
+                "D_Reiniciar": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "D_Cursor": {
+              "type": "If",
+              "expression": "@and(variables('varGrupoOk'),not(empty(body('D_Clasificar')?['cursor_nuevo'])))",
+              "actions": {
+                "Fijar_cursor": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
+                      "parameters/method": "POST",
+                      "parameters/uri": "@concat('_api/web/lists/getbytitle(''P10_Control'')','/items(',string(body('Ciclo_API')?['lock']?['item_id']),')')",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=nometadata",
+                        "Content-Type": "application/json;odata=nometadata",
+                        "X-HTTP-Method": "MERGE",
+                        "IF-MATCH": "*"
+                      },
+                      "parameters/body": "@concat('{\"CURSOR_LISTA\":\"',body('D_Clasificar')?['cursor_nuevo'],'\"}')"
+                    },
+                    "authentication": "@parameters('$authentication')",
+                    "retryPolicy": {
+                      "type": "none"
+                    }
+                  },
+                  "runAfter": {}
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "Cada_sucio_D": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "D_GET": [
+              "Succeeded"
+            ]
+          }
+        },
+        "D_Falla_lectura": {
+          "type": "AppendToArrayVariable",
+          "inputs": {
+            "name": "varDetalles",
+            "value": "@concat('Lectura incremental de Depositos_Activos: no se pudo leer')"
+          },
+          "runAfter": {
+            "D_GET": [
+              "Failed",
+              "TimedOut"
+            ]
+          }
+        },
+        "Cada_slice": {
+          "type": "Foreach",
+          "foreach": "@union(body('Ciclo_API')?['slices'],variables('varSlices'))",
+          "actions": {
+            "S_Control_GET": {
               "type": "OpenApiConnection",
               "inputs": {
                 "host": {
@@ -1352,7 +1996,30 @@
                 "parameters": {
                   "dataset": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
                   "parameters/method": "GET",
-                  "parameters/uri": "@concat('_api/web/lists(guid''296c450a-25d6-415b-ad10-c909c74817cb'')','/items?$select=Id,Modified,CLAVE_TRANSACCION,BANCO,CUENTA_BANCARIA,MONEDA,FECHA_MOVIMIENTO,ESTADO_ASIGNACION,ESTUDIANTE,CODIGO_ESTUDIANTE,SOLICITADO_POR,SEDE_ASIGNACION,USUARIO_ASIGNACION,FECHA_HORA_ASIGNACION,OBSERVACION,ULTIMA_REVERSION_ID,LOTE_CARGA,FECHA_CARGA,ARCHIVO_ORIGEN&$orderby=Id&$top=5000&$filter=',uriComponent(concat('FECHA_MOVIMIENTO ge datetime''',formatDateTime(addDays(concat(items('Cada_mes_trabajo')?['periodo'],'-01T00:00:00Z'),-1),'yyyy-MM-ddT00:00:00Z'),''' and FECHA_MOVIMIENTO lt datetime''',formatDateTime(addDays(startOfMonth(addDays(concat(items('Cada_mes_trabajo')?['periodo'],'-01T00:00:00Z'),32)),1),'yyyy-MM-ddT00:00:00Z'),'''')))",
+                  "parameters/uri": "@concat('_api/web/lists/getbytitle(''P10_Control'')','/items?$top=5000')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=verbose"
+                  }
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              },
+              "runAfter": {}
+            },
+            "S_Items": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
+                  "parameters/method": "GET",
+                  "parameters/uri": "@concat('_api/web/lists(guid''296c450a-25d6-415b-ad10-c909c74817cb'')','/items?$select=Id,Modified,CLAVE_TRANSACCION,BANCO,CUENTA_BANCARIA,MONEDA,FECHA_MOVIMIENTO,ESTADO_ASIGNACION,ESTUDIANTE,CODIGO_ESTUDIANTE,SOLICITADO_POR,SEDE_ASIGNACION,USUARIO_ASIGNACION,FECHA_HORA_ASIGNACION,OBSERVACION,ULTIMA_REVERSION_ID,LOTE_CARGA,FECHA_CARGA,ARCHIVO_ORIGEN&$orderby=Id&$top=5000&$filter=',uriComponent(concat('BANCO eq ''',replace(items('Cada_slice')?['banco'],'''',''''''),''' and FECHA_MOVIMIENTO ge datetime''',formatDateTime(addDays(concat(items('Cada_slice')?['periodo'],'-01T00:00:00Z'),-1),'yyyy-MM-ddT00:00:00Z'),''' and FECHA_MOVIMIENTO lt datetime''',formatDateTime(addDays(startOfMonth(addDays(concat(items('Cada_slice')?['periodo'],'-01T00:00:00Z'),32)),1),'yyyy-MM-ddT00:00:00Z'),'''')))",
                   "parameters/headers": {
                     "Accept": "application/json;odata=nometadata"
                   }
@@ -1370,12 +2037,12 @@
                 }
               },
               "runAfter": {
-                "T_Control_GET": [
+                "S_Control_GET": [
                   "Succeeded"
                 ]
               }
             },
-            "T_Clasificar": {
+            "S_Clasificar": {
               "type": "Http",
               "inputs": {
                 "method": "POST",
@@ -1385,11 +2052,12 @@
                   "Authorization": "@concat('Bearer ',trim(base64ToString(body('Leer_token')?['$content'])))"
                 },
                 "body": {
-                  "periodo": "@items('Cada_mes_trabajo')?['periodo']",
-                  "items": "@body('T_Items')?['value']",
-                  "control": "@body('T_Control_GET')?['d']?['results']",
+                  "periodo": "@items('Cada_slice')?['periodo']",
+                  "banco": "@items('Cada_slice')?['banco']",
+                  "items": "@body('S_Items')?['value']",
+                  "control": "@body('S_Control_GET')?['d']?['results']",
                   "modo": "@body('Ciclo_API')?['modo']",
-                  "hay_mas": "@not(empty(body('T_Items')?['odata.nextLink']))",
+                  "hay_mas": "@not(empty(body('S_Items')?['odata.nextLink']))",
                   "verificar": "@body('Ciclo_API')?['grupos_a_verificar']"
                 },
                 "limit": {
@@ -1410,38 +2078,39 @@
                 }
               },
               "runAfter": {
-                "T_Items": [
+                "S_Items": [
                   "Succeeded"
                 ]
               }
             },
-            "T_Reiniciar": {
+            "S_Reiniciar": {
               "type": "SetVariable",
               "inputs": {
                 "name": "varGrupoOk",
                 "value": true
               },
               "runAfter": {
-                "T_Clasificar": [
+                "S_Clasificar": [
                   "Succeeded"
                 ]
               }
             },
-            "Cada_sucio": {
+            "Cada_sucio_S": {
               "type": "Foreach",
-              "foreach": "@if(equals(body('T_Clasificar')?['ok'],true),body('T_Clasificar')?['sucios'],createArray())",
+              "foreach": "@if(equals(body('S_Clasificar')?['ok'],true),body('S_Clasificar')?['sucios'],createArray())",
               "actions": {
                 "GM_Fijar_varG": {
                   "type": "SetVariable",
                   "inputs": {
                     "name": "varG",
                     "value": {
-                      "grupo_id": "@items('Cada_sucio')?['grupo_id']",
-                      "rutas": "@items('Cada_sucio')?['rutas']",
+                      "grupo_id": "@items('Cada_sucio_S')?['grupo_id']",
+                      "rutas": "@items('Cada_sucio_S')?['rutas']",
                       "parciales": "@createArray()",
-                      "filas": "@items('Cada_sucio')?['filas']",
-                      "verificar_xlsx": "@items('Cada_sucio')?['verificar_xlsx']",
-                      "finalizar": "@items('Cada_sucio')?['finalizar']"
+                      "filas": "@items('Cada_sucio_S')?['filas']",
+                      "verificar_xlsx": "@items('Cada_sucio_S')?['verificar_xlsx']",
+                      "finalizar": "@items('Cada_sucio_S')?['finalizar']",
+                      "parcial_lista": false
                     }
                   },
                   "runAfter": {}
@@ -1615,7 +2284,8 @@
                           "control_grupo": "@outputs('GM_Control')",
                           "verificar_xlsx": "@variables('varG')?['verificar_xlsx']",
                           "xlsx_actual_base64": "@outputs('GM_Xlsx')",
-                          "finalizar": "@variables('varG')?['finalizar']"
+                          "finalizar": "@variables('varG')?['finalizar']",
+                          "parcial_lista": "@variables('varG')?['parcial_lista']"
                         },
                         "limit": {
                           "timeout": "PT10M"
@@ -1860,7 +2530,7 @@
                     },
                     "GM_Guardar_CONTROL": {
                       "type": "If",
-                      "expression": "@equals(outputs('GM_Sync')?['statusCode'],200)",
+                      "expression": "@and(equals(outputs('GM_Sync')?['statusCode'],200),coalesce(body('GM_Sync')?['escribir_control'],true))",
                       "actions": {
                         "GM_Control_Upsert": {
                           "type": "If",
@@ -2014,139 +2684,50 @@
                 }
               },
               "runAfter": {
-                "T_Reiniciar": [
+                "S_Reiniciar": [
                   "Succeeded"
                 ]
               }
             },
-            "T_Mes_item": {
-              "type": "Query",
-              "inputs": {
-                "from": "@body('T_Control_GET')?['d']?['results']",
-                "where": "@equals(item()?['CLAVE_CONTROL'],concat('MES|',items('Cada_mes_trabajo')?['periodo']))"
-              },
-              "runAfter": {
-                "Cada_sucio": [
-                  "Succeeded"
-                ]
-              }
-            },
-            "T_Anotar": {
-              "type": "If",
-              "expression": "@and(equals(body('T_Clasificar')?['ok'],true),variables('varGrupoOk'))",
-              "actions": {
-                "T_Mes": {
-                  "type": "If",
-                  "expression": "@greater(length(body('T_Mes_item')),0)",
-                  "actions": {
-                    "T_Mes_Actualizar": {
-                      "type": "OpenApiConnection",
-                      "inputs": {
-                        "host": {
-                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
-                          "connectionName": "shared_sharepointonline",
-                          "operationId": "HttpRequest"
-                        },
-                        "parameters": {
-                          "dataset": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
-                          "parameters/method": "POST",
-                          "parameters/uri": "@concat('_api/web/lists/getbytitle(''P10_Control'')','/items(',string(first(body('T_Mes_item'))?['Id']),')')",
-                          "parameters/headers": {
-                            "Accept": "application/json;odata=nometadata",
-                            "Content-Type": "application/json;odata=nometadata",
-                            "X-HTTP-Method": "MERGE",
-                            "IF-MATCH": "*"
-                          },
-                          "parameters/body": "@string(json(concat('{\"CLAVE_CONTROL\":\"MES|',items('Cada_mes_trabajo')?['periodo'],'\",\"TIPO\":\"MES\",\"PERIODO\":\"',items('Cada_mes_trabajo')?['periodo'],'\",\"HUELLA\":\"',items('Cada_mes_trabajo')?['huella'],'\",\"ULTIMA_SYNC\":\"',convertTimeZone(utcNow(),'UTC','SA Western Standard Time','yyyy-MM-ddTHH:mm:ss'),'\"}')))"
-                        },
-                        "authentication": "@parameters('$authentication')",
-                        "retryPolicy": {
-                          "type": "none"
-                        }
-                      },
-                      "runAfter": {}
-                    }
-                  },
-                  "else": {
-                    "actions": {
-                      "T_Mes_Crear": {
-                        "type": "OpenApiConnection",
-                        "inputs": {
-                          "host": {
-                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
-                            "connectionName": "shared_sharepointonline",
-                            "operationId": "HttpRequest"
-                          },
-                          "parameters": {
-                            "dataset": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
-                            "parameters/method": "POST",
-                            "parameters/uri": "@concat('_api/web/lists/getbytitle(''P10_Control'')','/items')",
-                            "parameters/headers": {
-                              "Accept": "application/json;odata=nometadata",
-                              "Content-Type": "application/json;odata=nometadata"
-                            },
-                            "parameters/body": "@string(json(concat('{\"CLAVE_CONTROL\":\"MES|',items('Cada_mes_trabajo')?['periodo'],'\",\"TIPO\":\"MES\",\"PERIODO\":\"',items('Cada_mes_trabajo')?['periodo'],'\",\"HUELLA\":\"',items('Cada_mes_trabajo')?['huella'],'\",\"ULTIMA_SYNC\":\"',convertTimeZone(utcNow(),'UTC','SA Western Standard Time','yyyy-MM-ddTHH:mm:ss'),'\"}')))"
-                          },
-                          "authentication": "@parameters('$authentication')",
-                          "retryPolicy": {
-                            "type": "none"
-                          }
-                        },
-                        "runAfter": {}
-                      }
-                    }
-                  },
-                  "runAfter": {}
-                }
-              },
-              "else": {
-                "actions": {}
-              },
-              "runAfter": {
-                "T_Mes_item": [
-                  "Succeeded"
-                ]
-              }
-            },
-            "T_Falla_lectura": {
+            "S_Falla_lectura": {
               "type": "AppendToArrayVariable",
               "inputs": {
                 "name": "varDetalles",
-                "value": "@concat('Mes ',items('Cada_mes_trabajo')?['periodo'],': no se pudo leer')"
+                "value": "@concat('Conciliación {',items('Cada_slice')?['banco'],' ',items('Cada_slice')?['periodo'],'}: no se pudo leer')"
               },
               "runAfter": {
-                "T_Control_GET": [
+                "S_Control_GET": [
                   "Failed",
                   "TimedOut"
                 ],
-                "T_Items": [
+                "S_Items": [
                   "Failed",
                   "TimedOut"
                 ]
               }
             },
-            "T_Falla_clasificar": {
+            "S_Falla_servicio": {
               "type": "AppendToArrayVariable",
               "inputs": {
                 "name": "varDetalles",
-                "value": "@concat('Mes ',items('Cada_mes_trabajo')?['periodo'],': el servicio no respondió')"
+                "value": "@concat('Conciliación {',items('Cada_slice')?['banco'],' ',items('Cada_slice')?['periodo'],'}: el servicio no respondió')"
               },
               "runAfter": {
-                "T_Clasificar": [
+                "S_Clasificar": [
                   "Failed",
                   "TimedOut"
                 ]
               }
             },
-            "T_Clasificar_rechazo": {
+            "S_Rechazo": {
               "type": "If",
-              "expression": "@not(equals(body('T_Clasificar')?['ok'],true))",
+              "expression": "@not(equals(body('S_Clasificar')?['ok'],true))",
               "actions": {
                 "Anotar_rechazo": {
                   "type": "AppendToArrayVariable",
                   "inputs": {
                     "name": "varDetalles",
-                    "value": "@concat('Mes ',items('Cada_mes_trabajo')?['periodo'],': ',coalesce(body('T_Clasificar')?['codigo_error'],'rechazado'))"
+                    "value": "@concat('Conciliación {',items('Cada_slice')?['banco'],' ',items('Cada_slice')?['periodo'],'}: ',coalesce(body('S_Clasificar')?['codigo_error'],'rechazada'))"
                   }
                 }
               },
@@ -2154,7 +2735,7 @@
                 "actions": {}
               },
               "runAfter": {
-                "T_Clasificar": [
+                "S_Clasificar": [
                   "Succeeded"
                 ]
               }
@@ -2166,8 +2747,11 @@
             }
           },
           "runAfter": {
-            "Cada_mes_huella": [
-              "Succeeded"
+            "D_Hay_cambios": [
+              "Succeeded",
+              "Failed",
+              "Skipped",
+              "TimedOut"
             ]
           }
         }

@@ -2,11 +2,11 @@
 """
 p10/control_lista.py · P10-A.2 · contrato de la lista de SharePoint `P10_Control` (control, registro y bloqueo del sincronizador).
 
-Una sola lista, cuatro tipos de elemento (columna TIPO):
-    LOCK      un único elemento (CLAVE_CONTROL = LOCK): bloqueo lógico con vigencia (LOCK_HASTA/LOCK_ID) y ULTIMA_COMPLETA
+Una sola lista, tres tipos de elemento (columna TIPO):
+    LOCK      un único elemento (CLAVE_CONTROL = LOCK): bloqueo lógico con vigencia (LOCK_HASTA/LOCK_ID), ULTIMA_COMPLETA y CURSOR_LISTA
     GRUPO     BANCO+CUENTA+MONEDA+MES: último estado confirmado (versión, sellos, rutas, hash de lo último aplicado de la lista)
     EXTRACTO  registro de cada extracto de PROCESADOS incorporado (idempotencia: ruta, bytes, grupos que alimentó)
-    MES       huella del último estado observado de Depositos_Activos para ese mes (evita releer meses sin cambios)
+    (el cursor de lectura de Depositos_Activos —CURSOR_LISTA— vive en el elemento LOCK)
 Todas las columnas son texto o número: ninguna fecha de SharePoint (sin conversiones de zona horaria).
 """
 LISTA_CONTROL = "P10_Control"
@@ -27,7 +27,7 @@ CAMPOS_CONTROL = (
     ("HASH_ESTADO", "Text", 64, False, False),
     ("HASH_XLSX", "Text", 64, False, False),
     ("SHA256", "Text", 64, False, False),
-    ("HUELLA", "Text", 100, False, False),
+    ("CURSOR_LISTA", "Text", 20, False, False),
     ("ULTIMA_SYNC", "Text", 19, False, False),
     ("RECONSTRUIR_DESDE", "Text", 19, False, False),
     ("LOCK_HASTA", "Text", 19, False, False),
@@ -43,4 +43,4 @@ CAMPOS_CONTROL = (
     ("DETALLE", "Note", 0, False, False),
 )
 NOMBRES_CONTROL = tuple(c[0] for c in CAMPOS_CONTROL)
-TIPOS = ("LOCK", "GRUPO", "EXTRACTO", "MES")
+TIPOS = ("LOCK", "GRUPO", "EXTRACTO")

@@ -321,14 +321,31 @@ class TenantSimulado:
         raise FalloAccion("NotFound", f"endpoint de lista no simulado: {resto}", 404)
 
     def _depositos(self, q, verbose):
-        f = q.get("$filter", "")
-        m = RX_FECHAS.fullmatch(f)
-        if not m:
-            raise FalloAccion("BadRequest", "filtro no soportado", 400)
-        orden_modificado = q.get("$orderby", "").startswith("Modified")
+        """Filtros que usa P10: `FECHA_MOVIMIENTO ge/lt datetime'..'`, `Modified ge datetime'..'`, `BANCO eq '..'`, unidos con `and`."""
+        reglas = []
+        for clausula in re.split(r" and (?=\w+ (?:ge|gt|lt|eq) )", q.get("$filter", "")):
+            m = re.fullmatch(r"(\w+) (ge|gt|lt) datetime'([^']+)'", clausula) or re.fullmatch(r"(\w+) (eq) '((?:[^']|'')*)'", clausula)
+            if not m:
+                raise FalloAccion("BadRequest", f"filtro no soportado: {clausula}", 400)
+            reglas.append((m.group(1), m.group(2), m.group(3).replace("''", "'")))
+        if not any(campo in ("FECHA_MOVIMIENTO", "Modified") for campo, _, _ in reglas):
+            raise FalloAccion("ListViewThreshold", "el filtro no usa una columna indexada", 500)
+
+        def cumple(it):
+            for campo, op, valor in reglas:
+                v = it.get(campo)
+                if v is None or (op == "ge" and not v >= valor) or (op == "gt" and not v > valor) or (op == "lt" and not v < valor) or (op == "eq" and v != valor):
+                    return False
+            return True
+        orden = q.get("$orderby", "Id")
         top = int(q.get("$top", 100))
-        sel = [i for i in self.depositos.items.values() if m.group(1) <= i["FECHA_MOVIMIENTO"] < m.group(2)]
-        sel.sort(key=(lambda i: (i["Modified"], i["Id"])) if orden_modificado else (lambda i: i["Id"]), reverse=orden_modificado)
+        sel = [i for i in self.depositos.items.values() if cumple(i)]
+        if len(sel) > 5000 and not any(op == "eq" for _, op, _ in reglas) and any(c == "FECHA_MOVIMIENTO" for c, _, _ in reglas):
+            raise FalloAccion("ListViewThreshold", "la consulta supera el umbral de vista de lista (5000)", 500)
+        if orden.startswith("Modified"):
+            sel.sort(key=lambda i: (i["Modified"], i["Id"]), reverse=orden.endswith(" desc") or orden.endswith("%20desc"))
+        else:
+            sel.sort(key=lambda i: i["Id"])
         campos = set(q["$select"].split(",")) if "$select" in q else None
         out = [self.depositos.elemento(i, campos) for i in sel[:top]]
         for o in out:

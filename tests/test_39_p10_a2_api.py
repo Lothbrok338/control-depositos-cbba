@@ -75,7 +75,7 @@ def test_ciclo_plan_clasificar_por_http(cli):
     assert cli.post("/p10/plan", json={"ahora_local": AHORA, "modo": "NORMAL", "archivos": [], "control": []}, headers=H).json()["extractos"] == []
     assert cli.post("/p10/verificar", json={}, headers=H).status_code == 404         # la verificación vive en /sincronizar
     r = cli.post("/p10/clasificar", json={"periodo": "2026-10", "items": [], "control": [], "hay_mas": True}, headers=H).json()
-    assert r["codigo_error"] == "MES_EXCEDE_LIMITE"
+    assert r["codigo_error"] == "REBANADA_EXCEDE_LIMITE"
 
 
 def test_extracto_y_sincronizar_por_http_extremo_a_extremo(cli):
@@ -155,3 +155,17 @@ def test_railway_json_y_dockerfile_de_p10_no_tocan_los_de_p0():
     assert "--workers 1" in d and "USER p10" in d and "VOLUME" not in d
     raiz = json.loads((RAIZ / "railway.json").read_text())
     assert raiz["build"]["dockerfilePath"] == "Dockerfile"
+
+
+def test_delta_por_http_devuelve_grupos_rutas_y_cursor(cli):
+    item = {"Id": 1, "Modified": "2026-10-08T12:00:00Z", "CLAVE_TRANSACCION": "BNB|3501936692|20260803|123822|3P63339949|CRÉDITO|25.00|256422.49",
+            "BANCO": "BNB", "CUENTA_BANCARIA": "3501936692", "MONEDA": "BOB", "FECHA_MOVIMIENTO": "2026-08-03T00:00:00Z",
+            "ESTADO_ASIGNACION": "ASIGNADO", "ESTUDIANTE": "X", "FECHA_HORA_ASIGNACION": "2026-10-08T11:00:00Z"}
+    ctl = [{"CLAVE_CONTROL": "GRUPO|BNB|3501936692|BOB|2026-08", "TIPO": "GRUPO", "PERIODO": "2026-08", "BANCO": "BNB", "ESTADO": "OK",
+            "VERSION_ESTADO": 1}]
+    r = cli.post("/p10/delta", json={"ahora_local": AHORA, "items": [item], "control": ctl, "cursor_desde": "2026-10-07T14:00:00Z"}, headers=H).json()
+    assert r["ok"] and r["cursor_nuevo"] == "2026-10-08T12:00:00Z"
+    g = r["sucios"][0]
+    assert g["grupo_id"] == "BNB|3501936692|BOB|2026-08" and g["parcial_lista"] is True
+    assert g["filas"][0]["FECHA_HORA_ASIGNACION"] == "2026-10-08T07:00:00"          # hora de Bolivia
+    assert g["rutas"]["ruta_xlsx"].endswith("EXTRACTO_HISTORICO_BNB_3501936692_BOB_2026-08.xlsx")

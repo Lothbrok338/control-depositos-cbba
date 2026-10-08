@@ -3,7 +3,8 @@
     GET  /health            sin autenticación (healthcheck de Railway)
     POST /p10/ciclo         bloqueo + modo + meses a mirar               (decisión pura, p10/plan.py)
     POST /p10/plan          extractos de PROCESADOS que hay que incorporar
-    POST /p10/clasificar    grupos de un mes de Depositos_Activos que cambiaron
+    POST /p10/delta         filas de Depositos_Activos modificadas desde el cursor -> grupos a actualizar + cursor nuevo
+    POST /p10/clasificar    conciliación de un BANCO+MES de Depositos_Activos con lo guardado (nocturna o tras un cambio de extracto)
     POST /p10/extracto      UN extracto de PROCESADOS -> aportes (parciales) por BANCO+CUENTA+MONEDA+MES, con el MOTOR REAL de P0
     POST /p10/sincronizar   UN grupo: estado + parciales + filas de la lista -> estado nuevo + XLSX (generador aprobado de A.1)
 
@@ -137,9 +138,16 @@ def _h_plan(c):
                    _campo(c, "prefijo_servidor", str, False, ""), _campo(c, "limite", int, False, PL.MAX_EXTRACTOS_NORMAL))
 
 
+def _h_delta(c):
+    r = PL.delta(_items(c, "items"), _items(c, "control"), _fecha(c), _campo(c, "cursor_desde", str, False, ""))
+    for g in r["sucios"]:
+        g["rutas"] = S.rutas_grupo(E.grupo_desde_id(g["grupo_id"]))
+    return r
+
+
 def _h_clasificar(c):
     r = PL.clasificar(_campo(c, "periodo", str), _items(c, "items"), _items(c, "control"), _campo(c, "modo", str, False, "NORMAL"),
-                      bool(_campo(c, "hay_mas", bool, False, False)), _campo(c, "verificar", list, False, []))
+                      bool(_campo(c, "hay_mas", bool, False, False)), _campo(c, "verificar", list, False, []), _campo(c, "banco", str, False))
     for g in r.get("sucios", []):                       # el flujo necesita las rutas ANTES de llamar a /sincronizar
         g["rutas"] = S.rutas_grupo(E.grupo_desde_id(g["grupo_id"]))
     return r
@@ -169,10 +177,10 @@ def _h_sincronizar(c):
             _campo(c, "sede", str), _campo(c, "grupo_id", str), _b64(estado, "estado_base64") if estado else None,
             [_b64(p, "parciales_base64") for p in parciales], filas, _fecha(c), control,
             bool(_campo(c, "forzar_xlsx", bool, False, False)), bool(_campo(c, "verificar_xlsx", bool, False, False)),
-            _b64(xlsx, "xlsx_actual_base64") if xlsx else None, bool(_campo(c, "finalizar", bool, False, False)))
+            _b64(xlsx, "xlsx_actual_base64") if xlsx else None, bool(_campo(c, "finalizar", bool, False, False)), bool(_campo(c, "parcial_lista", bool, False, False)))
 
 
-RUTAS = {"ciclo": _h_ciclo, "plan": _h_plan, "clasificar": _h_clasificar,
+RUTAS = {"ciclo": _h_ciclo, "plan": _h_plan, "delta": _h_delta, "clasificar": _h_clasificar,
          "extracto": _h_extracto, "sincronizar": _h_sincronizar}
 
 
