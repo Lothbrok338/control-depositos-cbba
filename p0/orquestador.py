@@ -3,8 +3,8 @@
     ENTRADA/<extracto>.xls|xlsx
       -> motor_control_depositos_cbba.ejecutar_motor   (UN archivo por corrida)   -> LISTS.csv
       -> adaptador_m365.adaptar (P7)                                              -> DEPOSITOS_ACTIVOS__P7-<hash>.json
-      -> copia del JSON a la carpeta que escucha P8 V5                            -> P8 carga Depositos_Activos
-      -> el extracto pasa a PROCESADOS/   (o a ERROR/ + <archivo>.error.json si algo falla)
+      -> copia del JSON a CARGA_EXTRACTOS_BANCARIOS/ (la carpeta que escucha P8 V5) -> P8 carga Depositos_Activos
+      -> el extracto pasa a PROCESADOS/AAAA/MM_MES/   (o a ERROR/AAAA/MM_MES/ + <archivo>.error.json si algo falla)
 
 No contiene logica de negocio: solo encadena el motor y P7 existentes, procesa archivo por archivo (un archivo malo no
 detiene a los demas) y mueve los originales. La idempotencia sigue en P8 (CLAVE_TRANSACCION); aqui no se duplica.
@@ -41,6 +41,9 @@ IGNORAR_PREFIJOS = ("~$", ".")
 IGNORAR_SUFIJOS = (".tmp", ".crdownload", ".part", ".partial", ".download", ".lnk", ".p0tmp")
 IGNORAR_NOMBRES = {"desktop.ini", "thumbs.db"}
 
+MESES = ("01_ENERO", "02_FEBRERO", "03_MARZO", "04_ABRIL", "05_MAYO", "06_JUNIO", "07_JULIO", "08_AGOSTO",
+         "09_SEPTIEMBRE", "10_OCTUBRE", "11_NOVIEMBRE", "12_DICIEMBRE")  # independiente del idioma del equipo
+
 ESTADO_PROCESADO = "PROCESADO"
 ESTADO_ERROR = "ERROR"
 LOCK_VENCE_S = 2 * 3600
@@ -67,7 +70,7 @@ class Config:
     entrada: Path
     procesados: Path
     error: Path
-    destino_p8: Path
+    carga: Path  # CARGA_EXTRACTOS_BANCARIOS: la carpeta que escucha el flujo P8
     registro: Path
     trabajo: Path
     estable_s: float = 30.0
@@ -115,7 +118,12 @@ def registro_para_sede(cfg_sede, trabajo, base=REGISTRO_BASE, sede="SEDE"):
     return destino
 
 
-def cargar_config(sede, documentos=None, raiz=None, destino_p8=None, trabajo=None, sedes_json=SEDES_JSON,
+def carpeta_mes(base, fecha):
+    """base/AAAA/MM_MES para la fecha dada (no se crea aqui)."""
+    return Path(base) / f"{fecha.year:04d}" / MESES[fecha.month - 1]
+
+
+def cargar_config(sede, documentos=None, raiz=None, carga=None, trabajo=None, sedes_json=SEDES_JSON,
                   registro_base=REGISTRO_BASE, estable_s=30.0, intervalo_s=60.0):
     documentos = documentos or os.environ.get("CBBA_DOCUMENTOS")
     try:
@@ -129,21 +137,23 @@ def cargar_config(sede, documentos=None, raiz=None, destino_p8=None, trabajo=Non
     trabajo = Path(trabajo) if trabajo else Path(tempfile.gettempdir()) / "cbba_p0" / sede
     cfg = Config(
         sede=sede, entrada=raiz / "ENTRADA", procesados=raiz / "PROCESADOS", error=raiz / "ERROR",
-        destino_p8=_resolver(documentos, destino_p8 or s["destino_p8"]),
+        carga=_resolver(raiz, carga or s.get("carpeta_carga", "CARGA_EXTRACTOS_BANCARIOS")),
         registro=registro_para_sede(s, trabajo, registro_base, sede), trabajo=trabajo,
         estable_s=estable_s, intervalo_s=intervalo_s)
     return cfg
 
 
 def validar_config(cfg):
-    """Antes de procesar: las carpetas existen (la de P8 NO se crea: una carpeta nueva no la escucha el flujo)."""
-    if not cfg.destino_p8.is_dir():
-        raise ConfigError(f"la carpeta de P8 no existe: {cfg.destino_p8}. Debe ser la carpeta local sincronizada "
-                          "que corresponde a la carpeta de SharePoint que escucha el flujo P8.")
+    """Antes de procesar: la carpeta P0_EXTRACTOS debe existir (evita crear un arbol falso por una ruta mal escrita);
+    se crean las carpetas base de la estructura que falten (no los años/meses, que se crean al usarse)."""
     if not Path(cfg.registro).is_file():
         raise ConfigError(f"no se encuentra el registro de bancos: {cfg.registro}")
-    for c in (cfg.entrada, cfg.procesados, cfg.error, cfg.trabajo):
-        c.mkdir(parents=True, exist_ok=True)
+    if not cfg.entrada.parent.is_dir():
+        raise ConfigError(f"no existe la carpeta {cfg.entrada.parent}. Revisa --documentos (carpeta local sincronizada "
+                          "'Documents' de OneDrive) y que exista CONTROL_DEPOSITOS/P0_EXTRACTOS.")
+    for c in (cfg.entrada, cfg.procesados, cfg.error, cfg.carga):
+        c.mkdir(exist_ok=True)
+    cfg.trabajo.mkdir(parents=True, exist_ok=True)
 
 
 # ------------------------------------------------------------------ etapas (reutilizan el codigo existente)
@@ -197,16 +207,28 @@ def etapa_p7(lists_csv, carpeta_m365):
     return _modulo("adaptador_m365", "adaptador_m365.py").adaptar(str(lists_csv), str(carpeta_m365))
 
 
+def nombre_libre(carpeta, nombre, ahora):
+    """`nombre` si esta libre en `carpeta`; si no, `<stem>__AAAAMMDD_HHMMSS[_n]<ext>` (conserva prefijo y extension)."""
+    carpeta, p = Path(carpeta), Path(nombre)
+    if not (carpeta / nombre).exists():
+        return carpeta / nombre
+    base = f"{p.stem}__{ahora:%Y%m%d_%H%M%S}"
+    candidato, n = carpeta / f"{base}{p.suffix}", 1
+    while candidato.exists():
+        n += 1
+        candidato = carpeta / f"{base}_{n}{p.suffix}"
+    return candidato
+
+
 def etapa_publicar(ruta_json, destino, ahora):
-    """Copia el JSON con su nombre final a la carpeta que escucha P8 y comprueba que llego completo.
+    """Copia el JSON con su nombre final a CARGA_EXTRACTOS_BANCARIOS (la carpeta que escucha P8) y comprueba que llego completo.
     No se usa archivo temporal + renombrar: un archivo renombrado ya 'visto' por SharePoint podria no disparar
     'Cuando se crea un archivo'."""
     ruta_json, destino = Path(ruta_json), Path(destino)
     if not destino.is_dir():
-        raise ErrorP0("PUBLICACION", "DESTINO_P8_NO_EXISTE", f"la carpeta de P8 no existe: {destino}")
-    final = destino / ruta_json.name
-    if final.exists():  # mismo LISTS.csv byte a byte ya publicado antes: nombre nuevo conservando prefijo y .json
-        final = destino / f"{ruta_json.stem}__{ahora:%Y%m%d_%H%M%S}.json"
+        raise ErrorP0("PUBLICACION", "CARPETA_CARGA_NO_EXISTE", f"la carpeta de carga no existe: {destino}")
+    # mismo LISTS.csv byte a byte ya publicado antes: nombre nuevo conservando prefijo y .json
+    final = nombre_libre(destino, ruta_json.name, ahora)
     try:
         shutil.copyfile(ruta_json, final)
         if _sha256(final) != _sha256(ruta_json):
@@ -361,7 +383,7 @@ class Orquestador:
                                   f"P7 marcó {m['cantidad_error']} fila(s) inválida(s); no se publica para no cargar "
                                   f"un extracto incompleto. {'; '.join(det_err[:5])}")
                 etapa = "PUBLICACION"
-                final = self.etapas.publicar(p7["rutas"]["artefacto"], self.cfg.destino_p8, ahora)
+                final = self.etapas.publicar(p7["rutas"]["artefacto"], self.cfg.carga, ahora)
                 r.json_publicado = Path(final).name
         except ErrorP0 as e:
             r.etapa, r.codigo, r.mensaje = e.etapa, e.codigo, e.mensaje
@@ -374,21 +396,22 @@ class Orquestador:
 
         if r.codigo:
             r.estado = ESTADO_ERROR
-            self._cerrar(ruta, r, self.cfg.error, ".error.json")
+            self._cerrar(ruta, r, self.cfg.error, ".error.json", ahora)
         else:
             r.estado = ESTADO_PROCESADO
-            self._cerrar(ruta, r, self.cfg.procesados, ".p0.json")
+            self._cerrar(ruta, r, self.cfg.procesados, ".p0.json", ahora)
         log.info("%s -> %s%s", r.archivo, r.estado, f" [{r.etapa}/{r.codigo}] {r.mensaje}" if r.codigo else
                  f" ({r.movimientos} mov., JSON {r.json_publicado or 'no aplica'})")
         return r
 
-    def _cerrar(self, ruta, r, carpeta, sufijo):
-        """Mueve el original (recien ahora) y deja la evidencia minima junto a el."""
-        destino = carpeta / ruta.name
-        if destino.exists():
-            destino = carpeta / f"{ruta.stem}__{self.reloj():%Y%m%d_%H%M%S}{ruta.suffix}"
+    def _cerrar(self, ruta, r, carpeta, sufijo, ahora):
+        """Mueve el original (recien ahora) a <carpeta>/AAAA/MM_MES (se crea solo el año/mes en uso) y deja la
+        evidencia minima junto a el. El año/mes es el del momento del procesamiento."""
+        carpeta = carpeta_mes(carpeta, ahora)
         for intento in range(3):
             try:
+                carpeta.mkdir(parents=True, exist_ok=True)
+                destino = nombre_libre(carpeta, ruta.name, ahora)
                 shutil.move(str(ruta), str(destino))
                 break
             except OSError as e:
@@ -454,7 +477,7 @@ def main(argv=None):
     p.add_argument("--sede", default="CBBA")
     p.add_argument("--documentos", help="carpeta local 'Documents' de OneDrive (o variable CBBA_DOCUMENTOS)")
     p.add_argument("--raiz", help="sustituye carpeta_p0 de la sede (ENTRADA/PROCESADOS/ERROR)")
-    p.add_argument("--destino-p8", help="sustituye destino_p8 de la sede")
+    p.add_argument("--carga", help="sustituye carpeta_carga de la sede (CARGA_EXTRACTOS_BANCARIOS, la que escucha P8)")
     p.add_argument("--trabajo", help="carpeta local de trabajo/logs (por defecto en la carpeta temporal del sistema)")
     p.add_argument("--una-vez", action="store_true", help="un solo ciclo y termina (pruebas / Programador de tareas)")
     p.add_argument("--intervalo", type=float, default=60.0, help="segundos entre ciclos (por defecto 60)")
@@ -464,13 +487,13 @@ def main(argv=None):
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(errors="replace")
     try:
-        cfg = cargar_config(a.sede, a.documentos, a.raiz, a.destino_p8, a.trabajo, estable_s=a.estable,
+        cfg = cargar_config(a.sede, a.documentos, a.raiz, a.carga, a.trabajo, estable_s=a.estable,
                             intervalo_s=a.intervalo)
         validar_config(cfg)
         _configurar_log(cfg.trabajo)
         orq = Orquestador(cfg)
         with candado(cfg.trabajo) as lock:
-            log.info("P0 %s: ENTRADA=%s | P8=%s", cfg.sede, cfg.entrada, cfg.destino_p8)
+            log.info("P0 %s: ENTRADA=%s | CARGA(P8)=%s", cfg.sede, cfg.entrada, cfg.carga)
             while True:
                 try:
                     res = orq.ciclo()

@@ -30,18 +30,19 @@ V5_ZIP = RAIZ / "P8_CARGA_DEPOSITOS_ACTIVOS_V5_TENANT_LISTAS_REALES.zip"
 
 # ------------------------------------------------------------------ utilidades
 class Entorno:
-    def __init__(self, base, sedes_json=None, sede="CBBA", **kw):
+    def __init__(self, base, sedes_json=None, sede="CBBA", ahora=datetime(2026, 10, 15, 9, 30, 0), **kw):
         self.docs = base / "Documents"
         self.raiz = self.docs / "CONTROL_DEPOSITOS" / "P0_EXTRACTOS"
-        self.p8 = self.docs / "P8_PILOTO"
+        self.p8 = self.raiz / "CARGA_EXTRACTOS_BANCARIOS"
         for c in (self.raiz / "ENTRADA", self.raiz / "PROCESADOS", self.raiz / "ERROR", self.p8):
             c.mkdir(parents=True)
+        self.ahora = ahora  # reloj de P0 en las pruebas: define AAAA/MM_MES de PROCESADOS y ERROR
         args = {"estable_s": 0.0}
         if sedes_json:
             args["sedes_json"] = sedes_json
         self.cfg = P0.cargar_config(sede, documentos=str(self.docs), trabajo=base / "trabajo", **args, **kw)
         P0.validar_config(self.cfg)
-        self.orq = P0.Orquestador(self.cfg, esperar=lambda s: None)
+        self.orq = P0.Orquestador(self.cfg, reloj=lambda: self.ahora, esperar=lambda s: None)
 
     def poner(self, nombre, origen=None, contenido=None):
         destino = self.cfg.entrada / nombre
@@ -56,6 +57,17 @@ class Entorno:
 
     def nombres(self, carpeta):
         return sorted(p.name for p in carpeta.iterdir())
+
+    def procesados(self):  # PROCESADOS/AAAA/MM_MES del reloj actual
+        return P0.carpeta_mes(self.cfg.procesados, self.ahora)
+
+    def errores(self):
+        return P0.carpeta_mes(self.cfg.error, self.ahora)
+
+    def en(self, base):
+        """Nombres en base/AAAA/MM_MES (lista vacia si esa carpeta no existe)."""
+        c = P0.carpeta_mes(base, self.ahora)
+        return self.nombres(c) if c.is_dir() else []
 
     def jsons_p8(self):
         return sorted(self.p8.glob("DEPOSITOS_ACTIVOS__*.json"))
@@ -89,7 +101,7 @@ def _p8_v5(*jsons):
 
 
 def _evidencia_error(env, nombre):
-    return json.loads((env.cfg.error / f"{nombre}.error.json").read_text(encoding="utf-8"))
+    return json.loads((env.errores() / f"{nombre}.error.json").read_text(encoding="utf-8"))
 
 
 # ------------------------------------------------------------------ circuito feliz
@@ -98,12 +110,12 @@ def test_archivo_valido_se_publica_y_pasa_a_procesados(env):
     (r,) = env.orq.ciclo()
     assert r.estado == "PROCESADO" and r.movimientos == 8 and not r.codigo
     assert env.nombres(env.cfg.entrada) == []
-    assert env.nombres(env.cfg.procesados) == ["bcp_me_1.xls", "bcp_me_1.xls.p0.json"]
+    assert env.en(env.cfg.procesados) == ["bcp_me_1.xls", "bcp_me_1.xls.p0.json"]
     (j,) = env.jsons_p8()
     art = json.loads(j.read_text(encoding="utf-8"))
     assert art["esquema"] == "P7_DEPOSITOS_ACTIVOS_V1" and len(art["movimientos"]) == 8 and len(art["columnas"]) == 26
     assert all(m["ARCHIVO_ORIGEN"] == "bcp_me_1.xls" for m in art["movimientos"])  # el motor ve el nombre original
-    ev = json.loads((env.cfg.procesados / "bcp_me_1.xls.p0.json").read_text(encoding="utf-8"))
+    ev = json.loads((env.procesados() / "bcp_me_1.xls.p0.json").read_text(encoding="utf-8"))
     assert ev["json_publicado"] == j.name and ev["lote_id"] == art["lote_id"] and ev["movimientos"] == 8
     assert not (env.cfg.trabajo / "corridas").exists() or not list((env.cfg.trabajo / "corridas").iterdir())
 
@@ -139,7 +151,7 @@ def test_extracto_sin_movimientos_es_procesado_sin_json(env):
     env.fixture("bisa_me_2.xls")  # cuenta valida sin movimientos
     (r,) = env.orq.ciclo()
     assert r.estado == "PROCESADO" and r.movimientos == 0 and r.json_publicado == ""
-    assert env.jsons_p8() == [] and "bisa_me_2.xls" in env.nombres(env.cfg.procesados)
+    assert env.jsons_p8() == [] and "bisa_me_2.xls" in env.en(env.cfg.procesados)
 
 
 # ------------------------------------------------------------------ un archivo malo no detiene a los demas
@@ -152,7 +164,7 @@ def test_varios_archivos_cada_uno_con_su_resultado(env):
     assert {n: r.estado for n, r in res.items()} == {
         "BISA.xls": "PROCESADO", "BCP_ME.xls": "PROCESADO", "BCP.xls": "ERROR", "UNION.xls": "PROCESADO"}
     assert env.nombres(env.cfg.entrada) == []
-    assert "BCP.xls" in env.nombres(env.cfg.error) and "BCP.xls.error.json" in env.nombres(env.cfg.error)
+    assert "BCP.xls" in env.en(env.cfg.error) and "BCP.xls.error.json" in env.en(env.cfg.error)
     assert len(env.jsons_p8()) == sum(1 for r in res.values() if r.estado == "PROCESADO" and r.movimientos)
     assert res["BCP.xls"].json_publicado == ""  # el archivo malo no publica nada
 
@@ -173,7 +185,7 @@ def test_archivo_vacio_y_extension_no_soportada(env):
     env.poner("notas.txt", contenido=b"hola")
     res = {r.archivo: r for r in env.orq.ciclo()}
     assert res["vacio.xls"].codigo == "ARCHIVO_VACIO" and res["notas.txt"].codigo == "EXTENSION_NO_SOPORTADA"
-    assert {"vacio.xls", "notas.txt"} <= set(env.nombres(env.cfg.error))
+    assert {"vacio.xls", "notas.txt"} <= set(env.en(env.cfg.error))
 
 
 def test_banco_no_reconocido(env, tmp_path):
@@ -181,7 +193,7 @@ def test_banco_no_reconocido(env, tmp_path):
     wb = Workbook(); wb.active.append(["Banco Imaginario", "x"]); wb.save(env.cfg.entrada / "otro.xlsx")
     (r,) = env.orq.ciclo()
     assert (r.estado, r.etapa, r.codigo) == ("ERROR", "DETECCION", "SIN_FORMATO")
-    assert "otro.xlsx" in env.nombres(env.cfg.error)
+    assert "otro.xlsx" in env.en(env.cfg.error)
 
 
 def test_cuenta_no_registrada(env):
@@ -198,7 +210,7 @@ def test_error_del_motor_se_traduce_a_codigo_legible(env):
                                                   {"fecha": "06/08/2026", "cred": 50.0, "saldo": 9999.0, "cod": "2"}])
     (r,) = env.orq.ciclo()
     assert (r.estado, r.etapa, r.codigo) == ("ERROR", "MOTOR", "SALDOS_NO_CUADRAN")
-    assert "mal.xlsx" in env.nombres(env.cfg.error) and env.jsons_p8() == []
+    assert "mal.xlsx" in env.en(env.cfg.error) and env.jsons_p8() == []
 
 
 def test_nombre_que_el_motor_ignora(env):
@@ -223,7 +235,7 @@ def test_error_de_p7_va_a_error_y_no_detiene_a_los_demas(env):
     assert (res["union_mn_2.xls"].estado, res["union_mn_2.xls"].etapa, res["union_mn_2.xls"].codigo) == \
         ("ERROR", "P7", "P7_CONTRATO")
     assert res["bcp_me_1.xls"].estado == "PROCESADO"
-    assert "union_mn_2.xls" in env.nombres(env.cfg.error) and len(env.jsons_p8()) == 1
+    assert "union_mn_2.xls" in env.en(env.cfg.error) and len(env.jsons_p8()) == 1
 
 
 def test_p7_con_filas_invalidas_no_publica_un_extracto_incompleto(env, tmp_path):
@@ -242,7 +254,7 @@ def test_p7_con_filas_invalidas_no_publica_un_extracto_incompleto(env, tmp_path)
     env.fixture("bcp_me_1.xls")
     (r,) = env.orq.ciclo()
     assert (r.estado, r.codigo) == ("ERROR", "P7_FILAS_INVALIDAS") and "fila 3" in r.mensaje
-    assert env.jsons_p8() == [] and "bcp_me_1.xls" in env.nombres(env.cfg.error)
+    assert env.jsons_p8() == [] and "bcp_me_1.xls" in env.en(env.cfg.error)
 
 
 def test_error_al_publicar_el_json_deja_el_extracto_en_error(env):
@@ -253,15 +265,15 @@ def test_error_al_publicar_el_json_deja_el_extracto_en_error(env):
     env.fixture("bcp_me_1.xls")
     (r,) = env.orq.ciclo()
     assert (r.estado, r.etapa, r.codigo) == ("ERROR", "PUBLICACION", "PUBLICACION_FALLIDA")
-    assert "bcp_me_1.xls" in env.nombres(env.cfg.error) and env.nombres(env.cfg.procesados) == []
+    assert "bcp_me_1.xls" in env.en(env.cfg.error) and env.en(env.cfg.procesados) == []
 
 
 def test_carpeta_de_p8_desaparece_durante_la_corrida(env):
     shutil.rmtree(env.p8)
     env.fixture("bcp_me_1.xls")
     (r,) = env.orq.ciclo()
-    assert (r.estado, r.codigo) == ("ERROR", "DESTINO_P8_NO_EXISTE")
-    assert env.nombres(env.cfg.procesados) == []
+    assert (r.estado, r.codigo) == ("ERROR", "CARPETA_CARGA_NO_EXISTE")
+    assert env.en(env.cfg.procesados) == []
 
 
 def test_el_extracto_se_mueve_a_procesados_solo_despues_de_publicar(env):
@@ -270,14 +282,14 @@ def test_el_extracto_se_mueve_a_procesados_solo_despues_de_publicar(env):
 
     def publicar(ruta_json, destino, ahora):
         visto["en_entrada"] = "bcp_me_1.xls" in env.nombres(env.cfg.entrada)
-        visto["en_procesados"] = "bcp_me_1.xls" in env.nombres(env.cfg.procesados)
+        visto["en_procesados"] = "bcp_me_1.xls" in env.en(env.cfg.procesados)
         return real(ruta_json, destino, ahora)
 
     env.orq.etapas.publicar = publicar
     env.fixture("bcp_me_1.xls")
     env.orq.ciclo()
     assert visto == {"en_entrada": True, "en_procesados": False}
-    assert "bcp_me_1.xls" in env.nombres(env.cfg.procesados)
+    assert "bcp_me_1.xls" in env.en(env.cfg.procesados)
 
 
 def test_si_no_se_puede_mover_el_original_no_se_republica_en_cada_ciclo(env, monkeypatch):
@@ -321,7 +333,7 @@ def test_mismo_extracto_dos_veces_p8_no_duplica(env):
     assert len(activos) == 8
     assert (bitacoras[0]["CANTIDAD_NUEVA"], bitacoras[1]["CANTIDAD_NUEVA"], bitacoras[1]["CANTIDAD_YA_EXISTE"]) == (8, 0, 8)
     # el segundo original no pisa al primero en PROCESADOS
-    assert len([n for n in env.nombres(env.cfg.procesados) if n.endswith(".xls")]) == 2
+    assert len([n for n in env.en(env.cfg.procesados) if n.endswith(".xls")]) == 2
 
 
 def test_mismo_extracto_con_otro_nombre_en_la_misma_corrida(env):
@@ -373,7 +385,7 @@ def test_archivos_transitorios_se_ignoran(env):
         env.poner(n, contenido=b"x")
     (env.cfg.entrada / "subcarpeta").mkdir()
     assert env.orq.ciclo() == [] and len(env.nombres(env.cfg.entrada)) == 7
-    assert env.nombres(env.cfg.error) == []
+    assert env.en(env.cfg.error) == []
 
 
 def test_archivo_recien_copiado_espera_a_estar_estable(tmp_path):
@@ -410,7 +422,7 @@ def test_otra_sede_comparte_formatos_y_tiene_sus_propias_cuentas(tmp_path):
     adicionales.write_text(json.dumps([{"id": "BNB_LPZ_1", "formato": "BNB_EXTRACTO_V1", "banco": "BNB",
                                         "cuenta": "3777777777", "moneda": "BOB", "activa": True}]), encoding="utf-8")
     sedes = _sedes(tmp_path, LPZ={"nombre": "La Paz", "carpeta_p0": "CONTROL_DEPOSITOS/P0_EXTRACTOS",
-                                  "destino_p8": "P8_PILOTO", "cuentas": [], "cuentas_adicionales": str(adicionales)})
+                                  "carpeta_carga": "CARGA_EXTRACTOS_BANCARIOS", "cuentas": [], "cuentas_adicionales": str(adicionales)})
     e = Entorno(tmp_path, sedes_json=sedes, sede="LPZ")
     ids = [c["id"] for c in json.loads(e.cfg.registro.read_text(encoding="utf-8"))["CUENTAS"]]
     assert ids == ["BNB_LPZ_1"]
@@ -440,13 +452,23 @@ def test_cuentas_adicionales_con_id_repetido_es_error_de_configuracion(tmp_path)
 
 
 # ------------------------------------------------------------------ configuracion, bloqueo, linea de comandos
-def test_config_exige_la_carpeta_de_p8_y_no_la_crea(tmp_path):
+def test_config_crea_las_carpetas_base_pero_no_años_ni_meses(tmp_path):
     docs = tmp_path / "Documents"
-    (docs / "CONTROL_DEPOSITOS" / "P0_EXTRACTOS").mkdir(parents=True)
+    raiz = docs / "CONTROL_DEPOSITOS" / "P0_EXTRACTOS"
+    raiz.mkdir(parents=True)
     cfg = P0.cargar_config("CBBA", documentos=str(docs), trabajo=tmp_path / "t")
-    with pytest.raises(P0.ConfigError, match="carpeta de P8 no existe"):
+    P0.validar_config(cfg)
+    assert sorted(p.name for p in raiz.iterdir()) == ["CARGA_EXTRACTOS_BANCARIOS", "ENTRADA", "ERROR", "PROCESADOS"]
+    assert cfg.carga == raiz / "CARGA_EXTRACTOS_BANCARIOS"
+    assert list((raiz / "PROCESADOS").iterdir()) == [] and list((raiz / "ERROR").iterdir()) == []  # nada por adelantado
+    assert not (docs / "P8_PILOTO").exists()  # la carpeta piloto anterior ya no es el destino
+
+
+def test_config_no_crea_un_arbol_falso_si_la_ruta_esta_mal(tmp_path):
+    cfg = P0.cargar_config("CBBA", documentos=str(tmp_path / "typo"), trabajo=tmp_path / "t")
+    with pytest.raises(P0.ConfigError, match="no existe la carpeta"):
         P0.validar_config(cfg)
-    assert not (docs / "P8_PILOTO").exists()
+    assert not (tmp_path / "typo").exists()
 
 
 def test_config_sede_desconocida_y_ruta_relativa_sin_documentos(tmp_path, monkeypatch):
@@ -478,7 +500,95 @@ def test_linea_de_comandos_una_vez(tmp_path, capsys):
     rc = P0.main(["--sede", "CBBA", "--documentos", str(e.docs), "--trabajo", str(tmp_path / "trabajo2"),
                   "--una-vez", "--estable", "0"])
     assert rc == 0
-    assert "bcp_me_1.xls" in e.nombres(e.cfg.procesados) and "roto.xls" in e.nombres(e.cfg.error)
+    assert "bcp_me_1.xls" in e.en(e.cfg.procesados) and "roto.xls" in e.en(e.cfg.error)
     assert P0.main(["--sede", "CBBA", "--documentos", str(tmp_path / "no_existe"), "--una-vez"]) == 2
     for h in list(P0.log.handlers):  # cierra el archivo de log
         h.close(); P0.log.removeHandler(h)
+
+
+# ------------------------------------------------------------------ estructura final: AAAA/MM_MES y CARGA_EXTRACTOS_BANCARIOS
+def _arbol(base):
+    return sorted(str(p.relative_to(base)).replace(os.sep, "/") for p in base.rglob("*") if p.is_dir())
+
+
+def test_los_nombres_de_mes_son_fijos_e_independientes_del_idioma(env):
+    assert P0.MESES == ("01_ENERO", "02_FEBRERO", "03_MARZO", "04_ABRIL", "05_MAYO", "06_JUNIO", "07_JULIO",
+                        "08_AGOSTO", "09_SEPTIEMBRE", "10_OCTUBRE", "11_NOVIEMBRE", "12_DICIEMBRE")
+    for m in range(1, 13):
+        assert P0.carpeta_mes(Path("PROCESADOS"), datetime(2026, m, 1)) == Path("PROCESADOS") / "2026" / P0.MESES[m - 1]
+
+
+def test_exito_va_a_procesados_año_mes(env):
+    env.fixture("bcp_me_1.xls")
+    (r,) = env.orq.ciclo()
+    destino = env.cfg.procesados / "2026" / "10_OCTUBRE"
+    assert r.estado == "PROCESADO" and Path(r.destino) == destino / "bcp_me_1.xls"
+    assert env.nombres(destino) == ["bcp_me_1.xls", "bcp_me_1.xls.p0.json"]
+    assert env.nombres(env.cfg.procesados) == ["2026"] and env.nombres(env.cfg.procesados / "2026") == ["10_OCTUBRE"]
+    assert env.nombres(env.cfg.entrada) == []
+
+
+def test_error_va_a_error_año_mes_con_su_error_json(env):
+    env.poner("roto.xls", contenido=b"basura")
+    (r,) = env.orq.ciclo()
+    destino = env.cfg.error / "2026" / "10_OCTUBRE"
+    assert r.estado == "ERROR" and Path(r.destino) == destino / "roto.xls"
+    assert env.nombres(destino) == ["roto.xls", "roto.xls.error.json"]
+    assert json.loads((destino / "roto.xls.error.json").read_text(encoding="utf-8"))["codigo_error"] == "ARCHIVO_ILEGIBLE"
+    assert env.nombres(env.cfg.procesados) == []  # un error no crea carpetas en PROCESADOS
+
+
+def test_el_json_se_publica_en_carga_extractos_bancarios_y_no_en_subcarpetas(env):
+    env.fixture("bcp_me_1.xls")
+    env.orq.ciclo()
+    (j,) = env.jsons_p8()
+    assert j.parent == env.cfg.carga and env.cfg.carga.name == "CARGA_EXTRACTOS_BANCARIOS"
+    assert j.parent.parent.name == "P0_EXTRACTOS" and j.name.startswith("DEPOSITOS_ACTIVOS__") and j.suffix == ".json"
+    assert [p for p in env.cfg.carga.iterdir() if p.is_dir()] == []
+    assert not (env.docs / "P8_PILOTO").exists()
+
+
+def test_los_meses_se_crean_solo_cuando_se_usan_sin_adelantar_nada(env):
+    assert _arbol(env.cfg.procesados) == [] and _arbol(env.cfg.error) == []
+    env.fixture("bcp_me_1.xls")
+    env.orq.ciclo()
+    assert _arbol(env.cfg.procesados) == ["2026", "2026/10_OCTUBRE"] and _arbol(env.cfg.error) == []
+    env.ahora = datetime(2026, 11, 3, 8, 0)  # el mes siguiente se crea al usarse; octubre no se toca
+    env.fixture("union_mn_2.xls")
+    env.poner("malo.xls", contenido=b"x")
+    env.orq.ciclo()
+    assert _arbol(env.cfg.procesados) == ["2026", "2026/10_OCTUBRE", "2026/11_NOVIEMBRE"]
+    assert _arbol(env.cfg.error) == ["2026", "2026/11_NOVIEMBRE"]
+    assert env.nombres(env.cfg.procesados / "2026" / "10_OCTUBRE") == ["bcp_me_1.xls", "bcp_me_1.xls.p0.json"]
+
+
+def test_cambio_de_diciembre_a_enero_crea_el_año_nuevo(env):
+    env.ahora = datetime(2026, 12, 31, 23, 58)
+    env.fixture("bcp_me_1.xls")
+    env.poner("roto_dic.xls", contenido=b"x")
+    env.orq.ciclo()
+    env.ahora = datetime(2027, 1, 1, 0, 2)
+    env.fixture("union_mn_2.xls")
+    env.poner("roto_ene.xls", contenido=b"x")
+    env.orq.ciclo()
+    assert _arbol(env.cfg.procesados) == ["2026", "2026/12_DICIEMBRE", "2027", "2027/01_ENERO"]
+    assert _arbol(env.cfg.error) == ["2026", "2026/12_DICIEMBRE", "2027", "2027/01_ENERO"]
+    assert "bcp_me_1.xls" in env.nombres(env.cfg.procesados / "2026" / "12_DICIEMBRE")
+    assert "union_mn_2.xls" in env.nombres(env.cfg.procesados / "2027" / "01_ENERO")
+    assert "roto_ene.xls.error.json" in env.nombres(env.cfg.error / "2027" / "01_ENERO")
+
+
+def test_misma_carpeta_mes_con_nombres_repetidos_no_pisa_nada(env):
+    for _ in range(3):  # mismo nombre y mismo segundo (reloj fijo): se conservan los tres
+        env.fixture("bcp_me_1.xls")
+        env.orq.ciclo()
+    xls = [n for n in env.en(env.cfg.procesados) if n.endswith(".xls")]
+    assert len(xls) == 3 and len(set(xls)) == 3
+    assert len(env.jsons_p8()) == 3
+
+
+def test_entrada_es_plana_las_subcarpetas_no_se_procesan(env):
+    sub = env.cfg.entrada / "2026" / "10_OCTUBRE"
+    sub.mkdir(parents=True)
+    shutil.copy(EXTRACTOS / "bcp_me_1.xls", sub / "dentro.xls")
+    assert env.orq.ciclo() == [] and (sub / "dentro.xls").exists()
