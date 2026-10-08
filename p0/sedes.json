@@ -1,0 +1,18 @@
+{
+  "_ayuda": {
+    "sedes": "Una entrada por sede. Los bancos y formatos son comunes (registro_bancos.json); lo que cambia por sede son las cuentas y las carpetas. Un solo motor, un solo orquestador.",
+    "carpeta_p0": "Carpeta con ENTRADA/, PROCESADOS/ y ERROR/. Relativa a --documentos (carpeta local sincronizada 'Documents' de OneDrive) o absoluta.",
+    "destino_p8": "Carpeta LOCAL que corresponde a la carpeta de SharePoint que escucha el flujo P8 de esa sede (hoy P8 V5: /Documents/P8_PILOTO). Debe existir. Relativa a --documentos o absoluta.",
+    "cuentas": "\"TODAS\" = todas las cuentas de registro_bancos.json (comportamiento actual de CBBA), o una lista de ids de CUENTAS de ese archivo que pertenecen a la sede.",
+    "cuentas_adicionales": "Ruta (relativa a p0/) de un JSON con una lista de cuentas propias de la sede, con el mismo formato que CUENTAS de registro_bancos.json; o null."
+  },
+  "sedes": {
+    "CBBA": {
+      "nombre": "Cochabamba",
+      "carpeta_p0": "CONTROL_DEPOSITOS/P0_EXTRACTOS",
+      "destino_p8": "P8_PILOTO",
+      "cuentas": "TODAS",
+      "cuentas_adicionales": null
+    }
+  }
+}

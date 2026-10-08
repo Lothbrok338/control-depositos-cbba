@@ -17,9 +17,9 @@ válidas, encabezados esperados, normalizadores por banco, cálculo
 de CÓDIGO DE ASIGNACIÓN y CLAVE TRANSACCIÓN, reglas de débito/
 crédito, extracción del originante, construcción de INFORMACIÓN
 ADICIONAL, validaciones estructurales, validación de saldos con
-tolerancia 0.01, control fijo del año 2026, criterios que bloquean
-la exportación, estados válidos OK/SIN MOVIMIENTOS, y el lector
-robusto xlrd -> calamine ante AssertionError).
+tolerancia 0.01, control del año (desde P0: rango dinámico, ya no
+2026 fijo), criterios que bloquean la exportación, estados
+válidos OK/SIN MOVIMIENTOS, y el lector robusto xlrd -> calamine ante AssertionError).
 
 Este módulo es intencionalmente independiente de Google Drive, de
 Google Colab y de Claude/Cowork. Solo conoce:
@@ -959,6 +959,41 @@ PREFIJOS_SALIDA_SISTEMA = (
 )
 
 
+# ============================================================
+# CONTROL DEL AÑO (P0: antes fijo en 2026)
+#
+# Qué protege: que una fecha mal interpretada (año de 2 dígitos, texto
+# ilegible, formato inesperado) no entre como movimiento. NO es una regla
+# de negocio sobre "el año de trabajo".
+#   - mínimo  = ANIO_MINIMO_DATOS: primer año de operación del sistema
+#     (no existen extractos anteriores); constante, nunca vence.
+#   - máximo  = año de la fecha del equipo: un extracto no puede traer
+#     movimientos de un año que todavía no empezó.
+# Un extracto que cruza diciembre/enero es válido.
+# ============================================================
+
+ANIO_MINIMO_DATOS = 2026
+
+
+def fecha_referencia():
+    """Fecha del equipo usada por el control del año (se puede sustituir en pruebas)."""
+    return pd.Timestamp.now()
+
+
+def anios_fuera_de_rango(anios, hoy=None):
+    """Años (enteros, ordenados) fuera de [ANIO_MINIMO_DATOS, año de `hoy`]."""
+
+    maximo = (hoy if hoy is not None else fecha_referencia()).year
+
+    return sorted(
+        {
+            int(a)
+            for a in anios
+            if not (ANIO_MINIMO_DATOS <= int(a) <= maximo)
+        }
+    )
+
+
 def descubrir_archivos(carpeta_entrada):
     """
     Lista los extractos a procesar dentro de una carpeta local.
@@ -1550,18 +1585,26 @@ def ejecutar_motor(carpeta_entrada, ruta_salida):
         f"{sorted(anios_detectados)}"
     )
 
-    if any(
-        anio != 2026
-        for anio in anios_detectados
-    ):
+    _hoy_control = fecha_referencia()
+
+    _fuera_de_rango = anios_fuera_de_rango(
+        anios_detectados,
+        _hoy_control
+    )
+
+    if _fuera_de_rango:
 
         raise ValueError(
             "❌ EXPORTACIÓN BLOQUEADA: "
-            "se detectaron movimientos fuera del año 2026."
+            "se detectaron movimientos con año fuera del rango válido "
+            f"{ANIO_MINIMO_DATOS}–{_hoy_control.year} "
+            f"(años fuera de rango: {_fuera_de_rango}; "
+            f"fecha del equipo: {_hoy_control:%Y-%m-%d})."
         )
 
     print(
-        "✅ Todos los movimientos corresponden a 2026"
+        "✅ Todos los movimientos están en el rango de años válido "
+        f"({ANIO_MINIMO_DATOS}–{_hoy_control.year})"
     )
 
     # ========================================================

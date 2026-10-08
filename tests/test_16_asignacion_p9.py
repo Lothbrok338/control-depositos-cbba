@@ -413,6 +413,14 @@ def test_contrato_de_26_columnas_identico_al_del_adaptador_y_al_motor():
     assert set(C.CAMPOS_ESCRITOS) == operativos  # el flujo escribe exactamente las 8 columnas operativas de P8
 
 
+# Cambios posteriores al commit base, autorizados de forma explicita (archivo -> SHA-256 del contenido aprobado).
+# P0 (2026-10): el control del año del motor deja de estar fijo en 2026 (D-08). Cualquier otro cambio del motor
+# vuelve a fallar esta prueba hasta que se autorice aqui con su motivo.
+EXCEPCIONES_AUTORIZADAS = {
+    "motor_control_depositos_cbba.py": "c614d8518f8495c2a21464ece3b1559d8217813b93166350823615845524500c",
+}
+
+
 def test_archivos_p6_p7_p8_p85_sin_cambios_respecto_al_commit_base():
     """P9 es aditivo: ningún archivo existente en el commit base cambió (huellas congeladas desde ese commit)."""
     huellas = json.loads((RAIZ / "p9/evidencias/huellas_base_p8_5.json").read_text(encoding="utf-8"))
@@ -430,7 +438,8 @@ def test_archivos_p6_p7_p8_p85_sin_cambios_respecto_al_commit_base():
                 assert texto.count(separador) == 1
                 datos, adenda = texto.split(separador)
                 assert b"DOCUMENTACION_P9_REVERSION.md" in adenda and b"DESPLIEGUE_P9_REVERSION.md" in adenda
-        if hashlib.sha256(datos).hexdigest() != h:
+        calculado = hashlib.sha256(datos).hexdigest()
+        if calculado != h and EXCEPCIONES_AUTORIZADAS.get(f) != calculado:
             cambiados.append(f)
     assert cambiados == []
     assert not any(f.startswith("p9/") or f.startswith("P9_") or f.endswith("_P9.md") for f in huellas["archivos"])

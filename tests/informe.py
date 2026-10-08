@@ -14,7 +14,7 @@ CAMBIOS = {  # codigo -> (archivo/funcion, cambio minimo necesario)
  "D-05": ("motor · normalizar_hora()", "Convertir float 0<=x<1 (fraccion de dia de Excel) a HH:MM:SS."),
  "D-06": ("motor_generico.py · filtro_fecha del registro (P5; antes normalizar_*)", "Usar el mismo parser (normalizar_fecha) para FILTRAR filas y para el valor final, como ya hace normalizar_economico."),
  "D-07": ("motor_generico.py · MotorGenerico.normalizar (P5; antes normalizar_*)", "Contar filas descartadas por fecha; si alguna tiene importe/saldo, lanzar ValueError (pies de pagina 'Total ...' siguen permitidos)."),
- "D-08": ("motor · ejecutar_motor (paso 6)", "Reemplazar 2026 fijo por año parametrizable (p. ej. derivado de FECHA A PROCESAR) sin bloquear enero 2027."),
+ "D-08": ("motor · ejecutar_motor (paso 6)", "CORREGIDO EN P0: el control del año acepta [ANIO_MINIMO_DATOS, año de la fecha del equipo] (anios_fuera_de_rango) en vez del 2026 fijo."),
  "D-09": ("motor_generico.py · MotorGenerico._leer_tabla (P5)", "CORREGIDO EN P5: la normalizacion productiva exige encabezados.puntaje_minimo del registro y lanza ValueError con los encabezados que faltan (la deteccion ya lo exigia desde P4). La primitiva legada encontrar_fila_encabezado se retiro en P6."),
  "D-10": ("deteccion_registro.py (P4)", "CORREGIDO EN P4: la cuenta se lee solo en la celda rotulada de la cabecera (filas previas al encabezado) y debe ser UNA cuenta registrada."),
  "D-11": ("deteccion_registro.py (P4)", "CORREGIDO EN P4: BMSC exige la cuenta 1000872489 registrada en la cabecera; otra cuenta = CUENTA_NO_REGISTRADA."),

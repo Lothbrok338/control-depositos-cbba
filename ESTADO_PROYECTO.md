@@ -167,3 +167,8 @@ Capa 4 (`EXTRACTO_HISTORICO`, ver `DISENO_TRES_CAPAS.md` §6): bloque `historico
 ## 7. P9 — reversión de confirmación (fase B local)
 
 Sobre `d08454f7636a49a5711006cd900d79b32bf9c13b`, la rama local `candidate/p9-reversion` incorpora el esquema V2, cinco flujos/paquetes, snapshot, exclusión única, ETag original, aprobación de 168 horas, expiración, recuperación manual auditada y la extensión de Power Apps. La decisión humana y el resultado técnico son independientes; éxito exige REVERTIDO. El backend y frontend P9 base y el comprobante se conservan. Véanse [DOCUMENTACION_P9_REVERSION.md](DOCUMENTACION_P9_REVERSION.md), [DESPLIEGUE_P9_REVERSION.md](DESPLIEGUE_P9_REVERSION.md) e [INFORME_PRUEBAS.md](p9/reversion/evidencias/INFORME_PRUEBAS.md) para alcance, límites y resultados reales. El despliegue y validación en tenant, así como commit/push final, siguen pendientes de la revisión del usuario.
+
+
+## 8. P0 — entrada automática de extractos (experiment/p9-masiva-prototipo)
+
+Orquestador `p0/orquestador.py` (`python -m p0`): observa `Documents/CONTROL_DEPOSITOS/P0_EXTRACTOS/ENTRADA`, procesa **cada extracto por separado** con el motor y `adaptador_m365.py` existentes, copia el `DEPOSITOS_ACTIVOS__*.json` a la carpeta que escucha P8 V5 (`/Documents/P8_PILOTO`) y mueve el original a `PROCESADOS/` o `ERROR/` (+ `.error.json`). Corre en local (equipo con OneDrive sincronizado); sedes en `p0/sedes.json`. **P8, P7 y el resto del motor no cambian.** Único cambio del motor (sustituye la restricción «control del año 2026 fijo» de §6): el control del año deja de ser 2026 fijo (D-08 corregido). Validado solo con pruebas locales (flujo V5 con SharePoint simulado); falta la prueba real con OneDrive/tenant. Ver `P0_AUTOMATIZACION_EXTRACTOS.md`.
