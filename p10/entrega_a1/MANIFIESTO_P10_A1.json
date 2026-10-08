@@ -1,0 +1,232 @@
+{
+ "archivos": [
+  {
+   "advertencias": [],
+   "banco": "BANCO ECONÓMICO",
+   "bytes": 99124,
+   "creditos": 440785.38,
+   "cuenta": "3041210569",
+   "debitos": 28743.71,
+   "estados": {
+    "CONFIRMADO": 48,
+    "DISPONIBLE": 340
+   },
+   "id_cuenta": "ECO_CTA_CTE",
+   "moneda": "BOB",
+   "movimientos": 388,
+   "nombre_archivo": "EXTRACTO_HISTORICO_BANCO_ECONOMICO_3041210569_BOB_2026-08.xlsx",
+   "periodo": "2026-08",
+   "sha256": "67ead1c857b3bb609e4ee0038056f90ff8a723a7163271b1ba7f95ba2b12f56e",
+   "validacion": "OK"
+  },
+  {
+   "advertencias": [],
+   "banco": "BANCO ECONÓMICO",
+   "bytes": 9998,
+   "creditos": 6000.0,
+   "cuenta": "3051446946",
+   "debitos": 0.0,
+   "estados": {
+    "DISPONIBLE": 1
+   },
+   "id_cuenta": "ECO_AHORRO",
+   "moneda": "BOB",
+   "movimientos": 1,
+   "nombre_archivo": "EXTRACTO_HISTORICO_BANCO_ECONOMICO_3051446946_BOB_2026-08.xlsx",
+   "periodo": "2026-08",
+   "sha256": "69cb56682ded57d033c2ec934d2ce888549700dce0f110d092e9070744c7d97f",
+   "validacion": "OK"
+  },
+  {
+   "advertencias": [],
+   "banco": "BANCO UNIÓN",
+   "bytes": 15888,
+   "creditos": 143466.2,
+   "cuenta": "10000003224552",
+   "debitos": 0.0,
+   "estados": {
+    "CONFIRMADO": 4,
+    "DISPONIBLE": 28
+   },
+   "id_cuenta": "UNION_MN",
+   "moneda": "BOB",
+   "movimientos": 32,
+   "nombre_archivo": "EXTRACTO_HISTORICO_BANCO_UNION_10000003224552_BOB_2026-08.xlsx",
+   "periodo": "2026-08",
+   "sha256": "bb81352cc99cef227d87f357db2346106c70976e2c92b858dcdeff3324e3424a",
+   "validacion": "OK"
+  },
+  {
+   "advertencias": [],
+   "banco": "BCP",
+   "bytes": 11381,
+   "creditos": 5565.0,
+   "cuenta": "301-5005425-2-71",
+   "debitos": 0.0,
+   "estados": {
+    "DISPONIBLE": 8
+   },
+   "id_cuenta": "BCP_ME",
+   "moneda": "USD",
+   "movimientos": 8,
+   "nombre_archivo": "EXTRACTO_HISTORICO_BCP_301-5005425-2-71_USD_2026-07.xlsx",
+   "periodo": "2026-07",
+   "sha256": "42fd6c42ecf44b5d8a2c90fb3dc434f0f8d143115723e01562da2b7c1c5cf09a",
+   "validacion": "OK"
+  },
+  {
+   "advertencias": [],
+   "banco": "BCP",
+   "bytes": 507957,
+   "creditos": 3807655.56,
+   "cuenta": "301-5005684-3-97",
+   "debitos": 1047485.39,
+   "estados": {
+    "CONFIRMADO": 225,
+    "DISPONIBLE": 2106
+   },
+   "id_cuenta": "BCP_MN",
+   "moneda": "BOB",
+   "movimientos": 2331,
+   "nombre_archivo": "EXTRACTO_HISTORICO_BCP_301-5005684-3-97_BOB_2026-08.xlsx",
+   "periodo": "2026-08",
+   "sha256": "ca77a734f92b3e53d4eada890f17e9ac97f0b1bd303ef7044abd52483eec7f36",
+   "validacion": "OK"
+  },
+  {
+   "advertencias": [],
+   "banco": "BISA",
+   "bytes": 10291,
+   "creditos": 1139.0,
+   "cuenta": "0696870039",
+   "debitos": 0.0,
+   "estados": {
+    "DISPONIBLE": 1
+   },
+   "id_cuenta": "BISA_MN",
+   "moneda": "BOB",
+   "movimientos": 1,
+   "nombre_archivo": "EXTRACTO_HISTORICO_BISA_0696870039_BOB_2026-08.xlsx",
+   "periodo": "2026-08",
+   "sha256": "8091d5d9970fdb096cd5ca3a376903e3bf069eb97662a3b20d674b42ccd2cc1d",
+   "validacion": "OK"
+  },
+  {
+   "advertencias": [],
+   "banco": "BMSC",
+   "bytes": 11207,
+   "creditos": 7238.0,
+   "cuenta": "1000872489",
+   "debitos": 0.0,
+   "estados": {
+    "DISPONIBLE": 3
+   },
+   "id_cuenta": "BMSC",
+   "moneda": "BOB",
+   "movimientos": 3,
+   "nombre_archivo": "EXTRACTO_HISTORICO_BMSC_1000872489_BOB_2026-08.xlsx",
+   "periodo": "2026-08",
+   "sha256": "23f95767947f07bb8cc9db89897c0f95a60f89e0d7169108ce031b886bc69cc0",
+   "validacion": "OK"
+  },
+  {
+   "advertencias": [],
+   "banco": "BNB",
+   "bytes": 309323,
+   "creditos": 8909991.73,
+   "cuenta": "3000100152",
+   "debitos": 12080920.09,
+   "estados": {
+    "CONFIRMADO": 72,
+    "DISPONIBLE": 1112
+   },
+   "id_cuenta": "BNB_MN",
+   "moneda": "BOB",
+   "movimientos": 1184,
+   "nombre_archivo": "EXTRACTO_HISTORICO_BNB_3000100152_BOB_2026-08.xlsx",
+   "periodo": "2026-08",
+   "sha256": "8a248ac2a9972d6971b7a4770290a04e6897d5790798abde14dfceed84e1cdc0",
+   "validacion": "OK"
+  },
+  {
+   "advertencias": [],
+   "banco": "BNB",
+   "bytes": 12983,
+   "creditos": 68976.9,
+   "cuenta": "3000100705",
+   "debitos": 0.0,
+   "estados": {
+    "CONFIRMADO": 1,
+    "DISPONIBLE": 13
+   },
+   "id_cuenta": "BNB_CLINICA",
+   "moneda": "BOB",
+   "movimientos": 14,
+   "nombre_archivo": "EXTRACTO_HISTORICO_BNB_3000100705_BOB_2026-08.xlsx",
+   "periodo": "2026-08",
+   "sha256": "1696695088e4510b76b40e0f2905c40870c48e04f5211cd8e35bd60481cc8aef",
+   "validacion": "OK"
+  },
+  {
+   "advertencias": [],
+   "banco": "BNB",
+   "bytes": 11483,
+   "creditos": 1477.25,
+   "cuenta": "3400041236",
+   "debitos": 5553.6,
+   "estados": {
+    "DISPONIBLE": 7
+   },
+   "id_cuenta": "BNB_ME",
+   "moneda": "USD",
+   "movimientos": 7,
+   "nombre_archivo": "EXTRACTO_HISTORICO_BNB_3400041236_USD_2026-08.xlsx",
+   "periodo": "2026-08",
+   "sha256": "47bde7b37d496797401f6855c3ac50b2e733de72df017f80aac5c06830a8f974",
+   "validacion": "OK"
+  },
+  {
+   "advertencias": [],
+   "banco": "BNB",
+   "bytes": 36431,
+   "creditos": 13070.0,
+   "cuenta": "3501936692",
+   "debitos": 0.0,
+   "estados": {
+    "CONFIRMADO": 8,
+    "DISPONIBLE": 87
+   },
+   "id_cuenta": "BNB_AHORRO",
+   "moneda": "BOB",
+   "movimientos": 95,
+   "nombre_archivo": "EXTRACTO_HISTORICO_BNB_3501936692_BOB_2026-08.xlsx",
+   "periodo": "2026-08",
+   "sha256": "399aaa15647d3ed57e3ba49041b4859bf52e73517ffaee34f1105f194bc43ef2",
+   "validacion": "OK"
+  }
+ ],
+ "carpeta": null,
+ "entradas": {
+  "lists": "LISTS.csv",
+  "lists_sha256": "101c91cf0bd4279cc53a8c508c8886b8f0edfcb02e929eace78af7f56ac3d099",
+  "origen": "ORIGEN.xlsx",
+  "origen_sha256": "307868928e6de11b5d00668029e6c1b4a925516cbc76e3c16e56d135768350b0"
+ },
+ "estado": "OK",
+ "extractos_sin_movimientos": [
+  "bisa_me_2.xls"
+ ],
+ "omitidos": [],
+ "snapshot": {
+  "advertencias": [],
+  "con_fila_en_snapshot": 4064,
+  "fecha_corte": "2026-08-22T08:00:00",
+  "movimientos": 4064,
+  "origen": "SIMULADO",
+  "sha256": "48ca3e90c50d55d204a070ccb04a2fda6c84f620f6769cf329efbeea82d57214",
+  "sin_fila_en_snapshot": 0,
+  "snapshot_filas": 4064,
+  "snapshot_fuera_del_extracto": 0
+ },
+ "version": "P10-A.1"
+}
