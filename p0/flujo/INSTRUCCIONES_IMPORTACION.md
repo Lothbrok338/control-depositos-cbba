@@ -1,5 +1,7 @@
 # P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD — importación
 
+> **Estado: VALIDADO EN TENANT REAL (2026-10-08)** con extractos BCP (2331 movimientos) y BNB (1184). Concurrencia = 1 es **intencional**: no aumentarla. Paquete vigente: V5. Cerrado para esta etapa (ver `ESTADO_PROYECTO.md`).
+
 Paquete: `P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V5.zip` (raíz del repo). Generador: `python -m p0.flujo.construir`. Definición legible: `p0/flujo/P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_definition.json`.
 
 Power Automate solo orquesta: lee el archivo de OneDrive, hace un POST a P0 (Railway) y guarda lo que P0 devuelve. No recorre ni parsea movimientos. P0 sigue sin guardar nada (sin DB, volumen ni bucket).

@@ -1,5 +1,8 @@
 # P0 · Automatización de la entrada de extractos (API en Railway + Power Automate)
 
+> **ESTADO: CERRADO Y VALIDADO EN TENANT REAL (2026-10-08).** Railway `p0-api`, flujo `P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD` (OneDrive for Business `OnNewFilesV2` + Split On, concurrencia 1 intencional) y P8 V5 funcionan de punta a punta con extractos reales BCP (2331 movimientos) y BNB (1184). Los originales se archivan en `PROCESADOS/YYYY/MM_MES/DD/` (DD = día de procesamiento en hora Bolivia; estructura creada hasta 31/12/2028) o `ERROR/YYYY/MM_MES/`. P0, P7, P8, la API y el motor están cerrados para esta etapa. Estado global: `ESTADO_PROYECTO.md` §8 · Hoja de ruta: `ROADMAP.md`. Este documento conserva el diseño y el contrato; el flujo vigente es el paquete `P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V5.zip` (§5 es la descripción manual de referencia).
+
+
 **Resumen.** Gabriel deja extractos en `ENTRADA`. Un flujo de Power Automate los detecta y los envía a una **API Python sin estado en Railway**, que ejecuta el motor bancario y P7 que ya existían y devuelve el JSON. El flujo guarda ese JSON en `CARGA_EXTRACTOS_BANCARIOS` (donde escucha P8 V5) y mueve el extracto original a `PROCESADOS/AAAA/MM_MES` o `ERROR/AAAA/MM_MES`. **Railway no guarda nada** y no depende de ningún equipo personal.
 
 ```
@@ -11,7 +14,7 @@ Railway · API P0 (sin estado, en memoria/temporal, se borra al terminar)
    ▼  respuesta: { ok, json.texto = DEPOSITOS_ACTIVOS__P7-….json, banco, movimientos, periodo AAAA/MM_MES }
 Power Automate
    ├─ ok: guarda json.texto en  P0_EXTRACTOS/CARGA_EXTRACTOS_BANCARIOS/  →  P8 V5  →  Depositos_Activos
-   │      y mueve el original a  PROCESADOS/AAAA/MM_MES/
+   │      y mueve el original a  PROCESADOS/AAAA/MM_MES/DD/
    └─ error: guarda <archivo>.error.json y mueve el original a  ERROR/AAAA/MM_MES/
 ```
 
@@ -20,7 +23,7 @@ Estructura de carpetas (la maneja Power Automate; la API no ve SharePoint):
 ```
 CONTROL_DEPOSITOS/P0_EXTRACTOS/
 ├── ENTRADA/                       plana
-├── PROCESADOS/AAAA/MM_MES/        p. ej. PROCESADOS/2026/10_OCTUBRE/
+├── PROCESADOS/AAAA/MM_MES/DD/     p. ej. PROCESADOS/2026/10_OCTUBRE/08/  (DD = día de procesamiento, hora Bolivia; creadas hasta 31/12/2028)
 ├── ERROR/AAAA/MM_MES/             el original y su <archivo>.error.json
 └── CARGA_EXTRACTOS_BANCARIOS/     los DEPOSITOS_ACTIVOS__*.json que escucha P8
 ```
@@ -162,12 +165,14 @@ Un solo motor y una sola API. `sede` viaja en cada solicitud; `p0/sedes.json` de
 
 El control del paso 6 del motor protegía contra fechas mal leídas, no contra «otro año de trabajo». Regla actual (`anios_fuera_de_rango`): cada año debe estar en **[`ANIO_MINIMO_DATOS` (2026, primer año de operación; no vence), año de la fecha del servidor]**. 2027, 2028… son válidos cuando el reloj ya está en ese año y un extracto que cruza diciembre/enero también. Fuera de rango → `ANIO_FUERA_DE_RANGO`.
 
-## 9. Lo que NO se validó
+## 9. Validación
 
-* No se desplegó nada en Railway ni se tocó el tenant. No se pudo construir la imagen (el entorno de trabajo no tiene demonio de Docker). Sí se arrancó la API real con `uvicorn` desde una carpeta que contiene **solo** los archivos que copia el `Dockerfile`, y respondió `/health` y un extracto real de prueba por HTTP.
-* No se probó el flujo de Power Automate: la expresión `body('Obtener_contenido_del_archivo')?['$content']` (Base64 del binario con *Inferir tipo de contenido: No*), la creación de carpetas de año/mes y el borrado del original deben confirmarse en la primera ejecución real.
-* Las pruebas de duplicados usan el flujo P8 V5 con SharePoint **simulado**.
-* P8.5 / `control_origen` sigue fuera. El zip de V5 versionado sigue apuntando a `/Documents/P8_PILOTO` (se edita en el tenant, §5.5).
+**Validado en tenant real (2026-10-08):** despliegue en Railway (`p0-api`), `GET /health` y `POST /procesar-extracto` desde Power Automate (HTTP 200), extractos reales **BCP (2331 movimientos)** y **BNB (1184)**, JSON P7 correcto, carga por P8 V5 desde `CARGA_EXTRACTOS_BANCARIOS`, archivado en `PROCESADOS/YYYY/MM_MES/DD/`. Esto cierra lo que este apartado listaba antes como «no validado» (despliegue en Railway, expresión `body('…')?['$content']`, borrado/archivado del original, flujo de punta a punta). La creación de carpetas de año/mes/día **no se usa**: `PROCESADOS` ya existe hasta 31/12/2028.
+
+**Notas vigentes:**
+* El ZIP de P8 V5 versionado en el repo sigue apuntando a `/Documents/P8_PILOTO`; la carpeta `CARGA_EXTRACTOS_BANCARIOS` se configuró en el tenant (§5.5). P8 está cerrado, por eso el ZIP del repo no se modificó.
+* P8.5 / `control_origen` sigue fuera de P0.
+* El histórico normalizado y la limpieza de originales/JSON son del siguiente módulo (**P10**); la Solution nacional (token como variable de entorno secreta) y el Plan B offline vienen después (`ROADMAP.md`).
 
 ## 10. Pruebas
 

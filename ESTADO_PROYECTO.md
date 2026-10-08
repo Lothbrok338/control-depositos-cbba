@@ -1,5 +1,15 @@
 # ESTADO DEL PROYECTO — CONTROL DE DEPÓSITOS CBBA (módulo de normalización)
 
+> ## ESTADO ACTUAL · 2026-10-08 — **P0 CERRADO Y VALIDADO EN TENANT REAL**
+>
+> * **Cadena automática de punta a punta:** `ENTRADA` (OneDrive for Business) → flujo **`P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD`** → API **`p0-api`** en Railway → JSON P7 en `CARGA_EXTRACTOS_BANCARIOS` → **P8 V5** carga `Depositos_Activos`. Funciona automáticamente, sin intervención manual de Gabriel más allá de soltar el extracto.
+> * **Extractos reales validados:** **BCP: 2331 movimientos** y **BNB: 1184 movimientos**. P0 genera el JSON P7 correctamente; P8 V5 lo recibe y procesa la carga.
+> * **Trigger corregido:** OneDrive for Business **`OnNewFilesV2`** («When a file is created (properties only)») **+ Split On** `@triggerOutputs()?['body']` (devuelve un array de BlobMetadata; con `OnNewFileV2` el filtro descartaba todo). **Concurrencia = 1, intencional.**
+> * **Archivado de originales:** `PROCESADOS/YYYY/MM_MES/DD/` (DD = día de **procesamiento** en hora Bolivia, UTC-4, no la fecha de los movimientos); `ERROR/YYYY/MM_MES/` + `<archivo>.error.json`. La estructura de `PROCESADOS` está **creada hasta el 31/12/2028**; no se crean carpetas dinámicamente por adelantado.
+> * **Paquete vigente del flujo:** `P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V5.zip` (SHA-256 `97fb8a7459868c355c051a7737943b44e6a66e0bdeeff9b8354a0492e085a7c2`, commit `404647c`). Generador `p0/flujo/construir.py`; guía `p0/flujo/INSTRUCCIONES_IMPORTACION.md`.
+> * **CERRADOS para esta etapa (no se tocan sin aprobación explícita):** **P0, P7, P8, la API (`p0/api.py`, `p0/nucleo.py`, Dockerfile, `railway.json`) y el motor.** Las huellas SHA-256 de estos archivos están fijadas en `p0/flujo/huellas_protegidas.json` y las verifica `tests/test_36_flujo_p0_cloud.py`.
+> * **Siguiente:** **P10 HISTÓRICO / LIMPIEZA** → después **Solution nacional** → último entregable **Plan B (normalizador offline independiente)**. Ver [`ROADMAP.md`](ROADMAP.md).
+
 **Fecha del checkpoint P7:** 2026-09-30 (checkpoint P7 = rama remota `checkpoint-p7` = `main` al cerrar P7; anteriores: P6 = rama remota `checkpoint-p6` (`6d5922c`); P5 = rama remota `checkpoint-p5` (`0b182e2`); P4 = rama remota `checkpoint-p4` (`998158e`); P3b = rama remota `checkpoint-p3b`; P1+P2 = commit `8c9c09a`, tag local `checkpoint-p1-p2`; P3 = rama remota `checkpoint-p3`; el entorno no puede subir tags) · **Regla rectora:** NORMALIZAR NUNCA DEBE DESTRUIR INFORMACIÓN DE ORIGEN.
 
 ## 1. Estado
@@ -18,6 +28,7 @@
 | **P5** Normalización productiva por registro | **TERMINADO Y APROBADO** (620 PASS · 24 SKIP · 14 XFAIL · 0 FAIL) | La normalización productiva ya la ejecuta `motor_generico.py`: `ejecutar_motor` normaliza y valida con `motor_generico.py` + registro (pasos 2 y 7; ORIGEN con contrato del registro, paso 15); legado solo como referencia en sombra (paso 16); `tests/test_09_normalizacion_p5.py`; D-09 y D-12 corregidos. Ver §5e |
 | **P6** Retiro del legado | **TERMINADO Y APROBADO** (575 PASS · 23 SKIP · 14 XFAIL · 0 FAIL; checkpoint `checkpoint-p6`) | Retirados los `normalizar_*`, `validar_archivo`, `HOJAS_VALIDAS`, `ENCABEZADOS_ESPERADOS`, `encontrar_fila_encabezado`, `leer_tabla_movimientos`, `texto_de_archivo`, `aplicar_identidad_registro`, la referencia en sombra (paso 16), el comparador y la detección P3 de `motor_generico.py`, el cruce legado de `deteccion_registro.py` y los bloques `legado` del registro. Salidas P5 = P6. Ver §5f |
 | **P7** Puente P6 → Microsoft 365 | **TERMINADO Y APROBADO (validación local)** (620 PASS · 23 SKIP · 14 XFAIL · 0 FAIL; checkpoint `checkpoint-p7`) | `adaptador_m365.py` (LISTS.csv → JSON + manifiesto, contrato fail-fast de 26 columnas, clasificación NUEVO / YA_EXISTE / ERROR), diseño de `Depositos_Activos` y bitácora `Depositos_Cargas`, especificación del flujo `P7 - CARGA DEPOSITOS ACTIVOS`. **NO certifica la integración end-to-end con SharePoint / Power Automate** (pendiente del piloto). Ver §5g |
+| **P0** Entrada automática de extractos (cloud) | **CERRADO Y VALIDADO EN TENANT REAL** (2026-10-08) | API sin estado `p0-api` en Railway + flujo `P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD` (OneDrive for Business, `OnNewFilesV2` + Split On, concurrencia 1) → JSON P7 en `CARGA_EXTRACTOS_BANCARIOS` → P8 V5. Validado con BCP (2331 mov.) y BNB (1184 mov.). Originales en `PROCESADOS/YYYY/MM_MES/DD/` o `ERROR/YYYY/MM_MES/`. Ver §8 |
 
 ## 2. Resultado de pruebas (suite completa)
 
@@ -44,7 +55,7 @@
 6. **Registro parametrizable** `registro_bancos.json` (FORMATOS / CUENTAS): una cuenta nueva de un formato conocido = una entrada, cero código (P3). **Desde P4 es la fuente productiva de la detección** (banco, cuenta, moneda, formato).
 7. **UNION_ME** = `UNION_FECHAS_V1`: estructura **confirmada** por código legado + captura real (7 columnas, incl. `Nro de verificasion`, que el motor legado no lee y que va a ORIGEN e histórico, no a las 26 columnas). Comportamiento con movimientos: **pendiente de fixture real**.
 
-Plan: P1 ✔ · P2 ✔ · P3 ✔ · P3b ✔ · P4 ✔ · P5 ✔ · P6 ✔ (checkpoint `checkpoint-p6`) · P7 ✔ (checkpoint `checkpoint-p7`, validación local del puente P6 → artefacto M365; **sin certificación end-to-end**). Siguiente fase: piloto en el tenant de Microsoft 365 / Power Apps (sin definir; espera tu instrucción).
+Plan: P1 ✔ · P2 ✔ · P3 ✔ · P3b ✔ · P4 ✔ · P5 ✔ · P6 ✔ (checkpoint `checkpoint-p6`) · P7 ✔ (checkpoint `checkpoint-p7`, validación local del puente P6 → artefacto M365; **sin certificación end-to-end**). Estado posterior: P8, P9 y **P0 (cerrado y validado en tenant, ver el bloque «ESTADO ACTUAL» y §8)** ya corrieron en el tenant de Microsoft 365. Siguiente módulo: **P10 HISTÓRICO / LIMPIEZA** (ver `ROADMAP.md`).
 
 ## 4. Pendientes
 
@@ -162,6 +173,7 @@ Capa 4 (`EXTRACTO_HISTORICO`, ver `DISENO_TRES_CAPAS.md` §6): bloque `historico
 * `historico.py` y el bloque `historico` del registro (P3b): solo cambian con aprobación; su huella dorada se regenera con `tests/generar_golden_historico.py --force` y motivo explícito.
 * Las doradas (`tests/golden/`) y los fixtures reales: solo se regeneran con motivo explícito y contra el motor original.
 * Los archivos bancarios originales: siempre evidencia inalterada.
+* **Cerrados al cierre de P0 (2026-10-08):** P0 (`p0/api.py`, `p0/nucleo.py`, `p0/sedes.json`, `Dockerfile`, `railway.json`, `requirements-p0.txt` y el flujo `P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD`), P7 (`adaptador_m365.py`, `esquema_parse_json_p7.json`), P8 (`p8/`, `P8_*.zip`) y el motor. Solo cambian con aprobación explícita y motivo; `p0/flujo/huellas_protegidas.json` + `tests/test_36_flujo_p0_cloud.py` detectan cualquier cambio. Esto sustituye a «el control del año 2026 fijo» de la lista anterior: desde P0 el control del año es dinámico (D-08).
 
 
 ## 7. P9 — reversión de confirmación (fase B local)
@@ -169,6 +181,46 @@ Capa 4 (`EXTRACTO_HISTORICO`, ver `DISENO_TRES_CAPAS.md` §6): bloque `historico
 Sobre `d08454f7636a49a5711006cd900d79b32bf9c13b`, la rama local `candidate/p9-reversion` incorpora el esquema V2, cinco flujos/paquetes, snapshot, exclusión única, ETag original, aprobación de 168 horas, expiración, recuperación manual auditada y la extensión de Power Apps. La decisión humana y el resultado técnico son independientes; éxito exige REVERTIDO. El backend y frontend P9 base y el comprobante se conservan. Véanse [DOCUMENTACION_P9_REVERSION.md](DOCUMENTACION_P9_REVERSION.md), [DESPLIEGUE_P9_REVERSION.md](DESPLIEGUE_P9_REVERSION.md) e [INFORME_PRUEBAS.md](p9/reversion/evidencias/INFORME_PRUEBAS.md) para alcance, límites y resultados reales. El despliegue y validación en tenant, así como commit/push final, siguen pendientes de la revisión del usuario.
 
 
-## 8. P0 — entrada automática de extractos (experiment/p9-masiva-prototipo)
+## 8. P0 — entrada automática de extractos (**CERRADO Y VALIDADO EN TENANT REAL · 2026-10-08**)
 
-API Python **sin estado** (`p0/api.py` + `p0/nucleo.py`, FastAPI; `Dockerfile`/`railway.json` para Railway): `GET /health` y `POST /procesar-extracto` (extracto + sede). Procesa **cada extracto por separado** con el motor y `adaptador_m365.py` existentes, en memoria/temporal (se elimina al terminar; sin base de datos, volumen ni bucket; logs solo técnicos) y devuelve el JSON de P7 para P8. Power Automate detecta el archivo en `P0_EXTRACTOS/ENTRADA`, llama a la API (Bearer token en `P0_API_TOKEN`), guarda el JSON en `CARGA_EXTRACTOS_BANCARIOS` (lo escucha P8 V5) y mueve el original a `PROCESADOS/AAAA/MM_MES` o `ERROR/AAAA/MM_MES`. Reemplaza al orquestador local (ya no depende de una PC). **P8, P7 y el resto del motor no cambian.** Único cambio del motor (sustituye la restricción «control del año 2026 fijo» de §6): el control del año deja de ser 2026 fijo (D-08 corregido). Validado solo con pruebas locales (TestClient, flujo V5 con SharePoint simulado); falta desplegar en Railway y armar/probar el flujo de Power Automate. Ver `P0_AUTOMATIZACION_EXTRACTOS.md`.
+Rama `experiment/p9-masiva-prototipo`. Detalle técnico y contrato de la API: [`P0_AUTOMATIZACION_EXTRACTOS.md`](P0_AUTOMATIZACION_EXTRACTOS.md) · importación del flujo: [`p0/flujo/INSTRUCCIONES_IMPORTACION.md`](p0/flujo/INSTRUCCIONES_IMPORTACION.md).
+
+**Arquitectura final (cloud, sin PC local):**
+
+```
+OneDrive for Business  /CONTROL_DEPOSITOS/P0_EXTRACTOS/ENTRADA/<extracto>.xls|xlsx
+   │  Power Automate · P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD
+   │  (OnNewFilesV2 + Split On · concurrencia 1 · Get file content using path · HTTP POST)
+   ▼
+Railway · p0-api  POST /procesar-extracto   (sin estado; motor + P7 existentes; sin DB, volumen ni bucket)
+   ▼
+Power Automate
+   ├─ ok=true  → JSON P7 tal cual en  P0_EXTRACTOS/CARGA_EXTRACTOS_BANCARIOS/   → P8 V5 → Depositos_Activos
+   │             original → PROCESADOS/YYYY/MM_MES/DD/
+   └─ ok=false o fallo técnico → <archivo>.error.json + original → ERROR/YYYY/MM_MES/
+```
+
+**Validado en tenant real:**
+
+| Verificación | Resultado |
+|---|---|
+| Railway `p0-api`: `GET /health` y `POST /procesar-extracto` desde Power Automate | HTTP 200 |
+| Extracto real **BCP** (`bcp mn.xls`) | **2331 movimientos**, JSON P7 generado, ~7 s en Railway |
+| Extracto real **BNB** | **1184 movimientos**, JSON P7 generado |
+| P8 V5 (escucha `CARGA_EXTRACTOS_BANCARIOS`) | Recibe los JSON y procesa la carga; los duplicados los sigue controlando `CLAVE_TRANSACCION` (P0 no agrega lógica de duplicados) |
+| Archivado de originales | `PROCESADOS/YYYY/MM_MES/DD/`; estructura creada hasta **31/12/2028** |
+| Flujo de punta a punta | Automático |
+
+**Decisiones de diseño vigentes:**
+
+* **Trigger OneDrive for Business `OnNewFilesV2` + Split On.** `OnNewFileV2` («When a file is created») entrega el binario, no BlobMetadata: `Name`/`IsFolder` llegaban null y la condición descartaba todos los archivos (cero ejecuciones). `OnNewFilesV2` entrega un *array* de BlobMetadata; `splitOn: @triggerOutputs()?['body']` procesa cada archivo por separado y mantiene la condición (`IsFolder`, `Name`, `.xls`/`.xlsx`).
+* **Concurrencia = 1, intencional:** un extracto a la vez (la API procesa una solicitud por vez: `--workers 1` + candado, ver `P0_AUTOMATIZACION_EXTRACTOS.md` §3). No aumentar sin revisar la API.
+* **Secure Inputs/Outputs solo donde Power Automate lo admite** (`SetVariable`/`Compose`/condiciones lo rechazan con `SecureDataPropertyNotSupported`): HTTP (inputs+outputs), Get file content (outputs), Crear_JSON_P7, Original_Crear_copia y Error_json_Crear (inputs).
+* **Token:** nunca en Git; el paquete trae el marcador `<PEGAR_P0_API_TOKEN_AQUI>` en la cabecera `Authorization` de la acción HTTP. (A resolver en la Solution nacional: variable de entorno secreta.)
+* **Archivado:** copiar → borrar (el original solo se borra de ENTRADA si la copia existe); no sobrescribe (si el nombre existe se añade `_yyyyMMddTHHmmss`); `DD` = día de procesamiento en Bolivia (`@formatDateTime(outputs('Ahora_Bolivia'),'dd')`), `ERROR` no lleva día.
+* **Errores técnicos** (Railway caído, 401, 413, 5xx, fallo de lectura, JSON no publicado): `.error.json` `{codigo_error, etapa, mensaje, fecha_hora}` + original a `ERROR`; la ejecución queda *Failed* para que se vea.
+* Power Automate **solo orquesta**: sin Apply to each ni Parse JSON sobre movimientos.
+
+**Historial de correcciones del flujo (todas ya validadas):** V1→V2 `SecureDataPropertyNotSupported` (secureData fuera de `SetVariable`) · V2→V3 `OnNewFileV2`→`OnNewFilesV2` · V3→V4 `splitOn` · V4→V5 subcarpeta `DD` en PROCESADOS. Pruebas: `tests/test_36_flujo_p0_cloud.py` (estáticas, 25) y `pytest -m p0` (44 PASS · 1 SKIP). El único cambio del motor (control del año dinámico, D-08) es anterior y está cubierto por `tests/test_33_anio_dinamico_p0.py`.
+
+**Límites conocidos (aceptados para esta etapa):** el mes (`periodo.carpeta`, calculado por la API) y el día (calculado por el flujo segundos después) pueden diferir si un extracto se procesa justo en el cambio de mes; la carpeta resultante existe, por lo que no falla. El histórico y la limpieza de originales/JSON **no** forman parte de P0 → P10.

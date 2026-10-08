@@ -1,6 +1,8 @@
 # CONTROL DE DEPÓSITOS CBBA · módulo de normalización
 
-Estado y decisiones: `ESTADO_PROYECTO.md` · Diseño: `DISENO_TRES_CAPAS.md` · Matriz de campos: `MATRIZ_CAMPOS_ORIGEN.csv`.
+Estado y decisiones: `ESTADO_PROYECTO.md` · Hoja de ruta: `ROADMAP.md` · Diseño: `DISENO_TRES_CAPAS.md` · Matriz de campos: `MATRIZ_CAMPOS_ORIGEN.csv`.
+
+**Estado actual (2026-10-08): P0 CERRADO Y VALIDADO EN TENANT REAL.** El flujo `P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD` (OneDrive for Business `OnNewFilesV2` + Split On, concurrencia 1) envía cada extracto de `ENTRADA` a la API `p0-api` en Railway, guarda el JSON P7 en `CARGA_EXTRACTOS_BANCARIOS` (lo carga P8 V5) y archiva el original en `PROCESADOS/YYYY/MM_MES/DD/`. Validado con extractos reales BCP (2331 movimientos) y BNB (1184). P0, P7, P8, la API y el motor están cerrados para esta etapa. Siguiente: **P10 Histórico / Limpieza** → Solution nacional → Plan B (normalizador offline). Ver `P0_AUTOMATIZACION_EXTRACTOS.md` y `p0/flujo/INSTRUCCIONES_IMPORTACION.md`.
 
 ## Ejecutar las pruebas
 ```
@@ -38,6 +40,15 @@ Los `normalizar_*` por banco, `normalizar_archivo`, `validar_archivo`, `HOJAS_VA
 python adaptador_m365.py <salida>/LISTS.csv <carpeta_m365>      # genera DEPOSITOS_ACTIVOS__<lote>.json + MANIFIESTO_P7__<lote>.json
 ```
 Capa **separada** del motor (solo biblioteca estándar; no modifica `LISTS.csv` ni ninguna salida de P6). El JSON alimenta la Microsoft List `Depositos_Activos` mediante el flujo `P7 - CARGA DEPOSITOS ACTIVOS`; la `CLAVE TRANSACCIÓN` de P6 evita duplicados (`NUEVO` / `YA_EXISTE` / `ERROR`). **Checkpoint P7 (rama remota `checkpoint-p7` = `main` al cerrar P7).** **Alcance: P7 valida localmente el puente P6 → artefacto M365 y NO certifica la integración end-to-end con SharePoint / Power Automate** (pendiente del piloto en un tenant de Microsoft 365). Antes de leer nada, el adaptador comprueba (fail-fast) que el contrato de columnas coincide exactamente con las 26 `COLUMNAS_LISTS` de P6; si no, se detiene con `ERROR de contrato`. Bitácora de lotes: lista `Depositos_Cargas`. Diseño de la lista: `DISENO_LISTA_DEPOSITOS_ACTIVOS.md` · flujo: `ESPECIFICACION_FLUJO_P7_CARGA_DEPOSITOS_ACTIVOS.md` · ejemplo real: `ejemplos_p7/` · pruebas: `tests/test_11_adaptador_m365_p7.py`.
+
+## Entrada automática de extractos (P0 · cerrado y validado en tenant)
+```
+P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V5.zip     # flujo importable de Power Automate (OneDrive for Business)
+python -m p0.flujo.construir                  # regenera definición + ZIP del flujo
+cd tests && python -m pytest test_36_flujo_p0_cloud.py -q     # validación estática del flujo y de las huellas de P8/P7/API/motor
+uvicorn p0.api:app                            # API local (en producción: Railway, Dockerfile + railway.json)
+```
+API sin estado (`p0/api.py`, `p0/nucleo.py`): `GET /health` y `POST /procesar-extracto`, autenticada con `Authorization: Bearer <P0_API_TOKEN>` (el token nunca se versiona). Contrato, despliegue y flujo: `P0_AUTOMATIZACION_EXTRACTOS.md`.
 
 ## Extracto histórico para Contabilidad / Ingresos (P3b, capa 4)
 ```
