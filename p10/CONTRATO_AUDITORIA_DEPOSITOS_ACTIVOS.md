@@ -63,7 +63,7 @@ Qué NO duplica y por qué:
 * **`MOTOR_*` (7 columnas):** son constantes de P0 que ningún flujo escribe (`CAMPOS_ESCRITOS` de P9 asignar y de reversión no incluye ninguna —lo comprueba una prueba—; la confirmación masiva declara escribir solo los mismos campos que la individual, `proto_masiva/CONFIRMACION_MASIVA.md`). Duplicarlas aportaría `DISPONIBLE`/`COCHABAMBA`/vacío. *Recomendación para P10-B:* antes de borrar, comparar `MOTOR_*` con esas constantes y advertir si alguna difiere (edición manual en SharePoint).
 * **`ESTADO_ASIGNACION` crudo:** la traducción `ASIGNADO → CONFIRMADO` (`ESTADO_VISIBLE`) es 1:1 y reversible; no se pierde información.
 
-## 5. Decisión abierta (única): columnas de sistema de SharePoint
+## 5. Decisión CERRADA por Gabriel: columnas de sistema de SharePoint (NO se agregan)
 
 `ID`, `Creado/Modificado` y `Creado por/Modificado por` existen en cualquier lista pero **no están en el esquema del repo** y no salen de P0 ni del snapshot actual; añadirlas exige que el lector real de la lista (P10-A.2) las entregue, y en la simulación habría que inventar sus valores, por eso **no se incluyeron**. Evaluación:
 

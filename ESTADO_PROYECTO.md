@@ -8,6 +8,7 @@
 > * **Archivado de originales:** `PROCESADOS/YYYY/MM_MES/DD/` (DD = día de **procesamiento** en hora Bolivia, UTC-4, no la fecha de los movimientos); `ERROR/YYYY/MM_MES/` + `<archivo>.error.json`. La estructura de `PROCESADOS` está **creada hasta el 31/12/2028**; no se crean carpetas dinámicamente por adelantado.
 > * **Paquete vigente del flujo:** `P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD_V5.zip` (SHA-256 `97fb8a7459868c355c051a7737943b44e6a66e0bdeeff9b8354a0492e085a7c2`, commit `404647c`). Generador `p0/flujo/construir.py`; guía `p0/flujo/INSTRUCCIONES_IMPORTACION.md`.
 > * **CERRADOS para esta etapa (no se tocan sin aprobación explícita):** **P0, P7, P8, la API (`p0/api.py`, `p0/nucleo.py`, Dockerfile, `railway.json`) y el motor.** Las huellas SHA-256 de estos archivos están fijadas en `p0/flujo/huellas_protegidas.json` y las verifica `tests/test_36_flujo_p0_cloud.py`.
+> * **P10-A.1 (generador del histórico mensual) — CERRADO Y VALIDADO LOCALMENTE (2026-10-09).** Un XLSX por BANCO+CUENTA+MONEDA+MES con hojas `EXTRACTO` y `AUDITORIA` (28 columnas), sin paneles inmovilizados; contrato aprobado por Gabriel y **no se modifica sin aprobación explícita**. Ver §9 y `p10/DOCUMENTACION_P10_A1.md`.
 > * **Siguiente:** **P10 HISTÓRICO / LIMPIEZA** → después **Solution nacional** → último entregable **Plan B (normalizador offline independiente)**. Ver [`ROADMAP.md`](ROADMAP.md).
 
 **Fecha del checkpoint P7:** 2026-09-30 (checkpoint P7 = rama remota `checkpoint-p7` = `main` al cerrar P7; anteriores: P6 = rama remota `checkpoint-p6` (`6d5922c`); P5 = rama remota `checkpoint-p5` (`0b182e2`); P4 = rama remota `checkpoint-p4` (`998158e`); P3b = rama remota `checkpoint-p3b`; P1+P2 = commit `8c9c09a`, tag local `checkpoint-p1-p2`; P3 = rama remota `checkpoint-p3`; el entorno no puede subir tags) · **Regla rectora:** NORMALIZAR NUNCA DEBE DESTRUIR INFORMACIÓN DE ORIGEN.
@@ -224,3 +225,17 @@ Power Automate
 **Historial de correcciones del flujo (todas ya validadas):** V1→V2 `SecureDataPropertyNotSupported` (secureData fuera de `SetVariable`) · V2→V3 `OnNewFileV2`→`OnNewFilesV2` · V3→V4 `splitOn` · V4→V5 subcarpeta `DD` en PROCESADOS. Pruebas: `tests/test_36_flujo_p0_cloud.py` (estáticas, 25) y `pytest -m p0` (44 PASS · 1 SKIP). El único cambio del motor (control del año dinámico, D-08) es anterior y está cubierto por `tests/test_33_anio_dinamico_p0.py`.
 
 **Límites conocidos (aceptados para esta etapa):** el mes (`periodo.carpeta`, calculado por la API) y el día (calculado por el flujo segundos después) pueden diferir si un extracto se procesa justo en el cambio de mes; la carpeta resultante existe, por lo que no falla. El histórico y la limpieza de originales/JSON **no** forman parte de P0 → P10.
+
+## 9. P10-A.1 — generador del histórico mensual (**CERRADO Y VALIDADO LOCALMENTE · 2026-10-09**)
+
+Paquete aditivo `p10/` que reutiliza sin modificarlos el motor P0 (`ejecutar_motor`) y la capa 4 aprobada (`historico.py`). Validado **localmente** con los 12 extractos reales y un snapshot simulado de `Depositos_Activos` (62 pruebas en `tests/test_33_p10_a1_generador.py`; regresión P0/P7/P8/P9 sin cambios de resultado). **No** está validado en tenant: eso empieza con P10-A.2.
+
+**Contrato aprobado (no modificar sin aprobación explícita):**
+* Un `.xlsx` por `BANCO + CUENTA + MONEDA + MES` (mes de `FECHA MOVIMIENTO`, nunca el de confirmación). Nombre `EXTRACTO_HISTORICO_{BANCO}_{CUENTA}_{MONEDA}_{AAAA-MM}.xlsx`.
+* Hojas visibles: `EXTRACTO` (columnas propias del banco + `ESTADO`, `CONFIRMADO POR`, `FECHA DE CONFIRMACIÓN`, `OBSERVACIONES`; `CLAVE TRANSACCIÓN` oculta) y `AUDITORIA` (**28 columnas**: las 26 de `COLUMNAS_LISTS` + `CODIGO_ESTUDIANTE` + `ULTIMA_REVERSION_ID`).
+* **No** se agregan columnas de sistema de SharePoint (`ID`, `Created`, `Modified`, `Author`, `Editor`).
+* **Ninguna hoja tiene paneles inmovilizados.** Diseño visual aprobado.
+* Una reversión devuelve EXTRACTO al estado operativo correspondiente; AUDITORIA conserva `ULTIMA_REVERSION_ID`.
+* Los históricos oficiales viven en la nube con permisos de solo lectura para usuarios normales; no se usa contraseña de Excel como mecanismo de seguridad.
+
+Clasificación del esquema real de `Depositos_Activos` (35 columnas propias): `p10/CONTRATO_AUDITORIA_DEPOSITOS_ACTIVOS.md`.

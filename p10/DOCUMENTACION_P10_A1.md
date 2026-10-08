@@ -1,5 +1,7 @@
 # P10-A.1 · Generador histórico mensual (EXTRACTO + AUDITORIA)
 
+> **ESTADO: CERRADO Y VALIDADO LOCALMENTE (2026-10-09).** Contrato aprobado por Gabriel; no se modifica sin aprobación explícita. La sincronización automática con el tenant es **P10-A.2** (`p10/DOCUMENTACION_P10_A2.md`).
+
 Rama `experiment/p9-masiva-prototipo`. **Alcance de esta fase: solo el generador.** No hay flujos de Power Automate P10, triggers, `P10_Extractos` en el tenant, sincronización de 15 minutos, limpieza de Lists, P10-B ni cambios en Railway. El estado operativo (`Depositos_Activos`) se **simula** con nombres de campo reales; todo lo demás sale del motor P0 sobre los 12 extractos bancarios reales de `tests/fixtures/extractos`.
 
 ## 1. Qué hace
