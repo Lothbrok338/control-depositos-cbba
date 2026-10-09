@@ -245,7 +245,7 @@ def disparador():
 # ---------------------------------------------------------------------------------------------- FASE A: extractos nuevos
 def fase_extractos():
     """Pasos de la fase A en orden (sin runAfter entre ellos: los encadena `construir_sync`)."""
-    F = "string(coalesce(item()?['Files'],createArray()))"
+    F = "string(coalesce(item()?['Files'],json('[]')))"
     uri = ("@concat('_api/web/GetFolderByServerRelativeUrl(''',outputs('P')?['prefijo_servidor'],'" + CARPETA_PROCESADOS +
            "/',substring(items('Cada_mes_listar'),0,4),'/',outputs('P')?['meses']?[substring(items('Cada_mes_listar'),5,2)],"
            "''')/Folders?$expand=Files&$select=Name,Files/Name,Files/ServerRelativeUrl,Files/Length,Files/TimeCreated')")
@@ -270,7 +270,7 @@ def fase_extractos():
             "intentos": "@items('Cada_extracto')?['intentos']", "contenido_base64": "@body('E_Leer')?['$content']"}),
         Cada_grupo_E=cada(
             "@if(and(equals(outputs('E_Procesar')?['statusCode'],200),equals(body('E_Procesar')?['ok'],true)),"
-            "body('E_Procesar')?['grupos'],createArray())",
+            "body('E_Procesar')?['grupos'],json('[]'))",
             bloque_grupo("GE_", {"grupo_id": "@items('Cada_grupo_E')?['grupo_id']", "rutas": "@items('Cada_grupo_E')?['rutas']",
                                  "parciales": "@createArray(items('Cada_grupo_E')?['parcial_b64'])", "filas": None,
                                  "verificar_xlsx": False, "finalizar": False, "parcial_lista": False}, False, True)),
@@ -286,7 +286,7 @@ def fase_extractos():
         Plan=api("plan", {"ahora_local": "@" + AHORA, "modo": "@body('Ciclo_API')?['modo']", "archivos": "@variables('varArchivos')",
                           "control": "@" + CONTROL, "prefijo_servidor": "@outputs('P')?['prefijo_servidor']",
                           "limite": "@body('Ciclo_API')?['limite_extractos']"}),
-        Cada_extracto=cada("@if(equals(body('Plan')?['ok'],true),body('Plan')?['extractos'],createArray())", por_extracto))
+        Cada_extracto=cada("@if(equals(body('Plan')?['ok'],true),body('Plan')?['extractos'],json('[]'))", por_extracto))
 
 
 # ---------------------------------------------------------------------------------------------- FASE B: Depositos_Activos
@@ -311,14 +311,14 @@ def fase_lista(campos_select):
     """
     sel = f"/items?$select={campos_select}&$top=5000&$filter="
     ctl_d = "body('D_Control_GET')?['d']?['results']"
-    fijar_d = {"grupo_id": "@items('Cada_sucio_D')?['grupo_id']", "rutas": "@items('Cada_sucio_D')?['rutas']", "parciales": "@createArray()",
+    fijar_d = {"grupo_id": "@items('Cada_sucio_D')?['grupo_id']", "rutas": "@items('Cada_sucio_D')?['rutas']", "parciales": [],
                "filas": "@items('Cada_sucio_D')?['filas']", "verificar_xlsx": False, "finalizar": False, "parcial_lista": True}
     dentro = secuencia(
         D_Control_GET=sp("GET", uri_control(["/items?$top=5000"]), JSON_V),
         D_Clasificar=api("delta", {"ahora_local": "@" + AHORA, "items": "@body('D_GET')?['value']", "control": "@" + ctl_d,
                                    "cursor_desde": "@body('Ciclo_API')?['cursor_desde']"}),
         D_Reiniciar=asignar("varGrupoOk", True),
-        Cada_sucio_D=cada("@if(equals(body('D_Clasificar')?['ok'],true),body('D_Clasificar')?['sucios'],createArray())",
+        Cada_sucio_D=cada("@if(equals(body('D_Clasificar')?['ok'],true),body('D_Clasificar')?['sucios'],json('[]'))",
                           bloque_grupo("GD_", fijar_d, False)),
         D_Cursor=si("@and(variables('varGrupoOk'),not(empty(body('D_Clasificar')?['cursor_nuevo'])))", secuencia(Fijar_cursor=sp(
             "POST", uri_control(["/items(", ("x", "string(body('Ciclo_API')?['lock']?['item_id'])"), ")"]), MERGE,
@@ -340,7 +340,7 @@ def fase_lista(campos_select):
 
     s = "items('Cada_slice')"
     ctl_s = "body('S_Control_GET')?['d']?['results']"
-    fijar_s = {"grupo_id": "@items('Cada_sucio_S')?['grupo_id']", "rutas": "@items('Cada_sucio_S')?['rutas']", "parciales": "@createArray()",
+    fijar_s = {"grupo_id": "@items('Cada_sucio_S')?['grupo_id']", "rutas": "@items('Cada_sucio_S')?['rutas']", "parciales": [],
                "filas": "@items('Cada_sucio_S')?['filas']", "verificar_xlsx": "@items('Cada_sucio_S')?['verificar_xlsx']",
                "finalizar": "@items('Cada_sucio_S')?['finalizar']", "parcial_lista": False}
     por_slice = secuencia(
@@ -352,7 +352,7 @@ def fase_lista(campos_select):
             "modo": "@body('Ciclo_API')?['modo']", "hay_mas": "@not(empty(body('S_Items')?['odata.nextLink']))",
             "verificar": "@body('Ciclo_API')?['grupos_a_verificar']"}),
         S_Reiniciar=asignar("varGrupoOk", True),
-        Cada_sucio_S=cada("@if(equals(body('S_Clasificar')?['ok'],true),body('S_Clasificar')?['sucios'],createArray())",
+        Cada_sucio_S=cada("@if(equals(body('S_Clasificar')?['ok'],true),body('S_Clasificar')?['sucios'],json('[]'))",
                           bloque_grupo("GM_", fijar_s, True)))
     por_slice["S_Falla_lectura"] = anotar(f"@concat('Conciliación {{',{s}?['banco'],' ',{s}?['periodo'],'}}: no se pudo leer')",
                                           S_Control_GET=FALLOS, S_Items=FALLOS)

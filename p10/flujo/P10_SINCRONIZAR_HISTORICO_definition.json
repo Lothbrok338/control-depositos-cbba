@@ -393,7 +393,7 @@
               "type": "Select",
               "inputs": {
                 "from": "@body('Listar_dias')?['value']",
-                "select": "@substring(string(coalesce(item()?['Files'],createArray())),1,sub(length(string(coalesce(item()?['Files'],createArray()))),2))"
+                "select": "@substring(string(coalesce(item()?['Files'],json('[]'))),1,sub(length(string(coalesce(item()?['Files'],json('[]')))),2))"
               },
               "runAfter": {
                 "Listar_dias": [
@@ -506,7 +506,7 @@
         },
         "Cada_extracto": {
           "type": "Foreach",
-          "foreach": "@if(equals(body('Plan')?['ok'],true),body('Plan')?['extractos'],createArray())",
+          "foreach": "@if(equals(body('Plan')?['ok'],true),body('Plan')?['extractos'],json('[]'))",
           "actions": {
             "E_Leer": {
               "type": "OpenApiConnection",
@@ -588,7 +588,7 @@
             },
             "Cada_grupo_E": {
               "type": "Foreach",
-              "foreach": "@if(and(equals(outputs('E_Procesar')?['statusCode'],200),equals(body('E_Procesar')?['ok'],true)),body('E_Procesar')?['grupos'],createArray())",
+              "foreach": "@if(and(equals(outputs('E_Procesar')?['statusCode'],200),equals(body('E_Procesar')?['ok'],true)),body('E_Procesar')?['grupos'],json('[]'))",
               "actions": {
                 "GE_TRY": {
                   "type": "Scope",
@@ -1392,7 +1392,7 @@
             },
             "Cada_sucio_D": {
               "type": "Foreach",
-              "foreach": "@if(equals(body('D_Clasificar')?['ok'],true),body('D_Clasificar')?['sucios'],createArray())",
+              "foreach": "@if(equals(body('D_Clasificar')?['ok'],true),body('D_Clasificar')?['sucios'],json('[]'))",
               "actions": {
                 "GD_TRY": {
                   "type": "Scope",
@@ -1510,7 +1510,7 @@
                           "grupo_id": "@items('Cada_sucio_D')?['grupo_id']",
                           "ahora_local": "@convertTimeZone(utcNow(),'UTC','SA Western Standard Time','yyyy-MM-ddTHH:mm:ss')",
                           "estado_base64": "@outputs('GD_Estado')",
-                          "parciales_base64": "@createArray()",
+                          "parciales_base64": [],
                           "filas": "@items('Cada_sucio_D')?['filas']",
                           "control_grupo": "@outputs('GD_Control')",
                           "verificar_xlsx": false,
@@ -2154,7 +2154,7 @@
             },
             "Cada_sucio_S": {
               "type": "Foreach",
-              "foreach": "@if(equals(body('S_Clasificar')?['ok'],true),body('S_Clasificar')?['sucios'],createArray())",
+              "foreach": "@if(equals(body('S_Clasificar')?['ok'],true),body('S_Clasificar')?['sucios'],json('[]'))",
               "actions": {
                 "GM_TRY": {
                   "type": "Scope",
@@ -2320,7 +2320,7 @@
                           "grupo_id": "@items('Cada_sucio_S')?['grupo_id']",
                           "ahora_local": "@convertTimeZone(utcNow(),'UTC','SA Western Standard Time','yyyy-MM-ddTHH:mm:ss')",
                           "estado_base64": "@outputs('GM_Estado')",
-                          "parciales_base64": "@createArray()",
+                          "parciales_base64": [],
                           "filas": "@items('Cada_sucio_S')?['filas']",
                           "control_grupo": "@outputs('GM_Control')",
                           "verificar_xlsx": "@items('Cada_sucio_S')?['verificar_xlsx']",

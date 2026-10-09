@@ -209,7 +209,7 @@ En la raíz del repositorio: `P10_SINCRONIZAR_HISTORICO_V1.zip` y `P10_PROVISION
 
 | Archivo | SHA-256 |
 |---|---|
-| `P10_SINCRONIZAR_HISTORICO_V1.zip` | `a5e3cbc1ab58146880cbbd5aa5d39203676672e8cf9252a9af8a153b61702d1e` |
+| `P10_SINCRONIZAR_HISTORICO_V1.zip` | `018e8ebc75cf765e73a281790d911bfa10ba97f027206ea824f5a5c26f0be9a7` |
 | `P10_PROVISIONAR_CONTROL_V1.zip` | `7fe0c5347628b3b3b8375417b15a4033930922dd966029dbe15999d2fc1530c7` |
 | `p10/Dockerfile` | `f25c396ec98c9d96566397866880a8eb05ed4c00b9fd13d3f7a6947fcdddf8d9` |
 | `p10/railway.json` | `d19c8462435c97078a7e3c0d17a0ceba1c2a54ca62a2bc40438934c5b8b0de6f` |
@@ -353,4 +353,6 @@ Quien tenga solo «Puede ver» no puede cambiar el archivo; el flujo (con permis
 
 **Pruebas.** Solo las de P10-A.2 (`tests/test_37`–`test_40`: 126 en verde); nuevas: página llena del delta, fila malformada, auto-conciliación, orden de las fases del flujo, diagnóstico de la acción que falló. El intérprete local (`p10/ensayo_wdl.py`) ahora soporta `result()`.
 
-**Despliegue.** Cambia el servicio **y** el flujo: hay que redeplegar `p10-api` (rama `deploy/p10-api`) **y** actualizar `P10_SINCRONIZAR_HISTORICO_V1.zip` (importar como *Actualizar*, conservando la conexión y el flujo existente). SHA-256 del ZIP: `a5e3cbc1ab58146880cbbd5aa5d39203676672e8cf9252a9af8a153b61702d1e` (170 acciones).
+**Despliegue.** Cambia el servicio **y** el flujo: hay que redeplegar `p10-api` (rama `deploy/p10-api`) **y** actualizar `P10_SINCRONIZAR_HISTORICO_V1.zip` (importar como *Actualizar*, conservando la conexión y el flujo existente). SHA-256 del ZIP: `018e8ebc75cf765e73a281790d911bfa10ba97f027206ea824f5a5c26f0be9a7` (170 acciones).
+
+**Segunda corrección (misma prueba).** En tenant, `GD_Sync` falló con `InvalidTemplate: createArray() expects a comma separated list of parameters`: Power Automate exige al menos un parámetro en `createArray`. Se reemplazó `createArray()` (7 usos) por `json('[]')` / `[]`, y el intérprete local ahora rechaza `createArray()` vacío. Cambio solo del flujo: **no requiere redeploy de `p10-api`**. SHA-256 del ZIP: `018e8ebc75cf765e73a281790d911bfa10ba97f027206ea824f5a5c26f0be9a7`.

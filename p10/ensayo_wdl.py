@@ -375,6 +375,8 @@ class Ejecucion:
                 out.update(x)
             return out
         if f == "createArray":
+            if not a:
+                raise ErrorExpresion("createArray() exige al menos un parámetro (usar json('[]') para el arreglo vacío)")
             return list(a)
         if f == "string":
             return cadena(a[0])
