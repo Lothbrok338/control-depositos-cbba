@@ -284,8 +284,8 @@ def fase_extractos():
 def rango_mes(periodo):
     """Ventana del mes con un día de holgura a cada lado (la fecha de movimiento es «solo fecha»; el grupo lo decide la CLAVE)."""
     base = f"concat({periodo},'-01T00:00:00Z')"
-    ini = f"formatDateTime(addDays({base},-1),'yyyy-MM-ddT00:00:00Z')"
-    fin = f"formatDateTime(addDays(startOfMonth(addDays({base},32)),1),'yyyy-MM-ddT00:00:00Z')"
+    ini = f"concat(formatDateTime(addDays({base},-1),'yyyy-MM-dd'),'T00:00:00Z')"
+    fin = f"concat(formatDateTime(addDays(startOfMonth(addDays({base},32)),1),'yyyy-MM-dd'),'T00:00:00Z')"
     return ini, fin
 
 

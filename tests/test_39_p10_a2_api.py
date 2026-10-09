@@ -169,3 +169,24 @@ def test_delta_por_http_devuelve_grupos_rutas_y_cursor(cli):
     assert g["grupo_id"] == "BNB|3501936692|BOB|2026-08" and g["parcial_lista"] is True
     assert g["filas"][0]["FECHA_HORA_ASIGNACION"] == "2026-10-08T07:00:00"          # hora de Bolivia
     assert g["rutas"]["ruta_xlsx"].endswith("EXTRACTO_HISTORICO_BNB_3501936692_BOB_2026-08.xlsx")
+
+
+def test_el_dockerignore_propio_deja_pasar_todo_lo_que_copia_el_dockerfile_de_p10():
+    """El .dockerignore de la raíz (p0-api) es una lista blanca que NO incluye historico.py, p9/ ni p10/: p10 trae el suyo."""
+    import fnmatch
+    docker = (RAIZ / "p10/Dockerfile").read_text(encoding="utf-8")
+    reglas = [l.strip() for l in (RAIZ / "p10/Dockerfile.dockerignore").read_text(encoding="utf-8").splitlines()
+              if l.strip() and not l.startswith("#")]
+    permitidos = [r[1:] for r in reglas if r.startswith("!")]
+
+    def pasa(ruta):
+        return any(fnmatch.fnmatch(ruta, p.replace("**", "*")) or ruta == p for p in permitidos)
+    for linea in re.findall(r"^COPY (.+)$", docker, re.M):
+        *origenes, _ = linea.split()
+        for o in origenes:
+            if o.endswith("/"):
+                assert pasa(o + "x"), o
+            else:
+                assert pasa(o), f"{o} no pasa el dockerignore de p10"
+    raiz = (RAIZ / ".dockerignore").read_text(encoding="utf-8")
+    assert "!historico.py" not in raiz              # por eso hace falta el propio (y por eso no se toca el de p0-api)

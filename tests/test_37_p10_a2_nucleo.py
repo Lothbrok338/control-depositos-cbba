@@ -443,3 +443,22 @@ def test_el_estado_ya_no_guarda_el_hash_de_la_lista(inicial, lista):
     lista.confirmar(claves[0], estudiante="X")
     r = sincronizar(d64(inicial["estado_b64"]), filas=filas_de(lista), control=_ctl(inicial))
     assert "hash_lista" not in E.desempaquetar(d64(r["estado_b64"]))["operativo"]
+
+
+def test_las_columnas_que_p10_lee_de_depositos_activos_existen_en_el_esquema_real():
+    """Esquema P8 (columnas de la lista) + `ULTIMA_REVERSION_ID` que agrega P9: P10 no pide columnas inexistentes."""
+    def nombres(x, out):
+        if isinstance(x, dict):
+            for k in ("nombre_tecnico", "InternalName", "name", "Name"):
+                if isinstance(x.get(k), str):
+                    out.add(x[k])
+            for v in x.values():
+                nombres(v, out)
+        elif isinstance(x, list):
+            for v in x:
+                nombres(v, out)
+    esquema = set()
+    nombres(json.loads((RAIZ / "p8/esquema_listas_p8.json").read_text(encoding="utf-8")), esquema)
+    esquema.add("ULTIMA_REVERSION_ID")
+    pedidas = set(SP.CAMPOS_SELECT.split(",")) - {"Id", "Modified"}
+    assert pedidas <= esquema, pedidas - esquema
