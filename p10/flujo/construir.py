@@ -27,6 +27,7 @@ from pathlib import Path
 
 from p0.flujo import construir as P0
 from p10.control_lista import CAMPOS_CONTROL, LISTA_CONTROL
+from p10.plan import MAX_ELEMENTOS_DELTA
 from p9 import contrato as C9
 from p9.wdl import FALLOS, TODOS, agregar, ambito, asignar, compose, contar_acciones, definicion, secuencia, si, variable
 
@@ -170,18 +171,24 @@ def upsert(pre, existe, item_id, cuerpo):
 
 
 # ---------------------------------------------------------------------------------------------- bloque de grupo (único para extractos y meses)
-def bloque_grupo(pre, valor_varG, leer_xlsx, encolar_conciliacion=False):
+def bloque_grupo(pre, fuente, leer_xlsx, encolar_conciliacion=False):
     """
-    Sincroniza UN grupo (BANCO+CUENTA+MONEDA+MES). Entrada: `varG` = {grupo_id, rutas, parciales, filas, verificar_xlsx, finalizar}.
+    Sincroniza UN grupo (BANCO+CUENTA+MONEDA+MES). Entrada: `fuente` = {grupo_id, rutas, parciales, filas, verificar_xlsx, finalizar,
+    parcial_lista}: cada dato es una expresión sobre el elemento del Foreach que contiene el bloque (o un literal). NO se copia a una
+    variable: con miles de filas, «Set variable» era un paso más que podía fallar antes de llamar al servicio.
     Orden de escritura: XLSX -> estado -> control. Un fallo técnico se anota, marca varGrupoOk=false y no toca el control.
     `leer_xlsx`: solo la conciliación verifica el XLSX existente (los caminos de extractos y de delta no lo leen).
     `encolar_conciliacion`: si el estado del grupo cambió, su BANCO+MES se concilia con la lista completa más adelante en el mismo ciclo.
     """
-    def G(campo):
-        return f"variables('varG')?['{campo}']"
+    def G(campo):                      # expresión WDL (sin «@») del dato, para componer otras expresiones
+        v = fuente[campo]
+        return v[1:] if isinstance(v, str) and v.startswith("@") else json.dumps(v)
+
+    def V(campo):                      # valor para el cuerpo de la llamada: «@expresión» o literal
+        return fuente[campo]
 
     def R(campo):
-        return f"variables('varG')?['rutas']?['{campo}']"
+        return f"{G('rutas')}?['{campo}']"
 
     def n(x):
         return pre + x
@@ -195,11 +202,11 @@ def bloque_grupo(pre, valor_varG, leer_xlsx, encolar_conciliacion=False):
         **lectura_tolerante(pre, "Estado", "@" + R("ruta_estado"), True),
         **(lectura_tolerante(pre, "Xlsx", "@" + R("ruta_xlsx"), False) if leer_xlsx else {}),
         resp: api("sincronizar", {
-            "sede": "@outputs('P')?['sede']", "grupo_id": "@" + G("grupo_id"), "ahora_local": "@" + AHORA,
-            "estado_base64": f"@outputs('{n('Estado')}')", "parciales_base64": "@" + G("parciales"), "filas": "@" + G("filas"),
-            "control_grupo": f"@outputs('{n('Control')}')", "verificar_xlsx": "@" + G("verificar_xlsx"),
+            "sede": "@outputs('P')?['sede']", "grupo_id": V("grupo_id"), "ahora_local": "@" + AHORA,
+            "estado_base64": f"@outputs('{n('Estado')}')", "parciales_base64": V("parciales"), "filas": V("filas"),
+            "control_grupo": f"@outputs('{n('Control')}')", "verificar_xlsx": V("verificar_xlsx"),
             "xlsx_actual_base64": f"@outputs('{n('Xlsx')}')" if leer_xlsx else None,
-            "finalizar": "@" + G("finalizar"), "parcial_lista": "@" + G("parcial_lista")}),
+            "finalizar": V("finalizar"), "parcial_lista": V("parcial_lista")}),
         n("Escribir_XLSX"): si(f"@and({ok},not(empty(body('{resp}')?['xlsx_b64'])))", secuencia(**escritura(
             n("X_"), "@" + R("carpeta_xlsx"), "@" + R("nombre_xlsx"), "@" + R("ruta_xlsx"), f"body('{resp}')?['xlsx_b64']"))),
         n("Escribir_ESTADO"): si(f"@and({ok},not(empty(body('{resp}')?['estado_b64'])))", secuencia(**escritura(
@@ -216,12 +223,14 @@ def bloque_grupo(pre, valor_varG, leer_xlsx, encolar_conciliacion=False):
     }
     acciones = secuencia(**acciones)          # se encadenan con Succeeded: un fallo técnico salta al CATCH
     acciones[n("Control_GET")]["runAfter"] = {}
+    fallidas, nombres = n("Fallidas"), n("Nombres_fallidas")
     catch = ambito(secuencia(**{
         n("Fijar_no_ok_catch"): asignar("varGrupoOk", False),
-        n("Anotar_catch"): anotar("@concat('GRUPO '," + G("grupo_id") + ",': fallo técnico')")}), {n("TRY"): FALLOS})
-    fijar = asignar("varG", valor_varG)
-    fijar["runAfter"] = {}
-    return {n("Fijar_varG"): fijar, n("TRY"): con_ra(ambito(acciones), **{n("Fijar_varG"): ["Succeeded"]}), n("CATCH"): catch}
+        fallidas: {"type": "Query", "inputs": {"from": f"@result('{n('TRY')}')", "where": "@and(equals(item()?['status'],'Failed'),not(contains(item()?['name'],'_Probar')))"}},
+        nombres: {"type": "Select", "inputs": {"from": f"@body('{fallidas}')", "select": "@item()?['name']"}},
+        n("Anotar_catch"): anotar("@concat('GRUPO '," + G("grupo_id") + f",': fallo técnico en ',join(body('{nombres}'),','),': ',"
+                                  f"take(coalesce(first(body('{fallidas}'))?['error']?['message'],''),160))")}), {n("TRY"): FALLOS})
+    return {n("TRY"): con_ra(ambito(acciones)), n("CATCH"): catch}
 
 
 # ---------------------------------------------------------------------------------------------- disparador
@@ -315,12 +324,18 @@ def fase_lista(campos_select):
             "POST", uri_control(["/items(", ("x", "string(body('Ciclo_API')?['lock']?['item_id'])"), ")"]), MERGE,
             "@concat('{\"CURSOR_LISTA\":\"',body('D_Clasificar')?['cursor_nuevo'],'\"}')"))))
     leer_d = sp("GET", lista_depositos([sel.replace(f"/items?$select={campos_select}&$top=5000&$filter=",
-                                                    f"/items?$select={campos_select}&$orderby=Modified&$top=5000&$filter="),
+                                                    f"/items?$select={campos_select}&$orderby=Modified&$top={MAX_ELEMENTOS_DELTA}&$filter="),
                                         ("x", "uriComponent(concat('Modified gt datetime''',body('Ciclo_API')?['cursor_desde'],''''))")]),
                 JSON_SIN, seguro=SEGURO_SALIDA)
+    dentro["D_Falla_servicio"] = anotar("@concat('Lectura incremental: el servicio no respondió')", D_Clasificar=FALLOS)
+    dentro["D_Rechazo"] = con_ra(si("@not(equals(body('D_Clasificar')?['ok'],true))", {"Anotar_rechazo_D": anotar(
+        "@concat('Lectura incremental: ',coalesce(body('D_Clasificar')?['codigo_error'],'rechazada'))")}), D_Clasificar=["Succeeded"])
     delta_acc = secuencia(
         D_GET=leer_d,
         D_Hay_cambios=si("@greater(length(body('D_GET')?['value']),0)", dentro))
+    # La fase B espera a la fase A: sin esto D_GET (primera acción de su secuencia) arrancaba a la vez que el listado de PROCESADOS, el
+    # delta corría en paralelo con los extractos (variables compartidas) y Cada_slice leía varSlices antes de que A lo llenara.
+    delta_acc["D_GET"]["runAfter"] = {"Cada_extracto": TODOS}
     delta_acc["D_Falla_lectura"] = anotar("@concat('Lectura incremental de Depositos_Activos: no se pudo leer')", D_GET=FALLOS)
 
     s = "items('Cada_slice')"
@@ -361,7 +376,6 @@ def construir_sync(campos_select):
         Inicializar_varArchivos=variable("varArchivos", "array", []),
         Inicializar_varSlices=variable("varSlices", "array", []),
         Inicializar_varGrupoOk=variable("varGrupoOk", "boolean", True),
-        Inicializar_varG=variable("varG", "object", {}),
         Leer_token=od("GetFileContentByPath", {"path": RUTA_TOKEN, "inferContentType": False}, seguro=SEGURO_SALIDA),
         Leer_control=sp("GET", uri_control(["/items?$top=5000"]), JSON_V),
         Ciclo_API=api("ciclo", {"ahora_local": "@" + AHORA, "control": "@" + CONTROL, "mes_inicio": "@outputs('P')?['mes_inicio']",

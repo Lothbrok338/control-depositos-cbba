@@ -74,7 +74,7 @@ def agrupar(items):
     for it in items:
         try:
             gid, fila = fila_lista(it)
-        except FilaInvalida as e:
+        except (FilaInvalida, ValueError, TypeError) as e:
             anomalias.append(str(e)[:200])
             continue
         if fila["CLAVE_TRANSACCION"] in vistas:

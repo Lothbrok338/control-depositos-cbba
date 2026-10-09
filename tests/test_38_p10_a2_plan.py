@@ -66,10 +66,11 @@ def test_ventanas_de_meses():
     n = PL.ciclo("2026-10-08T10:00:00", [lock(completa="2026-10-08")])
     assert n["modo"] == "NORMAL" and n["meses_listar"] == ["2026-10", "2026-09"]
     assert n["grupos_a_verificar"] == [] and n["slices"] == []
-    c = PL.ciclo("2026-10-08T03:00:00", [lock(), grupo("BNB|1|BOB|2026-02"), grupo()])
-    assert c["meses_listar"][0] == "2026-01" and c["meses_listar"][-1] == "2026-10"
+    conc = {"HASH_OPERATIVO": "h"}                                           # grupos ya conciliados con la lista
+    c = PL.ciclo("2026-10-08T03:00:00", [lock(), grupo("BNB|1|BOB|2026-02", **conc), grupo(**conc)])
+    assert c["meses_listar"][0] == "2026-08" and c["meses_listar"][-1] == "2026-10"       # desde mes_inicio
     assert c["grupos_a_verificar"] == [GID]                                   # jueves: solo la ventana de 3 meses
-    d = PL.ciclo("2026-10-11T03:00:00", [lock(), grupo("BNB|1|BOB|2026-02"), grupo()])    # domingo: todos los meses conocidos
+    d = PL.ciclo("2026-10-11T03:00:00", [lock(), grupo("BNB|1|BOB|2026-02", **conc), grupo(**conc)])    # domingo: todos los meses conocidos
     assert sorted(d["grupos_a_verificar"]) == ["BNB|1|BOB|2026-02", GID]
     assert PL.ciclo("2026-10-08T03:00:00", [lock(), grupo(ESTADO="RECONSTRUIR")])["grupos_a_verificar"] == []
     # la conciliación nocturna cubre BANCO+MES de la ventana; el domingo, todos los meses conocidos
@@ -84,7 +85,7 @@ def test_meses_desplazados_cruzan_el_anio():
 
 def test_cursor_de_lectura_de_la_lista():
     r = PL.ciclo("2026-10-08T10:00:00", [lock(completa="2026-10-08")])
-    assert r["cursor_desde"] == "2026-10-07T14:00:00Z"                           # sin cursor: el día anterior (hora UTC)
+    assert r["cursor_desde"] == "2026-10-08T13:00:00Z"                           # sin cursor: la última hora (hora UTC)
     con = lock(completa="2026-10-08")
     con["CURSOR_LISTA"] = "2026-10-08T13:55:00Z"
     assert PL.ciclo("2026-10-08T10:00:00", [con])["cursor_desde"] == "2026-10-08T13:55:00Z"
@@ -136,7 +137,7 @@ def test_la_ruta_de_onedrive_se_obtiene_quitando_el_prefijo_del_servidor():
 def test_grupos_con_error_o_en_reconstruccion_se_concilian_aunque_la_lista_no_cambie():
     n = lambda *g: [(x["banco"], x["periodo"]) for x in PL.ciclo(
         "2026-10-08T10:00:00", [lock(completa="2026-10-08"), *g])["slices"]]   # noqa: E731
-    assert n(grupo()) == []
+    assert n(grupo(HASH_OPERATIVO="h")) == []                               # conciliado y sin error: nada pendiente
     assert n(grupo(ESTADO="ERROR", INTENTOS=1)) == [("BNB", "2026-10")]
     assert n(grupo(ESTADO="ERROR", INTENTOS=3)) == []                      # agotado: espera al ciclo completo
     assert n(grupo(ESTADO="RECONSTRUIR")) == [("BNB", "2026-10")]
@@ -293,21 +294,43 @@ def test_delta_entrega_las_filas_cambiadas_de_cada_grupo_con_estado_y_avanza_el_
     assert r["cursor_nuevo"] == "2026-10-08T13:00:00Z"
 
 
-def test_delta_no_avanza_el_cursor_sobre_filas_recientes_ni_sobre_grupos_sin_estado():
+def test_delta_no_avanza_el_cursor_sobre_filas_recientes_pero_si_sobre_grupos_sin_estado():
     lst = _lista_con(3)
     reciente = _con_modificado(lst, "2026-10-08T13:58:00Z")          # 2 min antes de las 10:00 locales (14:00Z): aún no asienta
     r = PL.delta(reciente, [grupo()], "2026-10-08T10:00:00")
     assert r["cursor_nuevo"] == "" and len(r["sucios"]) == 1
     viejas = _con_modificado(lst, "2026-10-08T12:00:00Z")
     r = PL.delta(viejas, [], "2026-10-08T10:00:00")                  # el grupo aún no tiene estado: su extracto no llegó
-    assert r["sin_estado"] == [GID] and r["sucios"] == [] and r["cursor_nuevo"] == "2026-10-08T11:59:59Z"     # justo antes de esas filas
+    assert r["sin_estado"] == [GID] and r["sucios"] == [] and r["cursor_nuevo"] == "2026-10-08T12:00:00Z"   # NO retiene el cursor (lo concilia su BANCO+MES)
     mezcla = _con_modificado(lst, "2026-10-08T12:00:00Z")[:1] + _con_modificado(lst, "2026-10-08T13:00:00Z")[1:]
     r = PL.delta(mezcla, [grupo(VERSION_ESTADO=0)], "2026-10-08T10:00:00")
-    assert r["cursor_nuevo"] == "2026-10-08T11:59:59Z"               # no deja atrás lo que aún no pudo aplicarse
-    r = PL.delta(_con_modificado(lst, "2026-10-01T12:00:00Z"), [], "2026-10-08T10:00:00")
-    assert r["cursor_nuevo"] == "2026-10-01T12:00:00Z"               # pasadas 24 h manda la conciliación nocturna
+    assert r["cursor_nuevo"] == "2026-10-08T13:00:00Z"
     r = PL.delta(viejas, [], "2026-10-08T10:00:00", cursor_desde="2026-10-08T12:30:00Z")
     assert r["cursor_nuevo"] == ""                                   # el cursor nunca retrocede
+
+
+def test_delta_con_la_pagina_llena_relee_la_ultima_hora_y_siempre_avanza():
+    """Prueba real: un lote grande de filas sin estado dejaba el cursor pegado y las filas nuevas (la confirmación) fuera de la página."""
+    lst = _lista_con(3)
+    modelo = lst.consultar()[0][0]
+    pagina = []
+    for i in range(PL.MAX_ELEMENTOS_DELTA):
+        f = dict(modelo, CLAVE_TRANSACCION=f"BNB|3000100152|20261001|{i:05d}|X", Modified=f"2026-10-08T12:{i // 60:02d}:{i % 60:02d}Z")
+        pagina.append(f)
+    r = PL.delta(pagina, [], "2026-10-08T10:00:00")
+    ultimo = pagina[-1]["Modified"]
+    assert r["cursor_nuevo"] < ultimo and r["cursor_nuevo"] == pagina[-2]["Modified"]       # la última hora se lee de nuevo
+    iguales = [dict(f, Modified="2026-10-08T12:00:00Z") for f in pagina]
+    r = PL.delta(iguales, [], "2026-10-08T10:00:00")
+    assert r["cursor_nuevo"] == "" and any(a.startswith("PAGINA_LLENA_SIN_AVANCE") for a in r["anomalias"])
+
+
+def test_delta_una_fila_malformada_no_tumba_la_pagina():
+    lst = _lista_con(2)
+    mala = dict(_con_modificado(lst, "2026-10-08T12:00:00Z")[0], FECHA_HORA_ASIGNACION="no es una fecha")
+    buena = _con_modificado(lst, "2026-10-08T12:01:00Z")[1]
+    r = PL.delta([mala, buena], [grupo()], "2026-10-08T10:00:00")
+    assert r["ok"] and len(r["sucios"][0]["filas"]) == 1 and len(r["anomalias"]) == 1
 
 
 def test_delta_deja_los_grupos_en_reconstruccion_a_la_conciliacion_completa():
@@ -319,3 +342,20 @@ def test_delta_deja_los_grupos_en_reconstruccion_a_la_conciliacion_completa():
 def test_delta_sin_cambios_no_hace_nada():
     r = PL.delta([], [grupo()], "2026-10-08T10:00:00")
     assert r == {"ok": True, "elementos": 0, "sucios": [], "sin_estado": [], "en_espera": [], "cursor_nuevo": "", "anomalias": []}
+
+
+def test_un_grupo_creado_por_extracto_y_nunca_conciliado_con_la_lista_se_concilia_solo():
+    """Prueba real: los grupos quedaron sin la foto operativa porque la conciliación posterior al extracto no corrió."""
+    r = PL.ciclo("2026-10-08T10:00:00", [lock(completa="2026-10-08"), grupo()])
+    assert r["modo"] == "NORMAL" and r["slices"] == [{"periodo": "2026-10", "banco": "BNB"}]
+    r = PL.ciclo("2026-10-08T10:00:00", [lock(completa="2026-10-08"), grupo(HASH_OPERATIVO="abc")])
+    assert r["slices"] == []
+    r = PL.ciclo("2026-10-08T10:00:00", [lock(completa="2026-10-08"), grupo(ESTADO="ERROR", INTENTOS=3)])
+    assert r["slices"] == []                                                 # con error agotado se espera revisión, no se insiste
+
+
+def test_un_grupo_nunca_conciliado_sin_filas_en_la_lista_queda_conciliado_con_la_lista_vacia():
+    r = PL.clasificar("2026-10", [], [grupo()], "NORMAL", False)
+    assert [(s["grupo_id"], s["filas"], s["hash_lista"]) for s in r["sucios"]] == [(GID, [], E.hash_lista([]))]
+    r = PL.clasificar("2026-10", [], [grupo(HASH_OPERATIVO=E.hash_lista([]))], "NORMAL", False)
+    assert r["sucios"] == []                                                 # ya constatado: no se repite en cada ciclo

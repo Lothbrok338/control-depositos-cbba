@@ -28,6 +28,8 @@ MAX_MESES_LISTAR = 12
 MAX_MESES_ESCANEAR = 14
 MAX_EXTRACTOS_NORMAL = 10
 MAX_EXTRACTOS_COMPLETO = 60
+MAX_ELEMENTOS_DELTA = 1000       # tamaño de página de la lectura incremental de Depositos_Activos (`$top` del flujo): el cursor drena de a páginas
+VENTANA_CURSOR_INICIAL_H = 1     # sin cursor (primera vez) se lee solo la última hora: lo anterior lo concilia el BANCO+MES de cada grupo nuevo
 EXTENSIONES = (".xls", ".xlsx")
 _RX_PERIODO_RUTA = re.compile(r"/PROCESADOS/(\d{4})/(\d{2})_[A-Z]+/", re.IGNORECASE)
 
@@ -60,6 +62,11 @@ def _num(v, defecto=0):
 
 def _por_tipo(control, tipo):
     return [i for i in control if i.get("TIPO") == tipo]
+
+
+def sin_conciliar(grupo):
+    """Grupo con estado válido cuyo XLSX salió solo del extracto: aún no se le aplicó nunca la foto operativa de Depositos_Activos."""
+    return grupo.get("ESTADO") == "OK" and _num(grupo.get("VERSION_ESTADO")) > 0 and not grupo.get("HASH_OPERATIVO")
 
 
 def clave_extracto(ruta):
@@ -102,8 +109,8 @@ def ciclo(ahora_local, control, mes_inicio="2026-08", forzar_completo=False):
     cursor = str(lock.get("CURSOR_LISTA") or "")
     try:
         desde = datetime.strptime(cursor, FORMATO_UTC)
-    except ValueError:                               # sin cursor (primera vez): el día anterior; el ciclo completo concilia el resto
-        desde = ahora + timedelta(hours=4) - timedelta(days=1)
+    except ValueError:                               # sin cursor (primera vez): la última hora; lo anterior lo concilian los BANCO+MES (abajo)
+        desde = ahora + timedelta(hours=4) - timedelta(hours=VENTANA_CURSOR_INICIAL_H)
     conciliar = set()
     if completo:
         listar = meses_entre(max(mes_inicio, mes_desplazado(actual, -(MAX_MESES_LISTAR - 1))), actual)
@@ -117,7 +124,8 @@ def ciclo(ahora_local, control, mes_inicio="2026-08", forzar_completo=False):
         listar, a_verificar = [actual, mes_desplazado(actual, -1)], []
     # grupos con trabajo pendiente aunque la lista no haya cambiado: error por reintentar, reconstrucción por finalizar
     conciliar |= {(g["PERIODO"], g.get("BANCO") or "") for g in grupos if g.get("PERIODO") and (
-        g.get("ESTADO") == "RECONSTRUIR" or (g.get("ESTADO") == "ERROR" and _num(g.get("INTENTOS")) < MAX_INTENTOS))}
+        g.get("ESTADO") == "RECONSTRUIR" or (g.get("ESTADO") == "ERROR" and _num(g.get("INTENTOS")) < MAX_INTENTOS)
+        or sin_conciliar(g))}
     slices = [{"periodo": p, "banco": b} for p, b in sorted(conciliar, reverse=True) if b][:MAX_SLICES]
     return {
         "ok": True, "modo": "COMPLETO" if completo else "NORMAL", "hoy": hoy, "periodo_actual": actual,
@@ -186,19 +194,21 @@ def plan(ahora_local, modo, archivos, control, prefijo_servidor, limite):
 # ------------------------------------------------------------------ lectura incremental de la lista (delta por Modified)
 def delta(items, control, ahora_local, cursor_desde=""):
     """
-    Lo que cambió en Depositos_Activos desde el cursor (`Modified > cursor`): normalmente nada o unas pocas filas.
+    Lo que cambió en Depositos_Activos desde el cursor (`Modified > cursor`, de a páginas de MAX_ELEMENTOS_DELTA, de la más antigua
+    a la más nueva): normalmente nada o unas pocas filas.
     Se aplican a su grupo como información parcial (las filas ausentes NO se tocan). Devuelve además el cursor nuevo:
       * solo avanza sobre filas «asentadas» (modificadas hace más de ASENTAR_MIN minutos): las más recientes se leen otra vez
         en el ciclo siguiente por si SharePoint aún no mostraba otra fila de la misma hora;
-      * no pasa de largo las filas cuyo grupo aún no tiene estado (su extracto todavía no se incorporó), hasta 24 h:
-        pasado ese plazo manda la conciliación completa de la noche.
+      * si la página vino llena, la última hora vuelve a leerse (podría haber quedado una fila de esa misma hora fuera de la página);
+      * NO se queda atrás por filas de grupos sin estado: retenerlo dejaba la lectura pegada a un lote viejo (y las filas nuevas, como una
+        confirmación, fuera de la página). Esas filas se concilian por BANCO+MES cuando su extracto crea el grupo y cada noche.
     """
     ctrl = {i["CLAVE_CONTROL"][len("GRUPO|"):]: i for i in _por_tipo(control, "GRUPO")}
-    por_gid, modificados, anomalias, vistas = {}, {}, [], set()
+    por_gid, anomalias, vistas = {}, [], set()
     for it in items:
         try:
             gid, fila = SP.fila_lista(it)
-        except SP.FilaInvalida as e:
+        except (SP.FilaInvalida, ValueError, TypeError) as e:
             anomalias.append(str(e)[:200])
             continue
         if fila["CLAVE_TRANSACCION"] in vistas:
@@ -206,27 +216,28 @@ def delta(items, control, ahora_local, cursor_desde=""):
             continue
         vistas.add(fila["CLAVE_TRANSACCION"])
         por_gid.setdefault(gid, []).append(fila)
-        modificados.setdefault(gid, []).append(str(it.get("Modified") or ""))
-    sucios, sin_estado, en_espera, retenidas = [], [], [], []
+    sucios, sin_estado, en_espera = [], [], []
     for gid in sorted(por_gid):
         c = ctrl.get(gid)
         if c is None or (_num(c.get("VERSION_ESTADO")) == 0 and c.get("ESTADO") != "RECONSTRUIR"):
-            sin_estado.append(gid)
-            retenidas += modificados[gid]
+            sin_estado.append(gid)                     # su extracto aún no se incorporó: la conciliación del BANCO+MES lo aplicará
         elif c.get("ESTADO") == "RECONSTRUIR":
             en_espera.append(gid)                      # la conciliación completa del grupo lo atiende
         else:
             sucios.append({"grupo_id": gid, "filas": por_gid[gid], "parcial_lista": True, "verificar_xlsx": False,
                            "finalizar": False, "intentos": _num(c.get("INTENTOS"))})
     asentado = (_ahora(ahora_local) + timedelta(hours=4, minutes=-ASENTAR_MIN)).strftime(FORMATO_UTC)
-    todas = [str(i.get("Modified")) for i in items if i.get("Modified") and str(i.get("Modified")) <= asentado]
+    modificadas = [str(i.get("Modified")) for i in items if i.get("Modified")]
+    todas = [m for m in modificadas if m <= asentado]
+    lleno = len(items) >= MAX_ELEMENTOS_DELTA
+    if lleno and modificadas:
+        todas = [m for m in todas if m < max(modificadas)]
     cursor_nuevo = max(todas) if todas else ""
-    retenidas = [m for m in retenidas if m]
-    if retenidas and min(retenidas) > (_ahora(ahora_local) + timedelta(hours=4, days=-1)).strftime(FORMATO_UTC):
-        un_segundo_antes = (datetime.strptime(min(retenidas), FORMATO_UTC) - timedelta(seconds=1)).strftime(FORMATO_UTC)
-        cursor_nuevo = min(cursor_nuevo, un_segundo_antes) if cursor_nuevo else un_segundo_antes
     if cursor_nuevo and cursor_nuevo <= cursor_desde:                         # nunca retrocede ni repite el mismo valor
         cursor_nuevo = ""
+    if lleno and not cursor_nuevo:
+        anomalias.append("PAGINA_LLENA_SIN_AVANCE: todas las filas de la página tienen la misma hora de modificación; "
+                         "la conciliación nocturna las cubre")
     return {"ok": True, "elementos": len(items), "sucios": sucios, "sin_estado": sin_estado, "en_espera": en_espera,
             "cursor_nuevo": cursor_nuevo, "anomalias": anomalias[:20]}
 
@@ -268,6 +279,8 @@ def clasificar(periodo, items, control, modo, hay_mas, verificar=(), banco=None)
         if filas is None:                            # grupo sin filas en la lista: solo se sincroniza para verificarlo
             if forzado:
                 sucio(gid, None, "", c, True, False)
+            elif sin_conciliar(c):                   # y se deja constancia de que la lista no tiene nada de él (si no, se reintentaría siempre)
+                sucio(gid, [], hash_lista([]), c, False, False)
             return
         if h == (c.get("HASH_OPERATIVO") or "") and c.get("ESTADO") == "OK" and not forzado:
             return
@@ -285,7 +298,7 @@ def clasificar(periodo, items, control, modo, hay_mas, verificar=(), banco=None)
         procesar(gid, filas)
     for gid in sorted(ctrl):
         if (gid.endswith("|" + periodo) and gid not in grupos and (banco is None or ctrl[gid].get("BANCO") == banco)
-                and (gid in pedidos or ctrl[gid].get("ESTADO") == "RECONSTRUIR")):
+                and (gid in pedidos or ctrl[gid].get("ESTADO") == "RECONSTRUIR" or sin_conciliar(ctrl[gid]))):
             procesar(gid, None)
     return {"ok": True, "periodo": periodo, "elementos": len(items), "grupos_en_lista": len(grupos), "sucios": sucios,
             "sin_estado": sin_estado, "en_espera": en_espera, "fuera_de_periodo": fuera, "anomalias": anomalias[:20]}
