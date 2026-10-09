@@ -147,23 +147,6 @@
         ]
       }
     },
-    "Inicializar_varG": {
-      "type": "InitializeVariable",
-      "inputs": {
-        "variables": [
-          {
-            "name": "varG",
-            "type": "object",
-            "value": {}
-          }
-        ]
-      },
-      "runAfter": {
-        "Inicializar_varGrupoOk": [
-          "Succeeded"
-        ]
-      }
-    },
     "Leer_token": {
       "type": "OpenApiConnection",
       "inputs": {
@@ -189,7 +172,7 @@
         }
       },
       "runAfter": {
-        "Inicializar_varG": [
+        "Inicializar_varGrupoOk": [
           "Succeeded"
         ]
       }
@@ -607,22 +590,6 @@
               "type": "Foreach",
               "foreach": "@if(and(equals(outputs('E_Procesar')?['statusCode'],200),equals(body('E_Procesar')?['ok'],true)),body('E_Procesar')?['grupos'],createArray())",
               "actions": {
-                "GE_Fijar_varG": {
-                  "type": "SetVariable",
-                  "inputs": {
-                    "name": "varG",
-                    "value": {
-                      "grupo_id": "@items('Cada_grupo_E')?['grupo_id']",
-                      "rutas": "@items('Cada_grupo_E')?['rutas']",
-                      "parciales": "@createArray(items('Cada_grupo_E')?['parcial_b64'])",
-                      "filas": null,
-                      "verificar_xlsx": false,
-                      "finalizar": false,
-                      "parcial_lista": false
-                    }
-                  },
-                  "runAfter": {}
-                },
                 "GE_TRY": {
                   "type": "Scope",
                   "actions": {
@@ -637,7 +604,7 @@
                         "parameters": {
                           "dataset": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
                           "parameters/method": "GET",
-                          "parameters/uri": "@concat('_api/web/lists/getbytitle(''P10_Control'')','/items?$top=1&$filter=',uriComponent(concat('CLAVE_CONTROL eq ''',concat('GRUPO|',variables('varG')?['grupo_id']),'''')))",
+                          "parameters/uri": "@concat('_api/web/lists/getbytitle(''P10_Control'')','/items?$top=1&$filter=',uriComponent(concat('CLAVE_CONTROL eq ''',concat('GRUPO|',items('Cada_grupo_E')?['grupo_id']),'''')))",
                           "parameters/headers": {
                             "Accept": "application/json;odata=verbose"
                           }
@@ -670,7 +637,7 @@
                               "operationId": "GetFileContentByPath"
                             },
                             "parameters": {
-                              "path": "@variables('varG')?['rutas']?['ruta_estado']",
+                              "path": "@items('Cada_grupo_E')?['rutas']?['ruta_estado']",
                               "inferContentType": false
                             },
                             "authentication": "@parameters('$authentication')",
@@ -736,16 +703,16 @@
                         },
                         "body": {
                           "sede": "@outputs('P')?['sede']",
-                          "grupo_id": "@variables('varG')?['grupo_id']",
+                          "grupo_id": "@items('Cada_grupo_E')?['grupo_id']",
                           "ahora_local": "@convertTimeZone(utcNow(),'UTC','SA Western Standard Time','yyyy-MM-ddTHH:mm:ss')",
                           "estado_base64": "@outputs('GE_Estado')",
-                          "parciales_base64": "@variables('varG')?['parciales']",
-                          "filas": "@variables('varG')?['filas']",
+                          "parciales_base64": "@createArray(items('Cada_grupo_E')?['parcial_b64'])",
+                          "filas": null,
                           "control_grupo": "@outputs('GE_Control')",
-                          "verificar_xlsx": "@variables('varG')?['verificar_xlsx']",
+                          "verificar_xlsx": false,
                           "xlsx_actual_base64": null,
-                          "finalizar": "@variables('varG')?['finalizar']",
-                          "parcial_lista": "@variables('varG')?['parcial_lista']"
+                          "finalizar": false,
+                          "parcial_lista": false
                         },
                         "limit": {
                           "timeout": "PT10M"
@@ -786,7 +753,7 @@
                                   "operationId": "GetFileMetadataByPath"
                                 },
                                 "parameters": {
-                                  "path": "@variables('varG')?['rutas']?['ruta_xlsx']"
+                                  "path": "@items('Cada_grupo_E')?['rutas']?['ruta_xlsx']"
                                 },
                                 "authentication": "@parameters('$authentication')",
                                 "retryPolicy": {
@@ -848,8 +815,8 @@
                                     "operationId": "CreateFile"
                                   },
                                   "parameters": {
-                                    "folderPath": "@variables('varG')?['rutas']?['carpeta_xlsx']",
-                                    "name": "@variables('varG')?['rutas']?['nombre_xlsx']",
+                                    "folderPath": "@items('Cada_grupo_E')?['rutas']?['carpeta_xlsx']",
+                                    "name": "@items('Cada_grupo_E')?['rutas']?['nombre_xlsx']",
                                     "body": "@base64ToBinary(body('GE_Sync')?['xlsx_b64'])"
                                   },
                                   "authentication": "@parameters('$authentication')",
@@ -895,7 +862,7 @@
                                   "operationId": "GetFileMetadataByPath"
                                 },
                                 "parameters": {
-                                  "path": "@variables('varG')?['rutas']?['ruta_estado']"
+                                  "path": "@items('Cada_grupo_E')?['rutas']?['ruta_estado']"
                                 },
                                 "authentication": "@parameters('$authentication')",
                                 "retryPolicy": {
@@ -957,8 +924,8 @@
                                     "operationId": "CreateFile"
                                   },
                                   "parameters": {
-                                    "folderPath": "@variables('varG')?['rutas']?['carpeta_estado']",
-                                    "name": "@variables('varG')?['rutas']?['nombre_estado']",
+                                    "folderPath": "@items('Cada_grupo_E')?['rutas']?['carpeta_estado']",
+                                    "name": "@items('Cada_grupo_E')?['rutas']?['nombre_estado']",
                                     "body": "@base64ToBinary(body('GE_Sync')?['estado_b64'])"
                                   },
                                   "authentication": "@parameters('$authentication')",
@@ -1074,8 +1041,8 @@
                           "inputs": {
                             "name": "varSlices",
                             "value": {
-                              "periodo": "@split(variables('varG')?['grupo_id'],'|')[3]",
-                              "banco": "@split(variables('varG')?['grupo_id'],'|')[0]"
+                              "periodo": "@split(items('Cada_grupo_E')?['grupo_id'],'|')[3]",
+                              "banco": "@split(items('Cada_grupo_E')?['grupo_id'],'|')[0]"
                             }
                           },
                           "runAfter": {}
@@ -1106,7 +1073,7 @@
                           "type": "AppendToArrayVariable",
                           "inputs": {
                             "name": "varDetalles",
-                            "value": "@concat('GRUPO ',variables('varG')?['grupo_id'],': ',coalesce(body('GE_Sync')?['codigo_error'],'XLSX_NO_VALIDO'))"
+                            "value": "@concat('GRUPO ',items('Cada_grupo_E')?['grupo_id'],': ',coalesce(body('GE_Sync')?['codigo_error'],'XLSX_NO_VALIDO'))"
                           },
                           "runAfter": {
                             "GE_Fijar_no_ok": [
@@ -1125,11 +1092,7 @@
                       }
                     }
                   },
-                  "runAfter": {
-                    "GE_Fijar_varG": [
-                      "Succeeded"
-                    ]
-                  }
+                  "runAfter": {}
                 },
                 "GE_CATCH": {
                   "type": "Scope",
@@ -1142,14 +1105,38 @@
                       },
                       "runAfter": {}
                     },
+                    "GE_Fallidas": {
+                      "type": "Query",
+                      "inputs": {
+                        "from": "@result('GE_TRY')",
+                        "where": "@and(equals(item()?['status'],'Failed'),not(contains(item()?['name'],'_Probar')))"
+                      },
+                      "runAfter": {
+                        "GE_Fijar_no_ok_catch": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "GE_Nombres_fallidas": {
+                      "type": "Select",
+                      "inputs": {
+                        "from": "@body('GE_Fallidas')",
+                        "select": "@item()?['name']"
+                      },
+                      "runAfter": {
+                        "GE_Fallidas": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
                     "GE_Anotar_catch": {
                       "type": "AppendToArrayVariable",
                       "inputs": {
                         "name": "varDetalles",
-                        "value": "@concat('GRUPO ',variables('varG')?['grupo_id'],': fallo técnico')"
+                        "value": "@concat('GRUPO ',items('Cada_grupo_E')?['grupo_id'],': fallo técnico en ',join(body('GE_Nombres_fallidas'),','),': ',take(coalesce(first(body('GE_Fallidas'))?['error']?['message'],''),160))"
                       },
                       "runAfter": {
-                        "GE_Fijar_no_ok_catch": [
+                        "GE_Nombres_fallidas": [
                           "Succeeded"
                         ]
                       }
@@ -1300,7 +1287,7 @@
             "parameters": {
               "dataset": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
               "parameters/method": "GET",
-              "parameters/uri": "@concat('_api/web/lists(guid''296c450a-25d6-415b-ad10-c909c74817cb'')','/items?$select=Id,Modified,CLAVE_TRANSACCION,BANCO,CUENTA_BANCARIA,MONEDA,FECHA_MOVIMIENTO,ESTADO_ASIGNACION,ESTUDIANTE,CODIGO_ESTUDIANTE,SOLICITADO_POR,SEDE_ASIGNACION,USUARIO_ASIGNACION,FECHA_HORA_ASIGNACION,OBSERVACION,ULTIMA_REVERSION_ID,LOTE_CARGA,FECHA_CARGA,ARCHIVO_ORIGEN&$orderby=Modified&$top=5000&$filter=',uriComponent(concat('Modified gt datetime''',body('Ciclo_API')?['cursor_desde'],'''')))",
+              "parameters/uri": "@concat('_api/web/lists(guid''296c450a-25d6-415b-ad10-c909c74817cb'')','/items?$select=Id,Modified,CLAVE_TRANSACCION,BANCO,CUENTA_BANCARIA,MONEDA,FECHA_MOVIMIENTO,ESTADO_ASIGNACION,ESTUDIANTE,CODIGO_ESTUDIANTE,SOLICITADO_POR,SEDE_ASIGNACION,USUARIO_ASIGNACION,FECHA_HORA_ASIGNACION,OBSERVACION,ULTIMA_REVERSION_ID,LOTE_CARGA,FECHA_CARGA,ARCHIVO_ORIGEN&$orderby=Modified&$top=1000&$filter=',uriComponent(concat('Modified gt datetime''',body('Ciclo_API')?['cursor_desde'],'''')))",
               "parameters/headers": {
                 "Accept": "application/json;odata=nometadata"
               }
@@ -1317,7 +1304,14 @@
               ]
             }
           },
-          "runAfter": {}
+          "runAfter": {
+            "Cada_extracto": [
+              "Succeeded",
+              "Failed",
+              "Skipped",
+              "TimedOut"
+            ]
+          }
         },
         "D_Hay_cambios": {
           "type": "If",
@@ -1400,22 +1394,6 @@
               "type": "Foreach",
               "foreach": "@if(equals(body('D_Clasificar')?['ok'],true),body('D_Clasificar')?['sucios'],createArray())",
               "actions": {
-                "GD_Fijar_varG": {
-                  "type": "SetVariable",
-                  "inputs": {
-                    "name": "varG",
-                    "value": {
-                      "grupo_id": "@items('Cada_sucio_D')?['grupo_id']",
-                      "rutas": "@items('Cada_sucio_D')?['rutas']",
-                      "parciales": "@createArray()",
-                      "filas": "@items('Cada_sucio_D')?['filas']",
-                      "verificar_xlsx": false,
-                      "finalizar": false,
-                      "parcial_lista": true
-                    }
-                  },
-                  "runAfter": {}
-                },
                 "GD_TRY": {
                   "type": "Scope",
                   "actions": {
@@ -1430,7 +1408,7 @@
                         "parameters": {
                           "dataset": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
                           "parameters/method": "GET",
-                          "parameters/uri": "@concat('_api/web/lists/getbytitle(''P10_Control'')','/items?$top=1&$filter=',uriComponent(concat('CLAVE_CONTROL eq ''',concat('GRUPO|',variables('varG')?['grupo_id']),'''')))",
+                          "parameters/uri": "@concat('_api/web/lists/getbytitle(''P10_Control'')','/items?$top=1&$filter=',uriComponent(concat('CLAVE_CONTROL eq ''',concat('GRUPO|',items('Cada_sucio_D')?['grupo_id']),'''')))",
                           "parameters/headers": {
                             "Accept": "application/json;odata=verbose"
                           }
@@ -1463,7 +1441,7 @@
                               "operationId": "GetFileContentByPath"
                             },
                             "parameters": {
-                              "path": "@variables('varG')?['rutas']?['ruta_estado']",
+                              "path": "@items('Cada_sucio_D')?['rutas']?['ruta_estado']",
                               "inferContentType": false
                             },
                             "authentication": "@parameters('$authentication')",
@@ -1529,16 +1507,16 @@
                         },
                         "body": {
                           "sede": "@outputs('P')?['sede']",
-                          "grupo_id": "@variables('varG')?['grupo_id']",
+                          "grupo_id": "@items('Cada_sucio_D')?['grupo_id']",
                           "ahora_local": "@convertTimeZone(utcNow(),'UTC','SA Western Standard Time','yyyy-MM-ddTHH:mm:ss')",
                           "estado_base64": "@outputs('GD_Estado')",
-                          "parciales_base64": "@variables('varG')?['parciales']",
-                          "filas": "@variables('varG')?['filas']",
+                          "parciales_base64": "@createArray()",
+                          "filas": "@items('Cada_sucio_D')?['filas']",
                           "control_grupo": "@outputs('GD_Control')",
-                          "verificar_xlsx": "@variables('varG')?['verificar_xlsx']",
+                          "verificar_xlsx": false,
                           "xlsx_actual_base64": null,
-                          "finalizar": "@variables('varG')?['finalizar']",
-                          "parcial_lista": "@variables('varG')?['parcial_lista']"
+                          "finalizar": false,
+                          "parcial_lista": true
                         },
                         "limit": {
                           "timeout": "PT10M"
@@ -1579,7 +1557,7 @@
                                   "operationId": "GetFileMetadataByPath"
                                 },
                                 "parameters": {
-                                  "path": "@variables('varG')?['rutas']?['ruta_xlsx']"
+                                  "path": "@items('Cada_sucio_D')?['rutas']?['ruta_xlsx']"
                                 },
                                 "authentication": "@parameters('$authentication')",
                                 "retryPolicy": {
@@ -1641,8 +1619,8 @@
                                     "operationId": "CreateFile"
                                   },
                                   "parameters": {
-                                    "folderPath": "@variables('varG')?['rutas']?['carpeta_xlsx']",
-                                    "name": "@variables('varG')?['rutas']?['nombre_xlsx']",
+                                    "folderPath": "@items('Cada_sucio_D')?['rutas']?['carpeta_xlsx']",
+                                    "name": "@items('Cada_sucio_D')?['rutas']?['nombre_xlsx']",
                                     "body": "@base64ToBinary(body('GD_Sync')?['xlsx_b64'])"
                                   },
                                   "authentication": "@parameters('$authentication')",
@@ -1688,7 +1666,7 @@
                                   "operationId": "GetFileMetadataByPath"
                                 },
                                 "parameters": {
-                                  "path": "@variables('varG')?['rutas']?['ruta_estado']"
+                                  "path": "@items('Cada_sucio_D')?['rutas']?['ruta_estado']"
                                 },
                                 "authentication": "@parameters('$authentication')",
                                 "retryPolicy": {
@@ -1750,8 +1728,8 @@
                                     "operationId": "CreateFile"
                                   },
                                   "parameters": {
-                                    "folderPath": "@variables('varG')?['rutas']?['carpeta_estado']",
-                                    "name": "@variables('varG')?['rutas']?['nombre_estado']",
+                                    "folderPath": "@items('Cada_sucio_D')?['rutas']?['carpeta_estado']",
+                                    "name": "@items('Cada_sucio_D')?['rutas']?['nombre_estado']",
                                     "body": "@base64ToBinary(body('GD_Sync')?['estado_b64'])"
                                   },
                                   "authentication": "@parameters('$authentication')",
@@ -1874,7 +1852,7 @@
                           "type": "AppendToArrayVariable",
                           "inputs": {
                             "name": "varDetalles",
-                            "value": "@concat('GRUPO ',variables('varG')?['grupo_id'],': ',coalesce(body('GD_Sync')?['codigo_error'],'XLSX_NO_VALIDO'))"
+                            "value": "@concat('GRUPO ',items('Cada_sucio_D')?['grupo_id'],': ',coalesce(body('GD_Sync')?['codigo_error'],'XLSX_NO_VALIDO'))"
                           },
                           "runAfter": {
                             "GD_Fijar_no_ok": [
@@ -1893,11 +1871,7 @@
                       }
                     }
                   },
-                  "runAfter": {
-                    "GD_Fijar_varG": [
-                      "Succeeded"
-                    ]
-                  }
+                  "runAfter": {}
                 },
                 "GD_CATCH": {
                   "type": "Scope",
@@ -1910,14 +1884,38 @@
                       },
                       "runAfter": {}
                     },
+                    "GD_Fallidas": {
+                      "type": "Query",
+                      "inputs": {
+                        "from": "@result('GD_TRY')",
+                        "where": "@and(equals(item()?['status'],'Failed'),not(contains(item()?['name'],'_Probar')))"
+                      },
+                      "runAfter": {
+                        "GD_Fijar_no_ok_catch": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "GD_Nombres_fallidas": {
+                      "type": "Select",
+                      "inputs": {
+                        "from": "@body('GD_Fallidas')",
+                        "select": "@item()?['name']"
+                      },
+                      "runAfter": {
+                        "GD_Fallidas": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
                     "GD_Anotar_catch": {
                       "type": "AppendToArrayVariable",
                       "inputs": {
                         "name": "varDetalles",
-                        "value": "@concat('GRUPO ',variables('varG')?['grupo_id'],': fallo técnico')"
+                        "value": "@concat('GRUPO ',items('Cada_sucio_D')?['grupo_id'],': fallo técnico en ',join(body('GD_Nombres_fallidas'),','),': ',take(coalesce(first(body('GD_Fallidas'))?['error']?['message'],''),160))"
                       },
                       "runAfter": {
-                        "GD_Fijar_no_ok_catch": [
+                        "GD_Nombres_fallidas": [
                           "Succeeded"
                         ]
                       }
@@ -1979,6 +1977,40 @@
               },
               "runAfter": {
                 "Cada_sucio_D": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "D_Falla_servicio": {
+              "type": "AppendToArrayVariable",
+              "inputs": {
+                "name": "varDetalles",
+                "value": "@concat('Lectura incremental: el servicio no respondió')"
+              },
+              "runAfter": {
+                "D_Clasificar": [
+                  "Failed",
+                  "TimedOut"
+                ]
+              }
+            },
+            "D_Rechazo": {
+              "type": "If",
+              "expression": "@not(equals(body('D_Clasificar')?['ok'],true))",
+              "actions": {
+                "Anotar_rechazo_D": {
+                  "type": "AppendToArrayVariable",
+                  "inputs": {
+                    "name": "varDetalles",
+                    "value": "@concat('Lectura incremental: ',coalesce(body('D_Clasificar')?['codigo_error'],'rechazada'))"
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "D_Clasificar": [
                   "Succeeded"
                 ]
               }
@@ -2124,22 +2156,6 @@
               "type": "Foreach",
               "foreach": "@if(equals(body('S_Clasificar')?['ok'],true),body('S_Clasificar')?['sucios'],createArray())",
               "actions": {
-                "GM_Fijar_varG": {
-                  "type": "SetVariable",
-                  "inputs": {
-                    "name": "varG",
-                    "value": {
-                      "grupo_id": "@items('Cada_sucio_S')?['grupo_id']",
-                      "rutas": "@items('Cada_sucio_S')?['rutas']",
-                      "parciales": "@createArray()",
-                      "filas": "@items('Cada_sucio_S')?['filas']",
-                      "verificar_xlsx": "@items('Cada_sucio_S')?['verificar_xlsx']",
-                      "finalizar": "@items('Cada_sucio_S')?['finalizar']",
-                      "parcial_lista": false
-                    }
-                  },
-                  "runAfter": {}
-                },
                 "GM_TRY": {
                   "type": "Scope",
                   "actions": {
@@ -2154,7 +2170,7 @@
                         "parameters": {
                           "dataset": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
                           "parameters/method": "GET",
-                          "parameters/uri": "@concat('_api/web/lists/getbytitle(''P10_Control'')','/items?$top=1&$filter=',uriComponent(concat('CLAVE_CONTROL eq ''',concat('GRUPO|',variables('varG')?['grupo_id']),'''')))",
+                          "parameters/uri": "@concat('_api/web/lists/getbytitle(''P10_Control'')','/items?$top=1&$filter=',uriComponent(concat('CLAVE_CONTROL eq ''',concat('GRUPO|',items('Cada_sucio_S')?['grupo_id']),'''')))",
                           "parameters/headers": {
                             "Accept": "application/json;odata=verbose"
                           }
@@ -2187,7 +2203,7 @@
                               "operationId": "GetFileContentByPath"
                             },
                             "parameters": {
-                              "path": "@variables('varG')?['rutas']?['ruta_estado']",
+                              "path": "@items('Cada_sucio_S')?['rutas']?['ruta_estado']",
                               "inferContentType": false
                             },
                             "authentication": "@parameters('$authentication')",
@@ -2254,7 +2270,7 @@
                               "operationId": "GetFileContentByPath"
                             },
                             "parameters": {
-                              "path": "@variables('varG')?['rutas']?['ruta_xlsx']",
+                              "path": "@items('Cada_sucio_S')?['rutas']?['ruta_xlsx']",
                               "inferContentType": false
                             },
                             "authentication": "@parameters('$authentication')",
@@ -2301,16 +2317,16 @@
                         },
                         "body": {
                           "sede": "@outputs('P')?['sede']",
-                          "grupo_id": "@variables('varG')?['grupo_id']",
+                          "grupo_id": "@items('Cada_sucio_S')?['grupo_id']",
                           "ahora_local": "@convertTimeZone(utcNow(),'UTC','SA Western Standard Time','yyyy-MM-ddTHH:mm:ss')",
                           "estado_base64": "@outputs('GM_Estado')",
-                          "parciales_base64": "@variables('varG')?['parciales']",
-                          "filas": "@variables('varG')?['filas']",
+                          "parciales_base64": "@createArray()",
+                          "filas": "@items('Cada_sucio_S')?['filas']",
                           "control_grupo": "@outputs('GM_Control')",
-                          "verificar_xlsx": "@variables('varG')?['verificar_xlsx']",
+                          "verificar_xlsx": "@items('Cada_sucio_S')?['verificar_xlsx']",
                           "xlsx_actual_base64": "@outputs('GM_Xlsx')",
-                          "finalizar": "@variables('varG')?['finalizar']",
-                          "parcial_lista": "@variables('varG')?['parcial_lista']"
+                          "finalizar": "@items('Cada_sucio_S')?['finalizar']",
+                          "parcial_lista": false
                         },
                         "limit": {
                           "timeout": "PT10M"
@@ -2351,7 +2367,7 @@
                                   "operationId": "GetFileMetadataByPath"
                                 },
                                 "parameters": {
-                                  "path": "@variables('varG')?['rutas']?['ruta_xlsx']"
+                                  "path": "@items('Cada_sucio_S')?['rutas']?['ruta_xlsx']"
                                 },
                                 "authentication": "@parameters('$authentication')",
                                 "retryPolicy": {
@@ -2413,8 +2429,8 @@
                                     "operationId": "CreateFile"
                                   },
                                   "parameters": {
-                                    "folderPath": "@variables('varG')?['rutas']?['carpeta_xlsx']",
-                                    "name": "@variables('varG')?['rutas']?['nombre_xlsx']",
+                                    "folderPath": "@items('Cada_sucio_S')?['rutas']?['carpeta_xlsx']",
+                                    "name": "@items('Cada_sucio_S')?['rutas']?['nombre_xlsx']",
                                     "body": "@base64ToBinary(body('GM_Sync')?['xlsx_b64'])"
                                   },
                                   "authentication": "@parameters('$authentication')",
@@ -2460,7 +2476,7 @@
                                   "operationId": "GetFileMetadataByPath"
                                 },
                                 "parameters": {
-                                  "path": "@variables('varG')?['rutas']?['ruta_estado']"
+                                  "path": "@items('Cada_sucio_S')?['rutas']?['ruta_estado']"
                                 },
                                 "authentication": "@parameters('$authentication')",
                                 "retryPolicy": {
@@ -2522,8 +2538,8 @@
                                     "operationId": "CreateFile"
                                   },
                                   "parameters": {
-                                    "folderPath": "@variables('varG')?['rutas']?['carpeta_estado']",
-                                    "name": "@variables('varG')?['rutas']?['nombre_estado']",
+                                    "folderPath": "@items('Cada_sucio_S')?['rutas']?['carpeta_estado']",
+                                    "name": "@items('Cada_sucio_S')?['rutas']?['nombre_estado']",
                                     "body": "@base64ToBinary(body('GM_Sync')?['estado_b64'])"
                                   },
                                   "authentication": "@parameters('$authentication')",
@@ -2646,7 +2662,7 @@
                           "type": "AppendToArrayVariable",
                           "inputs": {
                             "name": "varDetalles",
-                            "value": "@concat('GRUPO ',variables('varG')?['grupo_id'],': ',coalesce(body('GM_Sync')?['codigo_error'],'XLSX_NO_VALIDO'))"
+                            "value": "@concat('GRUPO ',items('Cada_sucio_S')?['grupo_id'],': ',coalesce(body('GM_Sync')?['codigo_error'],'XLSX_NO_VALIDO'))"
                           },
                           "runAfter": {
                             "GM_Fijar_no_ok": [
@@ -2665,11 +2681,7 @@
                       }
                     }
                   },
-                  "runAfter": {
-                    "GM_Fijar_varG": [
-                      "Succeeded"
-                    ]
-                  }
+                  "runAfter": {}
                 },
                 "GM_CATCH": {
                   "type": "Scope",
@@ -2682,14 +2694,38 @@
                       },
                       "runAfter": {}
                     },
+                    "GM_Fallidas": {
+                      "type": "Query",
+                      "inputs": {
+                        "from": "@result('GM_TRY')",
+                        "where": "@and(equals(item()?['status'],'Failed'),not(contains(item()?['name'],'_Probar')))"
+                      },
+                      "runAfter": {
+                        "GM_Fijar_no_ok_catch": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
+                    "GM_Nombres_fallidas": {
+                      "type": "Select",
+                      "inputs": {
+                        "from": "@body('GM_Fallidas')",
+                        "select": "@item()?['name']"
+                      },
+                      "runAfter": {
+                        "GM_Fallidas": [
+                          "Succeeded"
+                        ]
+                      }
+                    },
                     "GM_Anotar_catch": {
                       "type": "AppendToArrayVariable",
                       "inputs": {
                         "name": "varDetalles",
-                        "value": "@concat('GRUPO ',variables('varG')?['grupo_id'],': fallo técnico')"
+                        "value": "@concat('GRUPO ',items('Cada_sucio_S')?['grupo_id'],': fallo técnico en ',join(body('GM_Nombres_fallidas'),','),': ',take(coalesce(first(body('GM_Fallidas'))?['error']?['message'],''),160))"
                       },
                       "runAfter": {
-                        "GM_Fijar_no_ok_catch": [
+                        "GM_Nombres_fallidas": [
                           "Succeeded"
                         ]
                       }

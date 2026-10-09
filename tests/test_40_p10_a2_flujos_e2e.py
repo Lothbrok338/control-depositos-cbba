@@ -639,23 +639,24 @@ def test_un_evento_perdido_se_concilia_en_el_ciclo_completo(b):
     assert fila["ESTADO"] == "CONFIRMADO" and fila["ESTUDIANTE"] == "FANTASMA"
 
 
-def test_filas_de_la_lista_sin_estado_retienen_el_cursor_hasta_que_llega_el_extracto(b):
-    """P8 cargó la lista antes de que P10 pudiera incorporar el extracto (servicio caído): nada se pierde ni se da por visto."""
+def test_filas_de_la_lista_sin_estado_no_retienen_el_cursor_y_se_aplican_cuando_llega_el_extracto(b):
+    """P8 cargó la lista antes de que P10 pudiera incorporar el extracto (servicio caído): nada se pierde ni se da por visto.
+    El cursor NO se queda atrás (retenerlo dejaba la lectura pegada a un lote viejo); la conciliación del BANCO+MES aplica esas filas."""
     from p10 import sincronizacion as S
     r = S.procesar_extracto(FIXTURE.read_bytes(), FIXTURE.name, "CBBA", EXTRACTO, "2026-10-08T09:00:00")
     ref = S.sincronizar_grupo("CBBA", GID, None, [base64.b64decode(r["grupos"][0]["parcial_b64"])], None, "2026-10-08T09:00:00")
     _, _, filas, _ = E.entradas_generador(E.desempaquetar(base64.b64decode(ref["estado_b64"])))
-    b.t.depositos.reloj = b.t._local() - __import__("datetime").timedelta(hours=1)
+    b.t.depositos.reloj = b.t._local() - __import__("datetime").timedelta(minutes=30)
     b.t.depositos.cargar(filas)
     b.t.depositos.confirmar(sorted(i["CLAVE_TRANSACCION"] for i in b.t.depositos.items.values())[2], estudiante="ANTES")
     b.soltar()
     b.t.fallar("api", "/p10/extracto", veces=1, http=503)
     r1 = b.ciclo()
-    assert r1.estado_final == "Failed" and b.control("LOCK")["CURSOR_LISTA"] == "2026-10-08T12:59:59Z"   # queda justo antes de esas filas
+    assert r1.estado_final == "Failed" and b.control("LOCK")["CURSOR_LISTA"] >= "2026-10-08T13:29:59Z"      # el cursor siguió su camino
     r2 = b.ciclo("2026-10-08T10:15:00")
-    assert r2.estado_final == "Succeeded" and b.control("LOCK")["CURSOR_LISTA"] > "2026-10-08T12:59:59Z"
+    assert r2.estado_final == "Succeeded"
     fila = next(f for f in b.auditoria() if f["ESTADO"] == "CONFIRMADO")
-    assert fila["ESTUDIANTE"] == "ANTES"
+    assert fila["ESTUDIANTE"] == "ANTES"                                       # lo aplicó la conciliación posterior al extracto
 
 
 def test_el_flujo_encola_la_conciliacion_del_banco_y_mes_cuando_un_extracto_cambia_un_grupo(defs):
@@ -674,3 +675,20 @@ def test_una_conciliacion_no_reescribe_nada_si_todo_coincide(b):
     b.t.registro.clear()
     b.ciclo("2026-10-10T06:00:00")                                           # segunda noche: nada cambió
     assert [op for op, _ in b.t.registro if op in ("CreateFile", "UpdateFile")] == []
+
+
+def test_la_fase_de_la_lista_espera_a_la_de_extractos(defs):
+    """Prueba real: D_GET (primera acción de su secuencia) tenía runAfter vacío y corría EN PARALELO con el listado y los extractos."""
+    main = defs[0]["actions"]["MAIN"]["actions"]
+    sin_dependencia = [n for n, a in main.items() if not a.get("runAfter")]
+    assert sin_dependencia == ["Cada_mes_listar"]
+    assert "Cada_extracto" in main["D_GET"]["runAfter"]
+
+
+def test_un_fallo_tecnico_de_grupo_dice_que_accion_fallo(b):
+    """Prueba real: el grupo fallaba antes de llamar al servicio y el error solo decía «fallo técnico», sin dónde."""
+    b.soltar()
+    b.t.fallar("CreateFile", "ESTADO_P10", veces=1)
+    r = b.ciclo()
+    assert r.estado_final == "Failed" and r.error_final[0] == "P10_CICLO_CON_ERRORES"
+    assert "fallo técnico en GE_Escribir_ESTADO" in r.error_final[1]

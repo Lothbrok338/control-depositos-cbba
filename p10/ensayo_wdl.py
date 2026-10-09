@@ -412,7 +412,11 @@ class Ejecucion:
             xs = a[0] if len(a) == 1 and isinstance(a[0], list) else a
             return (min if f == "min" else max)(xs)
         if f == "result":
-            raise ErrorExpresion("result() no soportado en el ensayo")
+            if a[0] not in self.nombres:
+                raise ErrorExpresion(f"acción inexistente {a[0]}")
+            hijas = self.nombres[a[0]].get("actions", {})
+            return [{"name": h, "status": self.estados.get(h, "Skipped"), **({"error": self.errores[h]} if h in self.errores else {})}
+                    for h in hijas]
         raise ErrorExpresion(f"función sin implementar {f}")
 
     # ---- ejecución

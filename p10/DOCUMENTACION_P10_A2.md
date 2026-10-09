@@ -116,7 +116,7 @@ Columnas (todas texto o número; **ninguna fecha de SharePoint**, para evitar co
 | Flujo, acción `P` | `url_api` | `https://<PEGAR_DOMINIO_P10_RAILWAY>.up.railway.app` → **tu dominio de Railway** | una sola vez |
 | Flujo, acción `P` | `sede` | `CBBA` (igual que P0) | nunca |
 | Flujo, acción `P` | `prefijo_servidor` | `/personal/gtorricot_univalle_edu/Documents` | si cambia la biblioteca de OneDrive |
-| Flujo, acción `P` | `mes_inicio` | `2026-09` — primer mes que el ciclo completo mira en PROCESADOS (hasta 12 meses hacia atrás) | **decidido por Gabriel: 2026-09** |
+| Flujo, acción `P` | `mes_inicio` | `2026-08` — primer mes que el ciclo completo mira en PROCESADOS (hasta 12 meses hacia atrás) | **decidido por Gabriel: 2026-08** |
 | Flujo, disparador | horas / minutos | 06–22 / 0, 15, 30, 45 (hora de Bolivia) | para ajustar consumo |
 | OneDrive | `/CONTROL_DEPOSITOS/P10_CONFIG/P10_API_TOKEN.txt` | el token (solo el texto) | al rotar el token |
 | Railway | `P10_API_TOKEN` | el mismo token (≥ 16 caracteres) | al rotar el token |
@@ -209,8 +209,8 @@ En la raíz del repositorio: `P10_SINCRONIZAR_HISTORICO_V1.zip` y `P10_PROVISION
 
 | Archivo | SHA-256 |
 |---|---|
-| `P10_SINCRONIZAR_HISTORICO_V1.zip` | `9ce5abf8e6f14602ef544b8be0fc6559642a69f21cd41a7f4a635178d0d75515` |
-| `P10_PROVISIONAR_CONTROL_V1.zip` | `c8d9a4f2c1f262282321d6bff2db4ca4379af3dbd1d6a1b9bc8bb55a4e0b9891` |
+| `P10_SINCRONIZAR_HISTORICO_V1.zip` | `a5e3cbc1ab58146880cbbd5aa5d39203676672e8cf9252a9af8a153b61702d1e` |
+| `P10_PROVISIONAR_CONTROL_V1.zip` | `7fe0c5347628b3b3b8375417b15a4033930922dd966029dbe15999d2fc1530c7` |
 | `p10/Dockerfile` | `f25c396ec98c9d96566397866880a8eb05ed4c00b9fd13d3f7a6947fcdddf8d9` |
 | `p10/railway.json` | `d19c8462435c97078a7e3c0d17a0ceba1c2a54ca62a2bc40438934c5b8b0de6f` |
 | `p10/Dockerfile.dockerignore` | `76ce64ee79a9dcb8ea8d64de84af09e5393bdfc1b330cf9da68bbbde75172f67` |
@@ -329,3 +329,28 @@ Quien tenga solo «Puede ver» no puede cambiar el archivo; el flujo (con permis
 7. **Reconstrucción:** requiere los extractos originales en PROCESADOS (sección 11).
 8. **Versión de la lista de permisos de SharePoint personal:** `P10_Control` vive en el sitio personal de OneDrive igual que `Depositos_Activos`.
 9. **No validado en tenant.** Lo validado es la lógica (119 pruebas, extractos reales, motor real de P0, generador A.1 sin cambios) y el JSON de los flujos contra un intérprete estricto.
+
+
+## 20. Corrección tras la primera prueba operativa en tenant (2026-10-09)
+
+**Síntoma.** El histórico inicial se generó bien, pero un depósito confirmado desde Power Apps/P9 seguía como `DISPONIBLE` en el XLSX después de varios ciclos. En los logs de `p10-api` aparecían `ciclo`, `delta` y `plan` en cada ciclo y **nunca** `sincronizar` ni `clasificar`.
+
+**Qué mostraron los logs reales de Railway** (no era que `delta` devolviera cero grupos):
+* cada llamada a `/p10/delta` recibía ~2,1 MB (≈5000 filas de `Depositos_Activos`, el tope de la consulta) y respondía ~1,6 MB: devolvía grupos sucios con miles de filas, **el mismo lote cada ciclo**;
+* la lectura incremental empezaba «desde ayer» y el cursor **no avanzaba** (lo retenían las filas de grupos sin estado y los fallos de grupo), así que la consulta, ordenada de la más antigua a la más nueva y limitada a 5000 filas, volvía siempre al mismo lote y las filas nuevas —la confirmación— quedaban fuera de la página;
+* en cada ciclo `delta` llegaba **antes** que `plan`: la lectura de la lista (`D_GET`, primera acción de su secuencia) tenía `runAfter` vacío y corría **en paralelo** con el listado de PROCESADOS y los extractos. Consecuencia: `Cada_slice` leía `varSlices` antes de que la fase de extractos lo llenara, así que la conciliación BANCO+MES posterior al extracto **nunca corrió** (por eso no hubo `clasificar`) y los grupos nuevos quedaron sin la foto operativa de la lista.
+
+**Cambios (solo P10-A.2):**
+| Dónde | Cambio |
+|---|---|
+| Flujo | `D_GET` espera a `Cada_extracto` (`runAfter`): la fase de la lista corre **después** de la de extractos y `varSlices` está completo. |
+| Flujo | Página de la lectura incremental: `$top=1000` (antes 5000), de la fila más antigua a la más nueva. |
+| Flujo | El bloque de grupo ya no copia `filas`/`rutas` a una variable (`varG`): usa directamente el elemento del bucle. |
+| Flujo | Un fallo técnico de grupo dice **qué acción falló** y su mensaje corto (`GRUPO …: fallo técnico en <acción>: <mensaje>`); `D_Clasificar` ya no falla en silencio. |
+| `plan.delta` | El cursor **ya no se queda atrás** por filas de grupos sin estado (se concilian por BANCO+MES cuando su extracto crea el grupo y cada noche). Si la página viene llena, la última hora se vuelve a leer. Una fila malformada ya no tumba la página. |
+| `plan.ciclo` | Sin cursor (primera vez) se lee solo la última hora (antes, el día anterior). **Auto-conciliación:** todo grupo `OK` que nunca se conciliara con la lista (`HASH_OPERATIVO` vacío) se encola como BANCO+MES; así los grupos ya creados se corrigen en el siguiente ciclo, sin esperar a la noche. |
+| `plan.clasificar` | Un grupo nunca conciliado sin filas en la lista queda constatado (lista vacía) y no se reintenta cada ciclo. |
+
+**Pruebas.** Solo las de P10-A.2 (`tests/test_37`–`test_40`: 126 en verde); nuevas: página llena del delta, fila malformada, auto-conciliación, orden de las fases del flujo, diagnóstico de la acción que falló. El intérprete local (`p10/ensayo_wdl.py`) ahora soporta `result()`.
+
+**Despliegue.** Cambia el servicio **y** el flujo: hay que redeplegar `p10-api` (rama `deploy/p10-api`) **y** actualizar `P10_SINCRONIZAR_HISTORICO_V1.zip` (importar como *Actualizar*, conservando la conexión y el flujo existente). SHA-256 del ZIP: `a5e3cbc1ab58146880cbbd5aa5d39203676672e8cf9252a9af8a153b61702d1e` (170 acciones).
