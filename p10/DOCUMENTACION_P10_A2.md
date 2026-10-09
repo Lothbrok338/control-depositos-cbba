@@ -320,7 +320,7 @@ Quien tenga solo «Puede ver» no puede cambiar el archivo; el flujo (con permis
 
 ## 19. Decisiones y riesgos abiertos (te corresponde decidir o vigilar)
 
-1. **`mes_inicio` = `2026-09` (decidido por Gabriel).** El histórico se construye desde septiembre de 2026 con los extractos que ya están en PROCESADOS.
+1. **`mes_inicio` = `2026-08` (decidido por Gabriel; pasa a `2027-01` en el go-live).** El histórico se construye desde agosto de 2026 con los extractos que ya están en PROCESADOS.
 2. **Comportamientos de conectores sin verificar en tenant** (pruebas 5, 6, 8 de 18.5): crear subcarpetas con *Crear archivo*, *Actualizar archivo* por id y el listado `Folders?$expand=Files`. El intérprete local es una aproximación: **no certifica** el comportamiento de Microsoft.
 3. **Cuenta de servicio:** hoy es la tuya (18.6).
 4. **Extractos de meses antiguos subidos tarde** (carpeta de más de 2 meses atrás) esperan al ciclo completo del día siguiente.
@@ -328,7 +328,7 @@ Quien tenga solo «Puede ver» no puede cambiar el archivo; el flujo (con permis
 6. **Token en un archivo de OneDrive:** evita pegarlo en 6 acciones, pero es un archivo de texto en tu OneDrive. Alternativa (más segura, más trabajo): mover los flujos a una *Solution* y usar una variable de entorno de tipo *Secret*.
 7. **Reconstrucción:** requiere los extractos originales en PROCESADOS (sección 11).
 8. **Versión de la lista de permisos de SharePoint personal:** `P10_Control` vive en el sitio personal de OneDrive igual que `Depositos_Activos`.
-9. **No validado en tenant.** Lo validado es la lógica (119 pruebas, extractos reales, motor real de P0, generador A.1 sin cambios) y el JSON de los flujos contra un intérprete estricto.
+9. **(Superado: validado en operación real el 2026-10-09, ver §21.)** Antes del despliegue solo estaba validado es la lógica (119 pruebas, extractos reales, motor real de P0, generador A.1 sin cambios) y el JSON de los flujos contra un intérprete estricto.
 
 
 ## 20. Corrección tras la primera prueba operativa en tenant (2026-10-09)
