@@ -59,7 +59,7 @@
       "type": "Compose",
       "inputs": {
         "sede": "CBBA",
-        "url_api": "https://<PEGAR_DOMINIO_P10_RAILWAY>.up.railway.app",
+        "url_api": "https://p10-api-production.up.railway.app",
         "prefijo_servidor": "/personal/gtorricot_univalle_edu/Documents",
         "mes_inicio": "2026-09",
         "meses": {

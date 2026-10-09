@@ -39,7 +39,7 @@ ZIP_PROV = "P10_PROVISIONAR_CONTROL_V1.zip"
 
 SEDE = P0.SEDE
 MARCADOR_DOMINIO = "<PEGAR_DOMINIO_P10_RAILWAY>"
-URL_API = f"https://{MARCADOR_DOMINIO}.up.railway.app"
+URL_API = "https://p10-api-production.up.railway.app"     # servicio p10-api desplegado en Railway (CONTROL-DEPOSITOS)
 BASE = "/CONTROL_DEPOSITOS"
 RUTA_TOKEN = f"{BASE}/P10_CONFIG/P10_API_TOKEN.txt"
 PREFIJO_SERVIDOR = "/personal/gtorricot_univalle_edu/Documents"      # ruta del servidor de la biblioteca de OneDrive del sitio de P9
