@@ -86,7 +86,7 @@ def a_utc(ahora_local):
     return (_ahora(ahora_local) + timedelta(hours=4)).strftime(FORMATO_UTC)
 
 
-def ciclo(ahora_local, control, mes_inicio="2026-09", forzar_completo=False):
+def ciclo(ahora_local, control, mes_inicio="2026-08", forzar_completo=False):
     """Primera decisión del ciclo: bloqueo, modo, qué listar en PROCESADOS, desde dónde leer la lista y qué conciliar por completo."""
     ahora = _ahora(ahora_local)
     hoy, actual = ahora.strftime("%Y-%m-%d"), ahora.strftime("%Y-%m")

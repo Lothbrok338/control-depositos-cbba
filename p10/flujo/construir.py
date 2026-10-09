@@ -44,7 +44,7 @@ BASE = "/CONTROL_DEPOSITOS"
 RUTA_TOKEN = f"{BASE}/P10_CONFIG/P10_API_TOKEN.txt"
 PREFIJO_SERVIDOR = "/personal/gtorricot_univalle_edu/Documents"      # ruta del servidor de la biblioteca de OneDrive del sitio de P9
 CARPETA_PROCESADOS = f"{BASE}/P0_EXTRACTOS/PROCESADOS"
-MES_INICIO = "2026-09"                                               # primer mes que el ciclo completo mira en PROCESADOS
+MES_INICIO = "2026-08"                                               # primer mes que el ciclo completo mira en PROCESADOS
 INTERVALO_MINUTOS = 15
 HORAS_ACTIVAS = list(range(6, 23))                                   # 06:00–22:45 hora de Bolivia; el primer ciclo del día es el completo
 MINUTOS_ZONA = "SA Western Standard Time"
@@ -373,11 +373,16 @@ def construir_sync(campos_select):
                                 secuencia(Terminar_ciclo_invalido=termina("Failed", runError={
                                     "code": "@coalesce(body('Ciclo_API')?['codigo_error'],'CICLO_INVALIDO')",
                                     "message": "@coalesce(body('Ciclo_API')?['mensaje'],'El servicio p10-api no devolvió un ciclo válido.')"}))))))
+    acciones["Lock_sin_id"] = si(
+        "@empty(string(coalesce(body('Ciclo_API')?['lock']?['item_id'],'')))",
+        secuencia(Terminar_sin_id=termina("Failed", runError={
+            "code": "LOCK_SIN_ID", "message": "No se pudo identificar el elemento LOCK de P10_Control; no se toma el bloqueo."})))
+    acciones["Lock_sin_id"]["runAfter"] = {"Ciclo_no_continua": ["Succeeded"]}
     acciones["Adquirir_lock"] = con_ra(ambito(secuencia(Tomar_lock=sp(
         "POST", uri_control(["/items(", ("x", item_lock), ")"]),
         {**JSON_ESCRIBIR, "X-HTTP-Method": "MERGE", "IF-MATCH": "@body('Ciclo_API')?['lock']?['etag']"},
         "@concat('{\"LOCK_HASTA\":\"',body('Ciclo_API')?['lock']?['hasta_nuevo'],'\",\"LOCK_ID\":\"',workflow()?['run']?['name'],'\"}')"))),
-        Ciclo_no_continua=["Succeeded"])
+        Lock_sin_id=["Succeeded"])
     acciones["Lock_perdido"] = con_ra(termina("Succeeded"), Adquirir_lock=FALLOS)     # otra ejecución tomó el bloqueo primero
     acciones["MAIN"] = con_ra(ambito(main), Adquirir_lock=["Succeeded"])
     acciones["CATCH_MAIN"] = con_ra(ambito({"Anotar_general": anotar(
@@ -385,7 +390,10 @@ def construir_sync(campos_select):
     marcar = ("if(and(equals(body('Ciclo_API')?['modo'],'COMPLETO'),equals(actions('MAIN')?['status'],'Succeeded'),equals(length(variables('varDetalles')),0)),"
               "concat('{\"LOCK_HASTA\":\"\",\"LOCK_ID\":\"\",\"ULTIMA_COMPLETA\":\"',body('Ciclo_API')?['hoy'],'\"}'),"
               "'{\"LOCK_HASTA\":\"\",\"LOCK_ID\":\"\"}')")
-    acciones["Liberar_lock"] = con_ra(sp("POST", uri_control(["/items(", ("x", item_lock), ")"]), MERGE, "@" + marcar), MAIN=TODOS, CATCH_MAIN=TODOS)
+    # Solo se libera lo que ESTA ejecución adquirió: si falló antes (o perdió la carrera) no hay nada que liberar.
+    acciones["Liberar_lock"] = con_ra(si(
+        "@equals(actions('Adquirir_lock')?['status'],'Succeeded')",
+        secuencia(Liberar=sp("POST", uri_control(["/items(", ("x", item_lock), ")"]), MERGE, "@" + marcar))), MAIN=TODOS, CATCH_MAIN=TODOS)
     acciones["Cierre"] = con_ra(si("@greater(length(variables('varDetalles')),0)", secuencia(Terminar_con_errores=termina("Failed", runError={
         "code": "P10_CICLO_CON_ERRORES",
         "message": "@concat(string(length(variables('varDetalles'))),' fallo(s): ',take(join(variables('varDetalles'),'; '),600))"}))),

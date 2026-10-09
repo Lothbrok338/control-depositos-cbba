@@ -61,7 +61,7 @@
         "sede": "CBBA",
         "url_api": "https://p10-api-production.up.railway.app",
         "prefijo_servidor": "/personal/gtorricot_univalle_edu/Documents",
-        "mes_inicio": "2026-09",
+        "mes_inicio": "2026-08",
         "meses": {
           "01": "01_ENERO",
           "02": "02_FEBRERO",
@@ -302,6 +302,31 @@
         ]
       }
     },
+    "Lock_sin_id": {
+      "type": "If",
+      "expression": "@empty(string(coalesce(body('Ciclo_API')?['lock']?['item_id'],'')))",
+      "actions": {
+        "Terminar_sin_id": {
+          "type": "Terminate",
+          "inputs": {
+            "runStatus": "Failed",
+            "runError": {
+              "code": "LOCK_SIN_ID",
+              "message": "No se pudo identificar el elemento LOCK de P10_Control; no se toma el bloqueo."
+            }
+          },
+          "runAfter": {}
+        }
+      },
+      "else": {
+        "actions": {}
+      },
+      "runAfter": {
+        "Ciclo_no_continua": [
+          "Succeeded"
+        ]
+      }
+    },
     "Adquirir_lock": {
       "type": "Scope",
       "actions": {
@@ -334,7 +359,7 @@
         }
       },
       "runAfter": {
-        "Ciclo_no_continua": [
+        "Lock_sin_id": [
           "Succeeded"
         ]
       }
@@ -2781,29 +2806,39 @@
       }
     },
     "Liberar_lock": {
-      "type": "OpenApiConnection",
-      "inputs": {
-        "host": {
-          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
-          "connectionName": "shared_sharepointonline",
-          "operationId": "HttpRequest"
-        },
-        "parameters": {
-          "dataset": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
-          "parameters/method": "POST",
-          "parameters/uri": "@concat('_api/web/lists/getbytitle(''P10_Control'')','/items(',string(body('Ciclo_API')?['lock']?['item_id']),')')",
-          "parameters/headers": {
-            "Accept": "application/json;odata=nometadata",
-            "Content-Type": "application/json;odata=nometadata",
-            "X-HTTP-Method": "MERGE",
-            "IF-MATCH": "*"
+      "type": "If",
+      "expression": "@equals(actions('Adquirir_lock')?['status'],'Succeeded')",
+      "actions": {
+        "Liberar": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
+              "parameters/method": "POST",
+              "parameters/uri": "@concat('_api/web/lists/getbytitle(''P10_Control'')','/items(',string(body('Ciclo_API')?['lock']?['item_id']),')')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata",
+                "Content-Type": "application/json;odata=nometadata",
+                "X-HTTP-Method": "MERGE",
+                "IF-MATCH": "*"
+              },
+              "parameters/body": "@if(and(equals(body('Ciclo_API')?['modo'],'COMPLETO'),equals(actions('MAIN')?['status'],'Succeeded'),equals(length(variables('varDetalles')),0)),concat('{\"LOCK_HASTA\":\"\",\"LOCK_ID\":\"\",\"ULTIMA_COMPLETA\":\"',body('Ciclo_API')?['hoy'],'\"}'),'{\"LOCK_HASTA\":\"\",\"LOCK_ID\":\"\"}')"
+            },
+            "authentication": "@parameters('$authentication')",
+            "retryPolicy": {
+              "type": "none"
+            }
           },
-          "parameters/body": "@if(and(equals(body('Ciclo_API')?['modo'],'COMPLETO'),equals(actions('MAIN')?['status'],'Succeeded'),equals(length(variables('varDetalles')),0)),concat('{\"LOCK_HASTA\":\"\",\"LOCK_ID\":\"\",\"ULTIMA_COMPLETA\":\"',body('Ciclo_API')?['hoy'],'\"}'),'{\"LOCK_HASTA\":\"\",\"LOCK_ID\":\"\"}')"
-        },
-        "authentication": "@parameters('$authentication')",
-        "retryPolicy": {
-          "type": "none"
+          "runAfter": {}
         }
+      },
+      "else": {
+        "actions": {}
       },
       "runAfter": {
         "MAIN": [
