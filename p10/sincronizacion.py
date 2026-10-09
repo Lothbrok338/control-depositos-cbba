@@ -138,7 +138,7 @@ def procesar_extracto(contenido, nombre, sede, ruta, ahora_local, intentos_previ
     """
     nombre, sha = nucleo.nombre_seguro(nombre), nucleo.sha256_bytes(contenido)
     control = {"CLAVE_CONTROL": PL.clave_extracto(ruta), "TIPO": "EXTRACTO", "PERIODO": _periodo_de_ruta(ruta, ahora_local),
-               "BYTES": len(contenido), "SHA256": sha, "ULTIMA_SYNC": ahora_local}
+               "BYTES": len(contenido), "HASH_EXTRACTO": sha, "ULTIMA_SYNC": ahora_local}
     try:
         if os.path.splitext(nombre)[1].lower() not in nucleo.EXTENSIONES:
             raise ErrorP10("EXTENSION_NO_SOPORTADA", "Solo se incorporan extractos .xls/.xlsx.", "ARCHIVO")

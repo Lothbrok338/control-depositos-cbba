@@ -220,7 +220,7 @@
           }
         },
         {
-          "nombre": "SHA256",
+          "nombre": "HASH_EXTRACTO",
           "indexada": false,
           "unica": false,
           "crear": {
@@ -228,7 +228,7 @@
               "__metadata": {
                 "type": "SP.XmlSchemaFieldCreationInformation"
               },
-              "SchemaXml": "<Field Type=\"Text\" DisplayName=\"SHA256\" Name=\"SHA256\" StaticName=\"SHA256\" MaxLength=\"64\" />",
+              "SchemaXml": "<Field Type=\"Text\" DisplayName=\"HASH_EXTRACTO\" Name=\"HASH_EXTRACTO\" StaticName=\"HASH_EXTRACTO\" MaxLength=\"64\" />",
               "Options": 9
             }
           }

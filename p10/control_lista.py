@@ -26,7 +26,7 @@ CAMPOS_CONTROL = (
     ("HASH_INTENTO", "Text", 64, False, False),
     ("HASH_ESTADO", "Text", 64, False, False),
     ("HASH_XLSX", "Text", 64, False, False),
-    ("SHA256", "Text", 64, False, False),
+    ("HASH_EXTRACTO", "Text", 64, False, False),
     ("CURSOR_LISTA", "Text", 20, False, False),
     ("ULTIMA_SYNC", "Text", 19, False, False),
     ("RECONSTRUIR_DESDE", "Text", 19, False, False),
