@@ -61,7 +61,7 @@
         "sede": "CBBA",
         "url_api": "https://<PEGAR_DOMINIO_P10_RAILWAY>.up.railway.app",
         "prefijo_servidor": "/personal/gtorricot_univalle_edu/Documents",
-        "mes_inicio": "2026-01",
+        "mes_inicio": "2026-09",
         "meses": {
           "01": "01_ENERO",
           "02": "02_FEBRERO",

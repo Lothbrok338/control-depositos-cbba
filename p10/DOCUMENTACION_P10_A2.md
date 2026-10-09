@@ -1,6 +1,6 @@
 # P10-A.2 — Sincronización automática del histórico mensual
 
-> **Estado: IMPLEMENTADO Y PROBADO LOCALMENTE · NO DESPLEGADO EN EL TENANT.**
+> **Estado: IMPLEMENTADO Y PROBADO LOCALMENTE · EN DESPLIEGUE (por pasos, con Gabriel). Por decisión de Gabriel no se ejecutan más suites/simulaciones en esta fase.**
 > Todo lo de esta carpeta es aditivo. No se modificó P0, P7, P8, P9, el motor, `historico.py` ni el generador **P10-A.1 (CERRADO Y VALIDADO LOCALMENTE)**; una prueba (`p10/huellas_cerradas.json`) lo verifica con SHA-256.
 > No se hizo ningún cambio en Microsoft 365 ni en Railway. Los pasos para hacerlo, uno por uno, están en la sección 18.
 > P10-B (limpieza de `Depositos_Activos`) **no** está hecho: ningún flujo de P10-A.2 escribe en `Depositos_Activos` (una prueba estática lo comprueba).
@@ -116,7 +116,7 @@ Columnas (todas texto o número; **ninguna fecha de SharePoint**, para evitar co
 | Flujo, acción `P` | `url_api` | `https://<PEGAR_DOMINIO_P10_RAILWAY>.up.railway.app` → **tu dominio de Railway** | una sola vez |
 | Flujo, acción `P` | `sede` | `CBBA` (igual que P0) | nunca |
 | Flujo, acción `P` | `prefijo_servidor` | `/personal/gtorricot_univalle_edu/Documents` | si cambia la biblioteca de OneDrive |
-| Flujo, acción `P` | `mes_inicio` | `2026-01` — primer mes que el ciclo completo mira en PROCESADOS (hasta 12 meses hacia atrás) | **decisión tuya** (ver sección 19) |
+| Flujo, acción `P` | `mes_inicio` | `2026-09` — primer mes que el ciclo completo mira en PROCESADOS (hasta 12 meses hacia atrás) | **decidido por Gabriel: 2026-09** |
 | Flujo, disparador | horas / minutos | 06–22 / 0, 15, 30, 45 (hora de Bolivia) | para ajustar consumo |
 | OneDrive | `/CONTROL_DEPOSITOS/P10_CONFIG/P10_API_TOKEN.txt` | el token (solo el texto) | al rotar el token |
 | Railway | `P10_API_TOKEN` | el mismo token (≥ 16 caracteres) | al rotar el token |
@@ -209,7 +209,7 @@ En la raíz del repositorio: `P10_SINCRONIZAR_HISTORICO_V1.zip` y `P10_PROVISION
 
 | Archivo | SHA-256 |
 |---|---|
-| `P10_SINCRONIZAR_HISTORICO_V1.zip` | `6fcb4682a1080d97b17919b403786fad1984421bfd1d4c3814ecd115908b5184` |
+| `P10_SINCRONIZAR_HISTORICO_V1.zip` | `9ce5abf8e6f14602ef544b8be0fc6559642a69f21cd41a7f4a635178d0d75515` |
 | `P10_PROVISIONAR_CONTROL_V1.zip` | `c8d9a4f2c1f262282321d6bff2db4ca4379af3dbd1d6a1b9bc8bb55a4e0b9891` |
 | `p10/Dockerfile` | `f25c396ec98c9d96566397866880a8eb05ed4c00b9fd13d3f7a6947fcdddf8d9` |
 | `p10/railway.json` | `d19c8462435c97078a7e3c0d17a0ceba1c2a54ca62a2bc40438934c5b8b0de6f` |
@@ -235,7 +235,7 @@ Rama `experiment/p9-masiva-prototipo`, desde el cierre de A.1 (`c3691d2`): `cd69
    * **Dockerfile Path** = `p10/Dockerfile`
    * (si tu versión del panel lo ofrece) **Config-as-code / Railway Config File** = `/p10/railway.json`
    * (alternativa al *Dockerfile Path*: variable `RAILWAY_DOCKERFILE_PATH` = `p10/Dockerfile`)
-   * El `.dockerignore` de la raíz es el de `p0-api` y no deja pasar `historico.py`, `p9/` ni `p10/`; por eso `p10/` trae su propio `p10/Dockerfile.dockerignore` (BuildKit lo usa junto al Dockerfile). **Si el build falla con «historico.py: not found»**, Railway no lo está leyendo: avísame; la salida es añadir 4 líneas a la lista blanca del `.dockerignore` raíz (cambio aditivo en un archivo protegido de P0 que requiere tu aprobación). No lo hice por mi cuenta.
+   * El `.dockerignore` de la raíz es el de `p0-api` y no deja pasar `historico.py`, `p9/` ni `p10/`; por eso `p10/` trae su propio `p10/Dockerfile.dockerignore` (BuildKit lo usa junto al Dockerfile). **Si el build falla con «historico.py: not found»**, Railway no lo está leyendo: se resuelve en ese momento (decisión de Gabriel: el `.dockerignore` raíz de P0 NO se toca por ahora; se buscaría otra salida, p. ej. un repositorio/rama dedicada para p10-api).
 6. Pestaña **Variables** → **+ New Variable**:
    * Nombre `P10_API_TOKEN`, valor = un secreto aleatorio **de 40 o más caracteres** (genéralo con tu gestor de contraseñas). Guárdalo: lo necesitas en 18.2. → **Add**.
    * **No** agregues volumen ni base de datos.
@@ -320,7 +320,7 @@ Quien tenga solo «Puede ver» no puede cambiar el archivo; el flujo (con permis
 
 ## 19. Decisiones y riesgos abiertos (te corresponde decidir o vigilar)
 
-1. **`mes_inicio` (hoy `2026-01`).** Desde qué mes se construye el histórico con los extractos que ya están en PROCESADOS. Más atrás de 12 meses desde hoy no se mira. Si hay extractos viejos que no quieres en el histórico, sube el valor.
+1. **`mes_inicio` = `2026-09` (decidido por Gabriel).** El histórico se construye desde septiembre de 2026 con los extractos que ya están en PROCESADOS.
 2. **Comportamientos de conectores sin verificar en tenant** (pruebas 5, 6, 8 de 18.5): crear subcarpetas con *Crear archivo*, *Actualizar archivo* por id y el listado `Folders?$expand=Files`. El intérprete local es una aproximación: **no certifica** el comportamiento de Microsoft.
 3. **Cuenta de servicio:** hoy es la tuya (18.6).
 4. **Extractos de meses antiguos subidos tarde** (carpeta de más de 2 meses atrás) esperan al ciclo completo del día siguiente.
