@@ -1,6 +1,6 @@
 # HOJA DE RUTA — CONTROL DE DEPÓSITOS CBBA
 
-Actualizada: 2026-10-08. Estado detallado por módulo: [`ESTADO_PROYECTO.md`](ESTADO_PROYECTO.md).
+Actualizada: 2026-10-09. Estado detallado por módulo: [`ESTADO_PROYECTO.md`](ESTADO_PROYECTO.md).
 
 ## Cerrado
 
@@ -11,16 +11,20 @@ Actualizada: 2026-10-08. Estado detallado por módulo: [`ESTADO_PROYECTO.md`](ES
 | **P8** Carga a `Depositos_Activos` | Cerrado | V5 en tenant escucha `CARGA_EXTRACTOS_BANCARIOS`; duplicados por `CLAVE_TRANSACCION` |
 | **P9** Asignación / confirmación / reversión (Power Apps) | Validado en tenant (ver `ESTADO_P9_REVERSION_VALIDADO_TENANT.md`) | Fuera del alcance de este cierre |
 | **P10-A.1** Generador del histórico mensual (EXTRACTO + AUDITORIA) | **CERRADO Y VALIDADO LOCALMENTE (2026-10-09)** | Paquete `p10/`; contrato aprobado por Gabriel (28 columnas en AUDITORIA, sin paneles inmovilizados). Validado con extractos reales y snapshot simulado; **sin validación en tenant** (eso es P10-A.2). No se modifica sin aprobación explícita |
-| **P10-A.2** Sincronización automática del histórico | **IMPLEMENTADO Y PROBADO LOCALMENTE (2026-10-09); pendiente de despliegue en tenant** | Flujo `P10_SINCRONIZAR_HISTORICO` + servicio `p10-api` + lista `P10_Control`; no modifica P0/P7/P8/P9 ni A.1. Pasos de tenant en `p10/DOCUMENTACION_P10_A2.md` §18. P10-B (limpieza) no iniciado |
+| **P10-A.2** Sincronización automática del histórico — **P10 HISTÓRICO VIVO** | **CERRADO Y VALIDADO EN OPERACIÓN REAL (2026-10-09)** | Confirmación → `CONFIRMADO` ✅ y reversión → `DISPONIBLE` ✅ reflejadas por P10 en el XLSX mensual. ZIP `P10_SINCRONIZAR_HISTORICO_V1.zip` SHA-256 `018e8ebc75cf765e73a281790d911bfa10ba97f027206ea824f5a5c26f0be9a7`; `p10-api` deployment `72569ef1` (`deploy/p10-api` @ `456ca36`). Config congelada (`mes_inicio=2026-08`). Detalle: `p10/DOCUMENTACION_P10_A2.md` §21 |
 | **P0** Entrada automática de extractos (cloud) | **CERRADO Y VALIDADO EN TENANT REAL (2026-10-08)** | Flujo `P0_CARGA_EXTRACTOS_BANCARIOS_CLOUD` (V5) + API `p0-api` en Railway. Validado con BCP (2331 mov.) y BNB (1184 mov.). Originales en `PROCESADOS/YYYY/MM_MES/DD/` (creada hasta 31/12/2028) |
 
 **P0, P7, P8, la API y el motor quedan cerrados para esta etapa**: solo cambian con aprobación explícita (huellas en `p0/flujo/huellas_protegidas.json`, verificadas por `tests/test_36_flujo_p0_cloud.py`).
 
 ## Próximos módulos (en este orden)
 
-1. **P10 — HISTÓRICO / LIMPIEZA** *(en curso: A.1 cerrado; A.2 implementado y probado localmente, pendiente de tenant; B = limpieza de `Depositos_Activos`, no iniciado)*. Genera y archiva los históricos normalizados (capa 4, `historico.py`, hoy sin integrar al flujo automático) y define la limpieza/retención de originales en `PROCESADOS`/`ERROR` y de los JSON de `CARGA_EXTRACTOS_BANCARIOS`. No modifica P0, P7, P8, la API ni el motor sin aprobación.
-2. **Solution nacional.** Empaquetar flujos y listas en una Solution de Power Platform para varias sedes (la API ya recibe `sede`; `p0/sedes.json`). Incluye el token de P0 como variable de entorno **secreta** (hoy es un marcador en la acción HTTP del paquete) y despliegue repetible.
-3. **Plan B — normalizador offline independiente** *(último entregable)*. Ejecución local del motor sin depender de Railway ni de Power Automate, como contingencia.
+1. **Solution nacional.** Empaquetar flujos y listas en una Solution de Power Platform para varias sedes (la API ya recibe `sede`; `p0/sedes.json`). Incluye el token de P0 como variable de entorno **secreta** (hoy es un marcador en la acción HTTP del paquete) y despliegue repetible.
+2. **Plan B — normalizador offline independiente** *(último entregable)*. Ejecución local del motor sin depender de Railway ni de Power Automate, como contingencia.
+
+## P10 — cierre y go-live 2027 (decisión de arquitectura; NO implementar antes de enero 2027)
+
+* **P10-B (borrado/limpieza de `Depositos_Activos`): CANCELADO / NO NECESARIO.** Desde el 01/01/2027 `Depositos_Activos` es lista operativa permanente (sin ventana móvil de dos meses; Power Apps busca por FECHA + BANCO + CUENTA BANCARIA).
+* Únicas tareas de go-live: (1) `mes_inicio = 2027-01` en P10; (2) candado en Power Apps para fechas `< 01/01/2027`. Los datos 2026 quedan como pruebas, sin borrarse.
 
 ## Pendientes heredados (sin prioridad nueva)
 

@@ -356,3 +356,15 @@ Quien tenga solo «Puede ver» no puede cambiar el archivo; el flujo (con permis
 **Despliegue.** Cambia el servicio **y** el flujo: hay que redeplegar `p10-api` (rama `deploy/p10-api`) **y** actualizar `P10_SINCRONIZAR_HISTORICO_V1.zip` (importar como *Actualizar*, conservando la conexión y el flujo existente). SHA-256 del ZIP: `018e8ebc75cf765e73a281790d911bfa10ba97f027206ea824f5a5c26f0be9a7` (170 acciones).
 
 **Segunda corrección (misma prueba).** En tenant, `GD_Sync` falló con `InvalidTemplate: createArray() expects a comma separated list of parameters`: Power Automate exige al menos un parámetro en `createArray`. Se reemplazó `createArray()` (7 usos) por `json('[]')` / `[]`, y el intérprete local ahora rechaza `createArray()` vacío. Cambio solo del flujo: **no requiere redeploy de `p10-api`**. SHA-256 del ZIP: `018e8ebc75cf765e73a281790d911bfa10ba97f027206ea824f5a5c26f0be9a7`.
+
+## 21. CIERRE — P10 HISTÓRICO VIVO: CERRADO Y VALIDADO EN OPERACIÓN REAL (2026-10-09)
+
+**P10 HISTÓRICO VIVO — CERRADO Y VALIDADO EN OPERACIÓN REAL (2026-10-09).**
+* Zip final importado en tenant: `P10_SINCRONIZAR_HISTORICO_V1.zip`, SHA-256 `018e8ebc75cf765e73a281790d911bfa10ba97f027206ea824f5a5c26f0be9a7` (170 acciones), commit `1eb775c` de `experiment/p9-masiva-prototipo`.
+* `p10-api` (Railway): deployment `72569ef1` (SUCCESS) desde `deploy/p10-api` @ `456ca36` (= `7bd176b` + archivos de raíz de P10). El commit `1eb775c` solo cambia el flujo/ZIP/documentación, no archivos que copia el Dockerfile: el servicio desplegado es idéntico al de la rama de trabajo.
+* Validaciones reales superadas: (1) generación de históricos mensuales por banco+cuenta+moneda+mes ✅; (2) **CONFIRMACIÓN** desde Power Apps/P9 → el histórico pasó de `DISPONIBLE` a `CONFIRMADO` y P10 regeneró el archivo mensual ✅; (3) **REVERSIÓN** desde Power Apps/P9 → el histórico volvió a `DISPONIBLE` y P10 resincronizó ✅; (4) flujo automático P10 y `p10-api` funcionando en producción de prueba ✅.
+* Configuración CONGELADA: `mes_inicio = 2026-08`; sin candado en Power Apps; registros de prueba 2026 y `Depositos_Activos` intactos.
+* **Decisión de arquitectura 2027 (PENDIENTE DE GO-LIVE, NO IMPLEMENTADA):** desde el 01/01/2027 `Depositos_Activos` es una lista operativa permanente, sin ventana móvil de dos meses; crece indefinidamente y Power Apps busca por FECHA + BANCO + CUENTA BANCARIA. P10 sigue igual: `Power Apps/P9 → Depositos_Activos → Modified → P10 → histórico del mes de FECHA_MOVIMIENTO` (incluso confirmar un movimiento antiguo actualiza su Excel mensual). **P10-B (borrado/limpieza) CANCELADO / NO NECESARIO.** No se borran registros históricos.
+* **Únicas tareas de go-live 2027:** (1) `mes_inicio` de P10 → `2027-01`; (2) candado lógico en Power Apps: no mostrar ni permitir fechas `< 01/01/2027`. Los datos 2026 quedan como pruebas, sin borrarlos.
+
+Pruebas finales en tenant: **CONFIRMACIÓN → histórico `CONFIRMADO` ✅ · REVERSIÓN → histórico vuelve a `DISPONIBLE` ✅.** Las secciones 18.x (pasos de tenant) y 19 (riesgos) siguen siendo la referencia de operación; la mención de P10-B en ellas queda superada por esta decisión (cancelado).
