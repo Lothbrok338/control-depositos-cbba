@@ -36,7 +36,7 @@ class SPLista:
         self.titulo, self.campos, self.items, self._sig = titulo, {"Title": {"tipo": "Text", "max": 255, "requerido": True}}, [], 1
         self.indexados, self.unicos = set(), set()
 
-    def validar(self, valores):
+    def _comprobar_tipos(self, valores):
         for k, v in valores.items():
             if k == "__metadata":
                 continue
@@ -53,7 +53,7 @@ class SPLista:
                 raise FalloAccion("BadRequest", f"{k} excede {c.get('max', 255)} caracteres", 400)
 
     def crear(self, valores):
-        self.validar(valores)
+        self._comprobar_tipos(valores)
         for u in self.unicos:
             if valores.get(u) not in (None, "") and any(i.get(u) == valores[u] for i in self.items):
                 raise FalloAccion("DuplicateValue", f"valor duplicado en {u}", 400)
@@ -68,7 +68,7 @@ class SPLista:
             raise FalloAccion("ItemNotFound", "elemento inexistente", 404)
         if if_match not in (None, "*") and if_match != f'"{it["__etag"]}"':
             raise FalloAccion("PreconditionFailed", "ETag distinto", 412)
-        self.validar(valores)
+        self._comprobar_tipos(valores)
         for u in self.unicos:
             if u in valores and valores[u] not in (None, "") and any(o is not it and o.get(u) == valores[u] for o in self.items):
                 raise FalloAccion("DuplicateValue", f"valor duplicado en {u}", 400)

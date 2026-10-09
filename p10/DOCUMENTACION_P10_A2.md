@@ -199,7 +199,7 @@ Límite documentado de Microsoft para licencias de Microsoft 365: 6 000 solicitu
 
 ## 14. Regresión P0 / P7 / P8 / P9
 
-Ver el cierre del documento (sección 20): resultado de la suite completa contra la base.
+Suite completa (`pytest tests`) tras terminar A.2: **1587 pasaron, 23 omitidas, 13 xfail, 3 fallaron**. De los 3 fallos, **2 ya existían en la base** (`test_16 …sin_cambios_respecto_al_commit_base` y `test_27 …[provisionar]`; la base tenía 1468 pasadas con los mismos 2 fallos). El tercero (`test_33 …no_define_logica_de_clave_ni_de_normalizacion`, de A.1) lo provocó un método de mi simulador de tenant llamado `validar`; se renombró y `test_33 + test_37 + test_40` se re-ejecutaron: **137 pasaron**. Las 1468 pruebas de la base siguen pasando sin cambios de resultado: P0, P7, P8, P9 y A.1 no se modificaron (huellas verificadas por `test_36`, `test_16`, `test_33` y `test_37`). Pendiente de rigor: no volví a correr la suite completa *después* del renombrado (solo las 3 suites afectadas).
 
 ## 15. Paquetes / importables
 
@@ -207,11 +207,19 @@ En la raíz del repositorio: `P10_SINCRONIZAR_HISTORICO_V1.zip` y `P10_PROVISION
 
 ## 16. SHA-256
 
-<<SHA>>
+| Archivo | SHA-256 |
+|---|---|
+| `P10_SINCRONIZAR_HISTORICO_V1.zip` | `6fcb4682a1080d97b17919b403786fad1984421bfd1d4c3814ecd115908b5184` |
+| `P10_PROVISIONAR_CONTROL_V1.zip` | `c8d9a4f2c1f262282321d6bff2db4ca4379af3dbd1d6a1b9bc8bb55a4e0b9891` |
+| `p10/Dockerfile` | `f25c396ec98c9d96566397866880a8eb05ed4c00b9fd13d3f7a6947fcdddf8d9` |
+| `p10/railway.json` | `d19c8462435c97078a7e3c0d17a0ceba1c2a54ca62a2bc40438934c5b8b0de6f` |
+| `p10/Dockerfile.dockerignore` | `76ce64ee79a9dcb8ea8d64de84af09e5393bdfc1b330cf9da68bbbde75172f67` |
+
+Los ZIP son deterministas: `python -m p10.flujo.construir` los regenera con los mismos bytes (lo verifica una prueba).
 
 ## 17. Commits
 
-<<COMMITS>>
+Rama `experiment/p9-masiva-prototipo`, desde el cierre de A.1 (`c3691d2`): `cd699b8` núcleo · `0b511ee` servicio `p10-api` · `372ab4a` sellos cruzados/verificación/reconstrucción · `3b5652c` flujos + intérprete + tenant simulado · `eb15dba` huellas de lo cerrado · `799d34f` lectura incremental y conciliación por BANCO+MES · `c9ef354` documentación, dockerignore propio · `a7334ae` estado del proyecto y roadmap · más el commit final de esta entrega (renombrado en `tenant_simulado.py` y secciones 14/16/17/20).
 
 ## 18. Pasos EXACTOS en el tenant (para Gabriel) — nada de esto se ha hecho
 
