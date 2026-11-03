@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 tests/reports/resultados.json
+
+# Exports de Solution (contienen el token real de p0-api)
+CONTROLDEDEPSITOSCBBA*.zip
+*_Solution_*.zip

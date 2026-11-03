@@ -1,4 +1,47 @@
-# CONTROL DE DEPÓSITOS CBBA · módulo de normalización
+# Control de Depósitos CBBA
+
+Sistema que automatiza el control de depósitos bancarios de la Universidad Privada del Valle, sede Cochabamba: de un extracto bancario soltado en una carpeta hasta un histórico mensual en Excel, con confirmación y reversión de depósitos desde Power Apps y trazabilidad de quién hizo qué y cuándo.
+
+## Cómo funciona (cinco pasos)
+
+| Paso | Módulo | Qué hace | Dónde corre |
+|---|---|---|---|
+| 1 | Entrada | Se deja el extracto en la carpeta `ENTRADA` | OneDrive |
+| 2 | **P0** Normalizador | Lee cada formato bancario y entrega datos uniformes; archiva el original | Power Automate + `p0-api` (Railway) |
+| 3 | **P8** Carga | Escribe los movimientos en la lista `Depositos_Activos`, sin duplicados | Power Automate + SharePoint |
+| 4 | **P9** App de operación | Confirmar y revertir depósitos (con aprobación), comprobante PDF | Power Apps + Power Automate |
+| 5 | **P10** Histórico | Regenera cada 15 minutos el Excel mensual por banco, cuenta, moneda y mes | Power Automate + `p10-api` (Railway) |
+
+Mapa visual completo: [`docs/presentacion/Mapa_Sistema_Control_Depositos_CBBA.pdf`](docs/presentacion/Mapa_Sistema_Control_Depositos_CBBA.pdf) · Presentación: [`docs/presentacion/`](docs/presentacion/).
+
+## Estado (2026-11-03)
+
+| Módulo | Estado |
+|---|---|
+| P1–P7 Motor, registro y puente a Microsoft 365 | Cerrado |
+| P8 Carga a `Depositos_Activos` | Cerrado, validado en tenant |
+| P9 Asignación y reversión | Validado en tenant (aprobación); rechazo, expiración y recuperación sin probar en tenant |
+| P0 Entrada automática de extractos | Cerrado y validado en tenant real (08/10/2026) |
+| P10 Histórico vivo (A.1 y A.2) | **Cerrado y validado en operación real (09/10/2026)**: confirmación → `CONFIRMADO`, reversión → `DISPONIBLE` |
+| P10-B limpieza de `Depositos_Activos` | Cancelado: no necesario por decisión de arquitectura |
+
+**Pendiente:** Solution nacional (varias sedes) y Plan B (normalizador offline). **Go-live enero 2027:** `mes_inicio` de P10 a `2027-01` y candado en Power Apps para fechas anteriores al 01/01/2027.
+
+## Despliegue
+
+Qué servicio sale de qué rama, ZIP de flujos vigentes y SHA-256: [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md). Historial de hitos: [`CHANGELOG.md`](CHANGELOG.md).
+
+## Documentación técnica
+
+`ESTADO_PROYECTO.md` (estado y decisiones) · `ROADMAP.md` · `p10/DOCUMENTACION_P10_A2.md` · `DOCUMENTACION_P9_POWER_APPS.md` · `DOCUMENTACION_P9_REVERSION.md` · `P0_AUTOMATIZACION_EXTRACTOS.md`.
+
+## Seguridad
+
+Los tokens de `p0-api` y `p10-api` **no** están en el repositorio (los flujos traen marcadores). Los exports de la Solution de Power Platform contienen el token real y no deben subirse a GitHub.
+
+---
+
+# Módulo de normalización (detalle técnico)
 
 Estado y decisiones: `ESTADO_PROYECTO.md` · Hoja de ruta: `ROADMAP.md` · Diseño: `DISENO_TRES_CAPAS.md` · Matriz de campos: `MATRIZ_CAMPOS_ORIGEN.csv`.
 
