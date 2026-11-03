@@ -1,0 +1,27 @@
+# Lista blanca para la imagen de p10-api (BuildKit usa este archivo —junto a p10/Dockerfile— en lugar del .dockerignore de la raíz,
+# que es el de p0-api y no deja pasar historico.py, p9/ ni p10/). NO entran extractos reales, pruebas, evidencias ni paquetes de flujos.
+*
+!requirements-p0.txt
+!motor_control_depositos_cbba.py
+!motor_generico.py
+!deteccion_registro.py
+!captura_origen.py
+!registro_bancos.json
+!adaptador_m365.py
+!historico.py
+!p0/**
+!p9/__init__.py
+!p9/contrato.py
+!p9/reversion/contrato.py
+!p10/__init__.py
+!p10/api.py
+!p10/contrato.py
+!p10/estado.py
+!p10/generador.py
+!p10/plan.py
+!p10/sharepoint.py
+!p10/sincronizacion.py
+!p10/snapshot.py
+!p10/validacion.py
+**/__pycache__
+**/*.pyc

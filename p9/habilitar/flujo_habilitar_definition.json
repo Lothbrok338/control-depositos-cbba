@@ -1,0 +1,1010 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "$authentication": {
+      "defaultValue": {},
+      "type": "SecureObject"
+    },
+    "$connections": {
+      "defaultValue": {},
+      "type": "Object"
+    }
+  },
+  "triggers": {
+    "manual": {
+      "type": "Request",
+      "kind": "Button",
+      "inputs": {
+        "schema": {
+          "type": "object",
+          "properties": {},
+          "required": []
+        }
+      },
+      "runtimeConfiguration": {
+        "concurrency": {
+          "runs": 1
+        }
+      }
+    }
+  },
+  "actions": {
+    "PARAM_SITIO_SHAREPOINT": {
+      "type": "Compose",
+      "inputs": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
+      "runAfter": {}
+    },
+    "PARAM_LISTA_DEPOSITOS_ACTIVOS": {
+      "type": "Compose",
+      "inputs": "296c450a-25d6-415b-ad10-c909c74817cb",
+      "runAfter": {
+        "PARAM_SITIO_SHAREPOINT": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varEtapa": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varEtapa",
+            "type": "string",
+            "value": "INICIO"
+          }
+        ]
+      },
+      "runAfter": {
+        "PARAM_LISTA_DEPOSITOS_ACTIVOS": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varAccion": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varAccion",
+            "type": "string",
+            "value": "NINGUNA"
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varEtapa": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varEstadoAntes": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varEstadoAntes",
+            "type": "string",
+            "value": "NO_EVALUADO"
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varAccion": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varOpcionesDespues": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varOpcionesDespues",
+            "type": "string",
+            "value": "NO_LEIDAS"
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varEstadoAntes": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varDiferencias": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varDiferencias",
+            "type": "array",
+            "value": []
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varOpcionesDespues": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varIndicesCreados": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varIndicesCreados",
+            "type": "array",
+            "value": []
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varDiferencias": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varIndicesExistentes": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varIndicesExistentes",
+            "type": "array",
+            "value": []
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varIndicesCreados": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varIndicesFinal": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varIndicesFinal",
+            "type": "integer",
+            "value": 0
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varIndicesExistentes": [
+          "Succeeded"
+        ]
+      }
+    },
+    "PARAM_INDICES": {
+      "type": "Compose",
+      "inputs": [
+        {
+          "nombre": "ESTADO_ASIGNACION",
+          "cuerpo": "{\"__metadata\":{\"type\":\"SP.FieldChoice\"},\"Indexed\":true}"
+        },
+        {
+          "nombre": "FECHA_MOVIMIENTO",
+          "cuerpo": "{\"__metadata\":{\"type\":\"SP.FieldDateTime\"},\"Indexed\":true}"
+        },
+        {
+          "nombre": "BANCO",
+          "cuerpo": "{\"__metadata\":{\"type\":\"SP.FieldText\"},\"Indexed\":true}"
+        },
+        {
+          "nombre": "LOTE_CARGA",
+          "cuerpo": "{\"__metadata\":{\"type\":\"SP.FieldText\"},\"Indexed\":true}"
+        },
+        {
+          "nombre": "CODIGO_ASIGNACION",
+          "cuerpo": "{\"__metadata\":{\"type\":\"SP.FieldText\"},\"Indexed\":true}"
+        },
+        {
+          "nombre": "IMPORTE",
+          "cuerpo": "{\"__metadata\":{\"type\":\"SP.FieldNumber\"},\"Indexed\":true}"
+        },
+        {
+          "nombre": "TIPO_MOVIMIENTO",
+          "cuerpo": "{\"__metadata\":{\"type\":\"SP.FieldText\"},\"Indexed\":true}"
+        }
+      ],
+      "runAfter": {
+        "Inicializar_varIndicesFinal": [
+          "Succeeded"
+        ]
+      }
+    },
+    "PARAM_NOMBRES_INDICES": {
+      "type": "Compose",
+      "inputs": [
+        "ESTADO_ASIGNACION",
+        "FECHA_MOVIMIENTO",
+        "BANCO",
+        "LOTE_CARGA",
+        "CODIGO_ASIGNACION",
+        "IMPORTE",
+        "TIPO_MOVIMIENTO"
+      ],
+      "runAfter": {
+        "PARAM_INDICES": [
+          "Succeeded"
+        ]
+      }
+    },
+    "TRY": {
+      "type": "Scope",
+      "actions": {
+        "Etapa_leer_antes": {
+          "type": "SetVariable",
+          "inputs": {
+            "name": "varEtapa",
+            "value": "LEER_ANTES"
+          },
+          "runAfter": {}
+        },
+        "Leer_campo_antes": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/lists(guid''',outputs('PARAM_LISTA_DEPOSITOS_ACTIVOS'),''')','/fields?$filter=InternalName eq ''ESTADO_ASIGNACION''&$select=Id,InternalName,TypeAsString,Required,Indexed,DefaultValue,Hidden,ReadOnlyField,SchemaXml')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')",
+            "retryPolicy": {
+              "type": "none"
+            }
+          },
+          "runAfter": {
+            "Etapa_leer_antes": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Campo_unico": {
+          "type": "If",
+          "expression": "@equals(length(body('Leer_campo_antes')?['value']),1)",
+          "actions": {
+            "Campo_antes": {
+              "type": "Compose",
+              "inputs": "@first(body('Leer_campo_antes')?['value'])",
+              "runAfter": {}
+            },
+            "Opciones_antes": {
+              "type": "Compose",
+              "inputs": "@replace(replace(replace(replace(string(xpath(xml(outputs('Campo_antes')?['SchemaXml']),'/Field/CHOICES/CHOICE/text()')),'[',''),']',''),'\"',''),',','|')",
+              "runAfter": {
+                "Campo_antes": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Estado_antes": {
+              "type": "Compose",
+              "inputs": "@if(equals(outputs('Opciones_antes'),'DISPONIBLE|ASIGNADO'),'YA_HABILITADO',if(and(equals(outputs('Opciones_antes'),'DISPONIBLE'),equals(outputs('Campo_antes')?['TypeAsString'],'Choice')),'POR_HABILITAR','INESPERADO'))",
+              "runAfter": {
+                "Opciones_antes": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Guardar_estado_antes": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varEstadoAntes",
+                "value": "@outputs('Estado_antes')"
+              },
+              "runAfter": {
+                "Estado_antes": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Habilitar_si_corresponde": {
+              "type": "If",
+              "expression": "@equals(outputs('Estado_antes'),'POR_HABILITAR')",
+              "actions": {
+                "Cuerpo_habilitar": {
+                  "type": "Compose",
+                  "inputs": {
+                    "__metadata": {
+                      "type": "SP.FieldChoice"
+                    },
+                    "Choices": {
+                      "__metadata": {
+                        "type": "Collection(Edm.String)"
+                      },
+                      "results": [
+                        "DISPONIBLE",
+                        "ASIGNADO"
+                      ]
+                    }
+                  },
+                  "runAfter": {}
+                },
+                "Etapa_habilitar": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "varEtapa",
+                    "value": "HABILITAR"
+                  },
+                  "runAfter": {
+                    "Cuerpo_habilitar": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Habilitar_ASIGNADO": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+                      "parameters/method": "POST",
+                      "parameters/uri": "@concat('_api/web/lists(guid''',outputs('PARAM_LISTA_DEPOSITOS_ACTIVOS'),''')','/fields(guid''',outputs('Campo_antes')?['Id'],''')')",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=nometadata",
+                        "Content-Type": "application/json;odata=verbose",
+                        "X-HTTP-Method": "MERGE",
+                        "IF-MATCH": "*"
+                      },
+                      "parameters/body": "@string(outputs('Cuerpo_habilitar'))"
+                    },
+                    "authentication": "@parameters('$authentication')",
+                    "retryPolicy": {
+                      "type": "none"
+                    }
+                  },
+                  "runAfter": {
+                    "Etapa_habilitar": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Accion_HABILITADO": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "varAccion",
+                    "value": "HABILITADO"
+                  },
+                  "runAfter": {
+                    "Habilitar_ASIGNADO": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "Guardar_estado_antes": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Etapa_leer_despues": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varEtapa",
+                "value": "LEER_DESPUES"
+              },
+              "runAfter": {
+                "Habilitar_si_corresponde": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Leer_campo_despues": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+                  "parameters/method": "GET",
+                  "parameters/uri": "@concat('_api/web/lists(guid''',outputs('PARAM_LISTA_DEPOSITOS_ACTIVOS'),''')','/fields?$filter=InternalName eq ''ESTADO_ASIGNACION''&$select=Id,InternalName,TypeAsString,Required,Indexed,DefaultValue,Hidden,ReadOnlyField,SchemaXml')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=nometadata"
+                  }
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              },
+              "runAfter": {
+                "Etapa_leer_despues": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Verificar_campo_unico": {
+              "type": "If",
+              "expression": "@equals(length(body('Leer_campo_despues')?['value']),1)",
+              "actions": {
+                "Campo_despues": {
+                  "type": "Compose",
+                  "inputs": "@first(body('Leer_campo_despues')?['value'])",
+                  "runAfter": {}
+                },
+                "Opciones_despues": {
+                  "type": "Compose",
+                  "inputs": "@replace(replace(replace(replace(string(xpath(xml(outputs('Campo_despues')?['SchemaXml']),'/Field/CHOICES/CHOICE/text()')),'[',''),']',''),'\"',''),',','|')",
+                  "runAfter": {
+                    "Campo_despues": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Guardar_opciones_despues": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "varOpcionesDespues",
+                    "value": "@outputs('Opciones_despues')"
+                  },
+                  "runAfter": {
+                    "Opciones_despues": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Diferencias_campo": {
+                  "type": "Compose",
+                  "inputs": "@concat(if(equals(outputs('Campo_despues')?['InternalName'],'ESTADO_ASIGNACION'),'','InternalName;'),if(equals(outputs('Campo_despues')?['TypeAsString'],'Choice'),'','TypeAsString;'),if(equals(outputs('Campo_despues')?['Required'],true),'','Required;'),if(equals(outputs('Campo_despues')?['Hidden'],false),'','Hidden;'),if(equals(outputs('Campo_despues')?['ReadOnlyField'],false),'','ReadOnlyField;'),if(equals(coalesce(outputs('Campo_despues')?['DefaultValue'],''),'DISPONIBLE'),'','DefaultValue;'),if(equals(equals(toLower(xpath(xml(outputs('Campo_despues')?['SchemaXml']),'string(/Field/@FillInChoice)')),'true'),false),'','FillInChoice;'),if(equals(outputs('Opciones_despues'),'DISPONIBLE|ASIGNADO'),'','Choices;'))",
+                  "runAfter": {
+                    "Guardar_opciones_despues": [
+                      "Succeeded"
+                    ]
+                  }
+                },
+                "Registrar_diferencias": {
+                  "type": "If",
+                  "expression": "@not(empty(outputs('Diferencias_campo')))",
+                  "actions": {
+                    "Diferencia_campo": {
+                      "type": "AppendToArrayVariable",
+                      "inputs": {
+                        "name": "varDiferencias",
+                        "value": {
+                          "campo": "ESTADO_ASIGNACION",
+                          "propiedades": "@outputs('Diferencias_campo')",
+                          "opciones_observadas": "@outputs('Opciones_despues')",
+                          "opciones_esperadas": "DISPONIBLE|ASIGNADO"
+                        }
+                      },
+                      "runAfter": {}
+                    }
+                  },
+                  "else": {
+                    "actions": {}
+                  },
+                  "runAfter": {
+                    "Diferencias_campo": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Diferencia_campo_final": {
+                    "type": "AppendToArrayVariable",
+                    "inputs": {
+                      "name": "varDiferencias",
+                      "value": {
+                        "campo": "ESTADO_ASIGNACION",
+                        "propiedades": "CAMPO_AUSENTE_O_NO_UNICO",
+                        "opciones_observadas": "",
+                        "opciones_esperadas": "DISPONIBLE|ASIGNADO"
+                      }
+                    },
+                    "runAfter": {}
+                  }
+                }
+              },
+              "runAfter": {
+                "Leer_campo_despues": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {
+              "Diferencia_campo_antes": {
+                "type": "AppendToArrayVariable",
+                "inputs": {
+                  "name": "varDiferencias",
+                  "value": {
+                    "campo": "ESTADO_ASIGNACION",
+                    "propiedades": "CAMPO_AUSENTE_O_NO_UNICO",
+                    "opciones_observadas": "",
+                    "opciones_esperadas": "DISPONIBLE|ASIGNADO"
+                  }
+                },
+                "runAfter": {}
+              }
+            }
+          },
+          "runAfter": {
+            "Leer_campo_antes": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Etapa_indices": {
+          "type": "SetVariable",
+          "inputs": {
+            "name": "varEtapa",
+            "value": "INDICES"
+          },
+          "runAfter": {
+            "Campo_unico": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Leer_campos_antes_indices": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/lists(guid''',outputs('PARAM_LISTA_DEPOSITOS_ACTIVOS'),''')','/fields?$select=Id,InternalName,TypeAsString,Indexed,Hidden&$top=5000')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')",
+            "retryPolicy": {
+              "type": "none"
+            }
+          },
+          "runAfter": {
+            "Etapa_indices": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Sin_paginacion_indices": {
+          "type": "If",
+          "expression": "@and(empty(body('Leer_campos_antes_indices')?['odata.nextLink']),empty(body('Leer_campos_antes_indices')?['@odata.nextLink']),empty(body('Leer_campos_antes_indices')?['__next']))",
+          "actions": {
+            "Aplicar_a_cada_indice": {
+              "type": "Foreach",
+              "foreach": "@outputs('PARAM_INDICES')",
+              "runtimeConfiguration": {
+                "concurrency": {
+                  "repetitions": 1
+                }
+              },
+              "actions": {
+                "Campo_indice": {
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@body('Leer_campos_antes_indices')?['value']",
+                    "where": "@equals(item()?['InternalName'],items('Aplicar_a_cada_indice')?['nombre'])"
+                  },
+                  "runAfter": {}
+                },
+                "Evaluar_indice": {
+                  "type": "If",
+                  "expression": "@equals(length(body('Campo_indice')),1)",
+                  "actions": {
+                    "Ya_indexado": {
+                      "type": "If",
+                      "expression": "@equals(first(body('Campo_indice'))?['Indexed'],true)",
+                      "actions": {
+                        "Anotar_indice_existente": {
+                          "type": "AppendToArrayVariable",
+                          "inputs": {
+                            "name": "varIndicesExistentes",
+                            "value": "@items('Aplicar_a_cada_indice')?['nombre']"
+                          },
+                          "runAfter": {}
+                        }
+                      },
+                      "else": {
+                        "actions": {
+                          "TRY_INDICE": {
+                            "type": "Scope",
+                            "actions": {
+                              "Crear_indice": {
+                                "type": "OpenApiConnection",
+                                "inputs": {
+                                  "host": {
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                                    "connectionName": "shared_sharepointonline",
+                                    "operationId": "HttpRequest"
+                                  },
+                                  "parameters": {
+                                    "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+                                    "parameters/method": "POST",
+                                    "parameters/uri": "@concat('_api/web/lists(guid''',outputs('PARAM_LISTA_DEPOSITOS_ACTIVOS'),''')','/fields(guid''',first(body('Campo_indice'))?['Id'],''')')",
+                                    "parameters/headers": {
+                                      "Accept": "application/json;odata=nometadata",
+                                      "Content-Type": "application/json;odata=verbose",
+                                      "X-HTTP-Method": "MERGE",
+                                      "IF-MATCH": "*"
+                                    },
+                                    "parameters/body": "@items('Aplicar_a_cada_indice')?['cuerpo']"
+                                  },
+                                  "authentication": "@parameters('$authentication')",
+                                  "retryPolicy": {
+                                    "type": "none"
+                                  }
+                                },
+                                "runAfter": {}
+                              }
+                            },
+                            "runAfter": {}
+                          },
+                          "Anotar_indice_creado": {
+                            "type": "AppendToArrayVariable",
+                            "inputs": {
+                              "name": "varIndicesCreados",
+                              "value": "@items('Aplicar_a_cada_indice')?['nombre']"
+                            },
+                            "runAfter": {
+                              "TRY_INDICE": [
+                                "Succeeded"
+                              ]
+                            }
+                          },
+                          "CATCH_INDICE": {
+                            "type": "Scope",
+                            "actions": {
+                              "Diferencia_indice_no_creado": {
+                                "type": "AppendToArrayVariable",
+                                "inputs": {
+                                  "name": "varDiferencias",
+                                  "value": {
+                                    "campo": "INDICES",
+                                    "propiedades": "INDICE_NO_CREADO",
+                                    "opciones_observadas": "@items('Aplicar_a_cada_indice')?['nombre']",
+                                    "opciones_esperadas": "@concat('HTTP ',string(coalesce(outputs('Crear_indice')?['statusCode'],0)))"
+                                  }
+                                },
+                                "runAfter": {}
+                              }
+                            },
+                            "runAfter": {
+                              "TRY_INDICE": [
+                                "Failed",
+                                "TimedOut"
+                              ]
+                            }
+                          }
+                        }
+                      },
+                      "runAfter": {}
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "Diferencia_campo_indice": {
+                        "type": "AppendToArrayVariable",
+                        "inputs": {
+                          "name": "varDiferencias",
+                          "value": {
+                            "campo": "INDICES",
+                            "propiedades": "CAMPO_AUSENTE_O_NO_UNICO",
+                            "opciones_observadas": "@items('Aplicar_a_cada_indice')?['nombre']",
+                            "opciones_esperadas": "una columna con ese InternalName"
+                          }
+                        },
+                        "runAfter": {}
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Campo_indice": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "runAfter": {}
+            }
+          },
+          "else": {
+            "actions": {
+              "Diferencia_paginacion_indices": {
+                "type": "AppendToArrayVariable",
+                "inputs": {
+                  "name": "varDiferencias",
+                  "value": {
+                    "campo": "INDICES",
+                    "propiedades": "PAGINACION",
+                    "opciones_observadas": "respuesta parcial",
+                    "opciones_esperadas": "inventario completo de campos; no se crea ningun indice"
+                  }
+                },
+                "runAfter": {}
+              }
+            }
+          },
+          "runAfter": {
+            "Leer_campos_antes_indices": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Etapa_verificar_indices": {
+          "type": "SetVariable",
+          "inputs": {
+            "name": "varEtapa",
+            "value": "VERIFICAR_INDICES"
+          },
+          "runAfter": {
+            "Sin_paginacion_indices": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Leer_campos_despues_indices": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/lists(guid''',outputs('PARAM_LISTA_DEPOSITOS_ACTIVOS'),''')','/fields?$select=Id,InternalName,TypeAsString,Indexed,Hidden&$top=5000')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')",
+            "retryPolicy": {
+              "type": "none"
+            }
+          },
+          "runAfter": {
+            "Etapa_verificar_indices": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Verificar_paginacion_indices": {
+          "type": "If",
+          "expression": "@and(empty(body('Leer_campos_despues_indices')?['odata.nextLink']),empty(body('Leer_campos_despues_indices')?['@odata.nextLink']),empty(body('Leer_campos_despues_indices')?['__next']))",
+          "actions": {
+            "Indexados_final": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Leer_campos_despues_indices')?['value']",
+                "where": "@and(contains(outputs('PARAM_NOMBRES_INDICES'),item()?['InternalName']),equals(item()?['Indexed'],true))"
+              },
+              "runAfter": {}
+            },
+            "Nombres_indexados_final": {
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Indexados_final')",
+                "select": "@item()?['InternalName']"
+              },
+              "runAfter": {
+                "Indexados_final": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Indices_faltantes": {
+              "type": "Query",
+              "inputs": {
+                "from": "@outputs('PARAM_NOMBRES_INDICES')",
+                "where": "@not(contains(body('Nombres_indexados_final'),item()))"
+              },
+              "runAfter": {
+                "Nombres_indexados_final": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Guardar_indices_final": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varIndicesFinal",
+                "value": "@length(body('Indexados_final'))"
+              },
+              "runAfter": {
+                "Indices_faltantes": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Registrar_indices_faltantes": {
+              "type": "If",
+              "expression": "@greater(length(body('Indices_faltantes')),0)",
+              "actions": {
+                "Diferencia_indices_faltantes": {
+                  "type": "AppendToArrayVariable",
+                  "inputs": {
+                    "name": "varDiferencias",
+                    "value": {
+                      "campo": "INDICES",
+                      "propiedades": "INDICE_AUSENTE_O_NO_INDEXADO",
+                      "opciones_observadas": "@join(body('Indices_faltantes'),',')",
+                      "opciones_esperadas": "ESTADO_ASIGNACION|FECHA_MOVIMIENTO|BANCO|LOTE_CARGA|CODIGO_ASIGNACION|IMPORTE|TIPO_MOVIMIENTO"
+                    }
+                  },
+                  "runAfter": {}
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "Guardar_indices_final": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {
+              "Diferencia_paginacion_final": {
+                "type": "AppendToArrayVariable",
+                "inputs": {
+                  "name": "varDiferencias",
+                  "value": {
+                    "campo": "INDICES",
+                    "propiedades": "PAGINACION",
+                    "opciones_observadas": "respuesta parcial",
+                    "opciones_esperadas": "inventario completo de campos; no se puede certificar"
+                  }
+                },
+                "runAfter": {}
+              }
+            }
+          },
+          "runAfter": {
+            "Leer_campos_despues_indices": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "runAfter": {
+        "PARAM_NOMBRES_INDICES": [
+          "Succeeded"
+        ]
+      }
+    },
+    "CATCH": {
+      "type": "Scope",
+      "actions": {
+        "Diferencia_REST": {
+          "type": "AppendToArrayVariable",
+          "inputs": {
+            "name": "varDiferencias",
+            "value": {
+              "campo": "ESTADO_ASIGNACION",
+              "propiedades": "@concat('REST_',variables('varEtapa'))",
+              "opciones_observadas": "",
+              "opciones_esperadas": "DISPONIBLE|ASIGNADO"
+            }
+          },
+          "runAfter": {}
+        }
+      },
+      "runAfter": {
+        "TRY": [
+          "Failed",
+          "TimedOut"
+        ]
+      }
+    },
+    "Estado_final": {
+      "type": "Compose",
+      "inputs": "@if(equals(length(variables('varDiferencias')),0),'OK','FAIL')",
+      "runAfter": {
+        "TRY": [
+          "Succeeded",
+          "Failed",
+          "Skipped",
+          "TimedOut"
+        ],
+        "CATCH": [
+          "Succeeded",
+          "Failed",
+          "Skipped",
+          "TimedOut"
+        ]
+      }
+    },
+    "RESUMEN_FINAL": {
+      "type": "Compose",
+      "inputs": {
+        "P9_HABILITAR_ESTADO_ASIGNADO": "@outputs('Estado_final')",
+        "campo": "ESTADO_ASIGNACION",
+        "accion": "@variables('varAccion')",
+        "estado_antes": "@variables('varEstadoAntes')",
+        "opciones_despues": "@variables('varOpcionesDespues')",
+        "opciones_esperadas": "DISPONIBLE|ASIGNADO",
+        "indices_esperados": [
+          "ESTADO_ASIGNACION",
+          "FECHA_MOVIMIENTO",
+          "BANCO",
+          "LOTE_CARGA",
+          "CODIGO_ASIGNACION",
+          "IMPORTE",
+          "TIPO_MOVIMIENTO"
+        ],
+        "indices_creados": "@variables('varIndicesCreados')",
+        "indices_ya_existian": "@variables('varIndicesExistentes')",
+        "indices_verificados_al_final": "@variables('varIndicesFinal')",
+        "diferencias": "@variables('varDiferencias')",
+        "ejecucion": "@workflow()?['run']?['name']"
+      },
+      "runAfter": {
+        "Estado_final": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Finalizar": {
+      "type": "If",
+      "expression": "@equals(outputs('Estado_final'),'OK')",
+      "actions": {
+        "Terminar_OK": {
+          "type": "Terminate",
+          "inputs": {
+            "runStatus": "Succeeded"
+          },
+          "runAfter": {}
+        }
+      },
+      "else": {
+        "actions": {
+          "Terminar_FAIL": {
+            "type": "Terminate",
+            "inputs": {
+              "runStatus": "Failed",
+              "runError": {
+                "code": "P9_HABILITAR_FAIL",
+                "message": "P9_HABILITAR_ESTADO_ASIGNADO = FAIL. Revisar RESUMEN_FINAL: diferencias de la columna ESTADO_ASIGNACION."
+              }
+            },
+            "runAfter": {}
+          }
+        }
+      },
+      "runAfter": {
+        "RESUMEN_FINAL": [
+          "Succeeded"
+        ]
+      }
+    }
+  },
+  "outputs": {}
+}

@@ -1,0 +1,16 @@
+{
+  "_ayuda": {
+    "sedes": "Una entrada por sede. Los bancos y formatos son comunes (registro_bancos.json); lo que cambia por sede son las cuentas. Un solo motor, una sola API. Las carpetas de SharePoint/OneDrive de cada sede las maneja Power Automate, no la API.",
+    "cuentas": "\"TODAS\" = todas las cuentas de registro_bancos.json (comportamiento actual de CBBA), o una lista de ids de CUENTAS de ese archivo que pertenecen a la sede.",
+    "cuentas_adicionales": "Ruta (relativa a p0/) de un JSON con una lista de cuentas propias de la sede, con el mismo formato que CUENTAS de registro_bancos.json; o null.",
+    "zona_horaria": "Zona horaria IANA para calcular AAAA/MM_MES del periodo que devuelve la API (Bolivia: America/La_Paz)."
+  },
+  "sedes": {
+    "CBBA": {
+      "nombre": "Cochabamba",
+      "zona_horaria": "America/La_Paz",
+      "cuentas": "TODAS",
+      "cuentas_adicionales": null
+    }
+  }
+}

@@ -1,0 +1,233 @@
+{
+  "head": "d08454f7636a49a5711006cd900d79b32bf9c13b",
+  "source": "git -c core.autocrlf=false archive HEAD; canonical LF",
+  "copy": "C:\\Users\\PC\\Documents\\Codex\\2026-10-02\\files-mentioned-by-the-user-reversiondeposito\\work\\baseline-regression-lf",
+  "test_files": [
+    "tests/test_16_asignacion_p9.py",
+    "tests/test_18_asignar_powerapps_v2.py",
+    "tests/test_21_respuesta_v3_p9.py",
+    "tests/test_22_frontend_final_p9.py",
+    "tests/test_24_flujo_v4_2_firma_8_posicionales_p9.py",
+    "tests/test_25_comprobante_impresion_p9.py",
+    "tests/test_26_comprobante_cuenta_tc_p9.py"
+  ],
+  "returncode": 1,
+  "seconds": 5.489,
+  "python": "3.14.3 (tags/v3.14.3:323c59a, Feb  3 2026, 16:04:56) [MSC v.1944 64 bit (AMD64)]",
+  "platform": "Windows-10-10.0.19045-SP0",
+  "zlib_build": "1.3.1.zlib-ng",
+  "zlib_runtime": "1.3.1.zlib-ng",
+  "changed_zips": {
+    "P9_ASIGNAR_DEPOSITO.zip": {
+      "before_sha256": "90890c1f4bd5ee741c1b61f862cde5085ed51b8e08f0f8f5949b694d79b05a85",
+      "after_sha256": "491f6ccd480d31f34601e911d266c3b6768b5c0be5f531be9cf5585539c196df",
+      "members": [
+        {
+          "name": "manifest.json",
+          "same_content": true,
+          "metadata_differences": {
+            "create_system": [
+              3,
+              0
+            ],
+            "compress_size": [
+              582,
+              590
+            ]
+          }
+        },
+        {
+          "name": "Microsoft.Flow/flows/manifest.json",
+          "same_content": true,
+          "metadata_differences": {
+            "create_system": [
+              3,
+              0
+            ],
+            "compress_size": [
+              97,
+              98
+            ]
+          }
+        },
+        {
+          "name": "Microsoft.Flow/flows/1e61afbc-a5ae-5ee9-bfaf-c3bde2b2f578/apisMap.json",
+          "same_content": true,
+          "metadata_differences": {
+            "create_system": [
+              3,
+              0
+            ]
+          }
+        },
+        {
+          "name": "Microsoft.Flow/flows/1e61afbc-a5ae-5ee9-bfaf-c3bde2b2f578/connectionsMap.json",
+          "same_content": true,
+          "metadata_differences": {
+            "create_system": [
+              3,
+              0
+            ]
+          }
+        },
+        {
+          "name": "Microsoft.Flow/flows/1e61afbc-a5ae-5ee9-bfaf-c3bde2b2f578/definition.json",
+          "same_content": true,
+          "metadata_differences": {
+            "create_system": [
+              3,
+              0
+            ],
+            "compress_size": [
+              2947,
+              2957
+            ]
+          }
+        }
+      ],
+      "same_member_order": true
+    },
+    "P9_ASIGNAR_DEPOSITO_POWERAPPS_V3_RESPUESTA.zip": {
+      "before_sha256": "023db6b4a95b30320f27a1e4d0d38b09bcaac8889ec2e0d3e383d2eb3adb3a44",
+      "after_sha256": "d8429b766dc4332efa28c4736a6126979f8001d45b2f4c1869ffd37fdd107b1e",
+      "members": [
+        {
+          "name": "manifest.json",
+          "same_content": true,
+          "metadata_differences": {
+            "create_system": [
+              3,
+              0
+            ],
+            "compress_size": [
+              582,
+              590
+            ]
+          }
+        },
+        {
+          "name": "Microsoft.Flow/flows/manifest.json",
+          "same_content": true,
+          "metadata_differences": {
+            "create_system": [
+              3,
+              0
+            ],
+            "compress_size": [
+              97,
+              98
+            ]
+          }
+        },
+        {
+          "name": "Microsoft.Flow/flows/1e61afbc-a5ae-5ee9-bfaf-c3bde2b2f578/apisMap.json",
+          "same_content": true,
+          "metadata_differences": {
+            "create_system": [
+              3,
+              0
+            ]
+          }
+        },
+        {
+          "name": "Microsoft.Flow/flows/1e61afbc-a5ae-5ee9-bfaf-c3bde2b2f578/connectionsMap.json",
+          "same_content": true,
+          "metadata_differences": {
+            "create_system": [
+              3,
+              0
+            ]
+          }
+        },
+        {
+          "name": "Microsoft.Flow/flows/1e61afbc-a5ae-5ee9-bfaf-c3bde2b2f578/definition.json",
+          "same_content": true,
+          "metadata_differences": {
+            "create_system": [
+              3,
+              0
+            ],
+            "compress_size": [
+              2947,
+              2960
+            ]
+          }
+        }
+      ],
+      "same_member_order": true
+    },
+    "P9_HABILITAR_ESTADO_ASIGNADO.zip": {
+      "before_sha256": "e85771495d8a12ca910c821c52de9afaf61b345784687917d70e8c7691d2ca5d",
+      "after_sha256": "612116f9c7d1412a9006fdd896a9ed45e0388ae03b22a3fd1d8906754ee61353",
+      "members": [
+        {
+          "name": "manifest.json",
+          "same_content": true,
+          "metadata_differences": {
+            "create_system": [
+              3,
+              0
+            ],
+            "compress_size": [
+              587,
+              592
+            ]
+          }
+        },
+        {
+          "name": "Microsoft.Flow/flows/manifest.json",
+          "same_content": true,
+          "metadata_differences": {
+            "create_system": [
+              3,
+              0
+            ],
+            "compress_size": [
+              97,
+              98
+            ]
+          }
+        },
+        {
+          "name": "Microsoft.Flow/flows/6ad17f84-0dde-5757-9b3b-fe7a3031b2a2/apisMap.json",
+          "same_content": true,
+          "metadata_differences": {
+            "create_system": [
+              3,
+              0
+            ]
+          }
+        },
+        {
+          "name": "Microsoft.Flow/flows/6ad17f84-0dde-5757-9b3b-fe7a3031b2a2/connectionsMap.json",
+          "same_content": true,
+          "metadata_differences": {
+            "create_system": [
+              3,
+              0
+            ],
+            "compress_size": [
+              63,
+              64
+            ]
+          }
+        },
+        {
+          "name": "Microsoft.Flow/flows/6ad17f84-0dde-5757-9b3b-fe7a3031b2a2/definition.json",
+          "same_content": true,
+          "metadata_differences": {
+            "create_system": [
+              3,
+              0
+            ],
+            "compress_size": [
+              3561,
+              3585
+            ]
+          }
+        }
+      ],
+      "same_member_order": true
+    }
+  }
+}

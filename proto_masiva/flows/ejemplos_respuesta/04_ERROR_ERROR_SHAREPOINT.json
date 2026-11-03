@@ -1,0 +1,19 @@
+{
+  "escenario": "SharePoint responde 500 al leer Depositos_Activos: error técnico, sin detalle por fila",
+  "respuesta": {
+    "resultado": "ERROR",
+    "codigo": "ERROR_SHAREPOINT",
+    "mensaje": "No se pudo leer Depositos_Activos (HTTP 500). Vuelva a intentar o avise al administrador.",
+    "archivo": "prevalidar.xlsx",
+    "tabla_encontrada": "SI",
+    "filas_leidas": "0",
+    "copia_temporal_eliminada": "SI",
+    "tiempos_ms": "crear=7;excel=7;depositos=0;borrar=21;total=34",
+    "filas_totales": "0",
+    "filas_validas": "0",
+    "filas_con_error": "0",
+    "depositos_consultados": "0",
+    "detalle_json": "[]"
+  },
+  "detalle_json_expandido": []
+}

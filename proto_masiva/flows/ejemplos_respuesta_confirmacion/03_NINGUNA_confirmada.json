@@ -1,0 +1,49 @@
+{
+  "escenario": "el único depósito fue asignado por otro usuario entre PREVALIDAR y CONFIRMAR",
+  "respuesta_temprana": {
+    "resultado": "ACEPTADO",
+    "codigo": "PROCESAMIENTO_INICIADO",
+    "mensaje": "Confirmación iniciada: 1 depósitos en proceso.",
+    "execution_uid": "00000000-0000-4000-8000-000000000001",
+    "filas_recibidas": "1"
+  },
+  "estado_final": {
+    "execution_uid": "00000000-0000-4000-8000-000000000001",
+    "estado": "TERMINADO",
+    "codigo": "NINGUNA_CONFIRMADA",
+    "filas_totales": 1,
+    "filas_procesadas": 1,
+    "filas_confirmadas": 0,
+    "filas_no_confirmadas": 1,
+    "porcentaje": 100,
+    "mensaje": "0 de 1 depósitos confirmados; 1 requieren revisión.",
+    "detalle_json": [
+      {
+        "fila_excel": 6,
+        "deposito_id": 1,
+        "resultado": "NO_DISPONIBLE",
+        "mensaje": "El depósito ya no está DISPONIBLE (estado actual: ASIGNADO). No se aplicó ningún cambio.",
+        "estado_final": "ASIGNADO",
+        "banco": "BNB",
+        "cuenta_bancaria": "3000100152",
+        "codigo_asignacion": "COD-0001",
+        "importe": 100.0,
+        "moneda": "BOB"
+      }
+    ],
+    "detalle_truncado": false,
+    "actualizado_utc": "2026-10-05T12:00:00.042000Z",
+    "tiempos_ms": "total=41;filas=1;ms_por_fila=48"
+  },
+  "consulta_estado": {
+    "estado": "TERMINADO",
+    "filas_totales": "1",
+    "filas_procesadas": "1",
+    "filas_confirmadas": "0",
+    "filas_no_confirmadas": "1",
+    "porcentaje": "100",
+    "mensaje": "0 de 1 depósitos confirmados; 1 requieren revisión.",
+    "detalle_json": "[{\"fila_excel\":6,\"deposito_id\":1,\"resultado\":\"NO_DISPONIBLE\",\"mensaje\":\"El depósito ya no está DISPONIBLE (estado actual: ASIGNADO). No se aplicó ningún cambio.\",\"estado_final\":\"ASIGNADO\",\"banco\":\"BNB\",\"cuenta_bancaria\":\"3000100152\",\"codigo_asignacion\":\"COD-0001\",\"importe\":100.0,\"moneda\":\"BOB\"}]",
+    "tiempos_ms": "total=41;filas=1;ms_por_fila=48"
+  }
+}

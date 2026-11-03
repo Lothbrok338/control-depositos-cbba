@@ -1,0 +1,290 @@
+{
+  "nuevos_no_rastreados": [
+    {
+      "ruta": "DESPLIEGUE_P9_REVERSION.md",
+      "categoria": "E. Documentación"
+    },
+    {
+      "ruta": "DOCUMENTACION_P9_REVERSION.md",
+      "categoria": "E. Documentación"
+    },
+    {
+      "ruta": "P9_EXPIRAR_REVERSIONES.zip",
+      "categoria": "G. ZIP/paquetes"
+    },
+    {
+      "ruta": "P9_PROVISIONAR_REVERSION.zip",
+      "categoria": "G. ZIP/paquetes"
+    },
+    {
+      "ruta": "P9_RECUPERAR_REVERSION.zip",
+      "categoria": "G. ZIP/paquetes"
+    },
+    {
+      "ruta": "P9_RESOLVER_REVERSION.zip",
+      "categoria": "G. ZIP/paquetes"
+    },
+    {
+      "ruta": "P9_SOLICITAR_REVERSION.zip",
+      "categoria": "G. ZIP/paquetes"
+    },
+    {
+      "ruta": "p9/reversion/construir.py",
+      "categoria": "B. Flows y ensayo"
+    },
+    {
+      "ruta": "p9/reversion/contrato.py",
+      "categoria": "A. SharePoint/esquema"
+    },
+    {
+      "ruta": "p9/reversion/ensayo.py",
+      "categoria": "B. Flows y ensayo"
+    },
+    {
+      "ruta": "p9/reversion/esquema_reversiones.json",
+      "categoria": "A. SharePoint/esquema"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/AUDITORIA_BASELINE_P9_WINDOWS.md",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/DIAGNOSTICO_CODIFICACION_WINDOWS.md",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/GIT_DIFF_STAT.txt",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/GIT_STATUS_COMPLETO.txt",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/GIT_STATUS_POR_ARCHIVO.txt",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/INFORME_PRUEBAS.md",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/INVENTARIO_CAMBIOS.json",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/RESULTADOS_PRUEBAS.json",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/VALIDACION_ESTATICA.json",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/audit_baseline_regression.py.txt",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/baseline-completa-02.json",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/baseline-completa-02.log",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/baseline-completa-02.xml",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/baseline-regression-junit.xml",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/baseline-regression-lf-junit.xml",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/baseline-regression-lf-p9.log",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/baseline-regression-lf-platform.json",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/baseline-regression-p9.log",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/baseline-regression-platform.json",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/candidate-completa-final.json",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/candidate-completa-final.log",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/candidate-completa-final.xml",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/candidate-nuevos-03.json",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/candidate-nuevos-03.log",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/candidate-nuevos-03.xml",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/candidate-p9-final.json",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/candidate-p9-final.log",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/candidate-p9-final.xml",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/huellas_base.json",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/huellas_finales.json",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/evidencias/validar_iteracion.py.txt",
+      "categoria": "F. Evidencias"
+    },
+    {
+      "ruta": "p9/reversion/flujo_expirar_definition.json",
+      "categoria": "B. Flows y ensayo"
+    },
+    {
+      "ruta": "p9/reversion/flujo_provisionar_definition.json",
+      "categoria": "A. SharePoint/esquema"
+    },
+    {
+      "ruta": "p9/reversion/flujo_recuperar_definition.json",
+      "categoria": "B. Flows y ensayo"
+    },
+    {
+      "ruta": "p9/reversion/flujo_resolver_definition.json",
+      "categoria": "B. Flows y ensayo"
+    },
+    {
+      "ruta": "p9/reversion/flujo_solicitar_definition.json",
+      "categoria": "B. Flows y ensayo"
+    },
+    {
+      "ruta": "p9/reversion/flujos.py",
+      "categoria": "B. Flows y ensayo"
+    },
+    {
+      "ruta": "p9/reversion/paquete.py",
+      "categoria": "B. Flows y ensayo"
+    },
+    {
+      "ruta": "p9/reversion/powerapps/FORMULAS_EXACTAS.md",
+      "categoria": "C. Power Apps"
+    },
+    {
+      "ruta": "p9/reversion/powerapps/P9_CONTROL_INGRESOS_CON_REVERSION.txt",
+      "categoria": "C. Power Apps"
+    },
+    {
+      "ruta": "p9/reversion/powerapps/SOLICITAR_REVERSION_PEGAR.yaml",
+      "categoria": "C. Power Apps"
+    },
+    {
+      "ruta": "p9/reversion/provisionar.py",
+      "categoria": "A. SharePoint/esquema"
+    },
+    {
+      "ruta": "p9/reversion/referencia/PROCEDENCIA.md",
+      "categoria": "H. Referencia histórica"
+    },
+    {
+      "ruta": "p9/reversion/referencia/extraido/Microsoft.Flow/flows/f24c29ee-8d84-4577-b54d-8755c485a72c/apisMap.json",
+      "categoria": "H. Referencia histórica"
+    },
+    {
+      "ruta": "p9/reversion/referencia/extraido/Microsoft.Flow/flows/f24c29ee-8d84-4577-b54d-8755c485a72c/connectionsMap.json",
+      "categoria": "H. Referencia histórica"
+    },
+    {
+      "ruta": "p9/reversion/referencia/extraido/Microsoft.Flow/flows/f24c29ee-8d84-4577-b54d-8755c485a72c/definition.json",
+      "categoria": "H. Referencia histórica"
+    },
+    {
+      "ruta": "p9/reversion/referencia/extraido/Microsoft.Flow/flows/manifest.json",
+      "categoria": "H. Referencia histórica"
+    },
+    {
+      "ruta": "p9/reversion/referencia/extraido/manifest.json",
+      "categoria": "H. Referencia histórica"
+    },
+    {
+      "ruta": "p9/reversion/referencia/reversiondeposito_20261003015909.zip",
+      "categoria": "H. Referencia histórica"
+    },
+    {
+      "ruta": "p9/reversion/validar.py",
+      "categoria": "B. Flows y ensayo"
+    },
+    {
+      "ruta": "p9/reversion/wdl.py",
+      "categoria": "B. Flows y ensayo"
+    },
+    {
+      "ruta": "tests/reversion_helpers.py",
+      "categoria": "D. Tests"
+    },
+    {
+      "ruta": "tests/test_27_reversion_contrato_p9.py",
+      "categoria": "D. Tests"
+    },
+    {
+      "ruta": "tests/test_28_reversion_concurrencia_p9.py",
+      "categoria": "D. Tests"
+    },
+    {
+      "ruta": "tests/test_29_reversion_frontend_p9.py",
+      "categoria": "D. Tests"
+    },
+    {
+      "ruta": "tests/test_30_reversion_expiracion_recuperacion_p9.py",
+      "categoria": "D. Tests"
+    }
+  ],
+  "modificados_rastreados": [
+    {
+      "ruta": "DOCUMENTACION_P9_POWER_APPS.md",
+      "categoria": "E. Documentación"
+    },
+    {
+      "ruta": "ESTADO_PROYECTO.md",
+      "categoria": "E. Documentación"
+    },
+    {
+      "ruta": "tests/test_16_asignacion_p9.py",
+      "categoria": "D. Tests"
+    },
+    {
+      "ruta": "tests/test_26_comprobante_cuenta_tc_p9.py",
+      "categoria": "D. Tests"
+    }
+  ]
+}

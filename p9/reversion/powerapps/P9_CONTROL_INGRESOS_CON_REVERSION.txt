@@ -1,0 +1,1405 @@
+- cntControlDepositosP9:
+    Control: GroupContainer@1.5.0
+    Variant: ManualLayout
+    Properties:
+      DropShadow: =DropShadow.None
+      Fill: =RGBA(248, 249, 250, 1)
+      Height: =Parent.Height - 20
+      RadiusBottomLeft: =10
+      RadiusBottomRight: =10
+      RadiusTopLeft: =10
+      RadiusTopRight: =10
+      Width: =Parent.Width - 20
+      X: =10
+      Y: =10
+    Children:
+      - rectLineaInstitucionalP9:
+          Control: Rectangle@2.3.0
+          Properties:
+            BorderStyle: =BorderStyle.None
+            Fill: =RGBA(123, 22, 50, 1)
+            Height: =7
+            Width: =Parent.Width
+      - lblTituloControlP9:
+          Control: Label@2.5.1
+          Properties:
+            Color: =RGBA(94, 16, 38, 1)
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Bold
+            Height: =35
+            Size: =19
+            Text: ="CONFIRMACIÓN DE INGRESOS"
+            Width: =500
+            X: =20
+            Y: =15
+      - lblSubtituloControlP9:
+          Control: Label@2.5.1
+          Properties:
+            Color: =RGBA(98, 102, 106, 1)
+            Font: =Font.'Segoe UI'
+            Height: =22
+            Size: =10
+            Text: ="Confirmación de créditos · DISPONIBLES y CONFIRMADOS · Cochabamba"
+            Width: =650
+            X: =20
+            Y: =47
+      - btnActualizarP9:
+          Control: Classic/Button@2.2.0
+          Properties:
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            Fill: =RGBA(123, 22, 50, 1)
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Bold
+            Height: =32
+            OnSelect: |-
+              =Refresh(Depositos_Activos);
+              Notify("Información actualizada", NotificationType.Success)
+            Size: =9
+            Text: ="ACTUALIZAR"
+            Width: =150
+            X: =1010
+            Y: =27
+      - lblCantidadResultadosP9:
+          Control: Label@2.5.1
+          Properties:
+            Align: =Align.Center
+            Color: =RGBA(123, 22, 50, 1)
+            Fill: =RGBA(247, 237, 241, 1)
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Semibold
+            Height: =30
+            Size: =9
+            Text: =CountRows(galDepositosP9.AllItems) & " resultados visibles"
+            Width: =160
+            X: =1178
+            Y: =27
+
+      - lblFechaDesdeP9:
+          Control: Label@2.5.1
+          Properties:
+            Color: =RGBA(52, 55, 58, 1)
+            FontWeight: =FontWeight.Semibold
+            Height: =20
+            Size: =9
+            Text: ="FECHA DESDE"
+            Width: =135
+            X: =20
+            Y: =78
+      - dpFechaDesdeP9:
+          Control: Classic/DatePicker@2.6.0
+          Properties:
+            BorderColor: =RGBA(217, 218, 221, 1)
+            DefaultDate: =DateAdd(Today(), -2, TimeUnit.Months)
+            Font: =Font.'Segoe UI'
+            Height: =35
+            IconBackground: =RGBA(123, 22, 50, 1)
+            IconFill: =RGBA(255, 255, 255, 1)
+            IsEditable: =true
+            Size: =10
+            Width: =145
+            X: =20
+            Y: =98
+      - lblFechaHastaP9:
+          Control: Label@2.5.1
+          Properties:
+            Color: =RGBA(52, 55, 58, 1)
+            FontWeight: =FontWeight.Semibold
+            Height: =20
+            Size: =9
+            Text: ="FECHA HASTA"
+            Width: =135
+            X: =175
+            Y: =78
+      - dpFechaHastaP9:
+          Control: Classic/DatePicker@2.6.0
+          Properties:
+            BorderColor: =RGBA(217, 218, 221, 1)
+            DefaultDate: =Today()
+            Font: =Font.'Segoe UI'
+            Height: =35
+            IconBackground: =RGBA(123, 22, 50, 1)
+            IconFill: =RGBA(255, 255, 255, 1)
+            IsEditable: =true
+            Size: =10
+            Width: =145
+            X: =175
+            Y: =98
+      - lblImporteP9:
+          Control: Label@2.5.1
+          Properties:
+            Color: =RGBA(52, 55, 58, 1)
+            FontWeight: =FontWeight.Semibold
+            Height: =20
+            Size: =9
+            Text: ="IMPORTE"
+            Width: =120
+            X: =330
+            Y: =78
+      - txtImporteP9:
+          Control: Classic/TextInput@2.3.2
+          Properties:
+            BorderColor: =RGBA(217, 218, 221, 1)
+            Default: =""
+            DelayOutput: =true
+            Font: =Font.'Segoe UI'
+            Format: =TextFormat.Number
+            Height: =35
+            HintText: ="Ej. 1500"
+            Size: =10
+            Width: =135
+            X: =330
+            Y: =98
+      - lblBancoP9:
+          Control: Label@2.5.1
+          Properties:
+            Color: =RGBA(52, 55, 58, 1)
+            FontWeight: =FontWeight.Semibold
+            Height: =20
+            Size: =9
+            Text: ="BANCO"
+            Width: =95
+            X: =475
+            Y: =78
+      - cmbBancoP9:
+          Control: Classic/ComboBox@2.4.0
+          Properties:
+            BorderColor: =RGBA(217, 218, 221, 1)
+            ChevronBackground: =RGBA(241, 242, 243, 1)
+            ChevronFill: =RGBA(94, 16, 38, 1)
+            DisplayFields: =["Value"]
+            Font: =Font.'Segoe UI'
+            Height: =35
+            Items: |-
+              =Table(
+                  {Value: "(Todos)"},
+                  {Value: "BNB"},
+                  {Value: "BCP"},
+                  {Value: "BISA"},
+                  {Value: "BANCO UNIÓN"},
+                  {Value: "BANCO ECONÓMICO"},
+                  {Value: "BMSC"}
+              )
+            OnChange: =Reset(cmbCuentaP9)
+            SearchFields: =["Value"]
+            SelectMultiple: =false
+            Size: =10
+            Width: =150
+            X: =475
+            Y: =98
+      - lblCuentaP9:
+          Control: Label@2.5.1
+          Properties:
+            Color: =RGBA(52, 55, 58, 1)
+            FontWeight: =FontWeight.Semibold
+            Height: =20
+            Size: =9
+            Text: ="CUENTA BANCARIA"
+            Width: =180
+            X: =635
+            Y: =78
+      - cmbCuentaP9:
+          Control: Classic/ComboBox@2.4.0
+          Properties:
+            BorderColor: =RGBA(217, 218, 221, 1)
+            ChevronBackground: =RGBA(241, 242, 243, 1)
+            ChevronFill: =RGBA(94, 16, 38, 1)
+            DisplayFields: =["Label"]
+            DisplayMode: =If(IsBlank(cmbBancoP9.Selected.Value) || cmbBancoP9.Selected.Value = "(Todos)", DisplayMode.Disabled, DisplayMode.Edit)
+            Font: =Font.'Segoe UI'
+            Height: =35
+            Items: |-
+              =Switch(
+                  cmbBancoP9.Selected.Value,
+                  "BNB", Table(
+                      {Label: "MN · 3000100152", Cuenta: "3000100152"},
+                      {Label: "ME · 3400041236", Cuenta: "3400041236"},
+                      {Label: "AHORRO · 3501936692", Cuenta: "3501936692"},
+                      {Label: "CLÍNICA · 3000100705", Cuenta: "3000100705"}
+                  ),
+                  "BCP", Table(
+                      {Label: "MN · 301-5005684-3-97", Cuenta: "301-5005684-3-97"},
+                      {Label: "ME · 301-5005425-2-71", Cuenta: "301-5005425-2-71"}
+                  ),
+                  "BISA", Table(
+                      {Label: "MN · 0696870039", Cuenta: "0696870039"},
+                      {Label: "ME · 0696872023", Cuenta: "0696872023"}
+                  ),
+                  "BANCO UNIÓN", Table(
+                      {Label: "MN · 10000003224552", Cuenta: "10000003224552"},
+                      {Label: "ME · 20000003224544", Cuenta: "20000003224544"}
+                  ),
+                  "BANCO ECONÓMICO", Table(
+                      {Label: "CTA. CTE. · 3041210569", Cuenta: "3041210569"},
+                      {Label: "AHORRO · 3051446946", Cuenta: "3051446946"}
+                  ),
+                  "BMSC", Table(
+                      {Label: "CTA. CTE. · 1000872489", Cuenta: "1000872489"}
+                  ),
+                  Table({Label: "", Cuenta: ""})
+              )
+            SearchFields: =["Label"]
+            SelectMultiple: =false
+            Size: =9
+            Width: =185
+            X: =635
+            Y: =98
+      - lblTextoP9:
+          Control: Label@2.5.1
+          Properties:
+            Color: =RGBA(52, 55, 58, 1)
+            FontWeight: =FontWeight.Semibold
+            Height: =20
+            Size: =9
+            Text: ="DESCRIPCIÓN CONTIENE"
+            Width: =170
+            X: =830
+            Y: =78
+      - txtTextoP9:
+          Control: Classic/TextInput@2.3.2
+          Properties:
+            BorderColor: =RGBA(217, 218, 221, 1)
+            Default: =""
+            DelayOutput: =true
+            Font: =Font.'Segoe UI'
+            Height: =35
+            HintText: ="Texto en cualquier parte"
+            Size: =10
+            Width: =170
+            X: =830
+            Y: =98
+      - lblCodigoP9:
+          Control: Label@2.5.1
+          Properties:
+            Color: =RGBA(52, 55, 58, 1)
+            FontWeight: =FontWeight.Semibold
+            Height: =20
+            Size: =9
+            Text: ="CÓDIGO ASIGNACIÓN"
+            Width: =180
+            X: =1010
+            Y: =78
+      - txtCodigoP9:
+          Control: Classic/TextInput@2.3.2
+          Properties:
+            BorderColor: =RGBA(217, 218, 221, 1)
+            Default: =""
+            DelayOutput: =true
+            Font: =Font.'Segoe UI'
+            Height: =35
+            HintText: ="Código / referencia"
+            Size: =10
+            Width: =180
+            X: =1010
+            Y: =98
+      - btnLimpiarP9:
+          Control: Classic/Button@2.2.0
+          Properties:
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            Fill: =RGBA(98, 102, 106, 1)
+            Font: =Font.'Segoe UI'
+            Height: =35
+            OnSelect: |-
+              =Reset(dpFechaDesdeP9);
+              Reset(dpFechaHastaP9);
+              Reset(txtImporteP9);
+              Reset(cmbBancoP9);
+              Reset(cmbCuentaP9);
+              Reset(txtCodigoP9);
+              Reset(txtTextoP9)
+            Size: =9
+            Text: ="LIMPIAR"
+            Width: =105
+            X: =1200
+            Y: =98
+
+      - lblTituloResultadosP9:
+          Control: Label@2.5.1
+          Properties:
+            Color: =RGBA(94, 16, 38, 1)
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Bold
+            Height: =28
+            Size: =12
+            Text: ="INGRESOS"
+            Width: =400
+            X: =20
+            Y: =145
+      - lblAyudaResultadosP9:
+          Control: Label@2.5.1
+          Properties:
+            Color: =RGBA(98, 102, 106, 1)
+            Font: =Font.'Segoe UI'
+            Height: =25
+            Size: =9
+            Text: |-
+              ="Solo CRÉDITOS · DISPONIBLE o CONFIRMADO · Últimos 2 meses (desde " & Text(DateAdd(Today(), -2, TimeUnit.Months), "dd/mm/yyyy") & ")"
+            Width: =860
+            X: =420
+            Y: =147
+      - rectHeaderResultadosP9:
+          Control: Rectangle@2.3.0
+          Properties:
+            BorderStyle: =BorderStyle.None
+            Fill: =RGBA(52, 55, 58, 1)
+            Height: =36
+            Width: =Parent.Width - 40
+            X: =20
+            Y: =178
+      - headFechaP9:
+          Control: Label@2.5.1
+          Properties:
+            Color: =RGBA(255, 255, 255, 1)
+            FontWeight: =FontWeight.Semibold
+            Height: =26
+            Size: =8
+            Text: ="FECHA"
+            Width: =70
+            X: =35
+            Y: =183
+      - headHoraP9:
+          Control: Label@2.5.1
+          Properties:
+            Color: =RGBA(255, 255, 255, 1)
+            FontWeight: =FontWeight.Semibold
+            Height: =26
+            Size: =8
+            Text: ="HORA"
+            Width: =60
+            X: =105
+            Y: =183
+      - headBancoP9:
+          Control: Label@2.5.1
+          Properties:
+            Color: =RGBA(255, 255, 255, 1)
+            FontWeight: =FontWeight.Semibold
+            Height: =26
+            Size: =8
+            Text: ="BANCO"
+            Width: =75
+            X: =165
+            Y: =183
+      - headCuentaP9:
+          Control: Label@2.5.1
+          Properties:
+            Color: =RGBA(255, 255, 255, 1)
+            FontWeight: =FontWeight.Semibold
+            Height: =26
+            Size: =8
+            Text: ="CUENTA / MONEDA"
+            Width: =145
+            X: =240
+            Y: =183
+      - headImporteP9:
+          Control: Label@2.5.1
+          Properties:
+            Align: =Align.Right
+            Color: =RGBA(255, 255, 255, 1)
+            FontWeight: =FontWeight.Semibold
+            Height: =26
+            Size: =8
+            Text: ="IMPORTE"
+            Width: =100
+            X: =385
+            Y: =183
+      - headCodigoP9:
+          Control: Label@2.5.1
+          Properties:
+            Color: =RGBA(255, 255, 255, 1)
+            FontWeight: =FontWeight.Semibold
+            Height: =26
+            Size: =8
+            Text: ="CÓDIGO"
+            Width: =110
+            X: =490
+            Y: =183
+      - headDescripcionP9:
+          Control: Label@2.5.1
+          Properties:
+            Color: =RGBA(255, 255, 255, 1)
+            FontWeight: =FontWeight.Semibold
+            Height: =26
+            Size: =8
+            Text: ="DESCRIPCIÓN"
+            Width: =260
+            X: =610
+            Y: =183
+      - headEstadoP9:
+          Control: Label@2.5.1
+          Properties:
+            Align: =Align.Center
+            Color: =RGBA(255, 255, 255, 1)
+            FontWeight: =FontWeight.Semibold
+            Height: =26
+            Size: =8
+            Text: ="ESTADO"
+            Width: =95
+            X: =875
+            Y: =183
+      - headDatosConfirmacionP9:
+          Control: Label@2.5.1
+          Properties:
+            Color: =RGBA(255, 255, 255, 1)
+            FontWeight: =FontWeight.Semibold
+            Height: =26
+            Size: =8
+            Text: ="DATOS DE CONFIRMACIÓN"
+            Width: =Parent.Width - 1125
+            X: =975
+            Y: =183
+      - headAccionP9:
+          Control: Label@2.5.1
+          Properties:
+            Align: =Align.Center
+            Color: =RGBA(255, 255, 255, 1)
+            FontWeight: =FontWeight.Semibold
+            Height: =26
+            Size: =8
+            Text: ="ACCIÓN"
+            Width: =115
+            X: =Parent.Width - 145
+            Y: =183
+
+      - galDepositosP9:
+          Control: Gallery@2.15.0
+          Variant: BrowseLayout_Vertical_ThreeTextVariant_ver5.0
+          Properties:
+            BorderColor: =RGBA(217, 218, 221, 1)
+            Fill: =RGBA(255, 255, 255, 1)
+            Height: =Parent.Height - 235
+            Items: |-
+              =If(
+                  IsBlank(Trim(txtTextoP9.Text)),
+                  SortByColumns(
+                      Filter(
+                          [@Depositos_Activos],
+                          (ESTADO_ASIGNACION.Value = "DISPONIBLE" || ESTADO_ASIGNACION.Value = "ASIGNADO"),
+                          TIPO_MOVIMIENTO = "CRÉDITO",
+                          FECHA_MOVIMIENTO >= DateAdd(Today(), -2, TimeUnit.Months),
+                          FECHA_MOVIMIENTO <= Today(),
+                          IsBlank(dpFechaDesdeP9.SelectedDate) || FECHA_MOVIMIENTO >= dpFechaDesdeP9.SelectedDate,
+                          IsBlank(dpFechaHastaP9.SelectedDate) || FECHA_MOVIMIENTO <= dpFechaHastaP9.SelectedDate,
+                          IsBlank(txtImporteP9.Text) || IMPORTE = Value(txtImporteP9.Text),
+                          IsBlank(cmbBancoP9.Selected.Value) || cmbBancoP9.Selected.Value = "(Todos)" || BANCO = cmbBancoP9.Selected.Value,
+                          IsBlank(cmbCuentaP9.Selected.Cuenta) || CUENTA_BANCARIA = cmbCuentaP9.Selected.Cuenta,
+                          IsBlank(txtCodigoP9.Text) || StartsWith(CODIGO_ASIGNACION, txtCodigoP9.Text)
+                      ),
+                      "FECHA_MOVIMIENTO",
+                      SortOrder.Descending
+                  ),
+                  With(
+                      {
+                          baseP9: Filter(
+                              [@Depositos_Activos],
+                              (ESTADO_ASIGNACION.Value = "DISPONIBLE" || ESTADO_ASIGNACION.Value = "ASIGNADO"),
+                              TIPO_MOVIMIENTO = "CRÉDITO",
+                              FECHA_MOVIMIENTO >= DateAdd(Today(), -2, TimeUnit.Months),
+                              FECHA_MOVIMIENTO <= Today(),
+                              IsBlank(dpFechaDesdeP9.SelectedDate) || FECHA_MOVIMIENTO >= dpFechaDesdeP9.SelectedDate,
+                              IsBlank(dpFechaHastaP9.SelectedDate) || FECHA_MOVIMIENTO <= dpFechaHastaP9.SelectedDate,
+                              IsBlank(txtImporteP9.Text) || IMPORTE = Value(txtImporteP9.Text),
+                              IsBlank(cmbBancoP9.Selected.Value) || cmbBancoP9.Selected.Value = "(Todos)" || BANCO = cmbBancoP9.Selected.Value,
+                              IsBlank(cmbCuentaP9.Selected.Cuenta) || CUENTA_BANCARIA = cmbCuentaP9.Selected.Cuenta,
+                              IsBlank(txtCodigoP9.Text) || StartsWith(CODIGO_ASIGNACION, txtCodigoP9.Text)
+                          )
+                      },
+                      SortByColumns(
+                          Filter(
+                              baseP9,
+                              Lower(Trim(txtTextoP9.Text)) in Lower(Coalesce(DESCRIPCION, ""))
+                          ),
+                          "FECHA_MOVIMIENTO",
+                          SortOrder.Descending
+                      )
+                  )
+              )
+            TemplateFill: =If(ThisItem.IsSelected, RGBA(247, 237, 241, 1), RGBA(255, 255, 255, 1))
+            TemplateSize: =76
+            Width: =Parent.Width - 40
+            X: =20
+            Y: =215
+          Children:
+            - rowFechaP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Semibold
+                  Height: =24
+                  OnSelect: =Select(Parent)
+                  Size: =8
+                  Text: =Text(ThisItem.FECHA_MOVIMIENTO, "dd/mm/yyyy")
+                  Width: =70
+                  X: =15
+                  Y: =26
+            - rowHoraP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =24
+                  OnSelect: =Select(Parent)
+                  Size: =8
+                  Text: =ThisItem.HORA_MOVIMIENTO
+                  Width: =60
+                  X: =85
+                  Y: =26
+            - rowBancoP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Semibold
+                  Height: =24
+                  OnSelect: =Select(Parent)
+                  Size: =8
+                  Text: =ThisItem.BANCO
+                  Width: =85
+                  X: =145
+                  Y: =26
+            - rowCuentaP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =34
+                  OnSelect: =Select(Parent)
+                  Size: =8
+                  Text: =ThisItem.CUENTA_BANCARIA & " · " & ThisItem.MONEDA
+                  Width: =145
+                  X: =235
+                  Y: =21
+            - rowImporteP9:
+                Control: Label@2.5.1
+                Properties:
+                  Align: =Align.Right
+                  Color: =RGBA(94, 16, 38, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =30
+                  OnSelect: =Select(Parent)
+                  Size: =10
+                  Text: =Text(ThisItem.IMPORTE, "#,##0.00", "es-ES")
+                  Width: =100
+                  X: =385
+                  Y: =22
+            - rowCodigoP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Semibold
+                  Height: =24
+                  OnSelect: =Select(Parent)
+                  Size: =8
+                  Text: =ThisItem.CODIGO_ASIGNACION
+                  Width: =110
+                  X: =490
+                  Y: =26
+            - rowDescripcionP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =60
+                  OnSelect: =Select(Parent)
+                  Size: =8
+                  Text: =Coalesce(ThisItem.DESCRIPCION, "—")
+                  Width: =260
+                  X: =610
+                  Y: =8
+            - rowEstadoP9:
+                Control: Label@2.5.1
+                Properties:
+                  Align: =Align.Center
+                  Color: =If(ThisItem.ESTADO_ASIGNACION.Value = "ASIGNADO", RGBA(94, 16, 38, 1), RGBA(46, 125, 50, 1))
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =24
+                  OnSelect: =Select(Parent)
+                  Size: =8
+                  Text: =If(ThisItem.ESTADO_ASIGNACION.Value = "ASIGNADO", "CONFIRMADO", "DISPONIBLE")
+                  Width: =95
+                  X: =875
+                  Y: =26
+            - rowDatosConfirmacionP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =60
+                  OnSelect: =Select(Parent)
+                  Size: =7
+                  Text: |-
+                    =If(
+                        ThisItem.ESTADO_ASIGNACION.Value = "ASIGNADO",
+                        Coalesce(ThisItem.USUARIO_ASIGNACION, "—")
+                        & Char(10)
+                        & If(
+                            IsBlank(ThisItem.FECHA_HORA_ASIGNACION),
+                            "—",
+                            Text(ThisItem.FECHA_HORA_ASIGNACION, "dd/mm/yyyy hh:mm")
+                        ),
+                        "—"
+                    )
+                  Width: =Parent.TemplateWidth - 1110
+                  X: =975
+                  Y: =8
+            - btnAsignarP9:
+                Control: Classic/Button@2.2.0
+                Properties:
+                  BorderColor: =RGBA(123, 22, 50, 1)
+                  BorderThickness: =1
+                  Color: =RGBA(123, 22, 50, 1)
+                  Fill: =RGBA(255, 255, 255, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =If(ThisItem.ESTADO_ASIGNACION.Value = "ASIGNADO", 28, 32)
+                  OnSelect: |-
+                    =Set(varDepositoSeleccionado, ThisItem);
+                    Refresh(Depositos_Activos);
+                    Set(varDepositoSeleccionado, LookUp(Depositos_Activos, ID = varDepositoSeleccionado.ID));
+                    If(
+                        IsBlank(varDepositoSeleccionado),
+                        Notify("No se encontró el depósito. Actualiza la pantalla.", NotificationType.Warning);
+                        UpdateContext({mostrarConfirmacion: false}),
+                        Reset(txtEstudianteP9);
+                        Reset(txtSolicitadoP9);
+                        Reset(txtSedeP9);
+                        Reset(txtObservacionP9);
+                        UpdateContext({mostrarConfirmacion: true})
+                    )
+                  Size: =7
+                  Text: =If(ThisItem.ESTADO_ASIGNACION.Value = "ASIGNADO", "VER", "CONFIRMAR")
+                  Width: =110
+                  X: =Parent.TemplateWidth - 125
+                  Y: =If(ThisItem.ESTADO_ASIGNACION.Value = "ASIGNADO", 6, 22)
+            - btnAbrirComprobanteP9:
+                Control: Classic/Button@2.2.0
+                Properties:
+                  BorderStyle: =BorderStyle.None
+                  Color: =RGBA(255, 255, 255, 1)
+                  DisplayMode: =If(Coalesce(varP9ComprobanteCargando, false), DisplayMode.Disabled, DisplayMode.Edit)
+                  Fill: =RGBA(123, 22, 50, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =28
+                  OnSelect: |-
+                    =Set(varP9ComprobanteID, ThisItem.ID);
+                    Set(varP9Comprobante, Blank());
+                    Set(varP9ComprobanteCargando, true);
+                    IfError(
+                        Refresh(Depositos_Activos),
+                        Set(varP9Comprobante, Blank());
+                        Set(varP9ComprobanteID, Blank());
+                        Notify("No se pudo consultar SharePoint. Vuelve a intentar abrir el comprobante.", NotificationType.Warning);
+                        false,
+                        IfError(
+                            With(
+                                {registroP9: LookUp(Depositos_Activos, ID = varP9ComprobanteID)},
+                                If(
+                                    IsBlank(registroP9.ID) || registroP9.ESTADO_ASIGNACION.Value <> "ASIGNADO",
+                                    Set(varP9ComprobanteID, Blank());
+                                    Notify("El ingreso no existe o ya no está CONFIRMADO. No se puede abrir el comprobante.", NotificationType.Warning);
+                                    false,
+                                    Set(varP9Comprobante, registroP9);
+                                    Navigate('COMPROBANTE PDF', ScreenTransition.None)
+                                )
+                            ),
+                            Set(varP9Comprobante, Blank());
+                            Set(varP9ComprobanteID, Blank());
+                            Notify("No se pudo leer el ingreso desde SharePoint. Vuelve a intentarlo.", NotificationType.Warning);
+                            false
+                        )
+                    );
+                    Set(varP9ComprobanteCargando, false)
+                  Size: =7
+                  Text: ="PDF"
+                  Tooltip: ="Ver comprobante e imprimir o guardar como PDF"
+                  Visible: =ThisItem.ESTADO_ASIGNACION.Value = "ASIGNADO"
+                  Width: =110
+                  X: =Parent.TemplateWidth - 125
+                  Y: =40
+            - sepFilaP9:
+                Control: Rectangle@2.3.0
+                Properties:
+                  BorderStyle: =BorderStyle.None
+                  Fill: =RGBA(225, 225, 225, 1)
+                  Height: =1
+                  OnSelect: =Select(Parent)
+                  Width: =Parent.TemplateWidth
+                  Y: =Parent.TemplateHeight - 1
+
+      - overlayConfirmacionP9:
+          Control: Rectangle@2.3.0
+          Properties:
+            Fill: =RGBA(0, 0, 0, 0.45)
+            Height: =Parent.Height
+            Visible: =mostrarConfirmacion
+            Width: =Parent.Width
+      - cntConfirmarDepositoP9:
+          Control: GroupContainer@1.5.0
+          Variant: ManualLayout
+          Properties:
+            DropShadow: =DropShadow.None
+            Fill: =RGBA(255, 255, 255, 1)
+            Height: =530
+            RadiusBottomLeft: =12
+            RadiusBottomRight: =12
+            RadiusTopLeft: =12
+            RadiusTopRight: =12
+            Visible: =mostrarConfirmacion
+            Width: =Min(900, Parent.Width - 80)
+            X: =(Parent.Width - Self.Width) / 2
+            Y: =(Parent.Height - Self.Height) / 2
+          Children:
+            - rectCabeceraConfirmacionP9:
+                Control: Rectangle@2.3.0
+                Properties:
+                  BorderStyle: =BorderStyle.None
+                  Fill: =RGBA(123, 22, 50, 1)
+                  Height: =170
+                  Width: =Parent.Width
+            - lblTituloConfirmacionP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(255, 255, 255, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =32
+                  Size: =17
+                  Text: =If(!IsBlank(varDepositoSeleccionado) && varDepositoSeleccionado.ESTADO_ASIGNACION.Value = "ASIGNADO", "Ingreso CONFIRMADO", "Confirmar ingreso")
+                  Width: =500
+                  X: =25
+                  Y: =15
+            - lblEstadoConfirmacionP9:
+                Control: Label@2.5.1
+                Properties:
+                  Align: =Align.Center
+                  Color: =RGBA(94, 16, 38, 1)
+                  Fill: =RGBA(255, 255, 255, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =28
+                  Size: =9
+                  Text: =If(!IsBlank(varDepositoSeleccionado) && varDepositoSeleccionado.ESTADO_ASIGNACION.Value = "ASIGNADO", "CONFIRMADO", "DISPONIBLE")
+                  Width: =145
+                  X: =Parent.Width - 170
+                  Y: =15
+            - lblResumenConfirmacionP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(94, 16, 38, 1)
+                  Fill: =RGBA(255, 255, 255, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Semibold
+                  Height: =95
+                  Size: =10
+                  Text: |-
+                    ="FECHA: " & Text(varDepositoSeleccionado.FECHA_MOVIMIENTO, "dd/mm/yyyy")
+                    & "     HORA: " & Coalesce(varDepositoSeleccionado.HORA_MOVIMIENTO, "—")
+                    & "     MONTO: " & varDepositoSeleccionado.MONEDA & " " & Text(varDepositoSeleccionado.IMPORTE, "#,##0.00", "es-ES")
+                    & Char(10)
+                    & "CÓDIGO DE ASIGNACIÓN: " & Coalesce(varDepositoSeleccionado.CODIGO_ASIGNACION, "—")
+                    & Char(10)
+                    & "DESCRIPCIÓN: " & Coalesce(varDepositoSeleccionado.DESCRIPCION, "—")
+                  Width: =Parent.Width - 80
+                  X: =40
+                  Y: =58
+
+            - lblEstudianteP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =22
+                  Size: =9
+                  Text: ="ESTUDIANTE *"
+                  Width: =350
+                  X: =30
+                  Y: =185
+            - txtEstudianteP9:
+                Control: Classic/TextInput@2.3.2
+                Properties:
+                  BorderColor: =RGBA(217, 218, 221, 1)
+                  Default: =Coalesce(varDepositoSeleccionado.ESTUDIANTE, "")
+                  DisplayMode: =If(IsBlank(varDepositoSeleccionado) || varDepositoSeleccionado.ESTADO_ASIGNACION.Value = "DISPONIBLE", DisplayMode.Edit, DisplayMode.View)
+                  Font: =Font.'Segoe UI'
+                  Height: =38
+                  HintText: ="Nombre del estudiante"
+                  Size: =10
+                  Width: =(Parent.Width - 90) / 2
+                  X: =30
+                  Y: =208
+            - lblSolicitadoP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =22
+                  Size: =9
+                  Text: ="SOLICITADO POR *"
+                  Width: =350
+                  X: =Parent.Width / 2 + 15
+                  Y: =185
+            - txtSolicitadoP9:
+                Control: Classic/TextInput@2.3.2
+                Properties:
+                  BorderColor: =RGBA(217, 218, 221, 1)
+                  Default: =Coalesce(varDepositoSeleccionado.SOLICITADO_POR, "")
+                  DisplayMode: =If(IsBlank(varDepositoSeleccionado) || varDepositoSeleccionado.ESTADO_ASIGNACION.Value = "DISPONIBLE", DisplayMode.Edit, DisplayMode.View)
+                  Font: =Font.'Segoe UI'
+                  Height: =38
+                  HintText: ="Persona que solicita la confirmación"
+                  Size: =10
+                  Width: =(Parent.Width - 90) / 2
+                  X: =Parent.Width / 2 + 15
+                  Y: =208
+            - lblSedeP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =22
+                  Size: =9
+                  Text: ="SEDE *"
+                  Width: =350
+                  X: =30
+                  Y: =265
+            - txtSedeP9:
+                Control: Classic/TextInput@2.3.2
+                Properties:
+                  BorderColor: =RGBA(217, 218, 221, 1)
+                  Default: =If(IsBlank(varDepositoSeleccionado.SEDE_ASIGNACION), "COCHABAMBA", varDepositoSeleccionado.SEDE_ASIGNACION)
+                  DisplayMode: =If(IsBlank(varDepositoSeleccionado) || varDepositoSeleccionado.ESTADO_ASIGNACION.Value = "DISPONIBLE", DisplayMode.Edit, DisplayMode.View)
+                  Font: =Font.'Segoe UI'
+                  Height: =38
+                  HintText: ="Sede solicitante"
+                  Size: =10
+                  Width: =(Parent.Width - 90) / 2
+                  X: =30
+                  Y: =288
+            - lblObservacionP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =22
+                  Size: =9
+                  Text: ="OBSERVACIÓN"
+                  Width: =350
+                  X: =30
+                  Y: =345
+            - txtObservacionP9:
+                Control: Classic/TextInput@2.3.2
+                Properties:
+                  BorderColor: =RGBA(217, 218, 221, 1)
+                  Default: =Coalesce(varDepositoSeleccionado.OBSERVACION, "")
+                  DisplayMode: =If(IsBlank(varDepositoSeleccionado) || varDepositoSeleccionado.ESTADO_ASIGNACION.Value = "DISPONIBLE", DisplayMode.Edit, DisplayMode.View)
+                  Font: =Font.'Segoe UI'
+                  Height: =70
+                  HintText: ="Opcional"
+                  Mode: =TextMode.MultiLine
+                  Size: =10
+                  Width: =(Parent.Width - 90) / 2
+                  X: =30
+                  Y: =368
+            - lblDatosConfirmacionP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Semibold
+                  Height: =22
+                  Size: =9
+                  Text: ="DATOS DE CONFIRMACIÓN"
+                  Width: =(Parent.Width - 90) / 2
+                  X: =Parent.Width / 2 + 15
+                  Y: =345
+            - lblUsuarioP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Semibold
+                  Height: =70
+                  Size: =9
+                  Text: |-
+                    =If(
+                        !IsBlank(varDepositoSeleccionado) && varDepositoSeleccionado.ESTADO_ASIGNACION.Value = "ASIGNADO",
+                        "Confirmado por: " & Coalesce(varDepositoSeleccionado.USUARIO_ASIGNACION, "—")
+                        & Char(10)
+                        & "Fecha/hora: "
+                        & If(
+                            IsBlank(varDepositoSeleccionado.FECHA_HORA_ASIGNACION),
+                            "—",
+                            Text(varDepositoSeleccionado.FECHA_HORA_ASIGNACION, "dd/mm/yyyy hh:mm:ss")
+                        ),
+                        "Confirmará: " & User().Email
+                        & Char(10)
+                        & "Fecha/hora: se registrará al confirmar"
+                    )
+                  Width: =(Parent.Width - 90) / 2
+                  X: =Parent.Width / 2 + 15
+                  Y: =368
+            - btnCancelarConfirmacionP9:
+                Control: Classic/Button@2.2.0
+                Properties:
+                  BorderColor: =RGBA(98, 102, 106, 1)
+                  BorderThickness: =1
+                  Color: =RGBA(52, 55, 58, 1)
+                  Fill: =RGBA(255, 255, 255, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =42
+                  OnSelect: |-
+                    =Reset(txtEstudianteP9);
+                    Reset(txtSolicitadoP9);
+                    Reset(txtSedeP9);
+                    Reset(txtObservacionP9);
+                    UpdateContext({mostrarConfirmacion: false})
+                  Size: =9
+                  Text: =If(!IsBlank(varDepositoSeleccionado) && varDepositoSeleccionado.ESTADO_ASIGNACION.Value = "ASIGNADO", "CERRAR", "CANCELAR")
+                  Width: =125
+                  X: =Parent.Width - 325
+                  Y: =470
+            - btnConfirmarDepositoP9:
+                Control: Classic/Button@2.2.0
+                Properties:
+                  BorderStyle: =BorderStyle.None
+                  Color: =RGBA(255, 255, 255, 1)
+                  Fill: =RGBA(123, 22, 50, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =42
+                  OnSelect: |-
+                    =If(
+                        IsBlank(Trim(txtEstudianteP9.Text)) ||
+                        IsBlank(Trim(txtSolicitadoP9.Text)) ||
+                        IsBlank(Trim(txtSedeP9.Text)),
+                        Notify("Completa Estudiante, Solicitado por y Sede.", NotificationType.Warning),
+                        Refresh(Depositos_Activos);
+                        Set(varDepositoSeleccionado, LookUp(Depositos_Activos, ID = varDepositoSeleccionado.ID));
+                        If(
+                            IsBlank(varDepositoSeleccionado) || varDepositoSeleccionado.ESTADO_ASIGNACION.Value <> "DISPONIBLE",
+                            Notify("Este depósito ya no está DISPONIBLE.", NotificationType.Warning);
+                            UpdateContext({mostrarConfirmacion: false}),
+                            IfError(
+                                Set(
+                                    varRespuestaP9,
+                                    P9_ASIGNAR_DEPOSITO.Run(
+                                        varDepositoSeleccionado.ID,
+                                        varDepositoSeleccionado.CLAVE_TRANSACCION,
+                                        Trim(txtEstudianteP9.Text),
+                                        "",
+                                        Trim(txtSolicitadoP9.Text),
+                                        Trim(txtSedeP9.Text),
+                                        Trim(txtObservacionP9.Text),
+                                        User().Email
+                                    )
+                                ),
+                                Notify("No se pudo llamar al flujo P9_ASIGNAR_DEPOSITO.", NotificationType.Error),
+                                Refresh(Depositos_Activos);
+                                Set(varDepositoSeleccionado, LookUp(Depositos_Activos, ID = varDepositoSeleccionado.ID));
+                                Switch(
+                                    varRespuestaP9.resultado,
+                                    "ASIGNADO",
+                                        Notify("Ingreso confirmado correctamente.", NotificationType.Success),
+                                    "NO_DISPONIBLE",
+                                        Notify("El depósito ya fue CONFIRMADO por otro usuario.", NotificationType.Warning);
+                                        UpdateContext({mostrarConfirmacion: false}),
+                                    "CONFLICTO",
+                                        Notify("Conflicto: otro usuario modificó el depósito al mismo tiempo.", NotificationType.Warning);
+                                        UpdateContext({mostrarConfirmacion: false}),
+                                    Notify(
+                                        "ERROR (" & Coalesce(varRespuestaP9.codigo, "SIN_CODIGO") & "): " & Coalesce(varRespuestaP9.mensaje, ""),
+                                        NotificationType.Error
+                                    )
+                                )
+                            )
+                        )
+                    )
+                  Size: =9
+                  Text: ="CONFIRMAR INGRESO"
+                  Visible: =IsBlank(varDepositoSeleccionado) || varDepositoSeleccionado.ESTADO_ASIGNACION.Value = "DISPONIBLE"
+                  Width: =175
+                  X: =Parent.Width - 195
+                  Y: =470
+            - btnSolicitarReversionP9:
+                Control: Classic/Button@2.2.0
+                Properties:
+                  BorderStyle: =BorderStyle.None
+                  Color: =RGBA(255, 255, 255, 1)
+                  DisplayMode: =If(Coalesce(varP9RevCargando, false), DisplayMode.Disabled, DisplayMode.Edit)
+                  Fill: =RGBA(123, 22, 50, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =42
+                  OnSelect: |-
+                    =If(
+                        Coalesce(varP9RevEnvioIncierto, false),
+                        Set(varP9RevVisible, true);
+                        Notify("Hay un envío pendiente de verificar. Reintenta con el mismo identificador y motivo.", NotificationType.Warning),
+                        Set(varP9RevCargando, true);
+                        Set(varP9RevVisible, false);
+                        Set(varP9RevValida, false);
+                        Set(varP9RevAceptada, false);
+                        Set(varP9RevSnapshot, Blank());
+                        Set(varP9RevUID, Blank());
+                        Set(varP9RevSolicitudID, Blank());
+                        Set(varP9RevFechaLimite, Blank());
+                        Set(varP9RevDecision, Blank());
+                        Set(varP9RevFase, Blank());
+                        Set(varP9RevResultadoTecnico, Blank());
+                        Set(varP9RevMotivo, "");
+                        Set(varP9RevMotivoEnvio, "");
+                        IfError(
+                            Set(
+                                varP9RevRespuesta,
+                                P9_SOLICITAR_REVERSION.Run(
+                                    "CONSULTAR",
+                                    varDepositoSeleccionado.ID,
+                                    varDepositoSeleccionado.CLAVE_TRANSACCION,
+                                    "",
+                                    "",
+                                    ""
+                                )
+                            );
+                            If(
+                                varP9RevRespuesta.resultado = "LISTO" || varP9RevRespuesta.resultado = "PENDIENTE_EXISTENTE",
+                                With(
+                                    {s: ParseJSON(varP9RevRespuesta.snapshot_json)},
+                                    Set(
+                                        varP9RevSnapshot,
+                                        {
+                                            ID: Value(s.ID),
+                                            CLAVE_TRANSACCION: Text(s.CLAVE_TRANSACCION),
+                                            ESTADO_ASIGNACION: Text(s.ESTADO_ASIGNACION),
+                                            CODIGO_ASIGNACION: Text(s.CODIGO_ASIGNACION),
+                                            BANCO: Text(s.BANCO),
+                                            CUENTA_BANCARIA: Text(s.CUENTA_BANCARIA),
+                                            IMPORTE: Value(s.IMPORTE),
+                                            MONEDA: Text(s.MONEDA),
+                                            ESTUDIANTE: Text(s.ESTUDIANTE),
+                                            USUARIO_ASIGNACION: Text(s.USUARIO_ASIGNACION),
+                                            FECHA_HORA_ASIGNACION: Text(s.FECHA_HORA_ASIGNACION)
+                                        }
+                                    )
+                                );
+                                If(
+                                    varP9RevRespuesta.resultado = "PENDIENTE_EXISTENTE",
+                                    If(
+                                        IsBlank(varP9RevRespuesta.solicitud_id) || IsBlank(varP9RevRespuesta.solicitud_uid),
+                                        Notify("No se recibió la identificación completa de la solicitud activa. Vuelve a consultar.", NotificationType.Warning),
+                                        Set(varP9RevUID, varP9RevRespuesta.solicitud_uid);
+                                        Set(varP9RevSolicitudID, varP9RevRespuesta.solicitud_id);
+                                        Set(varP9RevFechaLimite, varP9RevRespuesta.fecha_limite);
+                                        Set(varP9RevDecision, varP9RevRespuesta.estado_solicitud);
+                                        Set(varP9RevFase, varP9RevRespuesta.fase_proceso);
+                                        Set(varP9RevResultadoTecnico, varP9RevRespuesta.resultado_tecnico);
+                                        Set(varP9RevAceptada, true);
+                                        Set(varP9RevMensaje, "Solicitud activa · ID " & varP9RevSolicitudID & ". " & varP9RevRespuesta.mensaje);
+                                        Set(varP9RevVisible, true)
+                                    ),
+                                If(
+                                    IsBlank(varP9RevSnapshot.ID) ||
+                                    varP9RevSnapshot.ID <> varDepositoSeleccionado.ID ||
+                                    varP9RevSnapshot.CLAVE_TRANSACCION <> varDepositoSeleccionado.CLAVE_TRANSACCION ||
+                                    varP9RevSnapshot.ESTADO_ASIGNACION <> "ASIGNADO" ||
+                                    IsBlank(varP9RevRespuesta.etag),
+                                    Notify("No se recibió una confirmación vigente con su versión. Vuelve a abrir VER.", NotificationType.Warning),
+                                    Set(varP9RevETag, varP9RevRespuesta.etag);
+                                    Set(varP9RevUID, Lower(Text(GUID())));
+                                    Set(varP9RevValida, true);
+                                    Set(varP9RevMensaje, "Completa el motivo. El depósito se modificará únicamente si la solicitud es aprobada y su versión sigue vigente.");
+                                    Set(varP9RevVisible, true)
+                                )),
+                                Notify(
+                                    Coalesce(varP9RevRespuesta.mensaje, "No se puede solicitar la reversión de este depósito.") & " (" & Coalesce(varP9RevRespuesta.codigo, "SIN_CODIGO") & ")",
+                                    NotificationType.Warning
+                                )
+                            );
+                            true,
+                            Set(varP9RevValida, false);
+                            Set(varP9RevVisible, false);
+                            Notify("No se pudo consultar la confirmación. No se envió ninguna solicitud desde este modal.", NotificationType.Error);
+                            false
+                        );
+                        Set(varP9RevCargando, false)
+                    )
+                  Size: =8
+                  Text: ="SOLICITAR REVERSIÓN"
+                  Tooltip: ="Solicitar la reversión de esta confirmación mediante aprobación"
+                  Visible: =!IsBlank(varDepositoSeleccionado.ID) && varDepositoSeleccionado.ESTADO_ASIGNACION.Value = "ASIGNADO"
+                  Width: =175
+                  X: =Parent.Width - 195
+                  Y: =470
+      - overlayReversionP9:
+          Control: Rectangle@2.3.0
+          Properties:
+            Fill: =RGBA(0, 0, 0, 0.55)
+            Height: =Parent.Height
+            Visible: =Coalesce(varP9RevVisible, false)
+            Width: =Parent.Width
+            X: =0
+            Y: =0
+      - cntSolicitarReversionP9:
+          Control: GroupContainer@1.5.0
+          Variant: ManualLayout
+          Properties:
+            DropShadow: =DropShadow.None
+            Fill: =RGBA(255, 255, 255, 1)
+            Height: =650
+            RadiusBottomLeft: =12
+            RadiusBottomRight: =12
+            RadiusTopLeft: =12
+            RadiusTopRight: =12
+            Visible: =Coalesce(varP9RevVisible, false)
+            Width: =Min(900, Parent.Width - 60)
+            X: =(Parent.Width - Self.Width) / 2
+            Y: =(Parent.Height - Self.Height) / 2
+          Children:
+            - rectCabeceraReversionP9:
+                Control: Rectangle@2.3.0
+                Properties:
+                  BorderStyle: =BorderStyle.None
+                  Fill: =RGBA(123, 22, 50, 1)
+                  Height: =62
+                  Width: =Parent.Width
+                  X: =0
+                  Y: =0
+            - lblTituloReversionP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(255, 255, 255, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =38
+                  Size: =17
+                  Text: ="SOLICITAR REVERSIÓN"
+                  Width: =Parent.Width - 48
+                  X: =24
+                  Y: =12
+                  FontWeight: =FontWeight.Bold
+            - lblDepositoReversionP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =80
+                  Size: =10
+                  Text: |-
+                    ="CÓDIGO: " & Coalesce(varP9RevSnapshot.CODIGO_ASIGNACION, "—")
+                    & Char(10) & "BANCO: " & Coalesce(varP9RevSnapshot.BANCO, "—")
+                    & Char(10) & "CUENTA: " & Coalesce(varP9RevSnapshot.CUENTA_BANCARIA, "—")
+                    & "     IMPORTE: " & varP9RevSnapshot.MONEDA & " " & Text(varP9RevSnapshot.IMPORTE, "#,##0.00", "es-ES")
+                  Width: =Parent.Width - 48
+                  X: =24
+                  Y: =76
+            - lblAsignacionReversionP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =80
+                  Size: =10
+                  Text: |-
+                    ="ESTUDIANTE: " & Coalesce(varP9RevSnapshot.ESTUDIANTE, "—")
+                    & Char(10) & "CONFIRMADO POR: " & Coalesce(varP9RevSnapshot.USUARIO_ASIGNACION, "—")
+                    & Char(10) & "FECHA DE CONFIRMACIÓN (UTC): " & Coalesce(varP9RevSnapshot.FECHA_HORA_ASIGNACION, "—")
+                  Width: =Parent.Width - 48
+                  X: =24
+                  Y: =164
+            - lblMotivoReversionP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =22
+                  Size: =9
+                  Text: ="MOTIVO DE REVERSIÓN * (máximo 4.000 caracteres)"
+                  Width: =Parent.Width - 48
+                  X: =24
+                  Y: =258
+                  FontWeight: =FontWeight.Semibold
+            - txtMotivoReversionP9:
+                Control: Classic/TextInput@2.3.2
+                Properties:
+                  BorderColor: =RGBA(217, 218, 221, 1)
+                  Default: =Coalesce(varP9RevMotivo, "")
+                  DisplayMode: =If(Coalesce(varP9RevCargando, false) || Coalesce(varP9RevEnvioIncierto, false) || Coalesce(varP9RevAceptada, false), DisplayMode.View, DisplayMode.Edit)
+                  Font: =Font.'Segoe UI'
+                  Height: =100
+                  HintText: ="Explica por qué se debe revertir la confirmación"
+                  MaxLength: =4000
+                  Mode: =TextMode.MultiLine
+                  OnChange: =Set(varP9RevMotivo, Self.Text)
+                  Reset: =!Coalesce(varP9RevVisible, false)
+                  Size: =10
+                  Width: =Parent.Width - 48
+                  X: =24
+                  Y: =286
+            - lblPlazoReversionP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =42
+                  Size: =9
+                  Text: |-
+                    =If(
+                        IsBlank(varP9RevFechaLimite),
+                        "Plazo de decisión: 168 horas desde la creación de la solicitud.",
+                        "Fecha límite de decisión (UTC): " & varP9RevFechaLimite
+                    ) & Char(10) & "Las respuestas posteriores al plazo no ejecutan la reversión."
+                  Width: =Parent.Width - 48
+                  X: =24
+                  Y: =398
+            - lblResultadoReversionP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(94, 16, 38, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =94
+                  Size: =9
+                  Text: |-
+                    =If(
+                        varP9RevFase = "EXPIRADA",
+                        "EXPIRADA · SIN DECISIÓN · NO EJECUTADA",
+                        varP9RevResultadoTecnico = "REVERTIDO",
+                        "REVERTIDO · ID " & varP9RevSolicitudID,
+                        varP9RevFase = "RECUPERACION_REQUERIDA",
+                        "RESULTADO PENDIENTE DE VERIFICACIÓN · ID " & varP9RevSolicitudID,
+                        !IsBlank(varP9RevSolicitudID),
+                        Coalesce(varP9RevDecision, "PENDIENTE") & " · " & Coalesce(varP9RevFase, "RECIBIDA") & " · " & Coalesce(varP9RevResultadoTecnico, "PENDIENTE"),
+                        ""
+                    ) & If(!IsBlank(varP9RevSolicitudID) || varP9RevFase = "EXPIRADA", Char(10), "") & varP9RevMensaje
+                  Width: =Parent.Width - 48
+                  X: =24
+                  Y: =448
+            - btnCancelarReversionP9:
+                Control: Classic/Button@2.2.0
+                Properties:
+                  BorderColor: =RGBA(98, 102, 106, 1)
+                  BorderThickness: =1
+                  Color: =RGBA(52, 55, 58, 1)
+                  DisplayMode: =If(Coalesce(varP9RevCargando, false), DisplayMode.Disabled, DisplayMode.Edit)
+                  Fill: =RGBA(255, 255, 255, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =42
+                  OnSelect: =Set(varP9RevVisible, false)
+                  Size: =9
+                  Text: ="CANCELAR"
+                  Width: =125
+                  X: =24
+                  Y: =560
+            - btnEnviarReversionP9:
+                Control: Classic/Button@2.2.0
+                Properties:
+                  BorderStyle: =BorderStyle.None
+                  Color: =RGBA(255, 255, 255, 1)
+                  DisplayMode: |-
+                    =If(
+                        Coalesce(varP9RevCargando, false) ||
+                        Coalesce(varP9RevAceptada, false) ||
+                        !Coalesce(varP9RevValida, false) ||
+                        IsBlank(varP9RevUID) || IsBlank(varP9RevETag) ||
+                        IsBlank(Trim(txtMotivoReversionP9.Text)) || Len(Trim(txtMotivoReversionP9.Text)) > 4000,
+                        DisplayMode.Disabled,
+                        DisplayMode.Edit
+                    )
+                  Fill: =RGBA(123, 22, 50, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =42
+                  OnSelect: |-
+                    =If(
+                        !Coalesce(varP9RevValida, false) ||
+                        Coalesce(varP9RevCargando, false) ||
+                        Coalesce(varP9RevAceptada, false) ||
+                        IsBlank(varP9RevUID) ||
+                        IsBlank(varP9RevETag) ||
+                        IsBlank(Trim(txtMotivoReversionP9.Text)) ||
+                        Len(Trim(txtMotivoReversionP9.Text)) > 4000,
+                        Notify("Completa un motivo de hasta 4.000 caracteres y consulta una confirmación vigente.", NotificationType.Warning),
+                        If(
+                            !Coalesce(varP9RevEnvioIncierto, false),
+                            Set(varP9RevMotivoEnvio, Trim(txtMotivoReversionP9.Text));
+                            Set(varP9RevMotivo, varP9RevMotivoEnvio);
+                            Set(varP9RevEnvioIncierto, true)
+                        );
+                        Set(varP9RevCargando, true);
+                        IfError(
+                            Set(
+                                varP9RevRespuesta,
+                                P9_SOLICITAR_REVERSION.Run(
+                                    "ENVIAR",
+                                    varP9RevSnapshot.ID,
+                                    varP9RevSnapshot.CLAVE_TRANSACCION,
+                                    varP9RevETag,
+                                    varP9RevMotivoEnvio,
+                                    varP9RevUID
+                                )
+                            );
+                            If(
+                                (varP9RevRespuesta.resultado = "ENVIADA" || varP9RevRespuesta.resultado = "EXISTENTE" || varP9RevRespuesta.resultado = "PENDIENTE_EXISTENTE") &&
+                                (IsBlank(varP9RevRespuesta.solicitud_id) || Value(varP9RevRespuesta.solicitud_id) <= 0 ||
+                                    ((varP9RevRespuesta.resultado = "ENVIADA" || varP9RevRespuesta.resultado = "EXISTENTE") && varP9RevRespuesta.solicitud_uid <> varP9RevUID)),
+                                Set(varP9RevMensaje, "La respuesta no identifica de forma completa la solicitud. Reintenta el mismo envío para verificarla."),
+                            Switch(
+                                varP9RevRespuesta.resultado,
+                                "ENVIADA",
+                                    Set(varP9RevSolicitudID, varP9RevRespuesta.solicitud_id);
+                                    Set(varP9RevFechaLimite, varP9RevRespuesta.fecha_limite);
+                                    Set(varP9RevDecision, varP9RevRespuesta.estado_solicitud);
+                                    Set(varP9RevFase, varP9RevRespuesta.fase_proceso);
+                                    Set(varP9RevResultadoTecnico, varP9RevRespuesta.resultado_tecnico);
+                                    Set(varP9RevAceptada, true);
+                                    Set(varP9RevEnvioIncierto, false);
+                                    Set(varP9RevMensaje, "SOLICITUD DE REVERSIÓN ENVIADA · ID " & varP9RevSolicitudID & ". La decisión y el resultado se muestran por separado.");
+                                    Notify("SOLICITUD DE REVERSIÓN ENVIADA · ID " & varP9RevSolicitudID, NotificationType.Success),
+                                "EXISTENTE",
+                                    Set(varP9RevSolicitudID, varP9RevRespuesta.solicitud_id);
+                                    Set(varP9RevFechaLimite, varP9RevRespuesta.fecha_limite);
+                                    Set(varP9RevDecision, varP9RevRespuesta.estado_solicitud);
+                                    Set(varP9RevFase, varP9RevRespuesta.fase_proceso);
+                                    Set(varP9RevResultadoTecnico, varP9RevRespuesta.resultado_tecnico);
+                                    Set(varP9RevAceptada, true);
+                                    Set(varP9RevEnvioIncierto, false);
+                                    Set(varP9RevMensaje, "Se recuperó la solicitud existente · ID " & varP9RevSolicitudID & ". " & varP9RevRespuesta.mensaje),
+                                "PENDIENTE_EXISTENTE",
+                                    Set(varP9RevSolicitudID, varP9RevRespuesta.solicitud_id);
+                                    Set(varP9RevFechaLimite, varP9RevRespuesta.fecha_limite);
+                                    Set(varP9RevDecision, varP9RevRespuesta.estado_solicitud);
+                                    Set(varP9RevFase, varP9RevRespuesta.fase_proceso);
+                                    Set(varP9RevResultadoTecnico, varP9RevRespuesta.resultado_tecnico);
+                                    Set(varP9RevAceptada, true);
+                                    Set(varP9RevEnvioIncierto, false);
+                                    Set(varP9RevMensaje, "Ya existe una solicitud activa · ID " & varP9RevSolicitudID & ". " & varP9RevRespuesta.mensaje),
+                                "CONFLICTO",
+                                    Set(varP9RevValida, false);
+                                    Set(varP9RevEnvioIncierto, false);
+                                    Set(varP9RevMensaje, "CONFLICTO: cambió la versión del depósito. Cierra este modal y vuelve a abrir VER para consultar los datos actuales."),
+                                Set(varP9RevMensaje, "No se confirmó la creación. " & Coalesce(varP9RevRespuesta.mensaje, "Reintenta el mismo envío.") & " (" & Coalesce(varP9RevRespuesta.codigo, "SIN_CODIGO") & "). Se conservan el identificador, la versión y el motivo.")
+                            ));
+                            true,
+                            Set(varP9RevMensaje, "No se recibió una respuesta concluyente. Reintenta el mismo envío para recuperar su resultado. Se conservan el identificador, la versión y el motivo.");
+                            Notify("Envío pendiente de verificar. No crees otra solicitud; usa REINTENTAR MISMO ENVÍO.", NotificationType.Warning);
+                            false
+                        );
+                        Set(varP9RevCargando, false)
+                    )
+                  Size: =8
+                  Text: =If(Coalesce(varP9RevCargando, false), "PROCESANDO…", Coalesce(varP9RevEnvioIncierto, false), "REINTENTAR MISMO ENVÍO", "ENVIAR SOLICITUD")
+                  Width: =250
+                  X: =Parent.Width - 274
+                  Y: =560
+            - lblUIDReversionP9:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =20
+                  Size: =7
+                  Text: '="Identificador del envío: " & Coalesce(varP9RevUID, "—")'
+                  Width: =Parent.Width - 48
+                  X: =24
+                  Y: =614

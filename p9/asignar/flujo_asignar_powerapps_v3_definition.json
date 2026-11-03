@@ -1,0 +1,627 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "$authentication": {
+      "defaultValue": {},
+      "type": "SecureObject"
+    },
+    "$connections": {
+      "defaultValue": {},
+      "type": "Object"
+    }
+  },
+  "triggers": {
+    "manual": {
+      "type": "Request",
+      "kind": "PowerAppV2",
+      "inputs": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "number": {
+              "title": "ID SharePoint",
+              "type": "number",
+              "x-ms-dynamically-added": true,
+              "description": "Valor de ID SharePoint enviado por la app",
+              "x-ms-content-hint": "NUMBER"
+            },
+            "text": {
+              "title": "CLAVE_TRANSACCION",
+              "type": "string",
+              "x-ms-dynamically-added": true,
+              "description": "Valor de CLAVE_TRANSACCION enviado por la app",
+              "x-ms-content-hint": "TEXT"
+            },
+            "text_1": {
+              "title": "ESTUDIANTE",
+              "type": "string",
+              "x-ms-dynamically-added": true,
+              "description": "Valor de ESTUDIANTE enviado por la app",
+              "x-ms-content-hint": "TEXT"
+            },
+            "text_2": {
+              "title": "CODIGO_ESTUDIANTE",
+              "type": "string",
+              "x-ms-dynamically-added": true,
+              "description": "Valor de CODIGO_ESTUDIANTE enviado por la app",
+              "x-ms-content-hint": "TEXT"
+            },
+            "text_3": {
+              "title": "SOLICITADO_POR",
+              "type": "string",
+              "x-ms-dynamically-added": true,
+              "description": "Valor de SOLICITADO_POR enviado por la app",
+              "x-ms-content-hint": "TEXT"
+            },
+            "text_4": {
+              "title": "SEDE_ASIGNACION",
+              "type": "string",
+              "x-ms-dynamically-added": true,
+              "description": "Valor de SEDE_ASIGNACION enviado por la app",
+              "x-ms-content-hint": "TEXT"
+            },
+            "text_5": {
+              "title": "OBSERVACION",
+              "type": "string",
+              "x-ms-dynamically-added": true,
+              "description": "Valor de OBSERVACION enviado por la app",
+              "x-ms-content-hint": "TEXT"
+            },
+            "text_6": {
+              "title": "USUARIO_ASIGNACION",
+              "type": "string",
+              "x-ms-dynamically-added": true,
+              "description": "Valor de USUARIO_ASIGNACION enviado por la app",
+              "x-ms-content-hint": "TEXT"
+            }
+          },
+          "required": [
+            "number",
+            "text",
+            "text_1",
+            "text_2",
+            "text_3",
+            "text_4",
+            "text_6"
+          ]
+        }
+      }
+    }
+  },
+  "actions": {
+    "PARAM_SITIO_SHAREPOINT": {
+      "type": "Compose",
+      "inputs": "https://univalleedu-my.sharepoint.com/personal/gtorricot_univalle_edu",
+      "runAfter": {}
+    },
+    "PARAM_LISTA_DEPOSITOS_ACTIVOS": {
+      "type": "Compose",
+      "inputs": "296c450a-25d6-415b-ad10-c909c74817cb",
+      "runAfter": {
+        "PARAM_SITIO_SHAREPOINT": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Entrada": {
+      "type": "Compose",
+      "inputs": {
+        "id": "@coalesce(triggerBody()?['number'],0)",
+        "clave": "@coalesce(triggerBody()?['text'],'')",
+        "estudiante": "@trim(coalesce(triggerBody()?['text_1'],''))",
+        "codigo_estudiante": "@trim(coalesce(triggerBody()?['text_2'],''))",
+        "solicitado_por": "@trim(coalesce(triggerBody()?['text_3'],''))",
+        "sede_asignacion": "@trim(coalesce(triggerBody()?['text_4'],''))",
+        "observacion": "@trim(coalesce(triggerBody()?['text_5'],''))",
+        "usuario": "@trim(coalesce(triggerBody()?['text_6'],''))"
+      },
+      "runAfter": {
+        "PARAM_LISTA_DEPOSITOS_ACTIVOS": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varEtapa": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varEtapa",
+            "type": "string",
+            "value": "ENTRADA"
+          }
+        ]
+      },
+      "runAfter": {
+        "Entrada": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Inicializar_varRespuesta": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "varRespuesta",
+            "type": "object",
+            "value": {
+              "resultado": "ERROR",
+              "codigo": "ERROR_NO_CONTROLADO",
+              "mensaje": "La asignación no se completó. No se aplicó ningún cambio.",
+              "estado_actual": "",
+              "asignado_por": "",
+              "fecha_hora_asignacion": ""
+            }
+          }
+        ]
+      },
+      "runAfter": {
+        "Inicializar_varEtapa": [
+          "Succeeded"
+        ]
+      }
+    },
+    "Validar_entrada": {
+      "type": "Compose",
+      "inputs": "@if(or(empty(outputs('Entrada')?['clave']),empty(outputs('Entrada')?['estudiante']),empty(outputs('Entrada')?['codigo_estudiante']),empty(outputs('Entrada')?['solicitado_por']),empty(outputs('Entrada')?['sede_asignacion']),empty(outputs('Entrada')?['usuario'])),'CAMPOS_OBLIGATORIOS',if(or(greater(length(outputs('Entrada')?['clave']),255),greater(length(outputs('Entrada')?['estudiante']),255),greater(length(outputs('Entrada')?['codigo_estudiante']),255),greater(length(outputs('Entrada')?['solicitado_por']),255),greater(length(outputs('Entrada')?['sede_asignacion']),255),greater(length(outputs('Entrada')?['usuario']),255)),'CAMPO_EXCEDE_255',if(or(less(outputs('Entrada')?['id'],1),contains(string(outputs('Entrada')?['id']),'.')),'ID_INVALIDO','')))",
+      "runAfter": {
+        "Inicializar_varRespuesta": [
+          "Succeeded"
+        ]
+      }
+    },
+    "TRY": {
+      "type": "Scope",
+      "actions": {
+        "Entrada_valida": {
+          "type": "If",
+          "expression": "@empty(outputs('Validar_entrada'))",
+          "actions": {
+            "Etapa_leer": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "varEtapa",
+                "value": "LEER"
+              },
+              "runAfter": {}
+            },
+            "Leer_deposito": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+                  "parameters/method": "GET",
+                  "parameters/uri": "@concat('_api/web/lists(guid''',outputs('PARAM_LISTA_DEPOSITOS_ACTIVOS'),''')','/items(',string(outputs('Entrada')?['id']),')?$select=Id,CLAVE_TRANSACCION,ESTADO_ASIGNACION,USUARIO_ASIGNACION,FECHA_HORA_ASIGNACION')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=verbose"
+                  }
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              },
+              "runAfter": {
+                "Etapa_leer": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Deposito": {
+              "type": "Compose",
+              "inputs": "@body('Leer_deposito')?['d']",
+              "runAfter": {
+                "Leer_deposito": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "ETag": {
+              "type": "Compose",
+              "inputs": "@coalesce(outputs('Deposito')?['__metadata']?['etag'],outputs('Leer_deposito')?['headers']?['ETag'],'')",
+              "runAfter": {
+                "Deposito": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Clave_coincide": {
+              "type": "If",
+              "expression": "@equals(outputs('Deposito')?['CLAVE_TRANSACCION'],outputs('Entrada')?['clave'])",
+              "actions": {
+                "Estado_disponible": {
+                  "type": "If",
+                  "expression": "@equals(outputs('Deposito')?['ESTADO_ASIGNACION'],'DISPONIBLE')",
+                  "actions": {
+                    "Con_ETag": {
+                      "type": "If",
+                      "expression": "@not(empty(outputs('ETag')))",
+                      "actions": {
+                        "Ahora": {
+                          "type": "Compose",
+                          "inputs": "@utcNow()",
+                          "runAfter": {}
+                        },
+                        "Cuerpo_actualizacion": {
+                          "type": "Compose",
+                          "inputs": {
+                            "ESTADO_ASIGNACION": "ASIGNADO",
+                            "ESTUDIANTE": "@outputs('Entrada')?['estudiante']",
+                            "CODIGO_ESTUDIANTE": "@outputs('Entrada')?['codigo_estudiante']",
+                            "SOLICITADO_POR": "@outputs('Entrada')?['solicitado_por']",
+                            "SEDE_ASIGNACION": "@outputs('Entrada')?['sede_asignacion']",
+                            "OBSERVACION": "@outputs('Entrada')?['observacion']",
+                            "USUARIO_ASIGNACION": "@outputs('Entrada')?['usuario']",
+                            "FECHA_HORA_ASIGNACION": "@outputs('Ahora')"
+                          },
+                          "runAfter": {
+                            "Ahora": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Etapa_actualizar": {
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "varEtapa",
+                            "value": "ACTUALIZAR"
+                          },
+                          "runAfter": {
+                            "Cuerpo_actualizacion": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Actualizar_deposito": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                              "connectionName": "shared_sharepointonline",
+                              "operationId": "HttpRequest"
+                            },
+                            "parameters": {
+                              "dataset": "@outputs('PARAM_SITIO_SHAREPOINT')",
+                              "parameters/method": "POST",
+                              "parameters/uri": "@concat('_api/web/lists(guid''',outputs('PARAM_LISTA_DEPOSITOS_ACTIVOS'),''')','/items(',string(outputs('Entrada')?['id']),')')",
+                              "parameters/headers": {
+                                "Accept": "application/json;odata=nometadata",
+                                "Content-Type": "application/json;odata=nometadata",
+                                "X-HTTP-Method": "MERGE",
+                                "IF-MATCH": "@outputs('ETag')"
+                              },
+                              "parameters/body": "@string(outputs('Cuerpo_actualizacion'))"
+                            },
+                            "authentication": "@parameters('$authentication')",
+                            "retryPolicy": {
+                              "type": "none"
+                            }
+                          },
+                          "runAfter": {
+                            "Etapa_actualizar": [
+                              "Succeeded"
+                            ]
+                          }
+                        },
+                        "Resultado_ASIGNADO": {
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "varRespuesta",
+                            "value": {
+                              "resultado": "ASIGNADO",
+                              "codigo": "ASIGNADO",
+                              "mensaje": "Depósito asignado correctamente.",
+                              "estado_actual": "ASIGNADO",
+                              "asignado_por": "@outputs('Entrada')?['usuario']",
+                              "fecha_hora_asignacion": "@outputs('Ahora')"
+                            }
+                          },
+                          "runAfter": {
+                            "Actualizar_deposito": [
+                              "Succeeded"
+                            ]
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {
+                          "Resultado_ERROR_SIN_ETAG": {
+                            "type": "SetVariable",
+                            "inputs": {
+                              "name": "varRespuesta",
+                              "value": {
+                                "resultado": "ERROR",
+                                "codigo": "SIN_ETAG",
+                                "mensaje": "SharePoint no devolvió el ETag del depósito; no se aplicó ningún cambio.",
+                                "estado_actual": "",
+                                "asignado_por": "",
+                                "fecha_hora_asignacion": ""
+                              }
+                            },
+                            "runAfter": {}
+                          }
+                        }
+                      },
+                      "runAfter": {}
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "Resultado_NO_DISPONIBLE": {
+                        "type": "SetVariable",
+                        "inputs": {
+                          "name": "varRespuesta",
+                          "value": {
+                            "resultado": "NO_DISPONIBLE",
+                            "codigo": "NO_DISPONIBLE",
+                            "mensaje": "El depósito ya no está disponible. No se aplicó ningún cambio.",
+                            "estado_actual": "@coalesce(outputs('Deposito')?['ESTADO_ASIGNACION'],'')",
+                            "asignado_por": "@coalesce(outputs('Deposito')?['USUARIO_ASIGNACION'],'')",
+                            "fecha_hora_asignacion": "@coalesce(outputs('Deposito')?['FECHA_HORA_ASIGNACION'],'')"
+                          }
+                        },
+                        "runAfter": {}
+                      }
+                    }
+                  },
+                  "runAfter": {}
+                }
+              },
+              "else": {
+                "actions": {
+                  "Resultado_CLAVE_NO_COINCIDE": {
+                    "type": "SetVariable",
+                    "inputs": {
+                      "name": "varRespuesta",
+                      "value": {
+                        "resultado": "ERROR",
+                        "codigo": "CLAVE_NO_COINCIDE",
+                        "mensaje": "La CLAVE_TRANSACCION enviada no coincide con la del depósito (ID de SharePoint). No se aplicó ningún cambio.",
+                        "estado_actual": "",
+                        "asignado_por": "",
+                        "fecha_hora_asignacion": ""
+                      }
+                    },
+                    "runAfter": {}
+                  }
+                }
+              },
+              "runAfter": {
+                "ETag": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "else": {
+            "actions": {
+              "Resultado_ENTRADA_INVALIDA": {
+                "type": "SetVariable",
+                "inputs": {
+                  "name": "varRespuesta",
+                  "value": {
+                    "resultado": "ERROR",
+                    "codigo": "@outputs('Validar_entrada')",
+                    "mensaje": "Faltan datos obligatorios o exceden 255 caracteres. No se aplicó ningún cambio.",
+                    "estado_actual": "",
+                    "asignado_por": "",
+                    "fecha_hora_asignacion": ""
+                  }
+                },
+                "runAfter": {}
+              }
+            }
+          },
+          "runAfter": {}
+        }
+      },
+      "runAfter": {
+        "Validar_entrada": [
+          "Succeeded"
+        ]
+      }
+    },
+    "CATCH": {
+      "type": "Scope",
+      "actions": {
+        "Clasificar_fallo": {
+          "type": "If",
+          "expression": "@equals(variables('varEtapa'),'ACTUALIZAR')",
+          "actions": {
+            "Fallo_en_actualizar": {
+              "type": "If",
+              "expression": "@equals(outputs('Actualizar_deposito')?['statusCode'],412)",
+              "actions": {
+                "Resultado_CONFLICTO": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "varRespuesta",
+                    "value": {
+                      "resultado": "CONFLICTO",
+                      "codigo": "CONFLICTO",
+                      "mensaje": "Otro usuario modificó el depósito mientras se asignaba. No se aplicó tu asignación.",
+                      "estado_actual": "",
+                      "asignado_por": "",
+                      "fecha_hora_asignacion": ""
+                    }
+                  },
+                  "runAfter": {}
+                }
+              },
+              "else": {
+                "actions": {
+                  "Resultado_ACTUALIZACION_NO_CONFIRMADA": {
+                    "type": "SetVariable",
+                    "inputs": {
+                      "name": "varRespuesta",
+                      "value": {
+                        "resultado": "ERROR",
+                        "codigo": "ACTUALIZACION_NO_CONFIRMADA",
+                        "mensaje": "No se pudo confirmar la asignación. Actualice la lista y verifique el depósito antes de reintentar.",
+                        "estado_actual": "",
+                        "asignado_por": "",
+                        "fecha_hora_asignacion": ""
+                      }
+                    },
+                    "runAfter": {}
+                  }
+                }
+              },
+              "runAfter": {}
+            }
+          },
+          "else": {
+            "actions": {
+              "Fallo_antes_de_actualizar": {
+                "type": "If",
+                "expression": "@equals(variables('varEtapa'),'LEER')",
+                "actions": {
+                  "Fallo_en_leer": {
+                    "type": "If",
+                    "expression": "@equals(outputs('Leer_deposito')?['statusCode'],404)",
+                    "actions": {
+                      "Resultado_DEPOSITO_NO_ENCONTRADO": {
+                        "type": "SetVariable",
+                        "inputs": {
+                          "name": "varRespuesta",
+                          "value": {
+                            "resultado": "ERROR",
+                            "codigo": "DEPOSITO_NO_ENCONTRADO",
+                            "mensaje": "No existe un depósito con ese ID en SharePoint. No se aplicó ningún cambio.",
+                            "estado_actual": "",
+                            "asignado_por": "",
+                            "fecha_hora_asignacion": ""
+                          }
+                        },
+                        "runAfter": {}
+                      }
+                    },
+                    "else": {
+                      "actions": {
+                        "Resultado_ERROR_LECTURA": {
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "varRespuesta",
+                            "value": {
+                              "resultado": "ERROR",
+                              "codigo": "ERROR_LECTURA",
+                              "mensaje": "No se pudo leer el depósito en SharePoint. No se aplicó ningún cambio.",
+                              "estado_actual": "",
+                              "asignado_por": "",
+                              "fecha_hora_asignacion": ""
+                            }
+                          },
+                          "runAfter": {}
+                        }
+                      }
+                    },
+                    "runAfter": {}
+                  }
+                },
+                "else": {
+                  "actions": {
+                    "Resultado_ERROR_NO_CONTROLADO": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "varRespuesta",
+                        "value": {
+                          "resultado": "ERROR",
+                          "codigo": "ERROR_NO_CONTROLADO",
+                          "mensaje": "Error inesperado antes de tocar SharePoint. No se aplicó ningún cambio.",
+                          "estado_actual": "",
+                          "asignado_por": "",
+                          "fecha_hora_asignacion": ""
+                        }
+                      },
+                      "runAfter": {}
+                    }
+                  }
+                },
+                "runAfter": {}
+              }
+            }
+          },
+          "runAfter": {}
+        }
+      },
+      "runAfter": {
+        "TRY": [
+          "Failed",
+          "TimedOut"
+        ]
+      }
+    },
+    "Responder_a_PowerApps": {
+      "type": "Response",
+      "kind": "PowerApp",
+      "runAfter": {
+        "TRY": [
+          "Succeeded",
+          "Failed",
+          "Skipped",
+          "TimedOut"
+        ],
+        "CATCH": [
+          "Succeeded",
+          "Failed",
+          "Skipped",
+          "TimedOut"
+        ]
+      },
+      "inputs": {
+        "statusCode": 200,
+        "body": {
+          "resultado": "@variables('varRespuesta')?['resultado']",
+          "codigo": "@variables('varRespuesta')?['codigo']",
+          "mensaje": "@variables('varRespuesta')?['mensaje']",
+          "estado_actual": "@variables('varRespuesta')?['estado_actual']",
+          "asignado_por": "@variables('varRespuesta')?['asignado_por']",
+          "fecha_hora_asignacion": "@variables('varRespuesta')?['fecha_hora_asignacion']"
+        },
+        "schema": {
+          "type": "object",
+          "properties": {
+            "resultado": {
+              "title": "resultado",
+              "x-ms-dynamically-added": true,
+              "type": "string"
+            },
+            "codigo": {
+              "title": "codigo",
+              "x-ms-dynamically-added": true,
+              "type": "string"
+            },
+            "mensaje": {
+              "title": "mensaje",
+              "x-ms-dynamically-added": true,
+              "type": "string"
+            },
+            "estado_actual": {
+              "title": "estado_actual",
+              "x-ms-dynamically-added": true,
+              "type": "string"
+            },
+            "asignado_por": {
+              "title": "asignado_por",
+              "x-ms-dynamically-added": true,
+              "type": "string"
+            },
+            "fecha_hora_asignacion": {
+              "title": "fecha_hora_asignacion",
+              "x-ms-dynamically-added": true,
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "outputs": {}
+}

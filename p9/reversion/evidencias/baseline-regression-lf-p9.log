@@ -1,0 +1,51 @@
+F....................................................................... [ 26%]
+.....................................FF............................F.... [ 53%]
+.................................F...................................... [ 80%]
+...................................................                      [100%]
+================================== FAILURES ===================================
+___________ test_paquetes_reproducibles_y_con_estructura_importable ___________
+tests\test_16_asignacion_p9.py:82: in test_paquetes_reproducibles_y_con_estructura_importable
+    assert {p: p.read_bytes() for p in antes} == antes
+E   assert {WindowsPath(... {}\r\n}\r\n'} == {WindowsPath(...ts": {}\n}\n'}
+E     
+E     Differing items:
+E     {WindowsPath('C:/Users/PC/Documents/Codex/2026-10-02/files-mentioned-by-the-user-reversiondeposito/work/baseline-regre..."type": "string"\r\n            }\r\n          }\r\n        }\r\n      }\r\n    }\r\n  },\r\n  "outputs": {}\r\n}\r\n'} != {WindowsPath('C:/Users/PC/Documents/Codex/2026-10-02/files-mentioned-by-the-user-reversiondeposito/work/baseline-regre...",\n              "type": "string"\n            }\n          }\n        }\n      }\n    }\n  },\n  "outputs": {}\n}\n'}
+E     {WindowsPath('C:/Users/PC/Documents/Codex/2026-10-02/files-mentioned-by-the-...
+E     
+E     ...Full output truncated (4 lines hidden), use '-vv' to show
+__ test_la_base_es_exactamente_el_zip_validado_en_el_tenant_y_no_se_modifica __
+tests\test_18_asignar_powerapps_v2.py:56: in test_la_base_es_exactamente_el_zip_validado_en_el_tenant_y_no_se_modifica
+    assert hashlib.sha256(BASE_ZIP.read_bytes()).hexdigest() == SHA_BASE
+E   AssertionError: assert '491f6ccd480d...5585539c196df' == '90890c1f4bd5...b694d79b05a85'
+E     
+E     - 90890c1f4bd5ee741c1b61f862cde5085ed51b8e08f0f8f5949b694d79b05a85
+E     + 491f6ccd480d31f34601e911d266c3b6768b5c0be5f531be9cf5585539c196df
+__________ test_generacion_reproducible_y_sin_efectos_sobre_la_base ___________
+tests\test_18_asignar_powerapps_v2.py:62: in test_generacion_reproducible_y_sin_efectos_sobre_la_base
+    V2.generar()
+p9\asignar\convertir_powerapps_v2.py:52: in generar
+    assert hashlib.sha256(base_bytes).hexdigest() == BASE_SHA256, "el ZIP base no es el validado en el tenant"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: el ZIP base no es el validado en el tenant
+_____________ test_base_pinned_generacion_reproducible_y_acciones _____________
+tests\test_21_respuesta_v3_p9.py:103: in test_base_pinned_generacion_reproducible_y_acciones
+    assert (V3.NUEVO_ZIP.read_bytes(), V3.DEFINICION_V3.read_bytes(), V3.DIFF_MD.read_bytes(), V3.BASE_ZIP.read_bytes()) == antes
+E   AssertionError: assert (b'PK\x03\x04...\x00\x00\x00') == (b'PK\x03\x04...\x00\x00\x00')
+E     
+E     At index 0 diff: b'PK\x03\x04\x14\x00\x00\x00\x08\x00\x00\x00A]<\xa1fCN\x02\x00\x00\xe5\x04\x00\x00\r\x00\x00\x00manifest.json\x95\x92\xedj\xdb0\x14\x86o\xc5\x9c_\x1bX\x8d?b\xd7\xf6F!k\xb3-\xb0\xda\xa1I\xc7\xd8(A\x96\x8e\x1c1G2\x92\xd2,\x94\\\xd5.a76\x9cPF\xb3\xaed !8:\x9c\x8f\xe7}\x1f\xc0\xb2%\xae(\x14\x10\x9e\x05\xe0\x03GGek\xa1x\x00.m\xd7\xd2mIW\x08\x05L\xf3\xc5h6\xf9P\x8en\x16W\xe3i5\x9b\xcc\xab}\xbaeFvNj\x05\x05\x8c\xacl\x14\xf5\xd6\xca\xe3\xd8\xfd\xfai\xa5\xd3\xde\xd5d6\xad\xca\xc9\xbbOc\x8f\\x\x87\x12W\x95\xc7\xb4\xea\xaf3\xba\xf5t\xe7\xe4JZG\xbd\x89 \xd7\xd4\xb1...
+E     
+E     ...Full output truncated (2 lines hidden), use '-vv' to show
+_______________ test_bases_pinned_cadena_reproducible_y_zip_v42 _______________
+tests\test_24_flujo_v4_2_firma_8_posicionales_p9.py:105: in test_bases_pinned_cadena_reproducible_y_zip_v42
+    assert hashlib.sha256(V3.NUEVO_ZIP.read_bytes()).hexdigest() == SHA_V3
+E   AssertionError: assert 'd8429b766dc4...fd37fdd107b1e' == '023db6b4a95b...3d2eb3adb3a44'
+E     
+E     - 023db6b4a95b30320f27a1e4d0d38b09bcaac8889ec2e0d3e383d2eb3adb3a44
+E     + d8429b766dc4332efa28c4736a6126979f8001d45b2f4c1869ffd37fdd107b1e
+=========================== short test summary info ===========================
+FAILED tests\test_16_asignacion_p9.py::test_paquetes_reproducibles_y_con_estructura_importable
+FAILED tests\test_18_asignar_powerapps_v2.py::test_la_base_es_exactamente_el_zip_validado_en_el_tenant_y_no_se_modifica
+FAILED tests\test_18_asignar_powerapps_v2.py::test_generacion_reproducible_y_sin_efectos_sobre_la_base
+FAILED tests\test_21_respuesta_v3_p9.py::test_base_pinned_generacion_reproducible_y_acciones
+FAILED tests\test_24_flujo_v4_2_firma_8_posicionales_p9.py::test_bases_pinned_cadena_reproducible_y_zip_v42
+5 failed, 262 passed in 4.24s

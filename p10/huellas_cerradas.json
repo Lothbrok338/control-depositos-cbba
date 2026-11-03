@@ -1,0 +1,30 @@
+{
+ "a1_cerrado": {
+  "p10/__init__.py": "a6a6b0782766c97f4e28110014589969369374ce738cfa4fe88fd8706b0d2be4",
+  "p10/comparar.py": "132ba7accdd195ff59cb694c5e1547f950a07d7a8818e387cb235e1fc4d80a01",
+  "p10/contrato.py": "5b85c6da1d4c08fc23e22b43727c81e52ef5562cd468020025808a4473b92957",
+  "p10/empaque.py": "78c99b9b5e8db1d7dcd5a75d227e414b99962fe0ebc019a7f8e09f654584e23d",
+  "p10/generador.py": "63df3a4ea568eebded519c60fd2d4b57211a1c23e7b2e7abaae0e5967be43c74",
+  "p10/motor_p0.py": "cadabf9e7258251ff5b3eee0c37879c692dd185173269749ce39ea296d314388",
+  "p10/snapshot.py": "0c4b243a9d09f46d4967aa88e7d0036f85ad4e0d71ece65df8b9f90ae3059737",
+  "p10/snapshot_simulado.py": "f1fa4f46e36b10758596659a8a8d4e0b75a9caea51ad091d84f78dd2cdb05e59",
+  "p10/validacion.py": "c2b833c1176ca2df0c8ec32bb370d7c5c3db5d9f0bb408a21a06963ac3c064bf"
+ },
+ "reutilizado_sin_cambios": {
+  "Dockerfile": "3423edaebd38ea78ef62d04155042cc70538977b60ffaa4080bc32a3a9649354",
+  "adaptador_m365.py": "c391355c98a0aeee132b38b0ba2f480ab269ba4b499720e2da84495e24154177",
+  "captura_origen.py": "1221ad239f3a0bcb5d8b2405162501326653fe2d0691b2653fc7a0dc99dcea16",
+  "deteccion_registro.py": "40030d3c51fda4201fb4f7b5eab569693d97c600b0754c87c63dbb792a5e865f",
+  "historico.py": "9e779e5fd1c827cc7f94631700dc91ed0e0c3f2f5d388f8b63b465313c1cd7fb",
+  "motor_control_depositos_cbba.py": "c614d8518f8495c2a21464ece3b1559d8217813b93166350823615845524500c",
+  "motor_generico.py": "510332a6c0df71cf46d05caaaafcda5f2e88a049cad945d78b23b950503f5e00",
+  "p0/api.py": "714d53f305a886aa6c33ad6bffa96cfd0ddfe25d108931c934662861264aa9f9",
+  "p0/nucleo.py": "abf2ae4e30f2650f684f980c226b415938c5e8b6174a030c5a502d967b889f8c",
+  "p0/sedes.json": "08e7a5e7a4731496b912e98aa969761ff487d13159be64cbb4d476bf7b7cf64d",
+  "p9/contrato.py": "53da1520d5531a3faaa44caf4d4fbc4ca7cd331322461d3631bbbe7ad39b445d",
+  "p9/reversion/contrato.py": "11fd114258458e38ffa943078cdaacbcc61db6f8913690c82c565e91406ad06b",
+  "railway.json": "96baf2f757a33ed482891bbe7276e16c662b5dfbe226872620e99ca456fcd068",
+  "registro_bancos.json": "511fa60da054616467a9e651c23a4dce685bd092f768b523e750aace6600cf6f",
+  "requirements-p0.txt": "859bab890179277a5076706e246b645f9c82e10071e96f3cd2c60b5b49c8e622"
+ }
+}

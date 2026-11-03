@@ -1,0 +1,26 @@
+{
+  "flujo": "P8 - CARGA DEPOSITOS ACTIVOS",
+  "tipo_de_evidencia": "Ensayo local del WDL; no ejecución Microsoft",
+  "primera_ejecucion": {
+    "CANTIDAD_RECIBIDA": 8,
+    "CANTIDAD_VALIDA": 8,
+    "CANTIDAD_NUEVA": 8,
+    "CANTIDAD_YA_EXISTE": 0,
+    "CANTIDAD_ERROR": 0,
+    "ESTADO_LOTE/Value": "COMPLETADO",
+    "coincidencias_preconsulta": 0,
+    "intentos_crear": 8,
+    "elementos_finales": 8
+  },
+  "segunda_ejecucion": {
+    "CANTIDAD_RECIBIDA": 8,
+    "CANTIDAD_VALIDA": 8,
+    "CANTIDAD_NUEVA": 0,
+    "CANTIDAD_YA_EXISTE": 8,
+    "CANTIDAD_ERROR": 0,
+    "ESTADO_LOTE/Value": "COMPLETADO",
+    "coincidencias_preconsulta": 8,
+    "intentos_crear": 0,
+    "elementos_finales": 8
+  }
+}

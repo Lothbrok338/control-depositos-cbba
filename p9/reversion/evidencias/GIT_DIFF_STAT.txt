@@ -1,0 +1,5 @@
+ DOCUMENTACION_P9_POWER_APPS.md            |  5 +++++
+ ESTADO_PROYECTO.md                        |  5 +++++
+ tests/test_16_asignacion_p9.py            | 17 +++++++++++++++--
+ tests/test_26_comprobante_cuenta_tc_p9.py | 31 +++++++++++++++++++++++++++----
+ 4 files changed, 52 insertions(+), 6 deletions(-)

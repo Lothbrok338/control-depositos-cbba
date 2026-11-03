@@ -79,8 +79,10 @@ def test_fila_con_importe_y_fecha_invalida_no_se_pierde_en_silencio(motor, tmp_p
         normalizar_productivo(motor, ruta, "BNB_CLINICA")
 
 
-@defecto("D-08 AÑO", "el año 2026 esta fijo: un movimiento de 2027 bloquea toda la exportacion")
-def test_movimiento_de_2027_no_bloquea(motor, tmp_path):
+# D-08: CORREGIDO EN P0. El control del año ya no esta fijo en 2026: acepta [ANIO_MINIMO_DATOS, año del equipo]
+# (ver tests/test_33_anio_dinamico_p0.py). Aqui queda como regresion con el reloj del equipo en 2027.
+def test_movimiento_de_2027_no_bloquea(motor, tmp_path, monkeypatch):
+    monkeypatch.setattr(motor, "fecha_referencia", lambda: pd.Timestamp("2027-02-01"))
     ent = tmp_path / "in"; ent.mkdir()
     crear_xlsx_bnb(ent / "x.xlsx", "3000100705", [{"fecha": "05/01/2027", "cred": 100.0, "saldo": 1100.0}])
     res = motor.ejecutar_motor(str(ent), str(tmp_path / "out" / "NORMALIZADO.xlsx"))

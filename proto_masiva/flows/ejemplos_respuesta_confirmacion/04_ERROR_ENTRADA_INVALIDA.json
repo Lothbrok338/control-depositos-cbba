@@ -1,0 +1,10 @@
+{
+  "escenario": "detalle_json no es un arreglo JSON: respuesta temprana de ERROR, no se crea estado ni se toca SharePoint",
+  "respuesta_temprana": {
+    "resultado": "ERROR",
+    "codigo": "ENTRADA_INVALIDA",
+    "mensaje": "Faltan detalle_json o usuario_email, o detalle_json no es un arreglo JSON. No se confirmó ningún depósito.",
+    "execution_uid": "",
+    "filas_recibidas": "0"
+  }
+}

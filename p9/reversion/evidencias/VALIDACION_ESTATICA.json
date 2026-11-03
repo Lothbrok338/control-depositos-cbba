@@ -1,0 +1,144 @@
+{
+  "alcance": "Artefactos nuevos activos, excluida referencia histórica y controles de app base",
+  "limite": "No certifica importación o ejecución nativa Microsoft 365",
+  "flujos": {
+    "P9_SOLICITAR_REVERSION": {
+      "definicion": {
+        "flujo": "P9_SOLICITAR_REVERSION",
+        "acciones": 63,
+        "profundidad": 5,
+        "variables": 3,
+        "conexiones": [
+          "shared_office365users",
+          "shared_sharepointonline"
+        ],
+        "resultado": "OK"
+      },
+      "paquete": {
+        "flujo": "P9_SOLICITAR_REVERSION",
+        "acciones": 63,
+        "profundidad": 5,
+        "variables": 3,
+        "conexiones": [
+          "shared_office365users",
+          "shared_sharepointonline"
+        ],
+        "resultado": "OK",
+        "archivos_zip": 5
+      },
+      "builder_json_zip_identicos": true,
+      "sha256_json": "9556b9303b3d1e0826d06a15b595959d2375e8edc4c3e3e7cfbd598cfac1adf0",
+      "sha256_zip": "6f9591f52b4e8675ebd727ae82a37a997621b23e208af428fd46fb7e012dbcd4"
+    },
+    "P9_RESOLVER_REVERSION": {
+      "definicion": {
+        "flujo": "P9_RESOLVER_REVERSION",
+        "acciones": 379,
+        "profundidad": 8,
+        "variables": 62,
+        "conexiones": [
+          "shared_approvals",
+          "shared_sharepointonline"
+        ],
+        "resultado": "OK"
+      },
+      "paquete": {
+        "flujo": "P9_RESOLVER_REVERSION",
+        "acciones": 379,
+        "profundidad": 8,
+        "variables": 62,
+        "conexiones": [
+          "shared_approvals",
+          "shared_sharepointonline"
+        ],
+        "resultado": "OK",
+        "archivos_zip": 5
+      },
+      "builder_json_zip_identicos": true,
+      "sha256_json": "43ee731ffbb2fac50e014d4d2e38519b1def63db34590cd7912b0e9199a8ebf9",
+      "sha256_zip": "720daf6a8d5c97b1a35aab1ecb979e53ca8528f18459527560c7ce79b10c1d0b"
+    },
+    "P9_EXPIRAR_REVERSIONES": {
+      "definicion": {
+        "flujo": "P9_EXPIRAR_REVERSIONES",
+        "acciones": 42,
+        "profundidad": 6,
+        "variables": 7,
+        "conexiones": [
+          "shared_sharepointonline"
+        ],
+        "resultado": "OK"
+      },
+      "paquete": {
+        "flujo": "P9_EXPIRAR_REVERSIONES",
+        "acciones": 42,
+        "profundidad": 6,
+        "variables": 7,
+        "conexiones": [
+          "shared_sharepointonline"
+        ],
+        "resultado": "OK",
+        "archivos_zip": 5
+      },
+      "builder_json_zip_identicos": true,
+      "sha256_json": "2b7659fce1de058eadff1a1297d96977d39437e400953969e55fbbb17271b51e",
+      "sha256_zip": "69c4858d05e75e304c181fae6a86a38ae29c36a7c8258ae68caf3adf4e6a64aa"
+    },
+    "P9_RECUPERAR_REVERSION": {
+      "definicion": {
+        "flujo": "P9_RECUPERAR_REVERSION",
+        "acciones": 491,
+        "profundidad": 8,
+        "variables": 74,
+        "conexiones": [
+          "shared_approvals",
+          "shared_office365users",
+          "shared_sharepointonline"
+        ],
+        "resultado": "OK"
+      },
+      "paquete": {
+        "flujo": "P9_RECUPERAR_REVERSION",
+        "acciones": 491,
+        "profundidad": 8,
+        "variables": 74,
+        "conexiones": [
+          "shared_approvals",
+          "shared_office365users",
+          "shared_sharepointonline"
+        ],
+        "resultado": "OK",
+        "archivos_zip": 5
+      },
+      "builder_json_zip_identicos": true,
+      "sha256_json": "6b587bf04fed3b7eb44b5e583162f8fdc04947e657e0392c4e9aa33e513692af",
+      "sha256_zip": "0ccbadfa29f899a4b5738c421756d65142d10147772adf2411ec03b6a6546d76"
+    },
+    "P9_PROVISIONAR_REVERSION": {
+      "definicion": {
+        "flujo": "P9_PROVISIONAR_REVERSION",
+        "acciones": 57,
+        "profundidad": 8,
+        "variables": 2,
+        "conexiones": [
+          "shared_sharepointonline"
+        ],
+        "resultado": "OK"
+      },
+      "paquete": {
+        "flujo": "P9_PROVISIONAR_REVERSION",
+        "acciones": 57,
+        "profundidad": 8,
+        "variables": 2,
+        "conexiones": [
+          "shared_sharepointonline"
+        ],
+        "resultado": "OK",
+        "archivos_zip": 5
+      },
+      "builder_json_zip_identicos": true,
+      "sha256_json": "612cbfcf070754202077ec55e25fcbaaea26a7e4dcc64275331a0ab6715f0e2c",
+      "sha256_zip": "61f6aa90c84c7abbd80942c007b20ddc209633e8580618a783eb32d8228f563c"
+    }
+  }
+}

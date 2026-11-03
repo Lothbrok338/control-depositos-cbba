@@ -1,0 +1,90 @@
+"""Validación aislada: nunca ejecuta generadores en el checkout de trabajo.
+
+Una copia nueva por corrida conserva el HEAD con texto LF de Git y superpone
+solo los cambios locales para candidate. El frontend extendido se lleva a LF
+en esa copia para comparar los mismos bytes de texto que el frontend base LF.
+No modifica ni normaliza ningún archivo de la rama local.
+"""
+from pathlib import Path
+import argparse
+import hashlib
+import io
+import json
+import platform
+import subprocess
+import sys
+import time
+import zipfile
+import zlib
+
+WORK=Path(__file__).resolve().parent
+REPO=WORK/'control-depositos-cbba'
+P9=['tests/test_16_asignacion_p9.py','tests/test_18_asignar_powerapps_v2.py',
+    'tests/test_21_respuesta_v3_p9.py','tests/test_22_frontend_final_p9.py',
+    'tests/test_24_flujo_v4_2_firma_8_posicionales_p9.py',
+    'tests/test_25_comprobante_impresion_p9.py','tests/test_26_comprobante_cuenta_tc_p9.py']
+NUEVOS=['tests/test_27_reversion_contrato_p9.py','tests/test_28_reversion_concurrencia_p9.py',
+        'tests/test_29_reversion_frontend_p9.py','tests/test_30_reversion_expiracion_recuperacion_p9.py']
+
+def git(*args):
+    return subprocess.check_output(['git',*args],cwd=REPO)
+
+def sha(p):
+    return hashlib.sha256(p.read_bytes()).hexdigest()
+
+def main():
+    # La consola Windows puede no representar caracteres del log UTF-8.
+    # El archivo conserva los bytes íntegros; solo se escapa la vista de consola.
+    sys.stdout.reconfigure(errors='backslashreplace')
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('nombre')
+    parser.add_argument('--fuente',choices=['baseline','candidate'],default='candidate')
+    parser.add_argument('--grupo',choices=['nuevos','p9','completa'],default='nuevos')
+    args=parser.parse_args()
+    copy=WORK/args.nombre
+    if copy.exists() or copy.parent.resolve()!=WORK.resolve():
+        raise ValueError('Usar un nombre nuevo, hijo directo de work; no se sobrescribe evidencia')
+    protected=json.loads((REPO/'p9/reversion/evidencias/huellas_base.json').read_text(encoding='utf-8-sig'))['sha256']
+    before={name:sha(REPO/name) for name in protected}
+    assert before==protected, 'Archivo protegido cambió; detener sin corregir'
+    head=git('rev-parse','HEAD').decode().strip()
+    archive=git('-c','core.autocrlf=false','archive','--format=zip','HEAD')
+    copy.mkdir()
+    with zipfile.ZipFile(io.BytesIO(archive)) as z:
+        for member in z.namelist():
+            assert (copy/member).resolve().is_relative_to(copy.resolve())
+        z.extractall(copy)
+    overlay=[]
+    if args.fuente=='candidate':
+        overlay=git('ls-files','--modified','--others','--exclude-standard','-z').decode().split('\0')
+        overlay=sorted(set(name for name in overlay if name))
+        for name in overlay:
+            source=REPO/name
+            if not source.is_file():raise ValueError('Cambio no soportado: '+name)
+            target=copy/name
+            target.parent.mkdir(parents=True,exist_ok=True)
+            data=source.read_bytes()
+            if name=='p9/reversion/powerapps/P9_CONTROL_INGRESOS_CON_REVERSION.txt':
+                data=data.replace(b'\r\n',b'\n')
+            target.write_bytes(data)
+    paths=NUEVOS if args.grupo=='nuevos' else P9 if args.grupo=='p9' else ['tests']
+    log=WORK/(args.nombre+'.log')
+    command=[sys.executable,'-m','pytest','-c','tests/pytest.ini',*paths,'-q','--tb=short',
+             '--junitxml='+str(WORK/(args.nombre+'.xml'))]
+    started=time.monotonic()
+    with log.open('wb') as out:
+        result=subprocess.run(command,cwd=copy,stdout=out,stderr=subprocess.STDOUT)
+    after={name:sha(REPO/name) for name in protected}
+    summary={'head':head,'fuente':args.fuente,'grupo':args.grupo,'copia':str(copy),
+             'command':command,'overlay':overlay,'returncode':result.returncode,
+             'seconds':round(time.monotonic()-started,3),'python':sys.version,
+             'platform':platform.platform(),'zlib':zlib.ZLIB_RUNTIME_VERSION,
+             'huellas_checkout_intactas':before==after==protected}
+    (WORK/(args.nombre+'.json')).write_text(json.dumps(summary,ensure_ascii=False,indent=2),encoding='utf-8')
+    assert summary['huellas_checkout_intactas'], 'Archivo protegido cambió; detener sin corregir'
+    print(json.dumps(summary,ensure_ascii=True,indent=2))
+    print(log.read_text(encoding='utf-8',errors='replace')[-25000:])
+    return result.returncode
+
+if __name__=='__main__':
+    raise SystemExit(main())

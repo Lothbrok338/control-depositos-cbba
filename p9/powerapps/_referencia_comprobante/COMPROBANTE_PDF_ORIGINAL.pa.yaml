@@ -1,0 +1,462 @@
+Screens:
+  COMPROBANTE PDF:
+    Properties:
+      Fill: =RGBA(255, 255, 255, 1)
+      Height: =1123
+      LoadingSpinnerColor: =RGBA(123, 22, 50, 1)
+      Width: =794
+    Children:
+      - cntComprobantePDF:
+          Control: GroupContainer@1.5.0
+          Variant: ManualLayout
+          Properties:
+            DropShadow: =DropShadow.None
+            Fill: =RGBA(255, 255, 255, 1)
+            Height: =700
+            RadiusBottomLeft: =8
+            RadiusBottomRight: =8
+            RadiusTopLeft: =8
+            RadiusTopRight: =8
+            Width: =Parent.Width - 80
+            X: =40
+            Y: =70
+          Children:
+            - rectLineaSuperiorPDF:
+                Control: Rectangle@2.3.0
+                Properties:
+                  BorderStyle: =BorderStyle.None
+                  Fill: =RGBA(123, 22, 50, 1)
+                  Height: =8
+                  Width: =Parent.Width
+            - lblInstitucionPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Align: =Align.Center
+                  Color: =RGBA(94, 16, 38, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =28
+                  Size: =12
+                  Text: ="UNIVALLE · CONTROL DE DEPÓSITOS"
+                  Width: =Parent.Width - 80
+                  X: =40
+                  Y: =25
+            - lblTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Align: =Align.Center
+                  Color: =RGBA(52, 55, 58, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =34
+                  Size: =18
+                  Text: ="COMPROBANTE DE CONFIRMACIÓN DE DEPÓSITO"
+                  Width: =Parent.Width - 80
+                  X: =40
+                  Y: =55
+            - lblCodigoTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Align: =Align.Center
+                  Color: =RGBA(98, 102, 106, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Semibold
+                  Height: =24
+                  Size: =9
+                  Text: ="CÓDIGO DE ASIGNACIÓN"
+                  Width: =Parent.Width - 80
+                  X: =40
+                  Y: =102
+            - lblCodigoValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Align: =Align.Center
+                  Color: =RGBA(123, 22, 50, 1)
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =58
+                  Size: =28
+                  Text: =If(IsBlank(varDepositoSeleccionado.'CÓDIGO DE ASIGNACION'), "—", varDepositoSeleccionado.'CÓDIGO DE ASIGNACION')
+                  Width: =Parent.Width - 80
+                  X: =40
+                  Y: =125
+            - rectSeparadorPDF1:
+                Control: Rectangle@2.3.0
+                Properties:
+                  BorderStyle: =BorderStyle.None
+                  Fill: =RGBA(225, 225, 225, 1)
+                  Height: =1
+                  Width: =Parent.Width - 80
+                  X: =40
+                  Y: =192
+            - lblBancoTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: ="BANCO"
+                  Width: =Parent.Width / 3 - 45
+                  X: =50
+                  Y: =212
+            - lblBancoValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  FontWeight: =FontWeight.Bold
+                  Height: =34
+                  Size: =15
+                  Text: =If(IsBlank(varDepositoSeleccionado.BANCO.Value), "—", varDepositoSeleccionado.BANCO.Value)
+                  Width: =Parent.Width / 3 - 45
+                  X: =50
+                  Y: =234
+            - lblCuentaTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: ="NÚMERO DE CUENTA BANCARIA"
+                  Width: =Parent.Width / 3 - 45
+                  X: =Parent.Width / 3 + 25
+                  Y: =212
+            - lblCuentaValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  FontWeight: =FontWeight.Bold
+                  Height: =34
+                  Size: =15
+                  Text: =If(IsBlank(varDepositoSeleccionado.'CUENTA BANCARIA'), "—", varDepositoSeleccionado.'CUENTA BANCARIA')
+                  Width: =Parent.Width / 3 - 45
+                  X: =Parent.Width / 3 + 25
+                  Y: =234
+            - lblCuentaContableTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: ="CUENTA CONTABLE"
+                  Width: =Parent.Width / 3 - 55
+                  X: =2 * Parent.Width / 3
+                  Y: =212
+            - lblCuentaContableValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(94, 16, 38, 1)
+                  FontWeight: =FontWeight.Bold
+                  Height: =34
+                  Size: =15
+                  Text: |-
+                    =With(
+                        {
+                            cta: Substitute(
+                                Substitute(
+                                    Trim(varDepositoSeleccionado.'CUENTA BANCARIA'),
+                                    "-",
+                                    ""
+                                ),
+                                " ",
+                                ""
+                            )
+                        },
+                        Switch(
+                            cta,
+                            "3000100152", "110103012",
+                            "3000100705", "110103022",
+                            "0696870039", "110103032",
+                            "696870039", "110103032",
+                            "3015005684397", "110103042",
+                            "10000003224552", "110103052",
+                            "13224552", "110103052",
+                            "3041210569", "110103062",
+                            "1000872489", "110103072",
+                            "4010879042", "110103072",
+                            "3400041236", "110104012",
+                            "0696872023", "110104022",
+                            "696872023", "110104022",
+                            "3015005425271", "110104032",
+                            "20000003224544", "110104042",
+                            "23224544", "110104042",
+                            "3051446946", "110103722",
+                            "0696876517", "110105112",
+                            "696876517", "110105112",
+                            "3501936692", "110103712",
+                            "—"
+                        )
+                    )
+                  Width: =Parent.Width / 3 - 55
+                  X: =2 * Parent.Width / 3
+                  Y: =234
+            - lblFechaMovTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: ="FECHA Y HORA DEL MOVIMIENTO"
+                  Width: =Parent.Width / 3 - 45
+                  X: =50
+                  Y: =286
+            - lblFechaMovValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =30
+                  Size: =11
+                  Text: |-
+                    =Text(varDepositoSeleccionado.'FECHA DE MOVIMIENTO', "dd/mm/yyyy")
+                    & " · "
+                    & varDepositoSeleccionado.'HORA DE MOVIMIENTO'
+                  Width: =Parent.Width / 3 - 45
+                  X: =50
+                  Y: =308
+            - lblImporteTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: ="IMPORTE"
+                  Width: =Parent.Width / 3 - 45
+                  X: =Parent.Width / 3 + 25
+                  Y: =286
+            - lblImporteValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(123, 22, 50, 1)
+                  FontWeight: =FontWeight.Bold
+                  Height: =30
+                  Size: =14
+                  Text: |-
+                    =If(
+                        IsBlank(varDepositoSeleccionado.MONEDA.Value),
+                        "",
+                        varDepositoSeleccionado.MONEDA.Value & " "
+                    )
+                    & Text(varDepositoSeleccionado.IMPORTE, "#,##0.00", "es-ES")
+                  Width: =Parent.Width / 3 - 45
+                  X: =Parent.Width / 3 + 25
+                  Y: =308
+            - lblEstadoTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: ="ESTADO"
+                  Width: =Parent.Width / 3 - 45
+                  X: =2 * Parent.Width / 3
+                  Y: =286
+            - lblEstadoValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(39, 122, 72, 1)
+                  FontWeight: =FontWeight.Bold
+                  Height: =30
+                  Size: =11
+                  Text: =varDepositoSeleccionado.ESTADO.Value
+                  Width: =Parent.Width / 3 - 55
+                  X: =2 * Parent.Width / 3
+                  Y: =308
+            - rectSeparadorPDF2:
+                Control: Rectangle@2.3.0
+                Properties:
+                  BorderStyle: =BorderStyle.None
+                  Fill: =RGBA(225, 225, 225, 1)
+                  Height: =1
+                  Width: =Parent.Width - 80
+                  X: =40
+                  Y: =358
+            - lblEstudianteTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: ="ESTUDIANTE"
+                  Width: =Parent.Width / 3 - 45
+                  X: =50
+                  Y: =378
+            - lblEstudianteValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =34
+                  Size: =10
+                  Text: =If(IsBlank(varDepositoSeleccionado.ESTUDIANTE), "—", varDepositoSeleccionado.ESTUDIANTE)
+                  Width: =Parent.Width / 3 - 45
+                  X: =50
+                  Y: =400
+            - lblSolicitadoTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: ="SOLICITADO POR"
+                  Width: =Parent.Width / 3 - 45
+                  X: =Parent.Width / 3 + 25
+                  Y: =378
+            - lblSolicitadoValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =34
+                  Size: =10
+                  Text: =If(IsBlank(varDepositoSeleccionado.'SOLICITADO POR'), "—", varDepositoSeleccionado.'SOLICITADO POR')
+                  Width: =Parent.Width / 3 - 45
+                  X: =Parent.Width / 3 + 25
+                  Y: =400
+            - lblSedeTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: ="SEDE SOLICITANTE"
+                  Width: =Parent.Width / 3 - 55
+                  X: =2 * Parent.Width / 3
+                  Y: =378
+            - lblSedeValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =34
+                  Size: =10
+                  Text: =If(IsBlank(varDepositoSeleccionado.'SEDE SOLICITANTE'.Value), "—", varDepositoSeleccionado.'SEDE SOLICITANTE'.Value)
+                  Width: =Parent.Width / 3 - 55
+                  X: =2 * Parent.Width / 3
+                  Y: =400
+            - lblConfirmadoTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: ="CONFIRMADO POR"
+                  Width: =Parent.Width / 2 - 70
+                  X: =50
+                  Y: =455
+            - lblConfirmadoValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(94, 16, 38, 1)
+                  FontWeight: =FontWeight.Bold
+                  Height: =36
+                  Text: =If(IsBlank(varDepositoSeleccionado.'CONFIRMADO POR'.DisplayName), "—", varDepositoSeleccionado.'CONFIRMADO POR'.DisplayName)
+                  Width: =Parent.Width / 2 - 70
+                  X: =50
+                  Y: =477
+            - lblFechaConfirmTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: ="FECHA DE CONFIRMACIÓN"
+                  Width: =Parent.Width / 2 - 70
+                  X: =Parent.Width / 2 + 20
+                  Y: =455
+            - lblFechaConfirmValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =36
+                  Size: =11
+                  Text: =If(IsBlank(varDepositoSeleccionado.'FECHA DE CONFIRMACION'), "—", Text(varDepositoSeleccionado.'FECHA DE CONFIRMACION', "dd/mm/yyyy hh:mm"))
+                  Width: =Parent.Width / 2 - 70
+                  X: =Parent.Width / 2 + 20
+                  Y: =477
+            - lblObsTituloPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(98, 102, 106, 1)
+                  FontWeight: =FontWeight.Semibold
+                  Height: =20
+                  Size: =8
+                  Text: ="OBSERVACIÓN"
+                  Width: =Parent.Width - 100
+                  X: =50
+                  Y: =535
+            - lblObsValorPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Color: =RGBA(52, 55, 58, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =55
+                  Size: =9
+                  Text: =If(IsBlank(varDepositoSeleccionado.OBSERVACION), "—", varDepositoSeleccionado.OBSERVACION)
+                  Width: =Parent.Width - 100
+                  X: =50
+                  Y: =557
+            - rectFirmaPDF:
+                Control: Rectangle@2.3.0
+                Properties:
+                  BorderStyle: =BorderStyle.None
+                  Fill: =RGBA(123, 22, 50, 1)
+                  Height: =2
+                  Width: =300
+                  X: =(Parent.Width - Self.Width) / 2
+                  Y: =625
+            - lblFirmaPDF:
+                Control: Label@2.5.1
+                Properties:
+                  Align: =Align.Center
+                  Color: =RGBA(98, 102, 106, 1)
+                  Font: =Font.'Segoe UI'
+                  Height: =32
+                  Size: =8
+                  Text: ="REGISTRO DE CONFIRMACIÓN · CONTROL DE DEPÓSITOS"
+                  Width: =400
+                  X: =(Parent.Width - Self.Width) / 2
+                  Y: =632
+      - btnVolverPDF:
+          Control: Classic/Button@2.2.0
+          Properties:
+            BorderColor: =RGBA(98, 102, 106, 1)
+            BorderThickness: =1
+            Color: =RGBA(52, 55, 58, 1)
+            Fill: =RGBA(255, 255, 255, 1)
+            Font: =Font.'Segoe UI'
+            Height: =38
+            OnSelect: =Back()
+            Size: =9
+            Text: ="VOLVER"
+            Visible: =Not('COMPROBANTE PDF'.Printing)
+            Width: =110
+            X: =40
+            Y: =20
+      - btnImprimirPDF:
+          Control: Classic/Button@2.2.0
+          Properties:
+            BorderStyle: =BorderStyle.None
+            Color: =RGBA(255, 255, 255, 1)
+            Fill: =RGBA(123, 22, 50, 1)
+            Font: =Font.'Segoe UI'
+            FontWeight: =FontWeight.Bold
+            Height: =38
+            OnSelect: =Print()
+            Size: =9
+            Text: ="IMPRIMIR / GUARDAR PDF"
+            Visible: =Not('COMPROBANTE PDF'.Printing)
+            Width: =190
+            X: =Parent.Width - 230
+            Y: =20

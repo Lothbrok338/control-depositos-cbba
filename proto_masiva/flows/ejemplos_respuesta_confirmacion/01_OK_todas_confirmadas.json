@@ -1,0 +1,36 @@
+{
+  "escenario": "3 filas VALIDO que siguen siendo válidas: las 3 se confirman; el detalle final queda vacío",
+  "respuesta_temprana": {
+    "resultado": "ACEPTADO",
+    "codigo": "PROCESAMIENTO_INICIADO",
+    "mensaje": "Confirmación iniciada: 3 depósitos en proceso.",
+    "execution_uid": "00000000-0000-4000-8000-000000000001",
+    "filas_recibidas": "3"
+  },
+  "estado_final": {
+    "execution_uid": "00000000-0000-4000-8000-000000000001",
+    "estado": "TERMINADO",
+    "codigo": "CONFIRMACION_OK",
+    "filas_totales": 3,
+    "filas_procesadas": 3,
+    "filas_confirmadas": 3,
+    "filas_no_confirmadas": 0,
+    "porcentaje": 100,
+    "mensaje": "3 de 3 depósitos confirmados.",
+    "detalle_json": [],
+    "detalle_truncado": false,
+    "actualizado_utc": "2026-10-05T12:00:00.063000Z",
+    "tiempos_ms": "total=63;filas=3;ms_por_fila=23"
+  },
+  "consulta_estado": {
+    "estado": "TERMINADO",
+    "filas_totales": "3",
+    "filas_procesadas": "3",
+    "filas_confirmadas": "3",
+    "filas_no_confirmadas": "0",
+    "porcentaje": "100",
+    "mensaje": "3 de 3 depósitos confirmados.",
+    "detalle_json": "[]",
+    "tiempos_ms": "total=63;filas=3;ms_por_fila=23"
+  }
+}

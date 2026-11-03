@@ -1,0 +1,183 @@
+{
+  "revision": "V3_HASH_SHA256",
+  "estado": "VALIDACION_LOCAL_OK_TENANT_V3_PENDIENTE",
+  "rama": "candidate/p8-m365-pilot",
+  "main": "673754a9b69072e6960bbf0c7ffb0f50dc5d2670",
+  "contrato": {
+    "fuente": "p8/esquema_listas_p8.json",
+    "sha256": "6fbd6a618b9b990c698abcf5693ad9684e86e3c6b725c007d84861c40dad7563",
+    "nombre_logico": "SHA256",
+    "nombre_visible": "SHA256",
+    "InternalName": "HASH_SHA256"
+  },
+  "creacion": {
+    "Name": "HASH_SHA256",
+    "StaticName": "HASH_SHA256",
+    "DisplayName_inicial": "HASH_SHA256",
+    "Options": 9,
+    "ID_especial": false,
+    "actualizacion_por_GUID": "Title=SHA256"
+  },
+  "verificacion_final": {
+    "InternalName": "HASH_SHA256",
+    "Title": "SHA256"
+  },
+  "bitacora": {
+    "parametro": "item/HASH_SHA256",
+    "valor": "@variables('varSha256')",
+    "origen_P7": "sha256_archivo_fuente",
+    "unico_cambio_en_WDL_de_carga": true
+  },
+  "pruebas": {
+    "p8": {
+      "comando": "python -m pytest -q tests/test_12_flujo_p8.py tests/test_13_provision_p8.py",
+      "PASS": 78,
+      "FAIL": 0,
+      "log": "p8/provision/pruebas_provision.log",
+      "salida": "........................................................................ [ 92%]\n......                                                                   [100%]\n78 passed in 14.56s\n"
+    },
+    "p7_adaptador": {
+      "comando": "python -m pytest -q tests/test_11_adaptador_m365_p7.py",
+      "PASS": 45,
+      "FAIL": 0,
+      "salida": ".............................................                            [100%]\n45 passed in 19.01s\n"
+    },
+    "nombres_visibles_y_recursos_independientes": true
+  },
+  "proteccion": {
+    "archivos_P6_P7_motor_adaptador_doradas_identicos": 91,
+    "Depositos_Activos_contrato_y_plan_identicos": true,
+    "otras_12_columnas_Cargas_identicas": true,
+    "paquetes_historicos_identicos": [
+      "P8_CARGA_DEPOSITOS_ACTIVOS.zip",
+      "P8_PROVISIONAR_LISTAS.zip",
+      "P8_PROVISIONAR_LISTAS_V2_SHA256.zip",
+      "ENTREGABLES_P8_CONTROL_DEPOSITOS_CBBA.zip"
+    ]
+  },
+  "paquetes": {
+    "P8_PROVISIONAR_LISTAS_V3_HASH_SHA256.zip": {
+      "bytes": 8454,
+      "sha256": "fec77dd0d40c4bf869ed006d4da140bd8e36d8f50f0d8615e7f6a3694fa1dc43",
+      "integridad_zip": true,
+      "nombre_visible": "P8_PROVISIONAR_LISTAS_V3_HASH_SHA256",
+      "nombre_manifiesto_y_definicion_verificado": true
+    },
+    "P8_CARGA_DEPOSITOS_ACTIVOS_V3_HASH_SHA256.zip": {
+      "bytes": 6861,
+      "sha256": "16403a21a18985aabf59238fa128f895d09416c2bb2cdc0685562a5fa503fafc",
+      "integridad_zip": true,
+      "nombre_visible": "P8_CARGA_DEPOSITOS_ACTIVOS_V3_HASH_SHA256",
+      "nombre_manifiesto_y_definicion_verificado": true
+    }
+  },
+  "provision_primera_simulada": {
+    "PROVISION_P8": "OK",
+    "resultado": "PROVISION_P8 = OK",
+    "fuente": "p8/esquema_listas_p8.json",
+    "sha256_contrato": "6fbd6a618b9b990c698abcf5693ad9684e86e3c6b725c007d84861c40dad7563",
+    "listas": [
+      {
+        "lista": "Depositos_Activos",
+        "esperadas": 34,
+        "presentes": 34,
+        "verificacion_columnas": "Succeeded"
+      },
+      {
+        "lista": "Depositos_Cargas",
+        "esperadas": 13,
+        "presentes": 13,
+        "verificacion_columnas": "Succeeded"
+      }
+    ],
+    "diferencias": [],
+    "ejecucion": "EJECUCION_LOCAL_NO_TENANT"
+  },
+  "provision_reproceso_simulado": {
+    "resumen": {
+      "PROVISION_P8": "OK",
+      "resultado": "PROVISION_P8 = OK",
+      "fuente": "p8/esquema_listas_p8.json",
+      "sha256_contrato": "6fbd6a618b9b990c698abcf5693ad9684e86e3c6b725c007d84861c40dad7563",
+      "listas": [
+        {
+          "lista": "Depositos_Activos",
+          "esperadas": 34,
+          "presentes": 34,
+          "verificacion_columnas": "Succeeded"
+        },
+        {
+          "lista": "Depositos_Cargas",
+          "esperadas": 13,
+          "presentes": 13,
+          "verificacion_columnas": "Succeeded"
+        }
+      ],
+      "diferencias": [],
+      "ejecucion": "EJECUCION_LOCAL_NO_TENANT"
+    },
+    "POST": 0
+  },
+  "carga_y_reproceso_simulados": {
+    "flujo": "P8_CARGA_DEPOSITOS_ACTIVOS_V3_HASH_SHA256",
+    "tipo_de_evidencia": "Ensayo local del WDL; no ejecución Microsoft",
+    "primera_ejecucion": {
+      "CANTIDAD_RECIBIDA": 8,
+      "CANTIDAD_VALIDA": 8,
+      "CANTIDAD_NUEVA": 8,
+      "CANTIDAD_YA_EXISTE": 0,
+      "CANTIDAD_ERROR": 0,
+      "ESTADO_LOTE/Value": "COMPLETADO",
+      "coincidencias_preconsulta": 0,
+      "intentos_crear": 8,
+      "elementos_finales": 8,
+      "HASH_SHA256": "3af418fcadd6fd848a5957af5225222a8f9e753254269514cd719a718d35c83e"
+    },
+    "segunda_ejecucion": {
+      "CANTIDAD_RECIBIDA": 8,
+      "CANTIDAD_VALIDA": 8,
+      "CANTIDAD_NUEVA": 0,
+      "CANTIDAD_YA_EXISTE": 8,
+      "CANTIDAD_ERROR": 0,
+      "ESTADO_LOTE/Value": "COMPLETADO",
+      "coincidencias_preconsulta": 8,
+      "intentos_crear": 0,
+      "elementos_finales": 8,
+      "HASH_SHA256": "3af418fcadd6fd848a5957af5225222a8f9e753254269514cd719a718d35c83e"
+    }
+  },
+  "observacion_real_V2_reportada_por_usuario": {
+    "Title": "SHA256",
+    "InternalName": "_x0053_HA256",
+    "ID_explicito_no_resolvio": true
+  },
+  "tenant_V3_ejecutado": false,
+  "migracion_automatica": false,
+  "borrado_automatico": false,
+  "diff_archivos": [
+    "DOCUMENTACION_PROVISION_P8.md",
+    "DOCUMENTACION_TECNICA_P8.md",
+    "P8_CARGA_DEPOSITOS_ACTIVOS_V3_HASH_SHA256.zip",
+    "P8_PROVISIONAR_LISTAS_V3_HASH_SHA256.zip",
+    "REPORTE_CORRECCION_P8.md",
+    "p8/construir_paquete_p8.py",
+    "p8/definicion.py",
+    "p8/esquema_listas_p8.json",
+    "p8/flujo_p8_definition.json",
+    "p8/provision/construir.py",
+    "p8/provision/ensayo.py",
+    "p8/provision/evidencia_validacion.json",
+    "p8/provision/flujo_provision_definition.json",
+    "p8/provision/plan_provision.json",
+    "p8/provision/pruebas_provision.log",
+    "p8/validar_p8.py",
+    "tests/test_12_flujo_p8.py",
+    "tests/test_13_provision_p8.py"
+  ],
+  "commit_base_validado": "93c16475bfe5b188cd05a53a999950daa22aa773",
+  "publicacion_autorizada": {
+    "rama": "candidate/p8-m365-pilot",
+    "main_sin_cambios": true,
+    "checkpoint_p8": false
+  }
+}

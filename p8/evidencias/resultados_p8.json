@@ -1,0 +1,3427 @@
+[
+  {
+    "id": "tests/test_01_contrato.py::test_columnas_lists_exactas",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_01_contrato.py::test_clave_transaccion_formula_congelada",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_01_contrato.py::test_clave_sin_hora_ni_saldo",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_01_contrato.py::test_numero_casos_validos[1,234.56-1234.56]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_01_contrato.py::test_numero_casos_validos[1.234,56-1234.56]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_01_contrato.py::test_numero_casos_validos[Bs 1.000,00-1000.0]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_01_contrato.py::test_numero_casos_validos[1234,5-1234.5]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_01_contrato.py::test_numero_casos_validos[-1,234.56--1234.56]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_01_contrato.py::test_numero_casos_validos[            236,880.41-236880.41]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_01_contrato.py::test_numero_casos_validos[ 63.826,52-63826.52]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_01_contrato.py::test_numero_casos_validos[25.0-25.0]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_01_contrato.py::test_numero_casos_validos[-None]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_01_contrato.py::test_normalizar_fecha_casos_validos[01/Ago/2026-esperado0]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_01_contrato.py::test_normalizar_fecha_casos_validos[24/08/2026-esperado1]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_01_contrato.py::test_normalizar_fecha_casos_validos[17/08/26-esperado2]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_01_contrato.py::test_normalizar_fecha_casos_validos[2026-08-24-esperado3]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_01_contrato.py::test_normalizar_fecha_casos_validos[valor4-esperado4]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_01_contrato.py::test_normalizar_hora_casos_validos[9:05-09:05:00]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_01_contrato.py::test_normalizar_hora_casos_validos[14:43:49-14:43:49]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_01_contrato.py::test_normalizar_hora_casos_validos[valor2-09:05:00]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_01_contrato.py::test_normalizar_hora_casos_validos[valor3-09:05:33]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_01_contrato.py::test_codigo_texto",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_deteccion_formato[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_deteccion_formato[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_deteccion_formato[BISA_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_deteccion_formato[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_deteccion_formato[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_deteccion_formato[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_deteccion_formato[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_deteccion_formato[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_deteccion_formato[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_deteccion_formato[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_deteccion_formato[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_deteccion_formato[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_hoja_y_encabezado_reales[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_hoja_y_encabezado_reales[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_hoja_y_encabezado_reales[BISA_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_hoja_y_encabezado_reales[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_hoja_y_encabezado_reales[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_hoja_y_encabezado_reales[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_hoja_y_encabezado_reales[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_hoja_y_encabezado_reales[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_hoja_y_encabezado_reales[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_hoja_y_encabezado_reales[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_hoja_y_encabezado_reales[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_hoja_y_encabezado_reales[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_contrato_banco_cuenta_moneda[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_contrato_banco_cuenta_moneda[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_contrato_banco_cuenta_moneda[BISA_ME]",
+    "estado": "SKIP",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_contrato_banco_cuenta_moneda[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_contrato_banco_cuenta_moneda[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_contrato_banco_cuenta_moneda[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_contrato_banco_cuenta_moneda[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_contrato_banco_cuenta_moneda[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_contrato_banco_cuenta_moneda[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_contrato_banco_cuenta_moneda[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_contrato_banco_cuenta_moneda[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_contrato_banco_cuenta_moneda[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_igual_a_referencia_dorada[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_igual_a_referencia_dorada[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_igual_a_referencia_dorada[BISA_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_igual_a_referencia_dorada[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_igual_a_referencia_dorada[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_igual_a_referencia_dorada[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_igual_a_referencia_dorada[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_igual_a_referencia_dorada[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_igual_a_referencia_dorada[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_igual_a_referencia_dorada[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_igual_a_referencia_dorada[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_igual_a_referencia_dorada[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_conteo_movimientos_oraculo_independiente[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_conteo_movimientos_oraculo_independiente[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_conteo_movimientos_oraculo_independiente[BISA_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_conteo_movimientos_oraculo_independiente[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_conteo_movimientos_oraculo_independiente[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_conteo_movimientos_oraculo_independiente[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_conteo_movimientos_oraculo_independiente[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_conteo_movimientos_oraculo_independiente[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_conteo_movimientos_oraculo_independiente[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_conteo_movimientos_oraculo_independiente[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_conteo_movimientos_oraculo_independiente[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_conteo_movimientos_oraculo_independiente[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_saldo_encadenado_fila_a_fila[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_saldo_encadenado_fila_a_fila[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_saldo_encadenado_fila_a_fila[BISA_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_saldo_encadenado_fila_a_fila[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_saldo_encadenado_fila_a_fila[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_saldo_encadenado_fila_a_fila[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_saldo_encadenado_fila_a_fila[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_saldo_encadenado_fila_a_fila[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_saldo_encadenado_fila_a_fila[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_saldo_encadenado_fila_a_fila[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_saldo_encadenado_fila_a_fila[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_saldo_encadenado_fila_a_fila[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_validacion_de_saldos_ok[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_validacion_de_saldos_ok[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_validacion_de_saldos_ok[BISA_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_validacion_de_saldos_ok[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_validacion_de_saldos_ok[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_validacion_de_saldos_ok[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_validacion_de_saldos_ok[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_validacion_de_saldos_ok[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_validacion_de_saldos_ok[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_validacion_de_saldos_ok[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_validacion_de_saldos_ok[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_validacion_de_saldos_ok[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_integridad_estructural[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_integridad_estructural[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_integridad_estructural[BISA_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_integridad_estructural[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_integridad_estructural[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_integridad_estructural[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_integridad_estructural[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_integridad_estructural[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_integridad_estructural[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_integridad_estructural[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_integridad_estructural[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_integridad_estructural[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_clave_consistente_con_columnas[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_clave_consistente_con_columnas[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_clave_consistente_con_columnas[BISA_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_clave_consistente_con_columnas[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_clave_consistente_con_columnas[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_clave_consistente_con_columnas[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_clave_consistente_con_columnas[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_clave_consistente_con_columnas[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_clave_consistente_con_columnas[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_clave_consistente_con_columnas[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_clave_consistente_con_columnas[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_clave_consistente_con_columnas[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_cuenta_real_aparece_en_cabecera_y_es_unica[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_cuenta_real_aparece_en_cabecera_y_es_unica[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_cuenta_real_aparece_en_cabecera_y_es_unica[BISA_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_cuenta_real_aparece_en_cabecera_y_es_unica[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_cuenta_real_aparece_en_cabecera_y_es_unica[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_cuenta_real_aparece_en_cabecera_y_es_unica[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_cuenta_real_aparece_en_cabecera_y_es_unica[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_cuenta_real_aparece_en_cabecera_y_es_unica[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_cuenta_real_aparece_en_cabecera_y_es_unica[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_cuenta_real_aparece_en_cabecera_y_es_unica[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_cuenta_real_aparece_en_cabecera_y_es_unica[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_cuenta_real_aparece_en_cabecera_y_es_unica[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_bisa_me_sin_movimientos_es_valido",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_totales_pie_de_pagina_coinciden",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_union_ultimos12_no_es_fixture_de_union_me_y_se_rechaza",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_union_me_contrato_legado_en_el_registro",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_union_me_registro_asigna_cuenta_y_moneda",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_union_me_estructura_proxy_sintetico_se_detecta",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_union_me_fixture_estructural_real_detecta_y_tiene_hoja_y_columnas",
+    "estado": "SKIP",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_union_me_fixture_estructural_real_sin_movimientos_no_bloquea",
+    "estado": "SKIP",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_union_me_movimientos_normalizan",
+    "estado": "SKIP",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_union_me_saldos_validan",
+    "estado": "SKIP",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_union_me_debitos_conservan_campos",
+    "estado": "SKIP",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_02_regresion_formatos.py::test_union_me_nro_de_verificasion_se_conserva",
+    "estado": "SKIP",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_03_lote.py::test_lote_csv_igual_a_dorada",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_03_lote.py::test_lote_csv_utf8_bom_y_columnas",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_03_lote.py::test_lote_xlsx_hojas_tabla_y_formatos",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_03_lote.py::test_lote_totales_y_orden",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_03_lote.py::test_xlsx_y_csv_tienen_mismas_filas_y_claves",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_03_lote.py::test_lote_bloquea_formato_repetido",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_03_lote.py::test_lote_ignora_archivos_normalizado_y_no_excel",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_03_lote.py::test_d20_archivos_del_sistema_no_son_extractos[NORMALIZADO.xlsx]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_03_lote.py::test_d20_archivos_del_sistema_no_son_extractos[normalizado.XLSX]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_03_lote.py::test_d20_archivos_del_sistema_no_son_extractos[NORMALIZADO_2026.xlsx]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_03_lote.py::test_d20_archivos_del_sistema_no_son_extractos[ORIGEN.xlsx]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_03_lote.py::test_d20_archivos_del_sistema_no_son_extractos[origen.xlsx]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_03_lote.py::test_d20_archivos_del_sistema_no_son_extractos[ORIGEN_2026-08-21.xlsx]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_03_lote.py::test_d20_archivos_del_sistema_no_son_extractos[ORIGEN (1).xlsx]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_03_lote.py::test_d20_archivos_del_sistema_no_son_extractos[EXTRACTO_HISTORICO_BNB_3000100152_2026-08.xlsx]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_03_lote.py::test_d20_archivos_del_sistema_no_son_extractos[extracto_historico_x.XLSX]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_03_lote.py::test_d20_extractos_reales_con_nombres_parecidos_siguen_incluidos",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_03_lote.py::test_d20_corrida_completa_con_salidas_en_la_carpeta_de_entrada",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_04_defectos_conocidos.py::test_numero_coma_de_miles_sin_decimales",
+    "estado": "XFAIL",
+    "motivo": "D-01 NUMERO: '1,234' (coma de miles sin decimales) se lee como 1.234 en vez de 1234"
+  },
+  {
+    "id": "tests/test_04_defectos_conocidos.py::test_numero_negativo_entre_parentesis",
+    "estado": "XFAIL",
+    "motivo": "D-02 NUMERO: negativo entre parentesis '(1,234.56)' devuelve NaN"
+  },
+  {
+    "id": "tests/test_04_defectos_conocidos.py::test_numero_miles_multiples",
+    "estado": "XFAIL",
+    "motivo": "D-03 NUMERO: miles con varios separadores y sin decimales '1.234.567' / '1,234,567' devuelven NaN"
+  },
+  {
+    "id": "tests/test_04_defectos_conocidos.py::test_fecha_iso_no_se_invierte",
+    "estado": "XFAIL",
+    "motivo": "D-04 FECHA: ISO '2026-04-03' con dayfirst=True se interpreta como 4 de marzo"
+  },
+  {
+    "id": "tests/test_04_defectos_conocidos.py::test_hora_fraccion_de_dia_excel",
+    "estado": "XFAIL",
+    "motivo": "D-05 HORA: fraccion de dia de Excel (0.5) se devuelve como 0.5 en vez de '12:00:00'"
+  },
+  {
+    "id": "tests/test_04_defectos_conocidos.py::test_bnb_fecha_con_mes_abreviado_no_se_pierde",
+    "estado": "XFAIL",
+    "motivo": "D-06 FECHA: el filtro de filas usa pd.to_datetime(dayfirst) y descarta EN SILENCIO fechas '24/Ago/2026' (el Economico si las reconoce con normalizar_fecha): dos criterios distintos"
+  },
+  {
+    "id": "tests/test_04_defectos_conocidos.py::test_fila_con_importe_y_fecha_invalida_no_se_pierde_en_silencio",
+    "estado": "XFAIL",
+    "motivo": "D-07 FILAS: una fila con importe y fecha NO interpretable se descarta sin error ni conteo (deberia bloquear o informar filas descartadas)"
+  },
+  {
+    "id": "tests/test_04_defectos_conocidos.py::test_movimiento_de_2027_no_bloquea",
+    "estado": "XFAIL",
+    "motivo": "D-08 AÑO: el año 2026 esta fijo: un movimiento de 2027 bloquea toda la exportacion"
+  },
+  {
+    "id": "tests/test_04_defectos_conocidos.py::test_encabezado_sin_coincidencias_debe_fallar",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_04_defectos_conocidos.py::test_encabezado_parcial_tambien_falla_y_dice_que_falta",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_04_defectos_conocidos.py::test_cuenta_dentro_de_glosa_no_cambia_la_deteccion",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_04_defectos_conocidos.py::test_bmsc_con_otra_cuenta_no_se_acepta",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_04_defectos_conocidos.py::test_formato_union_nuevo_no_hereda_cuenta_ajena",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_04_defectos_conocidos.py::test_bnb_sin_movimientos_no_bloquea",
+    "estado": "XFAIL",
+    "motivo": "D-16 VACIOS: un extracto BNB con encabezado y SIN movimientos lanza KeyError y bloquea todo el lote (solo BISA maneja 'sin movimientos', y por un efecto colateral de dropna)"
+  },
+  {
+    "id": "tests/test_04_defectos_conocidos.py::test_union_me_vacio_no_bloquea",
+    "estado": "XFAIL",
+    "motivo": "D-16b VACIOS: un UNION_ME por fechas SIN movimientos (formato confirmado por codigo legado + captura real, con 'Nro de verificasion') lanza KeyError y bloquearia todo el lote. Probado con PROXY SINTETICO: confirmar con el archivo real vacio"
+  },
+  {
+    "id": "tests/test_04_defectos_conocidos.py::test_bnb_con_adicionales_vacio_no_bloquea",
+    "estado": "XFAIL",
+    "motivo": "D-17 COLUMNAS: si la columna requerida 'Adicionales' viene completamente vacia el dia del extracto, dropna(axis=1) la elimina y buscar_columna lanza KeyError (bloquea todo el lote)"
+  },
+  {
+    "id": "tests/test_04_defectos_conocidos.py::test_corrida_fallida_no_deja_salidas_viejas",
+    "estado": "XFAIL",
+    "motivo": "D-13 SALIDAS: si una corrida falla, NORMALIZADO.xlsx y LISTS.csv de la corrida anterior quedan en la carpeta y un proceso posterior podria cargarlos como si fueran nuevos"
+  },
+  {
+    "id": "tests/test_04_defectos_conocidos.py::test_motor_corre_con_stdout_cp1252",
+    "estado": "XFAIL",
+    "motivo": "D-14 CONSOLA: los print con emojis fallan con UnicodeEncodeError si la salida se redirige con codificacion cp1252 (p. ej. Windows con redireccion a archivo/pipe)"
+  },
+  {
+    "id": "tests/test_04_defectos_conocidos.py::test_fecha_de_carga_en_hora_de_bolivia",
+    "estado": "XFAIL",
+    "motivo": "D-15 ZONA HORARIA: LOTE DE CARGA y FECHA DE CARGA usan la hora local de la maquina: en un servidor UTC se desfasan 4 h respecto de Bolivia"
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_origen_tiene_las_cuatro_hojas_y_columnas",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_completitud_celda_a_celda[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_completitud_celda_a_celda[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_completitud_celda_a_celda[BISA_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_completitud_celda_a_celda[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_completitud_celda_a_celda[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_completitud_celda_a_celda[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_completitud_celda_a_celda[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_completitud_celda_a_celda[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_completitud_celda_a_celda[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_completitud_celda_a_celda[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_completitud_celda_a_celda[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_completitud_celda_a_celda[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_textos_que_pandas_por_defecto_convierte_en_vacio_se_conservan",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_escritor_no_convierte_texto_en_formula_ni_rompe_con_caracteres_de_control",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_reconstruccion_del_archivo_desde_la_captura[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_reconstruccion_del_archivo_desde_la_captura[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_reconstruccion_del_archivo_desde_la_captura[BISA_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_reconstruccion_del_archivo_desde_la_captura[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_reconstruccion_del_archivo_desde_la_captura[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_reconstruccion_del_archivo_desde_la_captura[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_reconstruccion_del_archivo_desde_la_captura[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_reconstruccion_del_archivo_desde_la_captura[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_reconstruccion_del_archivo_desde_la_captura[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_reconstruccion_del_archivo_desde_la_captura[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_reconstruccion_del_archivo_desde_la_captura[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_reconstruccion_del_archivo_desde_la_captura[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_mapa_uno_a_uno_con_el_lote",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_cada_movimiento_apunta_a_su_fila_original[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_cada_movimiento_apunta_a_su_fila_original[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_cada_movimiento_apunta_a_su_fila_original[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_cada_movimiento_apunta_a_su_fila_original[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_cada_movimiento_apunta_a_su_fila_original[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_cada_movimiento_apunta_a_su_fila_original[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_cada_movimiento_apunta_a_su_fila_original[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_cada_movimiento_apunta_a_su_fila_original[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_cada_movimiento_apunta_a_su_fila_original[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_cada_movimiento_apunta_a_su_fila_original[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_cada_movimiento_apunta_a_su_fila_original[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_id_origen_tiene_formato_documentado",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_debitos_conservan_todas_sus_celdas_originales[BCP_ME]",
+    "estado": "SKIP",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_debitos_conservan_todas_sus_celdas_originales[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_debitos_conservan_todas_sus_celdas_originales[BISA_ME]",
+    "estado": "SKIP",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_debitos_conservan_todas_sus_celdas_originales[BISA_MN]",
+    "estado": "SKIP",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_debitos_conservan_todas_sus_celdas_originales[BNB_AHORRO]",
+    "estado": "SKIP",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_debitos_conservan_todas_sus_celdas_originales[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_debitos_conservan_todas_sus_celdas_originales[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_debitos_conservan_todas_sus_celdas_originales[BNB_CLINICA]",
+    "estado": "SKIP",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_debitos_conservan_todas_sus_celdas_originales[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_debitos_conservan_todas_sus_celdas_originales[ECO_AHORRO]",
+    "estado": "SKIP",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_debitos_conservan_todas_sus_celdas_originales[BMSC]",
+    "estado": "SKIP",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_debitos_conservan_todas_sus_celdas_originales[UNION_MN]",
+    "estado": "SKIP",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_columnas_hoy_perdidas_estan_en_la_captura[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_columnas_hoy_perdidas_estan_en_la_captura[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_columnas_hoy_perdidas_estan_en_la_captura[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_columnas_hoy_perdidas_estan_en_la_captura[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_columnas_hoy_perdidas_estan_en_la_captura[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_columnas_hoy_perdidas_estan_en_la_captura[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_columnas_hoy_perdidas_estan_en_la_captura[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_columnas_hoy_perdidas_estan_en_la_captura[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_bnb_referencia_e_itf_conservan_el_valor_exacto_del_banco",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_cabecera_encabezado_y_pie_conservados[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_cabecera_encabezado_y_pie_conservados[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_cabecera_encabezado_y_pie_conservados[BISA_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_cabecera_encabezado_y_pie_conservados[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_cabecera_encabezado_y_pie_conservados[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_cabecera_encabezado_y_pie_conservados[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_cabecera_encabezado_y_pie_conservados[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_cabecera_encabezado_y_pie_conservados[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_cabecera_encabezado_y_pie_conservados[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_cabecera_encabezado_y_pie_conservados[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_cabecera_encabezado_y_pie_conservados[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_cabecera_encabezado_y_pie_conservados[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_valores_especificos_de_cabecera_y_pie",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_hojas_adicionales_de_bmsc_se_conservan_completas",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_metadatos_esperados[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_metadatos_esperados[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_metadatos_esperados[BISA_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_metadatos_esperados[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_metadatos_esperados[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_metadatos_esperados[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_metadatos_esperados[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_metadatos_esperados[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_metadatos_esperados[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_metadatos_esperados[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_metadatos_esperados[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_metadatos_esperados[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_metadatos_una_fila_por_extracto",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_ids_son_deterministas_entre_corridas",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_ids_no_dependen_del_nombre_ni_de_la_ruta",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_columnas_vacias_del_formato_se_conservan_y_se_declaran[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_columnas_vacias_del_formato_se_conservan_y_se_declaran[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_columnas_vacias_del_formato_se_conservan_y_se_declaran[BISA_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_columnas_vacias_del_formato_se_conservan_y_se_declaran[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_columnas_vacias_del_formato_se_conservan_y_se_declaran[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_columnas_vacias_del_formato_se_conservan_y_se_declaran[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_columnas_vacias_del_formato_se_conservan_y_se_declaran[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_columnas_vacias_del_formato_se_conservan_y_se_declaran[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_columnas_vacias_del_formato_se_conservan_y_se_declaran[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_columnas_vacias_del_formato_se_conservan_y_se_declaran[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_columnas_vacias_del_formato_se_conservan_y_se_declaran[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_columnas_vacias_del_formato_se_conservan_y_se_declaran[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_columnas_vacias_conocidas",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_normalizado_xlsx_identico_a_su_dorada[LISTS]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_normalizado_xlsx_identico_a_su_dorada[VALIDACION]",
+    "estado": "FAIL",
+    "motivo": "tests/test_05_preservacion.py:494: AssertionError"
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_normalizado_xlsx_identico_a_su_dorada[RESUMEN]",
+    "estado": "FAIL",
+    "motivo": "tests/test_05_preservacion.py:494: AssertionError"
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_normalizado_xlsx_identico_a_su_dorada[DIAGNOSTICO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_lists_csv_identico_a_su_dorada_y_a_la_hoja_lists",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_captura_no_agrega_columnas_ni_cambia_clave",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_si_la_captura_falla_normalizado_y_lists_salen_identicos",
+    "estado": "FAIL",
+    "motivo": "tests/test_05_preservacion.py:526: AssertionError"
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_los_extractos_originales_no_se_modifican",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_union_me_estructura_vacia_se_captura_con_nro_de_verificasion",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_union_me_nro_de_verificasion_viaja_a_origen_y_no_a_lists_proxy_sintetico",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_union_me_archivo_real_vacio_se_captura_completo",
+    "estado": "SKIP",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_union_me_real_completitud_con_movimientos",
+    "estado": "SKIP",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_union_me_real_debitos_completos",
+    "estado": "SKIP",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_05_preservacion.py::test_union_me_real_nro_de_verificasion_y_mapa",
+    "estado": "SKIP",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_registro_es_valido",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_registro_tiene_las_13_cuentas_actuales_y_coinciden_con_el_contrato",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_registro_hojas_y_encabezados_son_los_del_motor_original",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_registro_formatos_de_la_misma_familia_se_comparten",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_registro_invalido_se_detecta[id_duplicado]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_registro_invalido_se_detecta[formato_inexistente]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_registro_invalido_se_detecta[misma_cuenta_y_formato]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_registro_invalido_se_detecta[cuenta_contenida_en_otra]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_registro_invalido_se_detecta[cuenta_a_formato_no_aceptado]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_registro_invalido_se_detecta[cuenta_sin_moneda]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_registro_invalido_se_detecta[falta_rol_obligatorio]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_registro_invalido_se_detecta[puntaje_minimo_invalido]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_registro_invalido_se_detecta[modo_importe_invalido]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_registro_invalido_se_detecta[depositante_campo_inexistente]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_registro_invalido_se_detecta[info_campo_inexistente]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_registro_invalido_se_detecta[filtro_fecha_invalido]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_registro_invalido_se_detecta[firma_vacia]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_registro_invalido_se_detecta[fuente_saldo_invalida]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_registro_invalido_se_detecta[formato_no_aceptado_sin_mensaje]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_registro_json_roto_falla_con_mensaje",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_motor_generico_no_usa_la_logica_bancaria_del_motor",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_primitivas_compartidas_son_solo_conversion_y_lectura",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_faltan_primitivas_error_claro",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_registro_no_se_modifica_al_normalizar",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_bisa_me_sin_movimientos_deja_df_vacio_con_identidad",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_generico_es_determinista",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_campo_canonico_cubre_todos_los_encabezados_reales[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_campo_canonico_cubre_todos_los_encabezados_reales[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_campo_canonico_cubre_todos_los_encabezados_reales[BISA_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_campo_canonico_cubre_todos_los_encabezados_reales[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_campo_canonico_cubre_todos_los_encabezados_reales[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_campo_canonico_cubre_todos_los_encabezados_reales[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_campo_canonico_cubre_todos_los_encabezados_reales[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_campo_canonico_cubre_todos_los_encabezados_reales[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_campo_canonico_cubre_todos_los_encabezados_reales[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_campo_canonico_cubre_todos_los_encabezados_reales[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_campo_canonico_cubre_todos_los_encabezados_reales[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_campo_canonico_cubre_todos_los_encabezados_reales[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_campo_canonico_ejemplos",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_cuenta_nueva_de_formato_conocido_se_agrega_solo_con_configuracion",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_cuenta_nueva_produce_lo_mismo_que_una_cuenta_conocida_con_el_mismo_contenido",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_con_cuenta_rechaza_configuraciones_invalidas",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_bnb_orden_descendente_valida_saldos",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_bnb_sinteticos[un_credito]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_bnb_sinteticos[debito_y_credito]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_bnb_sinteticos[fila_sin_fecha_interpretable]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_un_cambio_del_registro_cambia_exactamente_lo_que_describe[etiqueta_info_bisa]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_un_cambio_del_registro_cambia_exactamente_lo_que_describe[moneda_bnb_mn]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_un_cambio_del_registro_cambia_exactamente_lo_que_describe[depositante_bnb_vacio]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_un_cambio_del_registro_cambia_exactamente_lo_que_describe[bcp_sin_excluir_saldos]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_un_cambio_del_registro_cambia_exactamente_lo_que_describe[eco_filtro_fecha]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_un_cambio_del_registro_cambia_exactamente_lo_que_describe[bmsc_separador_info]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_una_fuente_de_saldo_distinta_que_da_el_mismo_resultado_no_cambia_la_validacion",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_una_fuente_de_saldo_equivocada_rompe_la_validacion",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_lote_la_produccion_generica_es_identica_a_la_dorada_del_legado",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_el_registro_gobierna_la_normalizacion_productiva",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_la_identidad_sale_del_registro",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_p4_sin_registro_valido_la_produccion_se_detiene_con_error_claro[json_roto-no es JSON v\\xe1lido]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_p4_sin_registro_valido_la_produccion_se_detiene_con_error_claro[registro_invalido-CUENTAS vac\\xedo]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_p4_sin_registro_valido_la_produccion_se_detiene_con_error_claro[archivo_inexistente-no se pudo leer el registro]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_p5_registro_valido_para_detectar_pero_no_para_normalizar_detiene_la_produccion",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_p5_motor_sin_motor_generico_al_lado_se_detiene_con_error_claro",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_06_registro_generico.py::test_archivos_de_sombra_de_corridas_anteriores_no_se_toman_como_extractos",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_once_archivos_uno_por_cuenta_y_mes_con_nombre_esperado",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_movimientos_por_archivo_igual_a_normalizado",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_extracto_que_cruza_dos_meses_genera_dos_archivos",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_una_sola_hoja_visible_llamada_extracto[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_una_sola_hoja_visible_llamada_extracto[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_una_sola_hoja_visible_llamada_extracto[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_una_sola_hoja_visible_llamada_extracto[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_una_sola_hoja_visible_llamada_extracto[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_una_sola_hoja_visible_llamada_extracto[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_una_sola_hoja_visible_llamada_extracto[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_una_sola_hoja_visible_llamada_extracto[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_una_sola_hoja_visible_llamada_extracto[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_una_sola_hoja_visible_llamada_extracto[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_una_sola_hoja_visible_llamada_extracto[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_columnas_visibles_son_las_del_banco_en_su_orden_mas_tres_operativas[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_columnas_visibles_son_las_del_banco_en_su_orden_mas_tres_operativas[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_columnas_visibles_son_las_del_banco_en_su_orden_mas_tres_operativas[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_columnas_visibles_son_las_del_banco_en_su_orden_mas_tres_operativas[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_columnas_visibles_son_las_del_banco_en_su_orden_mas_tres_operativas[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_columnas_visibles_son_las_del_banco_en_su_orden_mas_tres_operativas[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_columnas_visibles_son_las_del_banco_en_su_orden_mas_tres_operativas[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_columnas_visibles_son_las_del_banco_en_su_orden_mas_tres_operativas[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_columnas_visibles_son_las_del_banco_en_su_orden_mas_tres_operativas[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_columnas_visibles_son_las_del_banco_en_su_orden_mas_tres_operativas[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_columnas_visibles_son_las_del_banco_en_su_orden_mas_tres_operativas[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_orden_de_columnas_igual_al_orden_original_del_banco[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_orden_de_columnas_igual_al_orden_original_del_banco[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_orden_de_columnas_igual_al_orden_original_del_banco[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_orden_de_columnas_igual_al_orden_original_del_banco[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_orden_de_columnas_igual_al_orden_original_del_banco[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_orden_de_columnas_igual_al_orden_original_del_banco[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_orden_de_columnas_igual_al_orden_original_del_banco[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_orden_de_columnas_igual_al_orden_original_del_banco[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_orden_de_columnas_igual_al_orden_original_del_banco[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_orden_de_columnas_igual_al_orden_original_del_banco[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_orden_de_columnas_igual_al_orden_original_del_banco[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_registro_declara_el_bloque_historico_de_todos_los_formatos_aceptados",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_registro_sigue_siendo_valido_para_el_motor_generico",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_sin_perdida_cada_columna_bancaria_conserva_el_valor_del_banco[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_sin_perdida_cada_columna_bancaria_conserva_el_valor_del_banco[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_sin_perdida_cada_columna_bancaria_conserva_el_valor_del_banco[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_sin_perdida_cada_columna_bancaria_conserva_el_valor_del_banco[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_sin_perdida_cada_columna_bancaria_conserva_el_valor_del_banco[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_sin_perdida_cada_columna_bancaria_conserva_el_valor_del_banco[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_sin_perdida_cada_columna_bancaria_conserva_el_valor_del_banco[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_sin_perdida_cada_columna_bancaria_conserva_el_valor_del_banco[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_sin_perdida_cada_columna_bancaria_conserva_el_valor_del_banco[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_sin_perdida_cada_columna_bancaria_conserva_el_valor_del_banco[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_sin_perdida_cada_columna_bancaria_conserva_el_valor_del_banco[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_codigos_cheques_y_referencias_son_texto_y_conservan_ceros",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_glosas_nombres_y_datos_de_contraparte_se_conservan",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_debitos_conservan_todas_las_columnas_del_banco",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_importes_saldos_fecha_y_hora_son_los_de_normalizado[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_importes_saldos_fecha_y_hora_son_los_de_normalizado[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_importes_saldos_fecha_y_hora_son_los_de_normalizado[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_importes_saldos_fecha_y_hora_son_los_de_normalizado[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_importes_saldos_fecha_y_hora_son_los_de_normalizado[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_importes_saldos_fecha_y_hora_son_los_de_normalizado[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_importes_saldos_fecha_y_hora_son_los_de_normalizado[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_importes_saldos_fecha_y_hora_son_los_de_normalizado[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_importes_saldos_fecha_y_hora_son_los_de_normalizado[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_importes_saldos_fecha_y_hora_son_los_de_normalizado[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_importes_saldos_fecha_y_hora_son_los_de_normalizado[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_formato_visible_de_fecha_dd_mm_yyyy_y_de_importes[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_formato_visible_de_fecha_dd_mm_yyyy_y_de_importes[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_formato_visible_de_fecha_dd_mm_yyyy_y_de_importes[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_formato_visible_de_fecha_dd_mm_yyyy_y_de_importes[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_formato_visible_de_fecha_dd_mm_yyyy_y_de_importes[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_formato_visible_de_fecha_dd_mm_yyyy_y_de_importes[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_formato_visible_de_fecha_dd_mm_yyyy_y_de_importes[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_formato_visible_de_fecha_dd_mm_yyyy_y_de_importes[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_formato_visible_de_fecha_dd_mm_yyyy_y_de_importes[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_formato_visible_de_fecha_dd_mm_yyyy_y_de_importes[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_formato_visible_de_fecha_dd_mm_yyyy_y_de_importes[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_hora_bisa_respeta_el_formato_del_banco_hh_mm",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_estado_confirmado_por_y_fecha_de_confirmacion_al_final[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_estado_confirmado_por_y_fecha_de_confirmacion_al_final[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_estado_confirmado_por_y_fecha_de_confirmacion_al_final[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_estado_confirmado_por_y_fecha_de_confirmacion_al_final[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_estado_confirmado_por_y_fecha_de_confirmacion_al_final[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_estado_confirmado_por_y_fecha_de_confirmacion_al_final[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_estado_confirmado_por_y_fecha_de_confirmacion_al_final[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_estado_confirmado_por_y_fecha_de_confirmacion_al_final[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_estado_confirmado_por_y_fecha_de_confirmacion_al_final[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_estado_confirmado_por_y_fecha_de_confirmacion_al_final[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_estado_confirmado_por_y_fecha_de_confirmacion_al_final[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_tabla_estados_opcional_reemplaza_los_valores_operativos",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_orden_cronologico_y_empates_en_el_orden_original_del_archivo[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_orden_cronologico_y_empates_en_el_orden_original_del_archivo[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_orden_cronologico_y_empates_en_el_orden_original_del_archivo[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_orden_cronologico_y_empates_en_el_orden_original_del_archivo[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_orden_cronologico_y_empates_en_el_orden_original_del_archivo[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_orden_cronologico_y_empates_en_el_orden_original_del_archivo[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_orden_cronologico_y_empates_en_el_orden_original_del_archivo[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_orden_cronologico_y_empates_en_el_orden_original_del_archivo[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_orden_cronologico_y_empates_en_el_orden_original_del_archivo[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_orden_cronologico_y_empates_en_el_orden_original_del_archivo[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_orden_cronologico_y_empates_en_el_orden_original_del_archivo[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_empates_del_mismo_segundo_en_bnb_mn_siguen_el_orden_del_archivo",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_zona_superior_muestra_lo_que_trae_cada_banco",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_saldos_declarados_coinciden_con_la_validacion_del_motor",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_un_saldo_declarado_que_no_cuadra_bloquea_el_archivo",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_movimiento_sin_fila_de_origen_bloquea_solo_su_archivo",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_reconstruccion_sin_el_banco_es_identica_celda_a_celda[NORMALIZADO.xlsx]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_reconstruccion_sin_el_banco_es_identica_celda_a_celda[LISTS.csv]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_historico_no_depende_del_motor_ni_de_la_captura_ni_de_lectores_de_xls",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_generacion_determinista_y_huella_dorada",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_ningun_id_hash_ni_campo_tecnico_es_visible[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_ningun_id_hash_ni_campo_tecnico_es_visible[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_ningun_id_hash_ni_campo_tecnico_es_visible[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_ningun_id_hash_ni_campo_tecnico_es_visible[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_ningun_id_hash_ni_campo_tecnico_es_visible[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_ningun_id_hash_ni_campo_tecnico_es_visible[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_ningun_id_hash_ni_campo_tecnico_es_visible[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_ningun_id_hash_ni_campo_tecnico_es_visible[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_ningun_id_hash_ni_campo_tecnico_es_visible[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_ningun_id_hash_ni_campo_tecnico_es_visible[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_ningun_id_hash_ni_campo_tecnico_es_visible[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_clave_oculta_permite_sincronizar_con_lists",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_columna_nueva_del_banco_aparece_antes_de_las_operativas_con_advertencia",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_union_me_proxy_sintetico_con_movimiento_muestra_nro_de_verificasion",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_union_me_vacio_no_genera_archivo_ni_bloquea",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_union_me_real_historico_con_movimientos",
+    "estado": "SKIP",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_union_me_real_historico_debitos",
+    "estado": "SKIP",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_generar_historicos_no_modifica_normalizado_lists_ni_origen",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_normalizado_y_lists_siguen_identicos_a_sus_doradas",
+    "estado": "FAIL",
+    "motivo": "tests/test_07_historico_p3b.py:627: AssertionError"
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_el_motor_no_cambio_y_no_escribe_historicos",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_07_historico_p3b.py::test_cli_genera_desde_origen_y_lists_csv",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_formato_real_se_detecta_exactamente_como_hoy[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_formato_real_se_detecta_exactamente_como_hoy[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_formato_real_se_detecta_exactamente_como_hoy[BISA_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_formato_real_se_detecta_exactamente_como_hoy[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_formato_real_se_detecta_exactamente_como_hoy[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_formato_real_se_detecta_exactamente_como_hoy[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_formato_real_se_detecta_exactamente_como_hoy[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_formato_real_se_detecta_exactamente_como_hoy[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_formato_real_se_detecta_exactamente_como_hoy[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_formato_real_se_detecta_exactamente_como_hoy[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_formato_real_se_detecta_exactamente_como_hoy[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_formato_real_se_detecta_exactamente_como_hoy[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_detectar_formato_conserva_su_contrato[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_detectar_formato_conserva_su_contrato[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_detectar_formato_conserva_su_contrato[BISA_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_detectar_formato_conserva_su_contrato[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_detectar_formato_conserva_su_contrato[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_detectar_formato_conserva_su_contrato[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_detectar_formato_conserva_su_contrato[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_detectar_formato_conserva_su_contrato[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_detectar_formato_conserva_su_contrato[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_detectar_formato_conserva_su_contrato[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_detectar_formato_conserva_su_contrato[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_detectar_formato_conserva_su_contrato[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_lote_12_salidas_identicas_y_deteccion_por_registro",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_registro_valido_para_detectar",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_registro_invalido_se_rechaza_al_cargar[sin_etiquetas_de_cuenta]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_registro_invalido_se_rechaza_al_cargar[mismo_numero_en_dos_formatos]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_registro_invalido_se_rechaza_al_cargar[id_repetido]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_registro_invalido_se_rechaza_al_cargar[formato_inexistente]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_registro_invalido_se_rechaza_al_cargar[cuenta_sin_moneda]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_registro_invalido_se_rechaza_al_cargar[cuenta_en_formato_rechazado]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_registro_invalido_se_rechaza_al_cargar[cuenta_sin_digitos]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_registro_invalido_se_rechaza_al_cargar[prohibida_sin_mensaje]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_cuenta_nueva_sin_registrar_se_rechaza_con_motivo",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_cuenta_nueva_se_incorpora_solo_con_una_entrada_en_cuentas",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_cuenta_nueva_tambien_llega_al_historico_p3b",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_cuenta_nueva_en_hoja_alternativa_se_detecta_en_esa_hoja",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_cuenta_nueva_de_union_junto_al_lote_real",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_cuenta_nueva_no_modifica_el_registro_productivo",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_cuenta_en_glosa_no_altera_la_deteccion",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_cuenta_no_registrada_con_glosa_que_menciona_una_registrada_se_rechaza",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_cuenta_fuera_de_la_cabecera_no_cuenta",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_los_extractos_reales_tienen_otras_cuentas_en_sus_movimientos_y_no_confunden",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_bmsc_con_cuenta_incorrecta_se_rechaza",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_bmsc_con_cuenta_de_otro_banco_se_rechaza_y_lo_dice",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_bmsc_con_su_cuenta_registrada_se_acepta",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_bmsc_sin_cuenta_en_la_cabecera_se_rechaza",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_dos_cuentas_en_la_celda_de_cuenta_es_ambiguo",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_dos_rotulos_de_cuenta_distintos_es_ambiguo",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_una_cuenta_registrada_y_otra_desconocida_en_la_cabecera_es_ambiguo",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_archivo_con_estructura_de_dos_formatos_es_ambiguo",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_cabecera_ambigua_detiene_el_lote_sin_escribir",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_encabezado_incompleto_se_rechaza_y_dice_que_falta",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_encabezado_con_una_sola_columna_faltante_tambien_se_rechaza",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_hoja_sin_encabezado_reconocible_no_se_asigna_a_ningun_formato",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_union_ultimos12_real_se_rechaza_en_la_deteccion",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_union_ultimos12_detiene_el_lote_con_su_mensaje",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_union_ultimos12_con_la_hoja_renombrada_tampoco_pasa_como_union_me",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_union_ultimos12_aunque_traiga_saldo_se_rechaza_por_su_cabecera",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_union_me_proxy_sintetico_sigue_detectandose",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_08_deteccion_p4.py::test_p4_la_deteccion_no_contiene_logica_de_normalizacion",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_ejecutar_motor_no_nombra_la_normalizacion_legada",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_lote_real_completo_sin_ningun_normalizador_legado",
+    "estado": "FAIL",
+    "motivo": "tests/test_09_normalizacion_p5.py:108: AssertionError"
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_formato_real_identico_a_la_referencia_legada_congelada[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_formato_real_identico_a_la_referencia_legada_congelada[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_formato_real_identico_a_la_referencia_legada_congelada[BISA_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_formato_real_identico_a_la_referencia_legada_congelada[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_formato_real_identico_a_la_referencia_legada_congelada[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_formato_real_identico_a_la_referencia_legada_congelada[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_formato_real_identico_a_la_referencia_legada_congelada[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_formato_real_identico_a_la_referencia_legada_congelada[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_formato_real_identico_a_la_referencia_legada_congelada[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_formato_real_identico_a_la_referencia_legada_congelada[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_formato_real_identico_a_la_referencia_legada_congelada[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_formato_real_identico_a_la_referencia_legada_congelada[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_formato_real_clasificacion_banco_cuenta_moneda[BCP_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_formato_real_clasificacion_banco_cuenta_moneda[BCP_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_formato_real_clasificacion_banco_cuenta_moneda[BISA_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_formato_real_clasificacion_banco_cuenta_moneda[BISA_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_formato_real_clasificacion_banco_cuenta_moneda[BNB_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_formato_real_clasificacion_banco_cuenta_moneda[BNB_ME]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_formato_real_clasificacion_banco_cuenta_moneda[BNB_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_formato_real_clasificacion_banco_cuenta_moneda[BNB_CLINICA]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_formato_real_clasificacion_banco_cuenta_moneda[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_formato_real_clasificacion_banco_cuenta_moneda[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_formato_real_clasificacion_banco_cuenta_moneda[BMSC]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_formato_real_clasificacion_banco_cuenta_moneda[UNION_MN]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_la_normalizacion_lee_la_misma_hoja_y_fila_que_la_deteccion",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_registro_de_la_version_de_normalizacion",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_las_12_cuentas_reales_como_cuentas_nuevas_solo_por_configuracion",
+    "estado": "FAIL",
+    "motivo": "tests/test_09_normalizacion_p5.py:108: AssertionError"
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_cuenta_nueva_con_extracto_real_del_economico[ECO_AHORRO]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_cuenta_nueva_con_extracto_real_del_economico[ECO_CTA_CTE]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_cuenta_nueva_bnb_de_punta_a_punta_sin_legado",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_cuenta_nueva_bnb_en_hoja_alternativa_sin_plantilla_legada",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_cuenta_nueva_bmsc_sin_legado",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_cuenta_nueva_union_junto_al_lote_real_sin_legado",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_cuenta_sin_registrar_sigue_rechazada",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_union_me_proxy_sintetico_se_normaliza_por_registro",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_union_me_real_con_movimientos_se_normaliza_por_registro",
+    "estado": "SKIP",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_09_normalizacion_p5.py::test_p5_union_me_real_validacion_y_debitos",
+    "estado": "SKIP",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_10_retiro_legado_p6.py::test_p6_componente_productivo_no_define_ni_nombra_el_legado[motor_control_depositos_cbba.py]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_10_retiro_legado_p6.py::test_p6_componente_productivo_no_define_ni_nombra_el_legado[deteccion_registro.py]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_10_retiro_legado_p6.py::test_p6_componente_productivo_no_define_ni_nombra_el_legado[motor_generico.py]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_10_retiro_legado_p6.py::test_p6_captura_origen_no_llama_al_legado",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_10_retiro_legado_p6.py::test_p6_el_modulo_del_motor_no_expone_el_legado",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_10_retiro_legado_p6.py::test_p6_el_motor_generico_no_tiene_comparador_ni_modo_script",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_10_retiro_legado_p6.py::test_p6_el_registro_no_tiene_plantillas_legadas",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_10_retiro_legado_p6.py::test_p6_las_primitivas_compartidas_siguen_en_el_motor_una_sola_vez",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_10_retiro_legado_p6.py::test_p6_la_deteccion_ya_no_informa_campos_legados",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_10_retiro_legado_p6.py::test_p6_produccion_aislada_da_la_salida_aprobada",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_10_retiro_legado_p6.py::test_p6_sin_archivos_ni_estado_de_sombra",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_10_retiro_legado_p6.py::test_p6_la_produccion_carga_sus_modulos_desde_la_carpeta_productiva",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_tabla_de_columnas_es_exactamente_columnas_lists_del_motor",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_nombres_tecnicos_ascii_y_sin_choque_con_campos_operativos",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_documento_de_diseno_menciona_las_26_columnas_y_los_8_campos_operativos",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_esquema_parse_json_publicado_coincide_con_el_generado",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_las_26_columnas_se_conservan",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_ningun_valor_cambia_respecto_a_lists_csv_dorada",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_valores_iguales_a_lists_csv_de_una_corrida_real_del_motor",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_la_clave_se_conserva_y_es_la_de_crear_clave_del_motor",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_no_toca_lists_csv_ni_escribe_en_su_carpeta",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_json_utf8_sin_bom_y_acentos_sin_escapar",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_filas_duplicadas_se_identifican",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_clasificacion_nuevo_ya_existe_error",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_reprocesar_el_mismo_archivo_no_genera_nuevos",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_lote_solapado_solo_agrega_los_movimientos_nuevos",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_claves_existentes_desde_archivo_de_texto",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_dos_ejecuciones_sobre_la_misma_entrada_son_identicas",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_sin_ahora_solo_cambia_la_marca_de_tiempo_del_manifiesto",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_re_ejecutar_en_la_misma_carpeta_sobrescribe_sin_acumular",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_el_lote_cambia_si_cambia_el_contenido_del_archivo",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_manifiesto_del_lote_dorado",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_manifiesto_cuenta_errores_y_repetidas",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_encabezado_distinto_no_genera_nada",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_fila_con_numero_de_campos_incorrecto_no_genera_nada",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_lists_csv_solo_encabezado_es_un_lote_vacio_valido",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_csv_con_y_sin_bom_producen_el_mismo_artefacto",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_valores_con_comas_comillas_y_saltos_de_linea_se_conservan",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_texto_de_una_linea_mayor_a_255_es_error_y_el_largo_admite_mas",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_hora_vacia_es_valida_como_en_banco_union",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_cli_escribe_artefacto_y_esquema_y_devuelve_codigos",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_esquema_declara_las_26_columnas_como_texto",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_contrato_esperado_es_exactamente_el_de_p6",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_verificar_contrato_contra_el_motor_real",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_adaptar_informa_que_el_contrato_fue_verificado",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_motor_ausente_no_bloquea_pero_se_informa",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_deriva_en_la_tabla_del_adaptador_detiene_todo",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_el_error_de_contrato_nombra_la_desviacion",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_nombre_tecnico_que_choca_con_campo_operativo_detiene_todo",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_deriva_en_columnas_lists_del_motor_detiene_todo",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_motor_sin_columnas_lists_o_ilegible_detiene_todo",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_cli_con_deriva_de_contrato_sale_con_error_y_no_escribe",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_encabezado_de_lists_csv_desviado_nombra_la_diferencia",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_verificar_contrato_no_modifica_el_motor",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_especificacion_del_flujo_define_la_bitacora_depositos_cargas",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_documentacion_declara_que_no_certifica_la_integracion_end_to_end",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_11_adaptador_m365_p7.py::test_p7_ejemplo_publicado_se_regenera_identico_desde_su_lists_csv",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_paquete_y_fuente_son_reproducibles",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_piloto_8_y_reproceso_sin_intentos_de_creacion",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_estructural_siempre_registra_antes_de_terminar[ilegible]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_estructural_siempre_registra_antes_de_terminar[version]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_estructural_siempre_registra_antes_de_terminar[columnas]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_estructural_siempre_registra_antes_de_terminar[propiedad_raiz]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_estructural_siempre_registra_antes_de_terminar[propiedad_movimiento]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_estructural_siempre_registra_antes_de_terminar[omitido_invalido]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_creacion_fallida_o_timeout_reconsulta_y_continua[False-Failed]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_creacion_fallida_o_timeout_reconsulta_y_continua[False-TimedOut]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_creacion_fallida_o_timeout_reconsulta_y_continua[True-Failed]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_creacion_fallida_o_timeout_reconsulta_y_continua[True-TimedOut]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_reconsulta_fallida_es_error_de_fila_y_no_del_lote[Failed]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_reconsulta_fallida_es_error_de_fila_y_no_del_lote[TimedOut]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_fallo_preconsulta_es_estructural_y_cero_creaciones",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_fallo_lectura_tiene_archivo_del_trigger",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_fallo_escritura_bitacora_no_se_oculta_ni_termina_exitoso",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_trigger_sharepoint_filtra_nombres_reales[MANIFIESTO_P7__x.json-False]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_trigger_sharepoint_filtra_nombres_reales[DEPOSITOS_ACTIVOS__x.csv-False]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_trigger_sharepoint_filtra_nombres_reales[otro.json-False]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_trigger_sharepoint_filtra_nombres_reales[DEPOSITOS_ACTIVOS__x.json-True]",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_configuracion_binaria_no_adivina_otra_forma",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_error_con_omitidos_conserva_fila_original_y_no_expone_secreto",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_diagnostico_acotado_mantiene_json_valido_con_textos_largos",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_extremos_con_utc_y_fecha_testigo_julio_nueve",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_apostrofos_odata_se_escapan_sin_modificar_clave",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_conjunto_ampliado_cubre_fixtures_sin_cambios",
+    "estado": "PASS",
+    "motivo": ""
+  },
+  {
+    "id": "tests/test_12_flujo_p8.py::test_lote_vacio_valido",
+    "estado": "PASS",
+    "motivo": ""
+  }
+]

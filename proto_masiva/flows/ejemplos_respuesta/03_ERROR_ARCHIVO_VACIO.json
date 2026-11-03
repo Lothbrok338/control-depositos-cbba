@@ -1,0 +1,19 @@
+{
+  "escenario": "la plantilla vacía: error controlado, no se consulta Depositos_Activos",
+  "respuesta": {
+    "resultado": "ERROR",
+    "codigo": "ARCHIVO_VACIO",
+    "mensaje": "La tabla no tiene filas con datos. Complete la plantilla y vuelva a intentar.",
+    "archivo": "Plantilla_Confirmacion_Masiva_P9.xlsx",
+    "tabla_encontrada": "SI",
+    "filas_leidas": "0",
+    "copia_temporal_eliminada": "SI",
+    "tiempos_ms": "crear=7;excel=7;depositos=0;borrar=6;total=28",
+    "filas_totales": "0",
+    "filas_validas": "0",
+    "filas_con_error": "0",
+    "depositos_consultados": "0",
+    "detalle_json": "[]"
+  },
+  "detalle_json_expandido": []
+}
